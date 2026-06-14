@@ -9,6 +9,8 @@
     --point-color: #a3b8cc;      /* 포인트 색상: 부드러운 파스텔 블루 그레이 */
     --divider-bg: rgba(0, 0, 0, 0.05);
     --dropdown-bg: #ffffff;
+    --modal-card-bg: rgba(255, 255, 255, 0.8);
+    --input-bg: rgba(0, 0, 0, 0.03);
 }
 
 .theme-dark {
@@ -19,6 +21,8 @@
     --point-color: #637b94;      /* 다크모드용 톤다운 파스텔 블루 */
     --divider-bg: rgba(255, 255, 255, 0.08);
     --dropdown-bg: #2c2c2e;
+    --modal-card-bg: rgba(44, 44, 46, 0.8);
+    --input-bg: rgba(255, 255, 255, 0.05);
 }
 
 /* ==========================================================================
@@ -105,10 +109,10 @@ html, body, #wrap {
 
 .nav-icon-btn:hover {
     color: var(--main-color);
-    transform: translateY(-1px); /* 미세하고 고급스러운 반응 */
+    transform: translateY(-1px);
 }
 
-/* 드롭다운 메뉴 스타일 */
+/* 드롭다운 메뉴 스타일 (피드백 반영: 초기 닫힘 및 폰트 축소) */
 .dropdown {
     position: relative;
     display: inline-block;
@@ -127,6 +131,7 @@ html, body, #wrap {
 }
 
 .dropdown-inner {
+    display: none; /* 피드백: 무조건 완전히 닫힌 채 시작 */
     position: absolute;
     right: 0;
     top: calc(100% + 8px);
@@ -143,7 +148,7 @@ html, body, #wrap {
 .dropdown-inner a {
     display: block;
     padding: 8px 20px;
-    font-size: 13px;
+    font-size: 11.5px; /* 피드백: 작고 단정하게 축소 */
     color: var(--sub-color);
 }
 
@@ -154,7 +159,7 @@ html, body, #wrap {
 
 /* 메인 컨테이너 영역 */
 .inner_index {
-    max-width: 700px;  /* 대다수 프리미엄 블로그/아카이브가 채택하는 가독성 최적 너비 */
+    max-width: 700px;  
     margin: 60px auto;
     padding: 0 24px;
 }
@@ -169,9 +174,7 @@ html, body, #wrap {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ==========================================================================
-   [요청사항] 본문 내 글 관리 버튼 스타일 (수정, 삭제) 미리 정의
-   ========================================================================== */
+/* 본문 내 글 관리 버튼 스타일 (수정, 삭제) */
 .article-admin-menu {
     display: flex;
     gap: 12px;
@@ -190,7 +193,106 @@ html, body, #wrap {
     transition: color 0.2s;
 }
 .btn-admin.edit:hover { color: var(--point-color); }
-.btn-admin.delete:hover { color: #ff3b30; } /* 단정한 파스텔 레드 삭제 피드백 */
+.btn-admin.delete:hover { color: #ff3b30; } 
+
+/* ==========================================================================
+   [요청사항] 고급스러운 아이클라우드 스타일 로그인 팝업 (모달)
+   ========================================================================== */
+.login-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.15);
+    /* [요청사항] 배경 완벽 블러처리 */
+    backdrop-filter: blur(15px) saturate(140%);
+    -webkit-backdrop-filter: blur(15px) saturate(140%);
+     Chil-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: var(--modal-card-bg);
+    border: 1px solid var(--divider-bg);
+    width: 100%;
+    max-width: 340px;
+    padding: 35px 30px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    /* [규칙 4] 부드럽게 싹 열리는 애니메이션 기입 */
+    animation: modalPopEffect 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalPopEffect {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.login-card h2 {
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0 0 25px 0;
+    color: var(--title-color);
+}
+
+.login-field {
+    position: relative;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.login-field input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--input-bg);
+    border: 1px solid var(--divider-bg);
+    border-radius: 8px;
+    color: var(--main-color);
+    outline: none;
+    font-size: 13px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.login-field input:focus {
+    border-color: var(--point-color);
+    background: var(--dropdown-bg);
+}
+
+.login-submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--main-color);
+    color: var(--back-color);
+    border: none;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.login-submit-btn:hover {
+    opacity: 0.9;
+}
+.login-submit-btn:active {
+    transform: scale(0.99);
+}
+
+.login-close-btn {
+    display: inline-block;
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: var(--sub-color);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.login-close-btn:hover {
+    color: var(--main-color);
+}
 
 /* ==========================================================================
    [규칙 0] 모바일 대응 완벽 최적화 미디어 쿼리
@@ -201,6 +303,10 @@ html, body, #wrap {
         padding: 0 20px;
     }
     body, button, input, textarea, p, div, a, span {
-        font-size: 14px; /* 모바일 가독성을 위해 본문 폰트 미세 조정 */
+        font-size: 14px;
+    }
+    .login-card {
+        max-width: 85%;
+        padding: 30px 20px;
     }
 }
