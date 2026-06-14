@@ -1,5 +1,14 @@
 /**
  * ==========================================================================
+ * [추가된 부분] Supabase 실제 연동 설정
+ * ==========================================================================
+ */
+const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_8CDvOg82boUIFNxAtxBGwQ_t-DG1Fj6';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/**
+ * ==========================================================================
  * [규칙 4] 부드러운 전환 효과 중심의 자바스크립트 아키텍처
  * ==========================================================================
  */
@@ -22,22 +31,71 @@ $(document).ready(function () {
     });
     $('.dropdown-inner').click(function(e) { e.stopPropagation(); });
 
-    // 2. [요청사항] 로그인 / 로그아웃 버튼 인터페이스 가작동 구현
-    // (추후 2단계에서 Supabase 실시간 연동 코드가 이곳에 주입됩니다)
-    $("#btn-login").click(function() {
-        // 임시 로그인 처리 가시화
-        $(this).hide();
-        $("#btn-logout").fadeIn(200);
-        alert("나만 로그인하는 관리자 세션 모드 활성화 (UI 가구현)");
-        // TODO: Supabase Auth 연동 예정
+    // 2. [수정된 부분] 관리자 로그인 / 로그아웃 (Supabase 실제 연동)
+    
+    // 로그인 상태에 따른 UI 제어 함수
+    function updateLoginUI(isLoggedIn) {
+        if (isLoggedIn) {
+            $("#btn-login").hide();
+            $("#btn-logout").fadeIn(200);
+            $(".article-admin-menu").fadeIn(300); // 관리자용 버튼 표시
+        } else {
+            $("#btn-logout").hide();
+            $("#btn-login").fadeIn(200);
+            $(".article-admin-menu").hide();      // 관리자용 버튼 숨김
+        }
+    }
+
+    // 접속 시 현재 Supabase 로그인 상태 확인
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        updateLoginUI(!!session);
     });
 
-    $("#btn-logout").click(function() {
-        // 임시 로그아웃 처리 가시화
-        $(this).hide();
-        $("#btn-login").fadeIn(200);
-        alert("로그아웃 되었습니다.");
-        // TODO: Supabase Auth 로그아웃 연동 예정
+    // 로그인 버튼 클릭 시 팝업 열기
+    $("#btn-login").click(function() {
+        $("#login-modal").css('display', 'flex').hide().fadeIn(250);
+    });
+
+    // 팝업 닫기 버튼
+    $("#btn-login-close").click(function() {
+        $("#login-modal").fadeOut(200);
+    });
+
+    // 실제 로그인 시도
+    $("#btn-login-submit").click(async function() {
+        const inputEmail = $("#login-id").val();
+        const inputPw = $("#login-pw").val();
+        const submitBtn = $(this);
+
+        submitBtn.text("로그인 중..."); // 진행 중 표시
+
+        // Supabase 인증 요청
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: inputEmail,
+            password: inputPw,
+        });
+
+        submitBtn.text("로그인"); // 버튼 글씨 원상복구
+
+        if (error) {
+            alert("로그인 실패: 이메일이나 비밀번호가 틀렸습니다.");
+            console.error(error);
+        } else {
+            alert("관리자로 로그인되었습니다.");
+            $("#login-modal").fadeOut(200);
+            $("#login-id").val("");
+            $("#login-pw").val("");
+            updateLoginUI(true);
+        }
+    });
+
+    // 로그아웃 처리
+    $("#btn-logout").click(async function() {
+        const { error } = await supabase.auth.signOut();
+        if (!error) {
+            alert("로그아웃 되었습니다.");
+            updateLoginUI(false);
+        }
     });
 
     // 3. 첫 접속 시 디폴트로 홈 화면 로드
