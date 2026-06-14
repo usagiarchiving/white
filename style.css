@@ -209,7 +209,7 @@ html, body, #wrap {
     /* [요청사항] 배경 완벽 블러처리 */
     backdrop-filter: blur(15px) saturate(140%);
     -webkit-backdrop-filter: blur(15px) saturate(140%);
-     Chil-index: 10000;
+    z-index: 10000;
     align-items: center;
     justify-content: center;
 }
