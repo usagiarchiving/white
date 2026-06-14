@@ -1,0 +1,22 @@
+.feed-container { margin-bottom: 35px; border-top: var(--thin-line); }
+        .feed-item { 
+            padding: 14px 0; border-bottom: var(--thin-line); 
+            font-size: 0.85rem; display: flex; justify-content: space-between; align-items: baseline;
+        }
+        .feed-text { opacity: 0.9; font-family: 'Noto Serif KR', serif; white-space: pre-line; }
+        .feed-time { font-size: 0.7rem; opacity: 0.35; margin-left: 10px; font-family: monospace; white-space: nowrap; }
+        
+        .input-wrap { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .minimal-input {
+            flex: 1; background: transparent; border: none; 
+            border-bottom: 0.6px solid var(--point-color); 
+            color: var(--text-color); font-family: inherit; 
+            padding: 8px 0; outline: none; font-size: 0.85rem;
+        }
+        .btn-box { 
+            background: none; border: 0.5px solid var(--point-color); 
+            padding: 5px 12px; font-size: 0.75rem; cursor: pointer; color: var(--point-color);
+            font-family: 'Noto Serif KR', serif; white-space: nowrap; transition: 0.2s;
+        }
+        .btn-box:hover { background-color: var(--point-color); color: var(--bg-color); }
+        .notice-text { font-size: 0.8rem; opacity: 0.4; font-family: 'Noto Serif KR', serif; letter-spacing: 0.5px; line-height: 1.8; }
