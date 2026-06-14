@@ -2,16 +2,22 @@
 <html lang="ko">
 <head>
     <meta charset="utf-8" />
+    <!-- 모바일과 PC 환경을 완벽히 호환하는 반응형 뷰포트 설정 -->
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
     <title>개인홈</title>
     
+    <!-- 가독성 최우선 Noto Serif KR 폰트 적용 -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&display=swap" />
+    <!-- 아이콘 팩 (xeicon) -->
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
-    
+    <!-- 분리된 스타일시트 연결 -->
     <link rel="stylesheet" href="style.css" />
     
+    <!-- jQuery 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+    <!-- Supabase 공식 자바스크립트 라이브러리 연결 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -20,13 +26,16 @@
             
             <header id="header">
                 <div class="inner_header">
+                    <!-- 로그인 / 로그아웃 버튼 -->
                     <button id="btn-login" class="nav-icon-btn" title="로그인"><i class="xi-log-in"></i></button>
                     <button id="btn-logout" class="nav-icon-btn" title="로그아웃" style="display: none;"><i class="xi-log-out"></i></button>
 
+                    <!-- 테마 변경 버튼 -->
                     <button id="btn-theme" class="nav-icon-btn" onclick="toggleTheme()" title="테마 변경">
                         <i id="theme-icon" class="xi-toggle-off"></i>
                     </button>
 
+                    <!-- 드롭다운 메뉴 (7가지 카테고리 구성) -->
                     <div class="dropdown">
                         <div class="dropdown-bars" title="메뉴 열기">
                             <i id="menu-icon" class="xi-bars"></i>
@@ -44,16 +53,34 @@
                 </div>
             </header>
 
+            <!-- 동적 컨텐츠 메인 영역 -->
             <main id="main">
                 <div class="inner_index">
-                    <div id="content-area">
-                        </div>
+                    <div id="content-area"></div>
                 </div>
             </main>
 
         </div>
     </div>
 
+    <!-- 아이클라우드 스타일 블러 로그인 팝업 창 -->
+    <div id="login-modal" class="login-overlay" style="display: none;">
+        <div class="login-card">
+            <h2>Authentication</h2>
+            <form id="login-form" onsubmit="return false;">
+                <div class="login-field">
+                    <input type="text" id="login-id" placeholder="사용자 아이디" autocomplete="username" required>
+                </div>
+                <div class="login-field">
+                    <input type="password" id="login-pass" placeholder="비밀번호" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="login-submit-btn">로그인</button>
+            </form>
+            <div class="login-close-btn" onclick="closeLoginModal()">닫기</div>
+        </div>
+    </div>
+
+    <!-- 스크립트 파일 연결 -->
     <script src="script.js"></script>
 </body>
 </html>
