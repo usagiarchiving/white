@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
-    <title>개인홈</title>
+    <title>USAGI</title>
     
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&display=swap" />
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="style.css" />
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -47,26 +46,11 @@
 
             <main id="main">
                 <div class="inner_index">
-                    <div id="content-area"></div>
+                    <div id="content-area">
+                        </div>
                 </div>
             </main>
 
-        </div>
-    </div>
-
-    <div id="login-modal" class="login-overlay">
-        <div class="login-card">
-            <h2>Authentication</h2>
-            <form id="login-form" onsubmit="return false;">
-                <div class="login-field">
-                    <input type="text" id="login-id" placeholder="사용자 아이디" autocomplete="username" required>
-                </div>
-                <div class="login-field">
-                    <input type="password" id="login-pass" placeholder="비밀번호" autocomplete="current-password" required>
-                </div>
-                <button type="submit" class="login-submit-btn">로그인</button>
-            </form>
-            <div class="login-close-btn" onclick="closeLoginModal()">닫기</div>
         </div>
     </div>
 
