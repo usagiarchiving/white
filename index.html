@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="style.css" />
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -51,6 +52,20 @@
                 </div>
             </main>
 
+        </div>
+    </div>
+
+    <div id="login-modal" class="login-overlay">
+        <div class="login-card">
+            <h2>관리자 로그인</h2>
+            <div class="login-field">
+                <input type="email" id="login-id" placeholder="이메일 (usagiarchiving@gmail.com)" autocomplete="off">
+            </div>
+            <div class="login-field">
+                <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="off">
+            </div>
+            <button id="btn-login-submit" class="login-submit-btn">로그인</button>
+            <div id="btn-login-close" class="login-close-btn" style="margin-top: 15px;">닫기</div>
         </div>
     </div>
 
