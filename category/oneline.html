@@ -1,4 +1,80 @@
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* 피드 스타일 */
+        .feed-container { margin-bottom: 35px; border-top: var(--thin-line); }
+        .feed-item { 
+            padding: 14px 0; border-bottom: var(--thin-line); 
+            font-size: 0.85rem; display: flex; justify-content: space-between; align-items: baseline;
+        }
+        .feed-text { opacity: 0.9; font-family: 'Noto Serif KR', serif; white-space: pre-line; }
+        .feed-time { font-size: 0.7rem; opacity: 0.35; margin-left: 10px; font-family: monospace; white-space: nowrap; }
+        
+        .input-wrap { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .minimal-input {
+            flex: 1; background: transparent; border: none; 
+            border-bottom: 0.6px solid var(--point-color); 
+            color: var(--text-color); font-family: inherit; 
+            padding: 8px 0; outline: none; font-size: 0.85rem;
+        }
+        .btn-box { 
+            background: none; border: 0.5px solid var(--point-color); 
+            padding: 5px 12px; font-size: 0.75rem; cursor: pointer; color: var(--point-color);
+            font-family: 'Noto Serif KR', serif; white-space: nowrap; transition: 0.2s;
+        }
+        .btn-box:hover { background-color: var(--point-color); color: var(--bg-color); }
+        .notice-text { font-size: 0.8rem; opacity: 0.4; font-family: 'Noto Serif KR', serif; letter-spacing: 0.5px; line-height: 1.8; }
+
+        /* 02 archive 스타일 */
+        .archive-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 25px; }
+        .random-box { border: 0.5px solid var(--point-color); padding: 20px; margin-bottom: 40px; position: relative; }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin-bottom: 15px; }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .archive-text { font-size: 0.88rem; font-family: 'Noto Serif KR', serif; line-height: 1.8; white-space: pre-line; text-align: left; }
+        .archive-desc { font-size: 0.8rem; opacity: 0.5; font-family: 'Noto Serif KR', serif; }
+        .archive-list { border-top: var(--thin-line); }
+        .archive-list-item { padding: 12px 0; border-bottom: var(--thin-line); font-size: 0.85rem; cursor: pointer; display: flex; justify-content: space-between; gap: 15px; }
+        .archive-list-title { font-family: 'Noto Serif KR', serif; opacity: 0.8; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+        .archive-list-title:hover { font-weight: bold; }
+        .archive-list-type { font-size: 0.75rem; opacity: 0.3; font-family: monospace; white-space: nowrap; }
+        .pagination { display: flex; justify-content: center; gap: 15px; margin-top: 20px; font-size: 0.8rem; }
+        .page-num { cursor: pointer; opacity: 0.4; }
+        .page-num.active { opacity: 1; font-weight: bold; }
+
+        /* 03 cupboard 스타일 */
+        .cupboard-box {
+            border: 0.5px solid var(--point-color); padding: 35px 25px; position: relative; margin-bottom: 40px;
+            background-image: linear-gradient(rgba(22, 56, 30, 0.07) 0.5px, transparent 0.5px); background-size: 100% 35px;
+        }
+        .cupboard-question { font-size: 0.95rem; text-align: center; margin-bottom: 35px; font-family: 'Noto Serif KR', serif; letter-spacing: 1px; }
+        .cupboard-form { display: flex; flex-direction: column; }
+        .cupboard-name-input { width: 70px; font-size: 0.75rem; text-align: center; margin-bottom: 20px; opacity: 0.35; transition: 0.3s; }
+        .cupboard-name-input:focus, .cupboard-name-input:hover { opacity: 1; }
+        .cupboard-textarea {
+            height: 160px; resize: none; background: transparent; border: none; color: var(--text-color); font-family: inherit; font-size: 0.85rem;
+            line-height: 1.7; outline: none; margin-bottom: 20px; border-left: 0.5px solid rgba(22, 56, 30, 0.3); padding-left: 15px;
+        }
+
+        /* 04 gaiwan 스타일 */
+        .gaiwan-layout { display: flex; gap: 40px; }
+        .gaiwan-tabs { display: flex; flex-direction: column; gap: 12px; }
+        .gaiwan-num { font-size: 0.8rem; opacity: 0.3; cursor: pointer; width: fit-content; transition: 0.2s; }
+        .gaiwan-num.active { opacity: 1; font-weight: bold; border-bottom: 0.6px solid var(--point-color); }
+        .gaiwan-text { flex: 1; font-size: 0.85rem; font-family: 'Noto Serif KR', serif; line-height: 1.8; opacity: 0.9; white-space: pre-line; }
+
+        /* 01 yhee 전용 사진 스타일 */
+        .yhee-wrapper { position: relative; width: 100%; min-height: 440px; padding: 10px; }
+        .yhee-text {
+            font-size: 0.85rem; line-height: 2.3; font-family: 'Noto Serif KR', serif; letter-spacing: 0.3px;
+            position: relative; z-index: 5; pointer-events: none;
+        }
+        .yhee-text strong { pointer-events: auto; font-weight: bold; }
+        .yhee-photo {
+            position: absolute; width: 125px; height: auto; opacity: 0.45; cursor: grab; z-index: 2;
+            user-select: none; -webkit-user-drag: none; border-radius: 1px; transition: transform 0.1s ease, opacity 0.2s ease;
+        }
+        .yhee-photo:active { cursor: grabbing; transform: scale(1.03); opacity: 0.7; z-index: 99; }
     <div class="container">
         <header>
             <h1 class="site-title">희거나 푸르거나 울창한 집</h1>
