@@ -1,312 +1,195 @@
-/* ==========================================================================
-   [규칙 2] 테마 설정 (iCloud 스타일의 심플 화이트 & 단정한 다크모드)
-   ========================================================================== */
 .theme-light {
-    --back-color: #fafafa;       /* 쨍하지 않은 편안한 화이트 아이클라우드 감성 */
-    --main-color: #2c2c2e;       /* 깊이감 있는 지식인의 먹색 텍스트 */
-    --title-color: #1c1c1e;      /* 또렷한 타이틀 색상 */
-    --sub-color: #8e8e93;        /* 단정한 파스텔 그레이 */
-    --point-color: #a3b8cc;      /* 포인트 색상: 부드러운 파스텔 블루 그레이 */
-    --divider-bg: rgba(0, 0, 0, 0.05);
-    --dropdown-bg: #ffffff;
-    --modal-card-bg: rgba(255, 255, 255, 0.8);
-    --input-bg: rgba(0, 0, 0, 0.03);
+    --back-color: #fff;
+    --main-color: #353535;
+    --title-color: #1d1d1d;
+    --sub-color: #c1c1c1;
+    --link-color: #c1c1c1;
+    --link-color-hover: #a2a2a2;
+    --menu-color: #c1c1c1;
+    --menu-color-hover: #a2a2a2;
+    --divider-bg: #0000000d;
+    --desc-bg: #f7f7f7;
+    --desc-txt: #353535;
+    --em-bg: #4b4b4b;
+    --em-txt: white;
+    --general1-bg: white;
+    --general1-txt: #353535;
+    --general2-bg: white;
+    --general2-txt: #353535;
 }
 
 .theme-dark {
-    --back-color: #1c1c1e;       /* 깊은 밤 서재 같은 다크 브라운 그레이 */
-    --main-color: #e5e5ea;       /* 눈이 편안한 라이트 그레이 텍스트 */
-    --title-color: #f2f2f7;      /* 밝은 타이틀 */
-    --sub-color: #8e8e93;        /* 정갈한 서브 그레이 */
-    --point-color: #637b94;      /* 다크모드용 톤다운 파스텔 블루 */
-    --divider-bg: rgba(255, 255, 255, 0.08);
-    --dropdown-bg: #2c2c2e;
-    --modal-card-bg: rgba(44, 44, 46, 0.8);
-    --input-bg: rgba(255, 255, 255, 0.05);
+    --back-color: #292929;
+    --main-color: #dadada;
+    --title-color: #fbfbfb;
+    --sub-color: #747474;
+    --link-color: #747474;
+    --link-color-hover: #a5a5a5;
+    --menu-color: #747474;
+    --menu-color-hover: #a5a5a5;
+    --divider-bg: #ffffff0d;
+    --desc-bg: #202020;
+    --desc-txt: #dadada;
+    --em-bg: black;
+    --em-txt: #fbfbfb;
+    --general1-bg: #292929;
+    --general1-txt: #dadada;
+    --general2-bg: #292929;
+    --general2-txt: #a5a5a5;
 }
 
-/* ==========================================================================
-   [규칙 1] 기본 가독성 및 자간/줄간격 최적화 (독서하는 지식인 컨셉)
-   ========================================================================== */
 * {
+    /* [요청사항] 기존 Noto Serif KR 로 변경 및 가독성 자간 설정 */
     font-family: 'Noto Serif KR', serif;
     box-sizing: border-box;
-    letter-spacing: -0.02em;    /* 한국어 가독성이 가장 정갈해지는 자간 설정 */
+    letter-spacing: -0.02em; 
 }
-
 ::selection {
     color: var(--back-color);
     background-color: var(--main-color);
 }
-
 body {
     background-color: var(--back-color);
+    transition: background-color 0.4s ease; 
     color: var(--main-color);
-    margin: 0;
-    padding: 0;
-    /* [규칙 4] 모든 배경 전환에 부드러운 애니메이션 부여 */
-    transition: background-color 0.4s ease, color 0.4s ease; 
+    margin: 0; padding: 0;
 }
-
-body, button, input, textarea, p, div, a, span {
-    font-size: 14.5px;
-    line-height: 1.85;          /* 행간을 여유롭게 주어 장문 독서 시 가독성 극대화 */
+body, button, input, select, table, textarea, p, div, a, span {
+    margin: 0; padding: 0;
+    line-height: 180%;
+    font-size: 14px; 
 }
-
+button, input { border: 0; border-radius: 0; }
+ol, ul { list-style: none; }
 a {
-    color: var(--sub-color);
+    color: var(--link-color);
+    font-weight: normal;
     text-decoration: none;
-    transition: color 0.25s ease;
-}
-
-a:hover {
-    color: var(--main-color);
-}
-
-/* ==========================================================================
-   레이아웃 및 반응형 구조
-   ========================================================================== */
-html, body, #wrap {
-    position: relative;
-    height: 100%;
-}
-
-#container {
-    position: absolute;
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1;
-}
-
-#header {
-    position: sticky;
-    top: 0;
-    z-index: 999;
-}
-
-.inner_header {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 18px;
-}
-
-/* 네비게이션 버튼 스타일 정돈 */
-.nav-icon-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    color: var(--sub-color);
-    padding: 4px;
-    transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.nav-icon-btn:hover {
-    color: var(--main-color);
-    transform: translateY(-1px);
-}
-
-/* 드롭다운 메뉴 스타일 (피드백 반영: 초기 닫힘 및 폰트 축소) */
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.dropdown-bars {
-    cursor: pointer;
-    font-size: 16px;
-    color: var(--sub-color);
-    padding: 4px;
     transition: color 0.2s ease;
 }
-
-.dropdown-bars:hover {
-    color: var(--main-color);
+a:hover {
+    text-decoration: none;
+    color: var(--link-color-hover);
 }
+html, body, #wrap { position: relative; height: 100%; }
+#container { position: absolute; width: 100%; top: 0; z-index: 1; left: 0; }
+#header { position: sticky; top: 0; z-index: 999; }
 
+/* [버그 픽스] 상단 버튼들이 한곳에 겹치지 않도록 flex로 나란히 정렬 */
+.inner_header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 15px; /* 버튼 사이 간격 */
+    padding: 10px 20px 10px 0px;
+    height: 30px;
+    position: absolute;
+    right: 0px;
+}
+.inner_header > button {
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 16px; 
+    color: var(--menu-color);
+}
+.inner_header > button:hover { color: var(--menu-color-hover); }
+
+.dropdown { display: inline-block; position: relative; }
+.dropdown-bars {
+    cursor: pointer;
+    font-size: 16px; 
+    color: var(--menu-color);
+}
+.dropdown-bars:hover { color: var(--menu-color-hover); }
+
+/* [피드백 반영] 메뉴 초기 닫힘 (display: none) 및 폰트 크기 축소 */
 .dropdown-inner {
-    display: none; /* 피드백: 무조건 완전히 닫힌 채 시작 */
+    display: none;
     position: absolute;
     right: 0;
-    top: calc(100% + 8px);
-    background: var(--dropdown-bg);
-    min-width: 130px;
+    top: 25px;
+    background: var(--back-color);
     padding: 8px 0;
     border: 1px solid var(--divider-bg);
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-    text-align: left;
-    z-index: 1000;
+    border-radius: 2px;
+    min-width: 110px;
+    text-align: left; 
 }
-
 .dropdown-inner a {
     display: block;
-    padding: 8px 20px;
-    font-size: 11.5px; /* 피드백: 작고 단정하게 축소 */
-    color: var(--sub-color);
-}
-
-.dropdown-inner a:hover {
-    background: var(--divider-bg);
-    color: var(--main-color);
-}
-
-/* 메인 컨테이너 영역 */
-.inner_index {
-    max-width: 700px;  
-    margin: 60px auto;
-    padding: 0 24px;
-}
-
-/* [규칙 4] 본문 내용이 바뀔 때 사용될 부드러운 페이드인 클래스 */
-.fade-in-element {
-    animation: fadeInEffect 0.5s ease forwards;
-}
-
-@keyframes fadeInEffect {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* 본문 내 글 관리 버튼 스타일 (수정, 삭제) */
-.article-admin-menu {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    margin-top: 15px;
-    opacity: 0.5;
-    transition: opacity 0.2s;
-}
-.article-admin-menu:hover { opacity: 1; }
-.btn-admin {
-    background: transparent;
-    border: none;
+    color: var(--menu-color);
     cursor: pointer;
-    font-size: 14px;
-    color: var(--sub-color);
-    transition: color 0.2s;
+    padding: 6px 15px; 
+    font-size: 11.5px; 
 }
-.btn-admin.edit:hover { color: var(--point-color); }
-.btn-admin.delete:hover { color: #ff3b30; } 
+.dropdown-inner a:hover { color: var(--menu-color-hover); background: var(--divider-bg); }
+
+.inner_index { position: relative; max-width: 725px; margin: 80px auto; overflow: hidden; }
+#view-home, #view-list { padding: 0 20px; }
+
+/* 검색창 및 목록 리스트 기존 디자인 유지 */
+.search-wrap { text-align: right; margin-bottom: 20px; }
+.search-wrap i { color: var(--sub-color); font-size: 12px; margin-right: 5px; }
+#search-input {
+    border: none; border-bottom: 1px solid var(--divider-bg);
+    background: transparent; color: var(--main-color);
+    font-size: 12px; padding: 5px 0; width: 120px; outline: none;
+    transition: width 0.3s, border-color 0.3s;
+}
+#search-input:focus { width: 150px; border-bottom: 1px solid var(--sub-color); }
+
+.box_contents { padding: 12px 0px; border-bottom: 1px solid var(--divider-bg); width: 100%; transition: opacity 0.2s; }
+.box_contents:hover { opacity: 0.7; }
+.box_contents .link_title { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.box_contents .link_title .title_post { font-size: 14px; color: var(--title-color); line-height: 120%; font-weight: normal; }
+.box_contents .info_post { line-height: 100%; font-size: 12px; color: var(--sub-color); white-space: nowrap; margin-left: 20px; text-align: right; }
+
+.area_view_content { padding: 0 20px; position: relative; }
+.article_content .title_view { font-size: 18px; color: var(--title-color); font-weight: bold; margin-bottom: 10px; }
+.btn-back-icon-wrap { text-align: right; margin-bottom: 15px; }
+.btn-back-icon { display: inline-block; color: var(--sub-color); font-size: 16px; opacity: 0.6; transition: opacity 0.2s; }
+.btn-back-icon:hover { opacity: 1; color: var(--title-color); }
+.area_view_content .article_content .info_post { display: block; margin: 0px 0px 30px 0px; }
+.area_view_content .article_content .view_info_post { color: var(--sub-color); font-size: 12px; text-align: right; }
+.area_view_content .article_view { font-size: 14px; }
+.article_view p { margin: 0 0 20px; }
+
+.category-menu { margin: 0px 0px 30px 0px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 15px; }
+.category-item { color: var(--sub-color); cursor: pointer; transition: color 0.2s; }
+.category-item:hover, .category-item.active { color: var(--title-color); font-weight: bold; }
+.category-item::before { content: "# "; }
+
+.page-view { display: none; }
+
+/* TRPG 서식 */
+.message { font-family: 'Noto Serif KR', serif; line-height: 120%; font-size: 13px; padding: 5px; margin: 2px 0; }
+.message.general { background-color: var(--general1-bg); color: var(--general1-txt); }
+.message.emote { background-color: var(--em-bg); color: var(--em-txt); }
+.message.desc { background-color: var(--desc-bg); color: var(--desc-txt); }
 
 /* ==========================================================================
-   [요청사항] 고급스러운 아이클라우드 스타일 로그인 팝업 (모달)
+   로그인 모달창 전용 CSS (충돌 없도록 하단 배치)
    ========================================================================== */
 .login-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.15);
-    /* [요청사항] 배경 완벽 블러처리 */
-    backdrop-filter: blur(15px) saturate(140%);
-    -webkit-backdrop-filter: blur(15px) saturate(140%);
-     Chil-index: 10000;
-    align-items: center;
-    justify-content: center;
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    z-index: 10000; align-items: center; justify-content: center;
 }
-
 .login-card {
-    background: var(--modal-card-bg);
-    border: 1px solid var(--divider-bg);
-    width: 100%;
-    max-width: 340px;
-    padding: 35px 30px;
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-    text-align: center;
-    /* [규칙 4] 부드럽게 싹 열리는 애니메이션 기입 */
-    animation: modalPopEffect 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    background: var(--back-color); border: 1px solid var(--divider-bg);
+    width: 100%; max-width: 340px; padding: 35px 30px; border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); text-align: center;
 }
-
-@keyframes modalPopEffect {
-    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.login-card h2 {
-    font-size: 18px;
-    font-weight: 400;
-    margin: 0 0 25px 0;
-    color: var(--title-color);
-}
-
-.login-field {
-    position: relative;
-    margin-bottom: 15px;
-    text-align: left;
-}
-
+.login-card h2 { font-size: 18px; font-weight: 400; margin: 0 0 25px 0; color: var(--title-color); }
+.login-field { margin-bottom: 15px; }
 .login-field input {
-    width: 100%;
-    padding: 12px 14px;
-    background: var(--input-bg);
-    border: 1px solid var(--divider-bg);
-    border-radius: 8px;
-    color: var(--main-color);
-    outline: none;
-    font-size: 13px;
-    transition: border-color 0.2s, background-color 0.2s;
+    width: 100%; padding: 12px; background: transparent; border: 1px solid var(--divider-bg);
+    border-radius: 8px; color: var(--main-color); font-size: 13px; outline: none;
 }
-
-.login-field input:focus {
-    border-color: var(--point-color);
-    background: var(--dropdown-bg);
-}
-
+.login-field input:focus { border-color: var(--sub-color); }
 .login-submit-btn {
-    width: 100%;
-    padding: 12px;
-    background: var(--main-color);
-    color: var(--back-color);
-    border: none;
-    border-radius: 8px;
-    font-size: 13.5px;
-    cursor: pointer;
-    margin-top: 10px;
-    transition: opacity 0.2s, transform 0.1s;
+    width: 100%; padding: 12px; background: var(--main-color); color: var(--back-color);
+    border: none; border-radius: 8px; cursor: pointer; margin-top: 10px;
 }
-
-.login-submit-btn:hover {
-    opacity: 0.9;
-}
-.login-submit-btn:active {
-    transform: scale(0.99);
-}
-
-.login-close-btn {
-    display: inline-block;
-    margin-top: 18px;
-    font-size: 11.5px;
-    color: var(--sub-color);
-    cursor: pointer;
-    transition: color 0.2s;
-}
-.login-close-btn:hover {
-    color: var(--main-color);
-}
-
-/* ==========================================================================
-   [규칙 0] 모바일 대응 완벽 최적화 미디어 쿼리
-   ========================================================================== */
-@media (max-width: 768px) {
-    .inner_index {
-        margin: 30px auto;
-        padding: 0 20px;
-    }
-    body, button, input, textarea, p, div, a, span {
-        font-size: 14px;
-    }
-    .login-card {
-        max-width: 85%;
-        padding: 30px 20px;
-    }
-}
+.login-close-btn { display: inline-block; margin-top: 18px; font-size: 11.5px; color: var(--sub-color); cursor: pointer; }
