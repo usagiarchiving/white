@@ -7,92 +7,88 @@
         padding-top: 30px;
     }
 
-    /* 편지지 배경: 텍스트를 길게 쓰면 자연스럽게 늘어남 */
+    /* 편지지 배경 */
     .memo-paper-input {
         border: 0.5px solid var(--point-color);
         padding: 30px 25px 25px 25px;
-        margin-bottom: 45px;
+        margin-bottom: 12px; /* 버튼이 아래로 빠졌으므로 여백 축소 */
         position: relative;
-        /* 레퍼런스의 찬장(cupboard)과 유사한 단정한 줄무늬 배경 */
         background-image: linear-gradient(var(--divider-bg) 1px, transparent 1px);
-        background-size: 100% 32px; /* 줄 간격 */
+        background-size: 100% 32px;
         border-radius: 2px;
         transition: height 0.2s ease;
     }
 
-    /* To. 입력칸 */
-    .memo-header-input {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-    }
+    /* To & From 라벨 (기본 회색 -> 포커스 시 포인트색) */
     .memo-label {
         font-family: 'Noto Serif KR', serif;
         font-size: 13px;
-        color: var(--point-color);
+        color: var(--sub-color); /* [요청] 기본 회색 */
         font-weight: 600;
         margin-right: 10px;
+        transition: color 0.3s ease;
     }
+    .memo-label.active {
+        color: var(--point-color); /* [요청] 클릭 시 포인트색 */
+    }
+    
+    .memo-header-input { display: flex; align-items: center; margin-bottom: 10px; }
     .memo-to-input, .memo-from-input {
-        background: transparent;
-        border: none;
-        outline: none;
-        color: var(--main-color);
-        font-family: 'Noto Serif KR', serif;
-        font-size: 13px;
+        background: transparent; border: none; outline: none;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
     }
     .memo-to-input { width: 150px; }
     .memo-from-input { width: 100px; text-align: left; }
 
-    /* 본문 텍스트 에어리어: 자동 높이 조절 */
+    /* 본문 텍스트 에어리어 */
     .memo-textarea {
-        width: 100%;
-        min-height: 96px; /* 기본 3줄 높이 */
-        background: transparent;
-        border: none;
-        resize: none;
-        color: var(--main-color);
-        font-family: 'Noto Serif KR', serif;
-        font-size: 13px;
-        line-height: 32px; /* 배경 줄무늬 간격과 완벽 일치 */
-        outline: none;
-        padding: 0;
-        overflow: hidden;
+        width: 100%; min-height: 96px; background: transparent; border: none; resize: none;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
+        line-height: 32px; outline: none; padding: 0; overflow: hidden;
+        position: relative; z-index: 2;
     }
 
-    /* 하단 날짜, From, 전송 버튼 영역 */
+    /* [요청] 깜빡이는 타이포 (Placeholder) */
+    .memo-placeholder {
+        position: absolute; top: 0; left: 0; color: var(--sub-color);
+        font-family: 'Noto Serif KR', serif; font-size: 13px; line-height: 32px;
+        pointer-events: none; opacity: 0.5; transition: opacity 0.3s ease; z-index: 1;
+    }
+    .blinking-cursor {
+        animation: blink 1s step-end infinite;
+        font-weight: 400;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* 하단 날짜, From 영역 (버튼이 빠져나가 양끝 정렬됨) */
     .memo-footer-input {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 15px;
-        margin-top: 20px;
+        display: flex; justify-content: space-between; align-items: center; margin-top: 20px;
+    }
+
+    /* [요청] 화살표 전송 버튼 (편지지 바깥 우측 하단, 테두리 없음) */
+    .memo-submit-container {
+        display: flex; justify-content: flex-end; margin-bottom: 45px; padding-right: 10px;
     }
     .memo-submit-btn {
-        background: none;
-        border: 0.5px solid var(--point-color);
-        color: var(--point-color);
-        cursor: pointer;
-        font-size: 16px;
-        padding: 4px 12px;
-        transition: 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        background: none; border: none; /* 테두리 제거 */
+        color: var(--point-color); cursor: pointer;
+        font-size: 24px; padding: 5px; opacity: 0.6;
+        transition: opacity 0.2s, transform 0.2s;
     }
     .memo-submit-btn:hover {
-        background-color: var(--point-color);
-        color: var(--back-color);
+        opacity: 1; transform: translateX(5px); /* 마우스 올리면 화살표가 살짝 앞으로 나감 */
     }
+
+    /* [요청] 실시간 시계 애니메이션 */
+    .live-colon { animation: blink 1s step-end infinite; }
 
     /* ==========================================================================
        [기능] 이미지 최적화 및 팝업(라이트박스), 우측 검색창
        ========================================================================== */
     .memo-img-container { margin: 15px 0; text-align: left; }
     .memo-attached-img {
-        max-width: 100%; max-height: 400px; object-fit: contain;
-        border-radius: 2px; cursor: pointer; border: 1px solid var(--divider-bg);
-        transition: opacity 0.2s ease;
+        max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 2px;
+        cursor: pointer; border: 1px solid var(--divider-bg); transition: opacity 0.2s ease;
     }
     .memo-attached-img:hover { opacity: 0.85; }
     .memo-img-caption { display: block; font-size: 11px; color: var(--sub-color); margin-top: 6px; font-style: italic; }
@@ -121,7 +117,7 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* 목록 (oneline과 동일한 레이아웃 보장) */
+    /* 목록 */
     .memo-read-mode { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
     @media (max-width: 768px) {
         .memo-read-mode { flex-direction: column-reverse; gap: 6px; }
@@ -140,22 +136,31 @@
     <div class="memo-paper-input">
         
         <div class="memo-header-input">
-            <span class="memo-label">To.</span>
-            <input type="text" id="memo-to" class="memo-to-input" autocomplete="off" placeholder="">
+            <span class="memo-label" id="label-to">To.</span>
+            <input type="text" id="memo-to" class="memo-to-input" autocomplete="off">
         </div>
 
-        <textarea id="memo-content" class="memo-textarea" placeholder=""></textarea>
+        <div style="position: relative; width: 100%;">
+            <div id="memo-placeholder" class="memo-placeholder">
+                글을 적어 내려가세요<span class="blinking-cursor">|</span>
+            </div>
+            <textarea id="memo-content" class="memo-textarea"></textarea>
+        </div>
 
         <div class="memo-footer-input">
-            <span id="memo-live-time" style="font-size: 11px; color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8;"></span>
+            <span id="memo-live-time" style="font-size: 10.5px; color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8;"></span>
             
-            <span class="memo-label" style="margin-left: 10px;">from.</span>
-            <input type="text" id="memo-from" class="memo-from-input" autocomplete="off" placeholder="">
-            
-            <button class="memo-submit-btn" onclick="addMemoPost()" title="전송">
-                <i class="xi-arrow-right"></i>
-            </button>
+            <div style="display: flex; align-items: center;">
+                <span class="memo-label" id="label-from">from.</span>
+                <input type="text" id="memo-from" class="memo-from-input" autocomplete="off">
+            </div>
         </div>
+    </div>
+    
+    <div class="memo-submit-container">
+        <button class="memo-submit-btn" onclick="addMemoPost()" title="전송">
+            <i class="xi-arrow-right"></i>
+        </button>
     </div>
     
     <div class="feed-container" id="memo-feed"></div>
@@ -170,13 +175,33 @@
     const MEMO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
     const memoSupabase = window.supabase.createClient(MEMO_URL, MEMO_KEY);
 
-    // [기능] 편지지 텍스트 에어리어 자동 늘어나기
+    // [요청] To, From 클릭 시 라벨 색상 변화 (포인트 컬러)
+    $('#memo-to').on('focus', function() { $('#label-to').addClass('active'); })
+                 .on('blur', function() { $('#label-to').removeClass('active'); });
+    
+    $('#memo-from').on('focus', function() { $('#label-from').addClass('active'); })
+                   .on('blur', function() { $('#label-from').removeClass('active'); });
+
+    // 편지지 텍스트 에어리어 자동 늘어나기
     $('#memo-content').on('input', function() {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
     });
 
-    // [기능] 실시간 시간 출력 (oneline 폼)
+    // [요청] 깜빡이는 Placeholder 제어
+    $('#memo-content').on('input focus', function() {
+        if ($(this).val().length > 0 || $(this).is(':focus')) {
+            $('#memo-placeholder').css('opacity', '0');
+        } else {
+            $('#memo-placeholder').css('opacity', '0.5');
+        }
+    }).on('blur', function() {
+        if ($(this).val().length === 0) {
+            $('#memo-placeholder').css('opacity', '0.5');
+        }
+    });
+
+    // [요청] 1초마다 흐르는 실시간 시계 (폰트 크기 동일하게 축소)
     function updateMemoTime() {
         const now = new Date();
         const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
@@ -186,15 +211,17 @@
         const dayStr = days[now.getDay()];
         const hh = String(now.getHours()).padStart(2, '0');
         const min = String(now.getMinutes()).padStart(2, '0');
-        $('#memo-live-time').html(`${yyyy}년 ${mm}월 ${dd}일 ${dayStr} <span style="color: var(--point-color);">${hh}:${min}</span>`);
+        
+        // 콜론(:)에 애니메이션 클래스를 주어 1초마다 깜빡임
+        $('#memo-live-time').html(`${yyyy}년 ${mm}월 ${dd}일 ${dayStr} <span style="color: var(--point-color);">${hh}<span class="live-colon">:</span>${min}</span>`);
     }
-    setInterval(updateMemoTime, 60000);
+    setInterval(updateMemoTime, 1000); // 1초마다 실행
     updateMemoTime();
 
     // 1. 메모 로드 및 이미지 마크다운 변환 처리
     async function loadMemoPosts() {
         const feedContainer = $('#memo-feed');
-        feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:12px; padding:30px 0; opacity:0.6;">서랍을 여는 중입니다...</p>');
+        feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">서랍을 여는 중입니다...</p>');
 
         try {
             const { data, error } = await memoSupabase.from('posts').select('*').eq('category', 'memo').order('created_at', { ascending: false });
@@ -202,7 +229,7 @@
             
             feedContainer.empty();
             if (data.length === 0) {
-                feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:12px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">아직 남겨진 편지가 없습니다.</p>');
+                feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11.5px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">아직 남겨진 편지가 없습니다.</p>');
                 return;
             }
 
@@ -218,8 +245,9 @@
                 const hh = String(dateObj.getHours()).padStart(2, '0');
                 const min = String(dateObj.getMinutes()).padStart(2, '0');
 
+                // [요청] 목록에 출력되는 날짜와 시간도 동일하게 10.5px로 축소 적용
                 const editTimeString = `${yyyy}.${mm}.${dd} ${hh}:${min}`;
-                const displayTimeHTML = `${yyyy}년 ${mm}월 ${dd}일 ${dayStr} <span style="color: var(--point-color);">${hh}:${min}</span>`;
+                const displayTimeHTML = `<span style="font-size: 10.5px;">${yyyy}년 ${mm}월 ${dd}일 ${dayStr} <span style="color: var(--point-color);">${hh}:${min}</span></span>`;
 
                 const safeContent = post.content.replace(/"/g, '&quot;');
                 const parsedContent = parseMemoMarkdown(post.content);
@@ -228,12 +256,12 @@
                     <div class="feed-item fade-in-element" id="post-${post.id}" style="padding: 22px 0; border-bottom: 1px solid var(--divider-bg); display: flex; flex-direction: column; gap: 8px;">
                         <div class="read-mode memo-read-mode">
                             <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; word-break: break-all; font-size: 13px; flex: 1; white-space: pre-wrap;">${parsedContent}</span>
-                            <span class="feed-time" onclick="toggleMemoAdminMenu(${post.id})" title="클릭하여 글 관리" style="font-size: 11px; color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; padding-top: 2px; cursor: pointer;">${displayTimeHTML}</span>
+                            <span class="feed-time" onclick="toggleMemoAdminMenu(${post.id})" title="클릭하여 글 관리" style="color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; padding-top: 2px; cursor: pointer;">${displayTimeHTML}</span>
                         </div>
                         
                         <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
                             <textarea id="edit-content-${post.id}" style="width: 100%; height: 150px; background: transparent; border: 1px solid var(--point-color); border-radius:2px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 15px; outline: none; line-height:1.7;">${safeContent}</textarea>
-                            <input type="text" id="edit-time-${post.id}" value="${editTimeString}" style="width: 140px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none;">
+                            <input type="text" id="edit-time-${post.id}" value="${editTimeString}" style="width: 140px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 10.5px; padding: 2px 0; outline: none;">
                         </div>
                         
                         <div class="admin-menu" id="admin-menu-${post.id}" style="display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;">
@@ -263,7 +291,7 @@
         });
     }
 
-    // [핵심] 3개의 입력칸을 하나의 본문으로 자연스럽게 결합하여 전송
+    // 3개의 입력칸을 하나의 본문으로 자연스럽게 결합하여 전송
     async function addMemoPost() {
         const toVal = $('#memo-to').val().trim();
         const contentVal = $('#memo-content').val().trim();
@@ -290,6 +318,9 @@
             $('#memo-content').val('').css('height', '96px');
             $('#memo-from').val('');
             $('#memo-search').val('').trigger('blur');
+            
+            // 전송 완료 시 포커스 해제 처리
+            $('#memo-to, #memo-from, #memo-content').blur();
             
             loadMemoPosts();
         } catch (error) {
