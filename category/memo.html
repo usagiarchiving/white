@@ -1,0 +1,367 @@
+<style>
+    /* ==========================================================================
+       [디자인] 편지지 및 메모장 스타일 UI & 가독성 최적화
+       ========================================================================== */
+    .memo-wrapper {
+        position: relative;
+        padding-top: 25px;
+    }
+
+    /* 편지지(Stationery) 형태의 입력창 박스 */
+    .memo-input-box {
+        position: relative;
+        background: transparent;
+        border: 1px solid var(--divider-bg);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.01);
+        /* 은은한 노트 줄무늬 배경 효과 (가독성 향상) */
+        background-image: linear-gradient(var(--divider-bg) 0.6px, transparent 0.6px);
+        background-size: 100% 2.2em;
+        line-height: 2.2em;
+    }
+
+    .memo-textarea {
+        width: 100%;
+        height: 140px;
+        max-height: 300px;
+        background: transparent;
+        border: none;
+        resize: vertical;
+        color: var(--main-color);
+        font-family: 'Noto Serif KR', serif;
+        font-size: 13.5px;
+        line-height: 2.2em;
+        outline: none;
+        padding: 0;
+    }
+
+    /* 우측 하단 배치 화살표 전송 버튼 */
+    .memo-submit-btn {
+        position: absolute;
+        right: 20px;
+        bottom: 15px;
+        background: none;
+        border: none;
+        color: var(--point-color);
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.2s, transform 0.2s;
+        padding: 5px;
+    }
+    .memo-submit-btn:hover {
+        opacity: 1;
+        transform: translateX(2px);
+    }
+
+    /* ==========================================================================
+       [이미지 기능] 이미지 업로드 최적화 및 캡션 스타일
+       ========================================================================== */
+    .memo-img-container {
+        margin: 12px 0;
+        text-align: left;
+    }
+    .memo-attached-img {
+        max-width: 100%;
+        max-height: 350px;
+        object-fit: contain;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1px solid var(--divider-bg);
+        transition: opacity 0.2s ease;
+    }
+    .memo-attached-img:hover {
+        opacity: 0.9;
+    }
+    .memo-img-caption {
+        display: block;
+        font-size: 11px;
+        color: var(--sub-color);
+        margin-top: 4px;
+        font-style: italic;
+        opacity: 0.7;
+    }
+
+    /* ==========================================================================
+       [원본 보기] 원본 이미지 라이트박스 모달 팝업
+       ========================================================================== */
+    .memo-lightbox {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 20000;
+        align-items: center;
+        justify-content: center;
+        cursor: zoom-out;
+    }
+    .memo-lightbox img {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+        border-radius: 4px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        animation: memoZoom 0.25s ease-out;
+    }
+    @keyframes memoZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* ==========================================================================
+       [기타 UI] 상단 조용한 검색창 및 리스트 레이아웃
+       ========================================================================== */
+    .search-wrapper {
+        position: absolute;
+        top: 0; right: 0;
+        display: flex; align-items: center;
+    }
+    #memo-search {
+        background: transparent; border: none; border-bottom: 1px solid transparent;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px;
+        outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0;
+        transition: width 0.4s ease, opacity 0.3s, border-color 0.4s;
+    }
+    #search-icon {
+        position: absolute; right: 0; color: var(--sub-color); opacity: 0.35;
+        cursor: pointer; font-size: 15px; transition: opacity 0.3s; z-index: 10;
+    }
+    #search-icon:hover { opacity: 0.7; }
+
+    /* 리스트 모바일 반응형 대응 */
+    .memo-read-mode { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+    @media (max-width: 768px) {
+        .memo-read-mode { flex-direction: column-reverse; gap: 6px; }
+        .memo-read-mode .feed-time { align-self: flex-start; }
+    }
+</style>
+
+<div class="memo-wrapper">
+    
+    <div class="search-wrapper">
+        <input type="text" id="memo-search" autocomplete="off" placeholder="검색">
+        <i class="xi-search" id="search-icon" title="검색 열기"></i>
+    </div>
+
+    <div class="memo-input-box">
+        <textarea id="memo-input" autocomplete="off" placeholder="생각이나 이미지 주소를 메모해 두세요.&#10;이미지 양식: [이름](링크)"></textarea>
+        <button class="memo-submit-btn" onclick="addMemoPost()" title="기록 전송">
+            <i class="xi-arrow-right"></i>
+        </button>
+    </div>
+    
+    <div class="feed-container" id="memo-feed">
+        </div>
+</div>
+
+<div id="memo-lightbox" class="memo-lightbox" onclick="closeMemoLightbox()">
+    <img id="lightbox-img" src="" alt="원본 이미지">
+</div>
+
+<script>
+    /**
+     * ==========================================================================
+     * Supabase 메모(memo) 전용 독립 연동 아키텍처
+     * ==========================================================================
+     */
+    const MEMO_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+    const MEMO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
+    const memoSupabase = window.supabase.createClient(MEMO_URL, MEMO_KEY);
+
+    // 1. 메모 로드 및 이미지 마크다운 변환 처리
+    async function loadMemoPosts() {
+        const feedContainer = $('#memo-feed');
+        feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:12px; padding:30px 0; opacity:0.6;">메모를 정리하는 중입니다...</p>');
+
+        try {
+            const { data, error } = await memoSupabase
+                .from('posts')
+                .select('*')
+                .eq('category', 'memo')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            feedContainer.empty();
+
+            if (data.length === 0) {
+                feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:12px; padding:30px 0;">아직 보관된 메모가 없습니다.</p>');
+                return;
+            }
+
+            data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            data.forEach(post => {
+                const dateObj = new Date(post.created_at);
+                const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+                
+                const yyyy = dateObj.getFullYear();
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                const dayStr = days[dateObj.getDay()];
+                const hh = String(dateObj.getHours()).padStart(2, '0');
+                const min = String(dateObj.getMinutes()).padStart(2, '0');
+
+                const editTimeString = `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+                const displayTimeHTML = `${yyyy}년 ${mm}월 ${dd}일 ${dayStr} <span style="color: var(--point-color);">${hh}:${min}</span>`;
+
+                const safeContent = post.content.replace(/"/g, '&quot;');
+                
+                // [핵심 기능] 본문 내 마크다운 이미지 양식 [이름](링크) 변환 파싱
+                const parsedContent = parseMemoMarkdown(post.content);
+
+                const postHtml = `
+                    <div class="feed-item fade-in-element" id="post-${post.id}" style="padding: 20px 0; border-bottom: 1px solid var(--divider-bg); display: flex; flex-direction: column; gap: 8px;">
+                        
+                        <div class="read-mode memo-read-mode">
+                            <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; word-break: break-all; font-size: 13px; flex: 1; white-space: pre-wrap;">${parsedContent}</span>
+                            <span class="feed-time" onclick="toggleMemoAdminMenu(${post.id})" style="font-size: 11px; color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; padding-top: 2px; cursor: pointer;">${displayTimeHTML}</span>
+                        </div>
+                        
+                        <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
+                            <textarea id="edit-content-${post.id}" style="width: 100%; height: 100px; background: transparent; border: 1px solid var(--point-color); border-radius:6px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 10px; outline: none; line-height:1.7;">${safeContent}</textarea>
+                            <input type="text" id="edit-time-${post.id}" value="${editTimeString}" style="width: 140px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none;">
+                        </div>
+                        
+                        <div class="admin-menu" id="admin-menu-${post.id}" style="display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;">
+                            <button onclick="startMemoEdit(${post.id})" style="background:none; border:none; color:var(--point-color); font-size: 11px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">수정</button>
+                            <button onclick="deleteMemoPost(${post.id})" style="background:none; border:none; color:#ff3b30; font-size: 11px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">삭제</button>
+                        </div>
+
+                        <div class="edit-actions" id="edit-actions-${post.id}" style="display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;">
+                            <button onclick="saveMemoEdit(${post.id})" style="background:none; border:none; color:var(--point-color); font-size: 11px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">저장</button>
+                            <button onclick="cancelMemoEdit(${post.id})" style="background:none; border:none; color:var(--sub-color); font-size: 11px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">취소</button>
+                        </div>
+                    </div>
+                `;
+                feedContainer.append(postHtml);
+            });
+
+        } catch (error) {
+            console.error('Memo 로드 실패:', error);
+            feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">메모를 불러오지 못했습니다.</p>');
+        }
+    }
+
+    // 마크다운 정규식 변환기 (텍스트 가독성 보호 안전 예외 설계)
+    function parseMemoMarkdown(content) {
+        let text = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const imgRegex = /\[(.*?)\]\((.*?)\)/g;
+        return text.replace(imgRegex, function(match, name, url) {
+            return `<div class="memo-img-container"><img src="${url}" alt="${name}" class="memo-attached-img" onclick="openMemoLightbox('${url}')"><span class="memo-img-caption"># ${name}</span></div>`;
+        });
+    }
+
+    // 2. 메모 전송 및 저장
+    async function addMemoPost() {
+        const inputEl = $('#memo-input');
+        const content = inputEl.val().trim();
+        if (!content) return;
+
+        try {
+            inputEl.prop('disabled', true);
+            const now = new Date();
+            const localISOString = now.toISOString();
+
+            const { error } = await memoSupabase
+                .from('posts')
+                .insert([{ category: 'memo', content: content, created_at: localISOString }]);
+
+            if (error) throw error;
+            inputEl.val('');
+            $('#memo-search').val('');
+            $('#memo-search').trigger('blur');
+            loadMemoPosts();
+        } catch (error) {
+            console.error('Memo 저장 실패:', error);
+            alert('메모를 보관하지 못했습니다.');
+        } finally {
+            inputEl.prop('disabled', false);
+            inputEl.focus();
+        }
+    }
+
+    // 3. 라이트박스 원본 뷰어 활성화 컨트롤
+    function openMemoLightbox(src) {
+        $('#lightbox-img').attr('src', src);
+        $('#memo-lightbox').css('display', 'flex').fadeIn(150);
+    }
+    function closeMemoLightbox() {
+        $('#memo-lightbox').fadeOut(150);
+    }
+
+    // 4. 인라인 가에디팅 및 부가기능 바인딩
+    function toggleMemoAdminMenu(id) {
+        if ($(`#post-${id} .edit-mode`).is(':visible')) return;
+        $(`#admin-menu-${id}`).slideToggle(150).css('display', 'flex');
+    }
+    function startMemoEdit(id) {
+        const postEl = $(`#post-${id}`);
+        postEl.find('.read-mode').hide();
+        postEl.find('.admin-menu').hide();
+        postEl.find('.edit-mode').fadeIn(200).css('display', 'flex');
+        postEl.find('.edit-actions').fadeIn(200).css('display', 'flex');
+    }
+    function cancelMemoEdit(id) {
+        const postEl = $(`#post-${id}`);
+        postEl.find('.edit-mode').hide();
+        postEl.find('.edit-actions').hide();
+        postEl.find('.read-mode').fadeIn(200).css('display', 'flex');
+    }
+
+    async function saveMemoEdit(id) {
+        const newContent = $(`#edit-content-${id}`).val().trim();
+        const newTimeStr = $(`#edit-time-${id}`).val().trim();
+        if (!newContent) return;
+
+        try {
+            const cleanTime = newTimeStr.replace(/\./g, '/');
+            let finalTimeISO = new Date(cleanTime).toISOString();
+            if (finalTimeISO === "Invalid Date") finalTimeISO = new Date().toISOString();
+
+            const { error } = await memoSupabase
+                .from('posts')
+                .update({ content: newContent, created_at: finalTimeISO })
+                .eq('id', id);
+
+            if (error) throw error;
+            loadMemoPosts();
+        } catch (error) {
+            alert('메모 수정에 실패했습니다.');
+        }
+    }
+
+    async function deleteMemoPost(id) {
+        if (!confirm("이 메모 조각을 서가에서 삭제하시겠습니까?")) return;
+        try {
+            const { error } = await memoSupabase.from('posts').delete().eq('id', id);
+            if (error) throw error;
+            loadMemoPosts();
+        } catch (error) {
+            alert('메모를 비우지 못했습니다.');
+        }
+    }
+
+    // 5. 우측 상단 검색 인터랙션 컨트롤
+    $('#search-icon').click(function() {
+        $('#memo-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
+        $(this).css('opacity', '0.7');
+    });
+    $('#memo-search').blur(function() {
+        if($(this).val().trim() === '') {
+            $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
+            $('#search-icon').css('opacity', '0.35');
+        }
+    });
+    $('#memo-search').on('input', function() {
+        const keyword = $(this).val().toLowerCase();
+        $('.feed-item').each(function() {
+            const text = $(this).find('.feed-text').text().toLowerCase();
+            const time = $(this).find('.feed-time').text().toLowerCase();
+            if ((text + " " + time).includes(keyword)) { $(this).show(); } else { $(this).hide(); }
+        });
+    });
+
+    // 즉시 구동
+    setTimeout(() => { loadMemoPosts(); }, 100);
+</script>
