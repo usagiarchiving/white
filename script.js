@@ -46,7 +46,7 @@ function loadPage(url) {
         $.ajax({
             url: url,
             dataType: 'html',
-            cache: false, // 강력 새로고침 기능 (캐시 무시)
+            cache: false, 
             success: function(data) {
                 contentArea.html(data).addClass('fade-in-element').show();
                 setTimeout(() => { contentArea.removeClass('fade-in-element'); }, 500);
@@ -78,7 +78,7 @@ function toggleTheme() {
 
 /**
  * ==========================================================================
- * Supabase 한 줄 기록 (oneline) 최적화 로직 (팝업 제거 인라인 에디팅)
+ * Supabase 한 줄 기록 (oneline) 최적화 로직 
  * ==========================================================================
  */
 
@@ -109,22 +109,36 @@ async function loadOneLinePosts() {
 
         data.forEach(post => {
             const dateObj = new Date(post.created_at);
-            const timeString = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
             
+            // [요청사항] 요일 배열 세팅
+            const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const dayStr = days[dateObj.getDay()];
+            const hh = String(dateObj.getHours()).padStart(2, '0');
+            const min = String(dateObj.getMinutes()).padStart(2, '0');
+
+            // [요청사항] 수정할 때 입력칸에 들어갈 글씨 (요일은 입력하기 힘드니 기존 방식 유지)
+            const editTimeString = `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+            
+            // [요청사항] 화면에 예쁘게 보여줄 글씨 (요일 포함 + 시간은 포인트 컬러)
+            const displayTimeHTML = `${yyyy}.${mm}.${dd} ${dayStr} <span style="color: var(--point-color);">${hh}:${min}</span>`;
+
             const safeContent = post.content.replace(/"/g, '&quot;');
 
-            // [핵심 변경] 목록 렌더링 영역 (글씨 12px, oneline-read-mode 클래스 추가)
             const postHtml = `
                 <div class="feed-item fade-in-element" id="post-${post.id}" style="padding: 18px 0; border-bottom: 1px solid var(--divider-bg); display: flex; flex-direction: column; gap: 8px;">
                     
                     <div class="read-mode oneline-read-mode">
                         <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.7; word-break: keep-all; font-size: 12px; flex: 1;">${post.content}</span>
-                        <span class="feed-time" onclick="toggleAdminMenu(${post.id})" title="클릭하여 글 관리" style="font-size: 11px; color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; padding-top: 2px; cursor: pointer;">${timeString}</span>
+                        <span class="feed-time" onclick="toggleAdminMenu(${post.id})" title="클릭하여 글 관리" style="font-size: 11px; color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; padding-top: 2px; cursor: pointer;">${displayTimeHTML}</span>
                     </div>
                     
                     <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
                         <input type="text" id="edit-content-${post.id}" value="${safeContent}" onkeypress="if(event.keyCode===13) saveEdit(${post.id})" style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; padding: 4px 0; outline: none;">
-                        <input type="text" id="edit-time-${post.id}" value="${timeString}" onkeypress="if(event.keyCode===13) saveEdit(${post.id})" style="width: 130px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none;">
+                        <input type="text" id="edit-time-${post.id}" value="${editTimeString}" onkeypress="if(event.keyCode===13) saveEdit(${post.id})" style="width: 130px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none;">
                     </div>
                     
                     <div class="admin-menu" id="admin-menu-${post.id}" style="display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;">
@@ -220,7 +234,7 @@ async function addOneLinePost() {
         
         // 검색창이 열려있다면 비워줌
         $('#oneline-search').val('');
-        $('#oneline-search').trigger('blur'); // 전송 후 검색창 스르륵 닫히게 처리
+        $('#oneline-search').trigger('blur'); 
         
         loadOneLinePosts();
 
