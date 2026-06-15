@@ -6,15 +6,12 @@
         align-items: flex-start;
         gap: 20px;
     }
-    @media (max-width: 768px) {
-        .oneline-read-mode {
-            flex-direction: column-reverse;
-            gap: 4px;
-        }
-        .oneline-read-mode .feed-text { width: 100%; display: block; }
-        .oneline-read-mode .feed-time { align-self: flex-start; padding-bottom: 4px; }
-    }
-    
+@media (max-width: 768px) {
+    .oneline-read-mode { flex-direction: column-reverse; gap: 4px; }
+    .oneline-read-mode .feed-text { width: 100%; display: block; }
+    .oneline-read-mode .feed-time { width: 100%; padding-bottom: 4px; } 
+}
+
     /* 2. [요청사항] 검색창 우측 상단 & 연하고 조용한 아이콘 애니메이션 */
     .oneline-wrapper {
         position: relative; /* 검색창 절대 배치를 위한 기준점 */
