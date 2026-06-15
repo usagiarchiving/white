@@ -6,7 +6,7 @@
     --main-color: #2c2c2e;       /* 깊이감 있는 지식인의 먹색 텍스트 */
     --title-color: #1c1c1e;      /* 또렷한 타이틀 색상 */
     --sub-color: #8e8e93;        /* 단정한 파스텔 그레이 */
-    --point-color: #a3b8cc;      /* 포인트 색상: 부드러운 파스텔 블루 그레이 */
+    --point-color: #8fa891;  /* 눈이 편안한 단정한 옅은 초록 */
     --divider-bg: rgba(0, 0, 0, 0.05);
     --dropdown-bg: #ffffff;
     --modal-card-bg: rgba(255, 255, 255, 0.8);
@@ -18,7 +18,7 @@
     --main-color: #e5e5ea;       /* 눈이 편안한 라이트 그레이 텍스트 */
     --title-color: #f2f2f7;      /* 밝은 타이틀 */
     --sub-color: #8e8e93;        /* 정갈한 서브 그레이 */
-    --point-color: #637b94;      /* 다크모드용 톤다운 파스텔 블루 */
+    --point-color: #7a947c;  /* 다크모드용 톤다운 옅은 초록 */
     --divider-bg: rgba(255, 255, 255, 0.08);
     --dropdown-bg: #2c2c2e;
     --modal-card-bg: rgba(44, 44, 46, 0.8);
