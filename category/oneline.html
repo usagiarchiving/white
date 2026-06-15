@@ -1,5 +1,5 @@
 <style>
-    /* 1. 모바일 맞춤 레이아웃: 데스크탑은 양옆, 모바일은 날짜 위 / 내용 아래 */
+    /* 1. 모바일 맞춤 레이아웃: 모바일에서는 날짜가 위로, 내용이 아래로 */
     .oneline-read-mode {
         display: flex;
         justify-content: space-between;
@@ -8,16 +8,22 @@
     }
     @media (max-width: 768px) {
         .oneline-read-mode {
-            flex-direction: column-reverse; /* 방향을 뒤집어서 날짜를 위로 올림 */
+            flex-direction: column-reverse;
             gap: 4px;
         }
         .oneline-read-mode .feed-text { width: 100%; display: block; }
         .oneline-read-mode .feed-time { align-self: flex-start; padding-bottom: 4px; }
     }
     
-    /* 2. 돋보기 검색창 우아한 확장 애니메이션 스타일 */
+    /* 2. [요청사항] 검색창 우측 상단 & 연하고 조용한 아이콘 애니메이션 */
+    .oneline-wrapper {
+        position: relative; /* 검색창 절대 배치를 위한 기준점 */
+        padding-top: 25px;  /* 검색창이 들어갈 여유 공간 */
+    }
     .search-wrapper {
-        position: relative;
+        position: absolute;
+        top: 0;
+        right: 0;
         display: flex;
         align-items: center;
         justify-content: flex-end;
@@ -30,8 +36,8 @@
         font-family: 'Noto Serif KR', serif;
         font-size: 12px;
         outline: none;
-        padding: 2px 22px 2px 0; /* 아이콘이 겹치지 않게 우측 여백 */
-        width: 0px; /* 초기에는 너비 0으로 숨김 */
+        padding: 2px 22px 2px 0; /* 아이콘과 글씨가 겹치지 않게 */
+        width: 0px; 
         opacity: 0;
         transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s, border-color 0.4s;
     }
@@ -39,15 +45,24 @@
         position: absolute;
         right: 0;
         color: var(--sub-color);
+        opacity: 0.35; /* [요청사항] 눈에 띄지 않게 아주 연한 회색 효과 */
         cursor: pointer;
-        font-size: 16px;
-        transition: color 0.3s ease;
+        font-size: 15px;
+        transition: opacity 0.3s ease;
         z-index: 10;
+    }
+    #search-icon:hover {
+        opacity: 0.7; /* 마우스 올렸을 때만 살짝 진해짐 */
     }
 </style>
 
-<div class="oneline-wrapper" style="padding-top: 15px;">
+<div class="oneline-wrapper">
     
+    <div class="search-wrapper">
+        <input type="text" id="oneline-search" autocomplete="off" placeholder="검색">
+        <i class="xi-search" id="search-icon" title="검색 열기"></i>
+    </div>
+
     <div class="input-container" style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px; border-bottom: 1.5px solid var(--divider-bg); padding-bottom: 8px; transition: border-color 0.3s ease;">
         <input type="text" id="oneline-input" autocomplete="off" placeholder="♡" 
                style="flex: 1; background: transparent; border: none; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none; padding: 4px 0;">
@@ -55,13 +70,6 @@
         <button onclick="addOneLinePost()" style="background: none; border: none; color: var(--point-color); font-family: 'Noto Serif KR', serif; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; white-space: nowrap; transition: opacity 0.2s ease;">
             전송
         </button>
-    </div>
-
-    <div class="search-container" style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-        <div class="search-wrapper">
-            <input type="text" id="oneline-search" autocomplete="off" placeholder="기록 검색...">
-            <i class="xi-search" id="search-icon" title="검색 열기"></i>
-        </div>
     </div>
     
     <div class="feed-container" id="oneline-feed">
@@ -76,33 +84,34 @@
         $('.input-container').css('border-color', 'var(--divider-bg)');
     });
 
-    // [기능] 돋보기 아이콘 클릭 시 검색창 스르륵 열리기
+    // 돋보기 아이콘 클릭 시 검색창 스르륵 열리기
     $('#search-icon').click(function() {
         $('#oneline-search').css({
-            'width': '130px', 
+            'width': '110px', 
             'opacity': '1', 
-            'border-bottom-color': 'var(--point-color)'
+            'border-bottom-color': 'var(--divider-bg)'
         }).focus();
-        $(this).css('color', 'var(--point-color)');
+        $(this).css('opacity', '0.7');
     });
 
-    // [기능] 검색창에서 포커스가 나갔을 때, 비어있으면 다시 닫기
+    // 검색창에서 포커스가 나갔을 때, 비어있으면 다시 닫기
     $('#oneline-search').blur(function() {
         if($(this).val().trim() === '') {
             $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
-            $('#search-icon').css('color', 'var(--sub-color)');
-        } else {
-            $(this).css('border-bottom-color', 'var(--divider-bg)');
-            $('#search-icon').css('color', 'var(--main-color)');
+            $('#search-icon').css('opacity', '0.35');
         }
     });
 
-    // [기능] 실시간 글 검색 필터링 로직
+    // [요청사항] 실시간 글 검색 필터링 로직 (날짜 텍스트까지 포함하여 검색)
     $('#oneline-search').on('input', function() {
         const keyword = $(this).val().toLowerCase();
         $('.feed-item').each(function() {
-            const text = $(this).find('.feed-text').text().toLowerCase();
-            if (text.includes(keyword)) {
+            // 본문 내용과 시간 텍스트(2026 등)를 합쳐서 검사합니다
+            const textContent = $(this).find('.feed-text').text().toLowerCase();
+            const timeContent = $(this).find('.feed-time').text().toLowerCase();
+            const combinedText = textContent + " " + timeContent;
+
+            if (combinedText.includes(keyword)) {
                 $(this).show();
             } else {
                 $(this).hide();
