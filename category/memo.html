@@ -215,7 +215,20 @@
                 return;
             }
 
-            data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            data.sort((a, b) => {
+    // 1. 시간, 분, 초(수정 시간)는 싹둑 자르고 오직 '날짜(YYYY-MM-DD)'만 추출합니다.
+    const dateA = a.created_at.split('T')[0];
+    const dateB = b.created_at.split('T')[0];
+    
+    // 2. 만약 달력 날짜가 같다면? 수정한 시간에 영향받지 않게 '처음 쓴 순서(고유 ID)'대로 고정합니다.
+    if (dateA === dateB) {
+        return b.id - a.id; 
+    }
+    
+    // 3. 날짜가 다르다면 무조건 최신 날짜가 맨 위로 오도록 배치합니다.
+    return new Date(dateB) - new Date(dateA);
+});
+
 
             data.forEach(post => {
                 const dateObj = new Date(post.created_at);
