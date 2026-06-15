@@ -125,7 +125,13 @@ async function loadOneLinePosts() {
             
             // [요청사항] 화면에 예쁘게 보여줄 글씨 (요일 포함 + 시간은 포인트 컬러)
             // 변경: 2026년 06월 15일 월요일 22:15 형태
-const displayTimeHTML = `${yyyy}년 ${mm}월 ${dd}일 ${dayStr} <span style="color: var(--point-color);">${hh}:${min}</span>`;
+            const displayTimeHTML = `
+    <span style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+        <span style="font-size: 11px;">${yyyy}년 ${mm}월 ${dd}일 ${dayStr}</span>
+        <span style="font-size: 11px; color: var(--point-color); margin-left: 15px;">${hh}:${min}</span>
+    </span>
+`;
+
 
             const safeContent = post.content.replace(/"/g, '&quot;');
 
