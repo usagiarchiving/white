@@ -1,255 +1,312 @@
-/**
- * ==========================================================================
- * [규칙 4] 부드러운 전환 효과 중심의 자바스크립트 아키텍처
- * ==========================================================================
- */
+/* ==========================================================================
+   [규칙 2] 테마 설정 (iCloud 스타일의 심플 화이트 & 단정한 다크모드)
+   ========================================================================== */
+.theme-light {
+    --back-color: #fafafa;       /* 쨍하지 않은 편안한 화이트 아이클라우드 감성 */
+    --main-color: #2c2c2e;       /* 깊이감 있는 지식인의 먹색 텍스트 */
+    --title-color: #1c1c1e;      /* 또렷한 타이틀 색상 */
+    --sub-color: #8e8e93;        /* 단정한 파스텔 그레이 */
+    --point-color: #7a9c8d;      /* [변경] 눈이 편안한 단정한 잎사귀 그린 */
+    --divider-bg: rgba(0, 0, 0, 0.05);
+    --dropdown-bg: #ffffff;
+    --modal-card-bg: rgba(255, 255, 255, 0.8);
+    --input-bg: rgba(0, 0, 0, 0.03);
+}
 
-$(document).ready(function () {
-    $(".dropdown-bars").click(function (e) {
-        e.stopPropagation();
-        $(".dropdown-inner").slideToggle(250); 
-        let icon = $("#menu-icon");
-        icon.toggleClass("xi-bars xi-close");
-    });
-    
-    $(".dropdown-inner a, body").click(function() {
-        $(".dropdown-inner").slideUp(200);
-        $("#menu-icon").removeClass("xi-close").addClass("xi-bars");
-    });
-    $('.dropdown-inner').click(function(e) { e.stopPropagation(); });
+.theme-dark {
+    --back-color: #1c1c1e;       /* 깊은 밤 서재 같은 다크 브라운 그레이 */
+    --main-color: #e5e5ea;       /* 눈이 편안한 라이트 그레이 텍스트 */
+    --title-color: #f2f2f7;      /* 밝은 타이틀 */
+    --sub-color: #8e8e93;        /* 정갈한 서브 그레이 */
+    --point-color: #9cbdae;      /* [변경] 다크모드용 톤다운 민트 실버 */
+    --divider-bg: rgba(255, 255, 255, 0.08);
+    --dropdown-bg: #2c2c2e;
+    --modal-card-bg: rgba(44, 44, 46, 0.8);
+    --input-bg: rgba(255, 255, 255, 0.05);
+}
 
-    $("#btn-login").click(function() {
-        $(this).hide();
-        $("#btn-logout").fadeIn(200);
-        alert("나만 로그인하는 관리자 세션 모드 활성화 (UI 가구현)");
-    });
+/* ==========================================================================
+   [규칙 1] 기본 가독성 및 자간/줄간격 최적화 (독서하는 지식인 컨셉)
+   ========================================================================== */
+* {
+    font-family: 'Noto Serif KR', serif;
+    box-sizing: border-box;
+    letter-spacing: -0.02em;    /* 한국어 가독성이 가장 정갈해지는 자간 설정 */
+}
 
-    $("#btn-logout").click(function() {
-        $(this).hide();
-        $("#btn-login").fadeIn(200);
-        alert("로그아웃 되었습니다.");
-    });
+::selection {
+    color: var(--back-color);
+    background-color: var(--main-color);
+}
 
-    loadPage('category/home.html');
-});
+body {
+    background-color: var(--back-color);
+    color: var(--main-color);
+    margin: 0;
+    padding: 0;
+    /* [규칙 4] 모든 배경 전환에 부드러운 애니메이션 부여 */
+    transition: background-color 0.4s ease, color 0.4s ease; 
+}
 
-// [추가 기능] 새 글 작성 시 엔터키 전송
-$(document).on('keypress', '#oneline-input', function(e) {
-    if (e.which === 13) { 
-        addOneLinePost(); 
+body, button, input, textarea, p, div, a, span {
+    font-size: 14.5px;
+    line-height: 1.85;          /* 행간을 여유롭게 주어 장문 독서 시 가독성 극대화 */
+}
+
+a {
+    color: var(--sub-color);
+    text-decoration: none;
+    transition: color 0.25s ease;
+}
+
+a:hover {
+    color: var(--main-color);
+}
+
+/* ==========================================================================
+   레이아웃 및 반응형 구조
+   ========================================================================== */
+html, body, #wrap {
+    position: relative;
+    height: 100%;
+}
+
+#container {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+#header {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+
+.inner_header {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 18px;
+}
+
+/* 네비게이션 버튼 스타일 정돈 */
+.nav-icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--sub-color);
+    padding: 4px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-icon-btn:hover {
+    color: var(--main-color);
+    transform: translateY(-1px);
+}
+
+/* 드롭다운 메뉴 스타일 (피드백 반영: 초기 닫힘 및 폰트 축소) */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-bars {
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--sub-color);
+    padding: 4px;
+    transition: color 0.2s ease;
+}
+
+.dropdown-bars:hover {
+    color: var(--main-color);
+}
+
+.dropdown-inner {
+    display: none; /* 피드백: 무조건 완전히 닫힌 채 시작 */
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: var(--dropdown-bg);
+    min-width: 130px;
+    padding: 8px 0;
+    border: 1px solid var(--divider-bg);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    text-align: left;
+    z-index: 1000;
+}
+
+.dropdown-inner a {
+    display: block;
+    padding: 8px 20px;
+    font-size: 11.5px; /* 피드백: 작고 단정하게 축소 */
+    color: var(--sub-color);
+}
+
+.dropdown-inner a:hover {
+    background: var(--divider-bg);
+    color: var(--main-color);
+}
+
+/* 메인 컨테이너 영역 */
+.inner_index {
+    max-width: 700px;  
+    margin: 60px auto;
+    padding: 0 24px;
+}
+
+/* [규칙 4] 본문 내용이 바뀔 때 사용될 부드러운 페이드인 클래스 */
+.fade-in-element {
+    animation: fadeInEffect 0.5s ease forwards;
+}
+
+@keyframes fadeInEffect {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 본문 내 글 관리 버튼 스타일 (수정, 삭제) */
+.article-admin-menu {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 15px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.article-admin-menu:hover { opacity: 1; }
+.btn-admin {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--sub-color);
+    transition: color 0.2s;
+}
+.btn-admin.edit:hover { color: var(--point-color); }
+.btn-admin.delete:hover { color: #ff3b30; } 
+
+/* ==========================================================================
+   [요청사항] 고급스러운 아이클라우드 스타일 로그인 팝업 (모달)
+   ========================================================================== */
+.login-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.15);
+    /* [요청사항] 배경 완벽 블러처리 */
+    backdrop-filter: blur(15px) saturate(140%);
+    -webkit-backdrop-filter: blur(15px) saturate(140%);
+     Chil-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: var(--modal-card-bg);
+    border: 1px solid var(--divider-bg);
+    width: 100%;
+    max-width: 340px;
+    padding: 35px 30px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    /* [규칙 4] 부드럽게 싹 열리는 애니메이션 기입 */
+    animation: modalPopEffect 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalPopEffect {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.login-card h2 {
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0 0 25px 0;
+    color: var(--title-color);
+}
+
+.login-field {
+    position: relative;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.login-field input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--input-bg);
+    border: 1px solid var(--divider-bg);
+    border-radius: 8px;
+    color: var(--main-color);
+    outline: none;
+    font-size: 13px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.login-field input:focus {
+    border-color: var(--point-color);
+    background: var(--dropdown-bg);
+}
+
+.login-submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--main-color);
+    color: var(--back-color);
+    border: none;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.login-submit-btn:hover {
+    opacity: 0.9;
+}
+.login-submit-btn:active {
+    transform: scale(0.99);
+}
+
+.login-close-btn {
+    display: inline-block;
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: var(--sub-color);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.login-close-btn:hover {
+    color: var(--main-color);
+}
+
+/* ==========================================================================
+   [규칙 0] 모바일 대응 완벽 최적화 미디어 쿼리
+   ========================================================================== */
+@media (max-width: 768px) {
+    .inner_index {
+        margin: 30px auto;
+        padding: 0 20px;
     }
-});
-
-function loadPage(url) {
-    const contentArea = $('#content-area');
-    contentArea.fadeOut(200, function() {
-        $.ajax({
-            url: url,
-            dataType: 'html',
-            success: function(data) {
-                contentArea.html(data).addClass('fade-in-element').show();
-                setTimeout(() => { contentArea.removeClass('fade-in-element'); }, 500);
-            },
-            error: function() {
-                contentArea.html('<p style="text-align:center; padding-top:50px; color:var(--sub-color);">내용을 불러오지 못했습니다.</p>').show();
-            }
-        });
-    });
-}
-
-function setTheme(themeName) {
-    localStorage.setItem('theme', themeName);
-    document.documentElement.className = themeName;
-    if(themeName === 'theme-dark') {
-        $('#theme-icon').removeClass('xi-toggle-off').addClass('xi-toggle-on');
-    } else {
-        $('#theme-icon').removeClass('xi-toggle-on').addClass('xi-toggle-off');
+    body, button, input, textarea, p, div, a, span {
+        font-size: 14px;
     }
-}
-
-function toggleTheme() {
-    setTheme(localStorage.getItem('theme') === 'theme-dark' ? 'theme-light' : 'theme-dark');
-}
-
-(function () {
-    setTheme(localStorage.getItem('theme') === 'theme-dark' ? 'theme-dark' : 'theme-light');
-})();
-
-/**
- * ==========================================================================
- * Supabase 한 줄 기록 (oneline) 최적화 로직 (팝업 제거 인라인 에디팅)
- * ==========================================================================
- */
-
-const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_8CDvOg82boUIFNxAtxBGwQ_t-DG1Fj6';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// 2. 한 줄 기록 불러오기
-async function loadOneLinePosts() {
-    const feedContainer = $('#oneline-feed');
-    feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:13.5px; padding:30px 0; font-family:\'Noto Serif KR\', serif; opacity:0.6;">종이에 글을 찍어내는 중입니다...</p>');
-
-    try {
-        const { data, error } = await supabaseClient
-            .from('posts')
-            .select('*')
-            .eq('category', 'oneline')
-            .order('created_at', { ascending: false }); 
-
-        if (error) throw error;
-        feedContainer.empty();
-
-        if (data.length === 0) {
-            feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:13.5px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">아직 남겨진 생각의 조각이 없습니다.</p>');
-            return;
-        }
-
-        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-        data.forEach(post => {
-            const dateObj = new Date(post.created_at);
-            const timeString = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-            
-            // 따옴표 오류 방지를 위한 이스케이프 처리
-            const safeContent = post.content.replace(/"/g, '&quot;');
-
-            // [UI 변경] 팝업 없이 그 자리에서 내용과 시간을 변경하는 '인라인 에디터' 구조
-            const postHtml = `
-                <div class="feed-item fade-in-element" id="post-${post.id}" style="padding: 22px 0; border-bottom: 1px solid var(--divider-bg); display: flex; flex-direction: column; gap: 8px;">
-                    
-                    <div class="read-mode" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-                        <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.7; word-break: keep-all; font-size: 14.5px; flex: 1;">${post.content}</span>
-                        <span class="feed-time" onclick="toggleAdminMenu(${post.id})" title="클릭하여 글 관리" style="font-size: 11.5px; color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; padding-top: 3px; cursor: pointer;">${timeString}</span>
-                    </div>
-                    
-                    <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
-                        <input type="text" id="edit-content-${post.id}" value="${safeContent}" onkeypress="if(event.keyCode===13) saveEdit(${post.id})" style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 14.5px; padding: 4px 0; outline: none;">
-                        <input type="text" id="edit-time-${post.id}" value="${timeString}" onkeypress="if(event.keyCode===13) saveEdit(${post.id})" style="width: 130px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11.5px; padding: 2px 0; outline: none;">
-                    </div>
-                    
-                    <div class="admin-menu" id="admin-menu-${post.id}" style="display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;">
-                        <button onclick="startEdit(${post.id})" style="background:none; border:none; color:var(--point-color); font-size: 11.5px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">수정</button>
-                        <button onclick="deleteOneLinePost(${post.id})" style="background:none; border:none; color:#ff3b30; font-size: 11.5px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">삭제</button>
-                    </div>
-
-                    <div class="edit-actions" id="edit-actions-${post.id}" style="display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;">
-                        <button onclick="saveEdit(${post.id})" style="background:none; border:none; color:var(--point-color); font-size: 11.5px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">저장</button>
-                        <button onclick="cancelEdit(${post.id})" style="background:none; border:none; color:var(--sub-color); font-size: 11.5px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">취소</button>
-                    </div>
-                </div>
-            `;
-            feedContainer.append(postHtml);
-        });
-
-    } catch (error) {
-        console.error('Supabase 데이터 로드 실패:', error);
-        feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:13px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">기록을 불러오지 못했습니다.</p>');
-    }
-}
-
-// 메뉴 토글 (수정 모드일 때는 날짜를 눌러도 반응하지 않게 차단)
-function toggleAdminMenu(id) {
-    if ($(`#post-${id} .edit-mode`).is(':visible')) return;
-    $(`#admin-menu-${id}`).slideToggle(150).css('display', 'flex');
-}
-
-// [추가] 인라인 에디팅 - 수정 시작
-function startEdit(id) {
-    const postEl = $(`#post-${id}`);
-    postEl.find('.read-mode').hide();
-    postEl.find('.admin-menu').hide();
-    postEl.find('.edit-mode').fadeIn(200).css('display', 'flex');
-    postEl.find('.edit-actions').fadeIn(200).css('display', 'flex');
-    postEl.find(`#edit-content-${id}`).focus();
-}
-
-// [추가] 인라인 에디팅 - 수정 취소
-function cancelEdit(id) {
-    const postEl = $(`#post-${id}`);
-    postEl.find('.edit-mode').hide();
-    postEl.find('.edit-actions').hide();
-    postEl.find('.read-mode').fadeIn(200).css('display', 'flex');
-    // 취소 시 메뉴는 기본적으로 닫아둠 (날짜를 눌러서 다시 열게 함)
-}
-
-// [추가] 인라인 에디팅 - 수정된 내용 실제 저장
-async function saveEdit(id) {
-    const newContent = $(`#edit-content-${id}`).val().trim();
-    const newTimeStr = $(`#edit-time-${id}`).val().trim();
-
-    if (!newContent) {
-        alert("사유의 파편이 비어있습니다. 문장을 적어주세요.");
-        $(`#edit-content-${id}`).focus();
-        return;
-    }
-
-    try {
-        const cleanTime = newTimeStr.replace(/\./g, '/');
-        let finalTimeISO = new Date(cleanTime).toISOString();
-        
-        if (finalTimeISO === "Invalid Date") {
-            finalTimeISO = new Date().toISOString(); 
-        }
-
-        const { error } = await supabaseClient
-            .from('posts')
-            .update({ content: newContent, created_at: finalTimeISO })
-            .eq('id', id);
-
-        if (error) throw error;
-        loadOneLinePosts(); // 저장 후 목록 새로고침
-
-    } catch (error) {
-        console.error('Supabase 데이터 수정 실패:', error);
-        alert('글을 수정하지 못했습니다. (Supabase RLS 비활성화 상태 확인)');
-    }
-}
-
-// 3. 한 줄 기록 전송하기
-async function addOneLinePost() {
-    const inputEl = $('#oneline-input');
-    const content = inputEl.val().trim();
-
-    if (!content) return; 
-
-    try {
-        inputEl.prop('disabled', true);
-        const now = new Date(); 
-        const localISOString = now.toISOString();
-
-        const { error } = await supabaseClient
-            .from('posts')
-            .insert([{ category: 'oneline', content: content, created_at: localISOString }]);
-
-        if (error) throw error;
-        inputEl.val('');
-        loadOneLinePosts();
-
-    } catch (error) {
-        console.error('Supabase 데이터 저장 실패:', error);
-        alert('기록을 남기지 못했습니다.');
-    } finally {
-        inputEl.prop('disabled', false);
-        inputEl.focus();
-    }
-}
-
-// 5. 한 줄 기록 삭제하기
-async function deleteOneLinePost(id) {
-    if (!confirm("정말 이 기록을 삭제하시겠습니까?")) return;
-
-    try {
-        const { error } = await supabaseClient
-            .from('posts')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-        loadOneLinePosts();
-
-    } catch (error) {
-        console.error('Supabase 데이터 삭제 실패:', error);
-        alert('기록을 삭제하지 못했습니다.');
+    .login-card {
+        max-width: 85%;
+        padding: 30px 20px;
     }
 }
