@@ -8,7 +8,7 @@
         padding-top: 10px;
     }
 
-    /* 검색창 레이아웃: 모바일 햄버거 버튼과 겹치지 않게 본문 위로 독립 배치 */
+    /* 검색창 레이아웃 */
     .search-wrapper {
         display: flex; justify-content: flex-end; margin-bottom: 25px; width: 100%;
     }
@@ -32,7 +32,7 @@
         background-size: 100% 32px; border-radius: 2px; transition: height 0.2s ease;
     }
 
-    /* [요청 추가] 제목 입력칸 (미니멀, 가운데 정렬, 본문보다 작은 폰트) */
+    /* 제목 입력칸 */
     .memo-title-input {
         display: block; margin: 0 auto 15px auto; width: 100%; max-width: 250px;
         background: transparent; border: none; border-bottom: 1px solid var(--divider-bg);
@@ -49,26 +49,21 @@
     .memo-label.active { color: var(--point-color); }
     
     .memo-header-input { display: flex; align-items: center; margin-bottom: 10px; }
+    
+    /* [수정사항 3] From 입력칸 우측 정렬 등 폰트 세팅 */
     .memo-to-input, .memo-from-input {
         background: transparent; border: none; outline: none;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
     }
     .memo-to-input { width: 150px; }
-    .memo-from-input { width: 100px; text-align: left; }
+    .memo-from-input { width: 100px; text-align: right; }
 
-    /* 본문 텍스트 에어리어 & Placeholder */
+    /* 본문 텍스트 에어리어 */
     .memo-textarea {
         width: 100%; min-height: 96px; background: transparent; border: none; resize: none;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
         line-height: 32px; outline: none; padding: 0; overflow: hidden; position: relative; z-index: 2;
     }
-    .memo-placeholder {
-        position: absolute; top: 0; left: 0; color: var(--sub-color);
-        font-family: 'Noto Serif KR', serif; font-size: 13px; line-height: 32px;
-        pointer-events: none; opacity: 0.5; transition: opacity 0.3s ease; z-index: 1;
-    }
-    .blinking-cursor { animation: blink 1s step-end infinite; font-weight: 400; }
-    @keyframes blink { 50% { opacity: 0; } }
 
     /* 하단 날짜, From 영역 */
     .memo-footer-input { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
@@ -87,20 +82,20 @@
     .memo-submit-btn:hover { opacity: 1; transform: translateX(5px); }
 
     /* ==========================================================================
-       [기능] 아코디언 리스트 레이아웃 (새로운 피드 디자인)
+       [기능] 아코디언 리스트 레이아웃 
        ========================================================================== */
+    /* [수정사항 4, 5] 제목(헤더) 볼드체 해제 및 제목-날짜(본문) 간격 미세 조정 */
     .memo-accordion-header {
-        font-size: 13px; font-family: 'Noto Serif KR', serif; font-weight: bold;
-        color: var(--main-color); cursor: pointer; padding: 18px 0;
+        font-size: 13px; font-family: 'Noto Serif KR', serif; font-weight: normal; 
+        color: var(--main-color); cursor: pointer; padding: 12px 0 8px 0; 
         border-bottom: 1px solid var(--divider-bg); transition: color 0.3s ease;
         display: flex; align-items: center;
     }
-    /* 클릭되어 열렸을 때 (포인트 색상) */
     .memo-accordion-header.open { color: var(--point-color); border-bottom-color: transparent; }
     .memo-accordion-header:hover { color: var(--point-color); }
     
     .memo-accordion-body {
-        display: none; padding: 10px 0 25px 0; border-bottom: 1px solid var(--divider-bg);
+        display: none; padding: 6px 0 25px 0; border-bottom: 1px solid var(--divider-bg);
     }
 
     /* 이미지 최적화 및 팝업(라이트박스) */
@@ -123,7 +118,7 @@
     }
     @keyframes memoZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-    /* 본문 (모바일 양끝 정렬 대응) */
+    /* 본문 */
     .memo-read-mode { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
     @media (max-width: 768px) {
         .memo-read-mode { flex-direction: column-reverse; gap: 4px; }
@@ -144,8 +139,8 @@
     <!-- 편지지 테마 -->
     <div class="memo-paper-input">
         
-        <!-- [요청 추가] 제목 입력 영역 -->
-        <input type="text" id="memo-title" class="memo-title-input" autocomplete="off" placeholder="제목을 적어주세요 (선택)">
+        <!-- [수정사항 1] Placeholder를 'title'로 변경 -->
+        <input type="text" id="memo-title" class="memo-title-input" autocomplete="off" placeholder="title">
         
         <div class="memo-header-input">
             <span class="memo-label" id="label-to">To.</span>
@@ -153,9 +148,7 @@
         </div>
 
         <div style="position: relative; width: 100%;">
-            <div id="memo-placeholder" class="memo-placeholder">
-                글을 적어 내려가세요<span class="blinking-cursor">|</span>
-            </div>
+            <!-- [수정사항 2] 깜빡이던 '글을 적어 내려가세요' 삭제 완료 -->
             <textarea id="memo-content" class="memo-textarea"></textarea>
         </div>
 
@@ -195,12 +188,6 @@
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
     });
-    $('#memo-content').on('input focus', function() {
-        if ($(this).val().length > 0 || $(this).is(':focus')) { $('#memo-placeholder').css('opacity', '0'); } 
-        else { $('#memo-placeholder').css('opacity', '0.5'); }
-    }).on('blur', function() {
-        if ($(this).val().length === 0) { $('#memo-placeholder').css('opacity', '0.5'); }
-    });
 
     function setDefaultDate() {
         const today = new Date();
@@ -238,18 +225,21 @@
                 const editDateString = `${yyyy}-${mm}-${dd}`;
                 const displayTimeHTML = `<span style="font-size: 11px;">${yyyy}년 ${mm}월 ${dd}일 ${dayStr}</span>`;
                 
-                // [요청 추가] 제목 유무에 따라 아코디언 헤더(리스트 제목) 결정
-                const fallbackTitle = `${yyyy}년 ${mm}월 ${dd}일 ${dayStr}`;
+                // [수정사항 4] 기본 제목을 '♡'로 변경
+                const fallbackTitle = `♡`;
                 const displayTitle = post.title ? post.title : fallbackTitle;
 
-                const safeContent = post.content.replace(/"/g, '&quot;');
-                const parsedContent = parseMemoMarkdown(post.content);
+                // [수정사항 6] from 우측 정렬 (데이터 무결성을 위해 보여줄 때만 치환)
+                const rawContent = post.content;
+                let safeContent = rawContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                let displayContent = safeContent.replace(/\n\nfrom\.\s*(.*)$/, '<div style="text-align: right; margin-top: 20px; color: var(--sub-color);">from. $1</div>');
+                
+                const parsedContent = parseMemoMarkdown(displayContent);
 
-                // [요청 추가] 아코디언 구조로 감싼 피드 아이템
                 const postHtml = `
                     <div class="feed-item fade-in-element" id="post-${post.id}">
                         
-                        <!-- 리스트 제목 (클릭 시 펼쳐짐) -->
+                        <!-- 리스트 제목 -->
                         <div class="memo-accordion-header" id="accordion-header-${post.id}" onclick="toggleMemoAccordion(${post.id})">
                             ${displayTitle}
                         </div>
@@ -259,21 +249,22 @@
                             <div class="read-mode memo-read-mode">
                                 <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; word-break: break-all; font-size: 13px; flex: 1; white-space: pre-wrap;">${parsedContent}</span>
                                 
-                                <span class="feed-time" onclick="toggleMemoAdminMenu(${post.id})" title="클릭하여 글 관리" style="color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; padding-top: 2px; cursor: pointer; z-index: 5;">
+                                <span class="feed-time" style="color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; z-index: 5;">
                                     ${displayTimeHTML}
                                 </span>
                             </div>
                             
-                            <!-- 수정 모드 -->
-                            <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
-                                <input type="text" id="edit-title-${post.id}" value="${post.title || ''}" placeholder="제목 (선택)" style="width:100%; margin-bottom:5px; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none; text-align:center;">
-                                <textarea id="edit-content-${post.id}" style="width: 100%; height: 150px; background: transparent; border: 1px solid var(--point-color); border-radius:2px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 15px; outline: none; line-height:1.7;">${safeContent}</textarea>
-                                <input type="date" id="edit-date-${post.id}" value="${editDateString}" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
+                            <!-- [수정사항 7] 열었을 때 우측 하단에 고정되는 미니멀 아이콘 수정/삭제 -->
+                            <div class="read-actions" id="read-actions-${post.id}" style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 15px;">
+                                <i class="xi-pen" onclick="startMemoEdit(${post.id})" title="수정" style="color:var(--sub-color); font-size: 11px; cursor:pointer; transition: 0.2s;" onmouseover="this.style.color='var(--point-color)'" onmouseout="this.style.color='var(--sub-color)'"></i>
+                                <i class="xi-trash" onclick="deleteMemoPost(${post.id})" title="삭제" style="color:var(--sub-color); font-size: 11px; cursor:pointer; transition: 0.2s;" onmouseover="this.style.color='#ff3b30'" onmouseout="this.style.color='var(--sub-color)'"></i>
                             </div>
                             
-                            <div class="admin-menu" id="admin-menu-${post.id}" style="display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;">
-                                <button onclick="startMemoEdit(${post.id})" style="background:none; border:none; color:var(--point-color); font-size: 11px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">수정</button>
-                                <button onclick="deleteMemoPost(${post.id})" style="background:none; border:none; color:#ff3b30; font-size: 11px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">삭제</button>
+                            <!-- 수정 모드 폼 -->
+                            <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
+                                <input type="text" id="edit-title-${post.id}" value="${post.title || ''}" placeholder="title" style="width:100%; margin-bottom:5px; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none; text-align:center;">
+                                <textarea id="edit-content-${post.id}" style="width: 100%; height: 150px; background: transparent; border: 1px solid var(--point-color); border-radius:2px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 15px; outline: none; line-height:1.7;">${safeContent}</textarea>
+                                <input type="date" id="edit-date-${post.id}" value="${editDateString}" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
                             </div>
 
                             <div class="edit-actions" id="edit-actions-${post.id}" style="display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;">
@@ -290,23 +281,22 @@
         }
     }
 
-    // [요청 추가] 아코디언 토글 애니메이션 로직
+    // 아코디언 토글 애니메이션 로직
     window.toggleMemoAccordion = function(id) {
         const header = $(`#accordion-header-${id}`);
         const body = $(`#accordion-body-${id}`);
         header.toggleClass('open');
-        body.slideToggle(250); // 부드럽게 열리고 닫힘
+        body.slideToggle(250);
     };
 
     function parseMemoMarkdown(content) {
-        let text = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const imgRegex = /\[(.*?)\]\((.*?)\)/g;
-        return text.replace(imgRegex, function(match, name, url) {
+        return content.replace(imgRegex, function(match, name, url) {
             return `<div class="memo-img-container"><img src="${url}" alt="${name}" class="memo-attached-img" onclick="openMemoLightbox('${url}')"><span class="memo-img-caption"># ${name}</span></div>`;
         });
     }
 
-    // 메모 전송 (제목 추가 완료)
+    // 메모 전송
     async function addMemoPost() {
         const titleVal = $('#memo-title').val().trim();
         const toVal = $('#memo-to').val().trim();
@@ -331,7 +321,6 @@
             }
             const localISOString = finalDate.toISOString();
 
-            // [핵심] title 컬럼을 추가하여 데이터베이스에 저장
             const { error } = await memoSupabase.from('posts').insert([{ 
                 category: 'memo', 
                 title: titleVal, 
@@ -351,7 +340,7 @@
             
             loadMemoPosts();
         } catch (error) {
-            alert('기록을 남기지 못했습니다. 데이터베이스에 title 컬럼이 추가되었는지 확인해주세요.');
+            alert('기록을 남기지 못했습니다.');
         } finally {
             $('.memo-submit-btn').prop('disabled', false);
         }
@@ -364,14 +353,10 @@
     }
     function closeMemoLightbox() { $('#memo-lightbox').fadeOut(150); }
 
-    function toggleMemoAdminMenu(id) {
-        if ($(`#post-${id} .edit-mode`).is(':visible')) return;
-        $(`#admin-menu-${id}`).slideToggle(150).css('display', 'flex');
-    }
     function startMemoEdit(id) {
         const postEl = $(`#post-${id}`);
         postEl.find('.read-mode').hide();
-        postEl.find('.admin-menu').hide();
+        postEl.find('.read-actions').hide(); // 아이콘 숨기기
         postEl.find('.edit-mode').fadeIn(200).css('display', 'flex');
         postEl.find('.edit-actions').fadeIn(200).css('display', 'flex');
     }
@@ -380,6 +365,7 @@
         postEl.find('.edit-mode').hide();
         postEl.find('.edit-actions').hide();
         postEl.find('.read-mode').fadeIn(200).css('display', 'flex');
+        postEl.find('.read-actions').fadeIn(200).css('display', 'flex'); // 아이콘 다시 보이기
     }
 
     // 수정 시 제목도 함께 업데이트
@@ -418,7 +404,7 @@
         } catch (error) { alert('삭제하지 못했습니다.'); }
     }
 
-    // 검색 (제목까지 포함해서 검색되도록 개선)
+    // 검색 
     $('#search-icon').click(function() {
         $('#memo-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
         $(this).css('opacity', '0.7');
@@ -436,7 +422,6 @@
             const text = $(this).find('.feed-text').text().toLowerCase();
             const time = $(this).find('.feed-time').text().toLowerCase();
             
-            // 제목, 본문, 날짜 중 하나라도 포함되면 표시
             if ((title + " " + text + " " + time).includes(keyword)) { $(this).show(); } else { $(this).hide(); }
         });
     });
