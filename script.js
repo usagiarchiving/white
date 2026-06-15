@@ -40,7 +40,7 @@ $(document).ready(function () {
         // TODO: Supabase Auth 로그아웃 연동 예정
     });
 
-    // 3. 첫 접속 시 디폴트로 홈 화면 로드
+    // 3. 첫 접속 시 디폴트로 홈 화면 로드 (oneline이 아닌 진짜 홈 화면)
     loadPage('category/home.html');
 });
 
@@ -100,10 +100,11 @@ function toggleTheme() {
  * ==========================================================================
  */
 
-// 1. Supabase 접속 정보 세팅 (제공해주신 URL과 Key 적용 완료)
+// 1. Supabase 접속 정보 세팅 
+// (주의: CDN의 기본 'supabase' 변수와 이름이 겹치지 않도록 'supabaseClient'로 명명)
 const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8CDvOg82boUIFNxAtxBGwQ_t-DG1Fj6';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 2. 한 줄 기록 불러오기
 async function loadOneLinePosts() {
@@ -114,7 +115,7 @@ async function loadOneLinePosts() {
 
     try {
         // posts 테이블에서 category가 'oneline'인 데이터만 최신순으로 가져오기
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('posts')
             .select('*')
             .eq('category', 'oneline')
@@ -166,7 +167,7 @@ async function addOneLinePost() {
         inputEl.prop('disabled', true);
         
         // posts 테이블에 insert (category는 'oneline', title은 생략)
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('posts')
             .insert([
                 { category: 'oneline', content: content }
