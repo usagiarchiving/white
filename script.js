@@ -46,6 +46,7 @@ function loadPage(url) {
         $.ajax({
             url: url,
             dataType: 'html',
+            cache: false, // <-- [중요] 브라우저가 옛날 파일을 기억하지 못하게 차단합니다.
             success: function(data) {
                 contentArea.html(data).addClass('fade-in-element').show();
                 setTimeout(() => { contentArea.removeClass('fade-in-element'); }, 500);
@@ -95,7 +96,7 @@ async function loadOneLinePosts() {
             .from('posts')
             .select('*')
             .eq('category', 'oneline')
-            .order('created_at', { ascending: false }); // 1차: DB에서 최신순 정렬
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
         feedContainer.empty();
@@ -105,14 +106,12 @@ async function loadOneLinePosts() {
             return;
         }
 
-        // 2차: 자바스크립트에서 확실하게 최신순(내림차순) 강제 정렬
         data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         data.forEach(post => {
             const dateObj = new Date(post.created_at);
             const timeString = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
 
-            // [UI 변경] 날짜에 onclick 기능을 달고, 버튼 컨테이너는 display: none으로 숨김
             const postHtml = `
                 <div class="feed-item fade-in-element" style="padding: 22px 0; border-bottom: 1px solid var(--divider-bg); display: flex; flex-direction: column; gap: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
@@ -135,7 +134,6 @@ async function loadOneLinePosts() {
     }
 }
 
-// 특정 글의 수정/삭제 버튼 토글 함수
 function toggleAdminMenu(id) {
     $(`#admin-menu-${id}`).slideToggle(150).css('display', 'flex');
 }
@@ -145,7 +143,7 @@ async function addOneLinePost() {
     const inputEl = $('#oneline-input');
     const content = inputEl.val().trim();
 
-    if (!content) return; // 내용이 없으면 아무 일도 일어나지 않음
+    if (!content) return; 
 
     try {
         inputEl.prop('disabled', true);
@@ -174,12 +172,10 @@ async function editOneLinePost(id, currentContent, currentDetailTime) {
     const newContent = prompt("수정할 내용을 입력하세요:", currentContent);
     if (newContent === null) return; 
     
-    // YYYY.MM.DD HH:mm 형식으로 직관적인 입력 유도
     const newTime = prompt("시간을 수정하시겠습니까? (형식: YYYY.MM.DD HH:mm)", currentDetailTime);
     if (newTime === null) return;
 
     try {
-        // "2026.06.15 17:25" 형식을 컴퓨터가 이해하기 쉽게 "2026/06/15 17:25"로 변환 후 저장
         const cleanTime = newTime.replace(/\./g, '/');
         let finalTimeISO = new Date(cleanTime).toISOString();
         
