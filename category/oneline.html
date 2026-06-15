@@ -1,1 +1,24 @@
+<div class="category-content" style="padding-top: 10px;">
+    <div class="input-area" style="margin-bottom: 35px;">
+        <div class="input-wrap" style="display: flex; align-items: center; gap: 15px; margin-bottom: 12px;">
+            <button class="btn-box" onclick="addOneLinePost()" style="background: none; border: 1px solid var(--point-color); padding: 8px 16px; border-radius: 6px; font-size: 13.5px; cursor: pointer; color: var(--point-color); font-family: 'Noto Serif KR', serif; transition: all 0.2s ease;">전송</button>
+            <input type="text" id="oneline-input" placeholder="오늘의 기분을 들려주세요." style="flex: 1; background: var(--input-bg); border: 1px solid var(--divider-bg); color: var(--main-color); padding: 10px 14px; border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s, background-color 0.2s;">
+        </div>
+        <div class="notice-text" style="font-size: 12.5px; color: var(--sub-color); line-height: 1.6; letter-spacing: -0.02em;">
+            조용히 쌓여가는 생각의 파편들입니다.<br>
+            가장 최근의 기록이 맨 위에 머뭅니다.
+        </div>
+    </div>
+    
+    <div class="feed-container" id="oneline-feed" style="border-top: 1px solid var(--divider-bg); padding-top: 20px;">
+        </div>
+</div>
 
+<script>
+    // loadPage 비동기 로딩이 완료된 직후 실행됩니다.
+    setTimeout(() => {
+        if(typeof loadOneLinePosts === 'function') {
+            loadOneLinePosts();
+        }
+    }, 100);
+</script>
