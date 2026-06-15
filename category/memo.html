@@ -1,3 +1,4 @@
+<!-- 파일명: category/memo.html -->
 <style>
     /* ==========================================================================
        [디자인] 편지지 테마의 완벽한 메모장 UI
@@ -24,7 +25,7 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* [수정사항 5] 제목 입력칸을 편지지 밖으로 독립 배치 */
+    /* 제목 입력칸 */
     .memo-title-input {
         display: block; margin: 0 auto 15px auto; width: 100%; max-width: 250px;
         background: transparent; border: none; border-bottom: 1px solid var(--divider-bg);
@@ -40,7 +41,7 @@
         background-size: 100% 32px; border-radius: 2px; transition: height 0.2s ease;
     }
 
-    /* [수정사항 1] To & From 라벨 완벽 통일 (기본 회색, 클릭 시 포인트 컬러) */
+    /* To & From 라벨 */
     .memo-label {
         font-family: 'Noto Serif KR', serif; font-size: 13px;
         color: var(--sub-color); font-weight: 600; margin-right: 10px; transition: color 0.3s ease;
@@ -54,7 +55,9 @@
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
     }
     .memo-to-input { width: 150px; }
-    .memo-from-input { width: 100px; text-align: right; }
+    
+    /* [요청 반영] 텍스트 방향을 left로 변경하여 from. 바로 옆에서 이름이 써지게 함 */
+    .memo-from-input { width: 100px; text-align: left; }
 
     /* 본문 텍스트 에어리어 */
     .memo-textarea {
@@ -63,15 +66,15 @@
         line-height: 32px; outline: none; padding: 0; overflow: hidden; position: relative; z-index: 2;
     }
 
-    /* [수정사항 2 & 6] 본문과 From 사이 간격 12px로 축소, 날짜를 From 위로 배치 */
+    /* [요청 반영] 날짜와 From 사이의 간격(gap)을 0px로 바짝 줄임 */
     .memo-footer-input {
-        display: flex; flex-direction: column; align-items: flex-end; /* 우측 정렬 세로 스택 */
-        margin-top: 12px; gap: 6px; 
+        display: flex; flex-direction: column; align-items: flex-end; 
+        margin-top: 12px; gap: 0px; 
     }
     .memo-date-picker {
         background: transparent; border: none; outline: none; color: var(--sub-color);
         font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s;
-        margin-bottom: 2px;
+        margin-bottom: 0px; 
     }
     .memo-date-picker:hover { opacity: 1; }
 
@@ -86,10 +89,9 @@
     /* ==========================================================================
        [기능] 아코디언 리스트 레이아웃 
        ========================================================================== */
-    /* [수정사항 3] 제목과 날짜(본문) 사이의 여백(padding) 대폭 축소 */
     .memo-accordion-header {
         font-size: 13px; font-family: 'Noto Serif KR', serif; font-weight: normal; 
-        color: var(--main-color); cursor: pointer; padding: 12px 0 4px 0; /* 하단 여백 축소 */
+        color: var(--main-color); cursor: pointer; padding: 12px 0 4px 0; 
         border-bottom: 1px solid var(--divider-bg); transition: color 0.3s ease;
         display: flex; align-items: center;
     }
@@ -97,8 +99,7 @@
     .memo-accordion-header:hover { color: var(--point-color); }
     
     .memo-accordion-body {
-        display: none; padding: 2px 0 25px 0; /* 상단 여백 축소 */
-        border-bottom: 1px solid var(--divider-bg);
+        display: none; padding: 2px 0 25px 0; border-bottom: 1px solid var(--divider-bg);
     }
 
     /* 이미지 최적화 및 팝업(라이트박스) */
@@ -139,8 +140,10 @@
         </div>
     </div>
 
+    <!-- 제목 입력 (메모지 밖) -->
     <input type="text" id="memo-title" class="memo-title-input" autocomplete="off" placeholder="title">
 
+    <!-- 편지지 테마 -->
     <div class="memo-paper-input">
         
         <div class="memo-header-input">
@@ -167,9 +170,11 @@
         </button>
     </div>
     
+    <!-- 피드 목록 영역 -->
     <div class="feed-container" id="memo-feed"></div>
 </div>
 
+<!-- 원본 이미지 보기 라이트박스 -->
 <div id="memo-lightbox" class="memo-lightbox" onclick="closeMemoLightbox()">
     <img id="lightbox-img" src="" alt="원본 이미지">
 </div>
@@ -235,10 +240,12 @@
                 const postHtml = `
                     <div class="feed-item fade-in-element" id="post-${post.id}">
                         
+                        <!-- 리스트 제목 -->
                         <div class="memo-accordion-header" id="accordion-header-${post.id}" onclick="toggleMemoAccordion(${post.id})">
                             ${displayTitle}
                         </div>
                         
+                        <!-- 숨겨진 본문 영역 -->
                         <div class="memo-accordion-body" id="accordion-body-${post.id}">
                             <div class="read-mode memo-read-mode">
                                 <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; word-break: break-all; font-size: 13px; flex: 1; white-space: pre-wrap;">${parsedContent}</span>
@@ -253,6 +260,7 @@
                                 <i class="xi-trash" onclick="deleteMemoPost(${post.id})" title="삭제" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'; this.style.color='#ff3b30'" onmouseout="this.style.opacity='0.35'; this.style.color='var(--sub-color)'"></i>
                             </div>
                             
+                            <!-- 수정 모드 폼 -->
                             <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
                                 <input type="text" id="edit-title-${post.id}" value="${post.title || ''}" placeholder="title" style="width:100%; margin-bottom:5px; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none; text-align:center;">
                                 <textarea id="edit-content-${post.id}" style="width: 100%; height: 150px; background: transparent; border: 1px solid var(--point-color); border-radius:2px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 15px; outline: none; line-height:1.7;">${safeContent}</textarea>
@@ -273,7 +281,7 @@
         }
     }
 
-    // [수정사항 7] 아코디언 애니메이션 시간을 500ms로 늘려 더 천천히, 부드럽게 열리도록 수정
+    // 아코디언 애니메이션 
     window.toggleMemoAccordion = function(id) {
         const header = $(`#accordion-header-${id}`);
         const body = $(`#accordion-body-${id}`);
