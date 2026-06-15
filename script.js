@@ -100,7 +100,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 async function loadOneLinePosts() {
     const feedContainer = $('#oneline-feed');
     
-    feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:13.5px; padding:30px 0;">기록을 살피는 중입니다...</p>');
+    feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:13.5px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">기록을 살피는 중입니다...</p>');
 
     try {
         const { data, error } = await supabaseClient
@@ -114,7 +114,7 @@ async function loadOneLinePosts() {
         feedContainer.empty();
 
         if (data.length === 0) {
-            feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:13.5px; padding:30px 0;">아직 남겨진 기록이 없습니다.</p>');
+            feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:13.5px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">아직 남겨진 기록이 없습니다.</p>');
             return;
         }
 
@@ -123,18 +123,32 @@ async function loadOneLinePosts() {
             const dateObj = new Date(post.created_at);
             const timeString = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
 
+            // 서체 통일 및 수정/삭제 버튼 UI 추가
             const postHtml = `
-                <div class="feed-item fade-in-element" style="padding: 18px 0; border-bottom: 1px dashed var(--divider-bg); display: flex; justify-content: space-between; align-items: baseline; gap: 20px;">
-                    <span class="feed-text" style="color: var(--main-color); line-height: 1.7; word-break: keep-all;">${post.content}</span>
-                    <span class="feed-time" style="font-size: 11.5px; color: var(--sub-color); font-family: monospace; opacity: 0.8; white-space: nowrap;">${timeString}</span>
+                <div class="feed-item fade-in-element" style="padding: 22px 0; border-bottom: 1px solid var(--divider-bg); display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+                        <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.7; word-break: keep-all; font-size: 14.5px;">${post.content}</span>
+                        <span class="feed-time" style="font-size: 11.5px; color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; padding-top: 3px;">${timeString}</span>
+                    </div>
+                    
+                    <div class="admin-inline-menu" style="display: flex; gap: 12px; justify-content: flex-end; opacity: 0.2; transition: opacity 0.3s ease;">
+                        <button onclick="editOneLinePost(${post.id}, '${post.content.replace(/'/g, "\\'")}', '${post.created_at}')" style="background:none; border:none; color:var(--sub-color); font-size: 11.5px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">수정</button>
+                        <button onclick="deleteOneLinePost(${post.id})" style="background:none; border:none; color:#ff3b30; font-size: 11.5px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">삭제</button>
+                    </div>
                 </div>
             `;
             feedContainer.append(postHtml);
         });
 
+        // 데스크탑에서는 마우스 오버, 모바일에서는 터치 시 버튼 진해짐
+        $('.feed-item').hover(
+            function() { $(this).find('.admin-inline-menu').css('opacity', '0.8'); },
+            function() { $(this).find('.admin-inline-menu').css('opacity', '0.2'); }
+        );
+
     } catch (error) {
         console.error('Supabase 데이터 로드 실패:', error);
-        feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:13px; padding:30px 0;">기록을 불러오지 못했습니다.</p>');
+        feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:13px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">기록을 불러오지 못했습니다.</p>');
     }
 }
 
@@ -151,7 +165,7 @@ async function addOneLinePost() {
     try {
         inputEl.prop('disabled', true);
         
-        // [핵심 변경] 전송 버튼을 누르는 순간의 기기 시간을 낚아채어 강제 주입
+        // 전송 버튼을 누르는 순간의 기기 시간을 낚아채어 강제 주입
         const now = new Date(); 
         const localISOString = now.toISOString();
 
@@ -161,7 +175,7 @@ async function addOneLinePost() {
                 { 
                     category: 'oneline', 
                     content: content,
-                    created_at: localISOString // DB가 알아서 하지 못하게 내가 잡은 시간을 넣음
+                    created_at: localISOString 
                 }
             ]);
 
@@ -176,5 +190,52 @@ async function addOneLinePost() {
     } finally {
         inputEl.prop('disabled', false);
         inputEl.focus();
+    }
+}
+
+// 4. [추가] 한 줄 기록 수정하기
+async function editOneLinePost(id, currentContent, currentDetailTime) {
+    const newContent = prompt("수정할 내용을 입력하세요:", currentContent);
+    if (newContent === null) return; // 취소
+    
+    const newTime = prompt("시간을 수정하시겠습니까? (형식 자유):", currentDetailTime);
+    if (newTime === null) return;
+
+    try {
+        let finalTimeISO = new Date(newTime).toISOString();
+        if(finalTimeISO === "Invalid Date") {
+            finalTimeISO = new Date().toISOString(); 
+        }
+
+        const { error } = await supabaseClient
+            .from('posts')
+            .update({ content: newContent.trim(), created_at: finalTimeISO })
+            .eq('id', id);
+
+        if (error) throw error;
+        loadOneLinePosts();
+
+    } catch (error) {
+        console.error('Supabase 데이터 수정 실패:', error);
+        alert('글을 수정하지 못했습니다.');
+    }
+}
+
+// 5. [추가] 한 줄 기록 삭제하기
+async function deleteOneLinePost(id) {
+    if (!confirm("정말 이 기록을 삭제하시겠습니까?")) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('posts')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        loadOneLinePosts();
+
+    } catch (error) {
+        console.error('Supabase 데이터 삭제 실패:', error);
+        alert('기록을 삭제하지 못했습니다.');
     }
 }
