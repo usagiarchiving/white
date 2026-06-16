@@ -1,187 +1,165 @@
-<!-- 파일명: category/home.html -->
 <style>
     /* ==========================================================================
-       [구조] 전체 컨테이너는 중앙 정렬 / 내부 텍스트는 좌측 정렬 및 폭 제한
+       [구조] 중앙 정렬된 컨테이너 속 완벽한 좌측 정렬 및 블록화
        ========================================================================== */
     .home-wrapper {
         position: relative;
-        padding-top: 10px; /* 헤더와의 간격 10px 유지 */
+        padding-top: 10px; /* 헤더와의 간격 밀착 */
         width: 100%;
         display: flex;
-        justify-content: center; /* 컨텐츠 덩어리를 화면 중앙으로 배치 */
+        justify-content: center;
     }
 
     .home-container {
         width: 100%;
-        max-width: 680px; /* PC에서 너무 넓어지지 않도록 단정하게 폭 제한 */
+        max-width: 680px; 
         display: flex;
         flex-direction: column;
-        align-items: flex-start; /* 내부 정렬은 좌측 고정 */
-        text-align: left; /* 모든 글자는 완벽한 좌측 정렬 */
+        text-align: left;
     }
 
-    /* 반응형 스플릿 레이아웃 (PC: 2단 분리 / 모바일: 1단 누적) */
-    .home-main-split {
-        display: flex;
-        gap: 30px;
+    /* 모바일 전용 가로형 이미지 (평소 숨김) */
+    .home-mobile-img-wrap {
+        display: none;
         width: 100%;
-        align-items: stretch; /* 카드와 이미지의 높이 밸런스를 위해 stretch 적용 */
+        height: 220px;
+        margin-bottom: 25px;
+    }
+    .home-mobile-img-wrap img {
+        width: 100%; height: 100%;
+        object-fit: cover; object-position: center; /* 비율 유지, 중간 기준 자르기 */
+        border-radius: 4px; border: 1px solid var(--divider-bg);
     }
 
-    /* 텍스트 영역 */
+    /* ==========================================================================
+       [1단] 좌측: 텍스트 / 우측: PC형 이미지
+       ========================================================================== */
+    .home-row-1 {
+        display: flex;
+        align-items: center; /* 텍스트와 이미지의 세로 중앙 정렬 */
+        gap: 40px;
+        width: 100%;
+        margin-bottom: 30px;
+    }
+
     .home-text-section {
         flex: 1;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        justify-content: space-between;
-    }
-
-    /* [요청사항] PC 전용 옅은 회색 텍스트 묶음 카드 디자인 */
-    .home-text-card {
-        width: 100%;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    @media (min-width: 769px) {
-        .home-text-card {
-            background-color: #f4f5f6; /* 아주 옅은 회색 배경 */
-            padding: 30px;
-            border-radius: 18px; /* 레퍼런스풍 라운딩 */
-        }
     }
 
     /* 타이포그래피 */
     .home-greeting {
-        font-size: 13px;
-        font-weight: 700; /* 볼드체 */
-        color: var(--main-color);
-        margin-bottom: 20px;
-        letter-spacing: 0.5px;
+        font-size: 13px; font-weight: 700; color: var(--main-color);
+        margin-bottom: 20px; letter-spacing: 0.5px;
     }
-
     .home-main-text {
-        font-size: 12px; /* 기본 폰트 12px */
-        color: var(--main-color);
-        line-height: 2.2;
-        margin-bottom: 25px;
-        letter-spacing: 0.3px;
+        font-size: 12px; color: var(--main-color); line-height: 2.2;
+        margin-bottom: 25px; letter-spacing: 0.3px;
     }
-
     .home-sub-text {
-        font-size: 11px; /* 작은 회색 글씨 */
-        color: var(--sub-color);
-        line-height: 2.0;
-        opacity: 0.7;
-        word-break: keep-all;
-        margin-bottom: 20px;
+        font-size: 11px; color: var(--sub-color); line-height: 2.0;
+        opacity: 0.7; word-break: keep-all; margin-bottom: 0;
     }
 
-    /* 바로가기 메뉴 영역 */
-    .home-menu-list {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        margin-top: 5px;
-    }
-
-    /* [요청사항] 이탤릭체 + 분호색 밑줄 단일 링크 디자인 */
-    .home-single-link {
-        background: none;
-        border: none;
-        text-align: left;
-        font-size: 12px;
-        font-style: italic; /* 이태릭 체 */
-        color: var(--main-color);
-        cursor: pointer;
-        padding: 0;
-        font-family: inherit;
-        display: inline-block;
-        text-decoration: underline; /* 바로 밑에 밑줄 */
-        text-decoration-color: #D04978; /* 밑줄 색은 분홍색 */
-        text-underline-offset: 3px; /* 밑줄 밀착도 조절 */
-        transition: color 0.2s ease, text-decoration-color 0.2s ease;
-    }
-
-    .home-single-link:hover {
-        color: #D04978;
-        text-decoration-color: var(--main-color);
-    }
-
-    /* ==========================================================================
-       [비주얼] PC형 세로 이미지 vs 모바일형 가로 이미지 분리형 배치
-       ========================================================================== */
-    /* PC 전용 세로형 배치 */
+    /* 우측 이미지 (너무 길지 않게 사이즈 축소 및 비율 고정) */
     .home-pc-img-section {
-        width: 220px;
-        flex-shrink: 0;
-        display: block;
+        width: 180px; height: 240px; flex-shrink: 0;
     }
     .home-pc-img-section img {
-        width: 100%;
-        height: 100%;
-        max-height: 480px;
-        object-fit: cover;
-        border-radius: 18px; /* 카드와 통일감 있는 라운딩 */
-        border: 1px solid var(--divider-bg);
-    }
-
-    /* 모바일 전용 가로형 탑 지붕 배치 (평소엔 숨김) */
-    .home-mobile-img-wrap {
-        display: none;
-        width: 100%;
-        margin-bottom: 25px;
-    }
-    .home-mobile-img-wrap img {
-        width: 100%;
-        height: 220px;
-        object-fit: cover;
-        border-radius: 12px;
-        border: 1px solid var(--divider-bg);
-    }
-
-    /* 모바일 환경 최적화 브레이크 포인트 */
-    @media (max-width: 768px) {
-        .home-main-split { display: block; } /* 1단으로 떨어짐 */
-        .home-pc-img-section { display: none; } /* PC 세로형 숨김 */
-        .home-mobile-img-wrap { display: block; } /* 모바일 가로형 등장 */
-        .home-text-card { background-color: transparent; padding: 0; border-radius: 0; } /* 모바일은 투명하게 */
+        width: 100%; height: 100%;
+        object-fit: cover; object-position: center; /* 어떤 사진이든 예쁘게 잘림 */
+        border-radius: 4px; border: 1px solid var(--divider-bg);
     }
 
     /* ==========================================================================
-       [기능] 미니멀 데일리 캘린더 인터페이스
+       [2단] 단일 바로가기 링크 (이탤릭 + 연핑크 밑줄)
        ========================================================================== */
-    .home-calendar-container {
+    .home-row-2 {
         width: 100%;
-        max-width: 240px;
-        padding-top: 30px;
-        margin-top: 40px;
-        border-top: 1px solid var(--divider-bg);
+        margin-bottom: 45px;
     }
+    .home-single-link {
+        background: none; border: none; padding: 0; cursor: pointer;
+        font-family: inherit; font-size: 12px; font-style: italic; color: var(--main-color);
+        text-decoration: underline; 
+        text-decoration-color: #FDEDF4; /* 툴바에 쓴 연핑크색 */
+        text-decoration-thickness: 4px; /* 눈에 띄게 두께 부여 */
+        text-underline-offset: 2px;
+        transition: color 0.2s ease, text-decoration-color 0.2s ease;
+    }
+    .home-single-link:hover {
+        color: #D04978; /* 툴바에 쓴 찐핑크색 */
+        text-decoration-color: #D04978;
+    }
+
+    /* ==========================================================================
+       [3단] 캘린더 (모바일 풀사이즈 연동)
+       ========================================================================== */
+    .home-row-3 {
+        width: 100%;
+        display: flex;
+        justify-content: flex-start;
+    }
+    .home-calendar-container {
+        width: 100%; max-width: 250px; 
+        padding-top: 10px;
+    }
+    
     .home-cal-header {
         display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 15px; font-size: 12px; color: var(--main-color);
     }
+    
+    .ym-selector-container { display: flex; align-items: center; justify-content: center; }
+    
+    /* 캘린더 월/년 텍스트: 클릭 기능 복구 및 자간 넓힘 */
+    #home-cal-month-display {
+        cursor: pointer; letter-spacing: 2px; transition: opacity 0.2s;
+    }
+    #home-cal-month-display:hover { opacity: 0.6; }
+    
+    #home-cal-picker {
+        background: transparent; border: none; color: var(--main-color);
+        font-family: 'Noto Serif KR', serif; font-size: 12px; letter-spacing: 1px;
+        outline: none; cursor: pointer; text-align: center;
+    }
+
     .home-cal-nav {
         cursor: pointer; color: var(--sub-color); transition: color 0.2s;
         padding: 0 10px; font-size: 14px;
     }
     .home-cal-nav:hover { color: var(--point-color); }
     
-    .home-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px 0; text-align: center; }
+    .home-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px 0; text-align: center; }
     .home-cal-day-header { font-size: 10px; color: var(--sub-color); opacity: 0.5; margin-bottom: 5px; font-family: 'Courier New', monospace; }
-    .home-cal-day { font-size: 11px; color: var(--main-color); cursor: pointer; padding: 4px 0; transition: all 0.2s; position: relative; font-family: 'Courier New', monospace; }
-    .home-cal-day:hover { color: var(--point-color); }
+    
+    .home-cal-day-wrap {
+        display: flex; justify-content: center; align-items: center;
+    }
+    .home-cal-day { 
+        width: 26px; height: 26px; display: flex; justify-content: center; align-items: center;
+        font-size: 11px; color: var(--main-color); cursor: pointer; 
+        border-radius: 50%; transition: background-color 0.2s, color 0.2s;
+        font-family: 'Courier New', monospace; 
+    }
+    .home-cal-day:hover { background-color: rgba(0,0,0,0.04); }
     .home-cal-day.empty { pointer-events: none; opacity: 0; }
     
-    /* 로그 기록이 존재하는 날짜 마킹 */
-    .home-cal-day.has-log { font-weight: bold; color: var(--point-color); }
-    .home-cal-day.has-log::after {
-        content: ''; position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%);
-        width: 3px; height: 3px; background-color: var(--point-color); border-radius: 50%;
+    /* [요청] 기록이 있는 날: 연핑크 동그라미 배경 */
+    .home-cal-day.has-log { background-color: #FDEDF4; }
+    
+    /* [요청] 오늘 날짜: 찐핑크 폰트 색상 */
+    .home-cal-day.is-today { color: #D04978; font-weight: bold; }
+
+    /* 반응형 브레이크 포인트 */
+    @media (max-width: 768px) {
+        .home-row-1 { flex-direction: column; gap: 0; margin-bottom: 25px; }
+        .home-pc-img-section { display: none; } /* PC 이미지 숨김 */
+        .home-mobile-img-wrap { display: block; } /* 모바일 이미지 등장 */
+        .home-row-3 { justify-content: center; }
+        .home-calendar-container { max-width: 100%; border-top: 1px solid var(--divider-bg); padding-top: 20px;} /* 모바일 꽉 차게 */
     }
 
     /* ==========================================================================
@@ -249,6 +227,13 @@
     .home-color-picker-label:hover { background: rgba(0,0,0,0.05); }
     .home-color-picker-label i { font-size: 14px; color: var(--main-color); pointer-events: none; }
     .home-native-color-picker { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; border: none; padding: 0; }
+
+    .color-btn { 
+        font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; 
+        border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px;
+    }
+    .btn-mint { color: #0E865E !important; background: #E1F9F1 !important; }
+    .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
 </style>
 
 <div id="home-format-toolbar" class="home-format-toolbar">
@@ -260,63 +245,56 @@
     <label class="home-color-picker-label" onmousedown="homeSaveSelection()"><i class="xi-font"></i><input type="color" class="home-native-color-picker" oninput="homeApplyCustomColor('foreColor', this.value)" onchange="homeApplyCustomColor('foreColor', this.value)"></label>
     <label class="home-color-picker-label" onmousedown="homeSaveSelection()"><i class="xi-palette"></i><input type="color" class="home-native-color-picker" oninput="homeApplyCustomColor('backColor', this.value)" onchange="homeApplyCustomColor('backColor', this.value)"></label>
     <div class="divider"></div>
-    <button onmousedown="event.preventDefault(); applyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
-    <button onmousedown="event.preventDefault(); applyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
+    <button onmousedown="event.preventDefault(); homeApplyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
+    <button onmousedown="event.preventDefault(); homeApplyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
 </div>
 
-<div class="home-wrapper">
+<div class="home-wrapper fade-in-element">
     <div class="home-container">
         
-        <!-- 모바일 전용 가로형 탑 지붕 이미지 -->
         <div class="home-mobile-img-wrap">
-            <img src="https://i.ibb.co/R4v4t2k7/7.jpg" alt="mobile theme grid">
+            <img src="https://i.ibb.co/R4v4t2k7/7.jpg" alt="mobile theme">
         </div>
         
-        <div class="home-main-split">
-            <!-- 좌측: 본문 및 메뉴 트랙 -->
+        <div class="home-row-1">
             <div class="home-text-section">
-                
-                <!-- [요청사항] 아주 옅은 회색으로 감싼 텍스트 카드 묶음 영역 (PC에서만 배경색 작동) -->
-                <div class="home-text-card">
-                    <div class="home-greeting">당신에게 닿는 모든 문장이 따뜻하기를.</div>
-
-                    <div class="home-main-text">
-                        특별하지 않은 것들이 특별해지는 순간을 생각합니다.<br>
-                        그래서 기록합니다. 잊지 않기 위해서가 아니라,<br>
-                        이 순간이 존재했음을 어딘가에 남겨두고 싶어서.
-                    </div>
-
-                    <div class="home-sub-text">
-                        서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
-                    </div>
-
-                    <div class="home-menu-list">
-                        <!-- [요청사항] 이탤릭체 + 분홍색 밑줄 단일 바로가기 링크 형성 -->
-                        <button class="home-single-link" onclick="loadPage('category/oneline.html')">손 끝에 남은 것</button>
-                    </div>
+                <div class="home-greeting">당신에게 닿는 모든 문장이 따뜻하기를.</div>
+                <div class="home-main-text">
+                    특별하지 않은 것들이 특별해지는 순간을 생각합니다.<br>
+                    그래서 기록합니다. 잊지 않기 위해서가 아니라,<br>
+                    이 순간이 존재했음을 어딘가에 남겨두고 싶어서.
                 </div>
-
-                <!-- 미니멀 데일리 캘린더 인터페이스 -->
-                <div class="home-calendar-container">
-                    <div class="home-cal-header">
-                        <i class="xi-angle-left home-cal-nav" onclick="changeHomeCalMonth(-1)"></i>
-                        <span id="home-cal-month-display"></span>
-                        <i class="xi-angle-right home-cal-nav" onclick="changeHomeCalMonth(1)"></i>
-                    </div>
-                    <div class="home-cal-grid" id="home-cal-grid"></div>
+                <div class="home-sub-text">
+                    서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
                 </div>
             </div>
             
-            <!-- PC 전용 우측 세로형 무드 가이드 스냅 -->
             <div class="home-pc-img-section">
-                <img src="https://i.ibb.co/xqx4ZSHF/8.jpg" alt="pc vertical theme grid">
+                <img src="https://i.ibb.co/xqx4ZSHF/8.jpg" alt="pc vertical theme">
+            </div>
+        </div>
+
+        <div class="home-row-2">
+            <button class="home-single-link" onclick="loadPage('category/oneline.html')">손 끝에 남은 것</button>
+        </div>
+
+        <div class="home-row-3">
+            <div class="home-calendar-container">
+                <div class="home-cal-header">
+                    <i class="xi-angle-left home-cal-nav" onclick="changeHomeCalMonth(-1)"></i>
+                    <div class="ym-selector-container">
+                        <span id="home-cal-month-display" onclick="showHomeYMPicker()" title="Change Month"></span>
+                        <input type="month" id="home-cal-picker" style="display: none;" onchange="handleHomeYMChange()" onblur="handleHomeYMChange()">
+                    </div>
+                    <i class="xi-angle-right home-cal-nav" onclick="changeHomeCalMonth(1)"></i>
+                </div>
+                <div class="home-cal-grid" id="home-cal-grid"></div>
             </div>
         </div>
 
     </div>
 </div>
 
-<!-- 홈 팝업: 데일리 작성 모달 -->
 <div id="home-daily-lightbox" class="home-daily-lightbox" onclick="if(event.target === this) closeHomeDailyModal()">
     <div class="home-daily-lightbox-card">
         
@@ -371,7 +349,10 @@
     }
 
     function renderHomeCalendar() {
-        $('#home-cal-month-display').text(`${homeCalYear}년 ${homeCalMonth}월`);
+        var displayStr = `${homeCalYear}년 ${homeCalMonth}월`;
+        $('#home-cal-month-display').text(displayStr).show();
+        var mm = String(homeCalMonth).padStart(2, '0');
+        $('#home-cal-picker').val(`${homeCalYear}-${mm}`).hide();
         
         var firstDay = new Date(homeCalYear, homeCalMonth - 1, 1).getDay();
         var daysInMonth = new Date(homeCalYear, homeCalMonth, 0).getDate();
@@ -380,8 +361,11 @@
         var dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
         dayNames.forEach(d => { html += `<div class="home-cal-day-header">${d}</div>`; });
         
-        for (var i = 0; i < firstDay; i++) { html += `<div class="home-cal-day empty"></div>`; }
+        for (var i = 0; i < firstDay; i++) { 
+            html += `<div class="home-cal-day-wrap"><div class="home-cal-day empty"></div></div>`; 
+        }
         
+        // 데일리 로그 작성된 날짜 취합
         var logDays = new Set();
         homeDailyPosts.forEach(post => {
             var d = new Date(post.created_at);
@@ -390,13 +374,39 @@
             }
         });
 
+        // 오늘 날짜 확인용
+        var today = new Date();
+        var isCurrentMonth = (today.getFullYear() === homeCalYear && (today.getMonth() + 1) === homeCalMonth);
+        var todayDate = today.getDate();
+
         for (var i = 1; i <= daysInMonth; i++) {
-            var hasLogClass = logDays.has(i) ? 'has-log' : '';
-            html += `<div class="home-cal-day fade-in-element ${hasLogClass}" onclick="openHomeDailyModal(${i})">${i}</div>`;
+            var classes = ['home-cal-day'];
+            if (logDays.has(i)) classes.push('has-log'); // 글쓴 날 연핑크 배경
+            if (isCurrentMonth && i === todayDate) classes.push('is-today'); // 오늘 찐핑크 글씨
+
+            html += `<div class="home-cal-day-wrap"><div class="${classes.join(' ')}" onclick="openHomeDailyModal(${i})">${i}</div></div>`;
         }
         
         $('#home-cal-grid').html(html);
     }
+
+    // [기능 복구] 연/월 텍스트 클릭 시 변경 인풋 활성화
+    window.showHomeYMPicker = function() {
+        $('#home-cal-month-display').hide();
+        $('#home-cal-picker').show().focus();
+    };
+
+    window.handleHomeYMChange = function() {
+        var val = $('#home-cal-picker').val();
+        if(val) {
+            var parts = val.split('-');
+            homeCalYear = parseInt(parts[0], 10);
+            homeCalMonth = parseInt(parts[1], 10);
+        }
+        $('#home-cal-picker').hide();
+        $('#home-cal-month-display').show();
+        renderHomeCalendar();
+    };
 
     window.changeHomeCalMonth = function(dir) {
         homeCalMonth += dir;
@@ -457,7 +467,7 @@
                 var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
                 var { error: uploadError } = await homeSupabase.storage.from('images').upload(fileName, homeSelectedFile);
                 if (uploadError) throw uploadError;
-                var { data: publicUrlData } = await homeSupabase.storage.from('images').getPublicUrl(fileName);
+                var { data: publicUrlData } = homeSupabase.storage.from('images').getPublicUrl(fileName);
                 finalImageUrl = publicUrlData.publicUrl;
             }
 
@@ -477,6 +487,8 @@
             if (error) throw error;
 
             closeHomeDailyModal();
+            
+            // 작성 즉시 캘린더 리렌더링하여 마킹 표시
             await fetchHomeDailyData();
             renderHomeCalendar(); 
         } catch (error) { alert('Failed to save.'); } finally { btn.prop('disabled', false).css('opacity', '0.7'); }
