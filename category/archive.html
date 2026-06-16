@@ -190,13 +190,14 @@
 </div>
 
 <script>
-    const ARCHIVE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
-    const ARCHIVE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    const archiveSupabase = window.supabase.createClient(ARCHIVE_URL, ARCHIVE_KEY);
+    // [수정] const와 let을 var로 교체하여 카테고리 재진입 시 생기는 먹통 에러 차단
+    var ARCHIVE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+    var ARCHIVE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
+    var archiveSupabase = window.supabase.createClient(ARCHIVE_URL, ARCHIVE_KEY);
 
-    let selectedFile = null;
-    let currentLightboxPostId = null;
-    let currentLightboxImageUrl = "";
+    var selectedFile = null;
+    var currentLightboxPostId = null;
+    var currentLightboxImageUrl = "";
 
     // 1. 파일 선택 시: 사진의 원본 메타데이터(수정일)를 읽어서 날짜에 기본 세팅
     $('#archive-file-input').on('change', function(e) {
@@ -333,7 +334,6 @@
                 const safeCaption = captionText ? captionText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 const searchText = `${post.title || ''} ${captionText} ${displayDate}`;
 
-                // [요청 반영] justify-content: flex-end 로 설정하여 날짜를 우측으로 배치
                 const postHtml = `
                     <div class="gallery-wrapper-item" data-search="${searchText}">
                         <div class="gallery-item fade-in-element" onclick="openArchiveLightbox(${post.id}, '${imageUrl}', '${safeTitle}', '${safeCaption}', '${displayDate}', '${inputDate}')">
