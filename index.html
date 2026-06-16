@@ -27,11 +27,13 @@
             
             <header id="header">
                 <div class="inner_header">
-<button id="theme-toggle" class="icon-btn" onclick="toggleTheme()" title="테마 변경">
-    <i id="theme-icon" class="xi-toggle-off"></i>
-</button>
-<button id="btn-login" class="icon-btn" title="로그인"><i class="xi-log-in"></i></button>
-<button id="btn-logout" class="icon-btn" title="로그아웃" style="display:none;"><i class="xi-log-out"></i></button>
+                    <button id="btn-login" class="nav-icon-btn" title="로그인"><i class="xi-log-in"></i></button>
+                    <button id="btn-logout" class="nav-icon-btn" title="로그아웃" style="display: none;"><i class="xi-log-out"></i></button>
+
+                    <button id="btn-theme" class="nav-icon-btn" onclick="toggleTheme()" title="테마 변경">
+                        <i id="theme-icon" class="xi-toggle-off"></i>
+                    </button>
+
                     <div class="dropdown">
                         <div class="dropdown-bars" title="메뉴 열기">
                             <i id="menu-icon" class="xi-bars"></i>
