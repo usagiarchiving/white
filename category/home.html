@@ -1,17 +1,41 @@
 <style>
+    /* ==========================================================================
+       [구조] 전체 컨테이너는 중앙 정렬 / 내부 텍스트는 좌측 정렬 및 폭 제한
+       ========================================================================== */
     .home-wrapper {
         position: relative;
-        padding-top: 20px; /* 요청사항: 헤더에서 20px 띄움 */
+        padding-top: 10px; /* [요청사항] 헤더와의 간격을 10px로 밀착 */
+        width: 100%;
         display: flex;
-        flex-direction: column;
-        align-items: flex-start; /* 요청사항: 완벽한 좌측 정렬 */
-        text-align: left;
-        min-height: calc(100vh - 200px);
-        animation: fadeUp 0.8s ease-out;
-        font-family: inherit;
+        justify-content: center; /* 컨텐츠 덩어리를 화면 중앙으로 배치 */
     }
 
-    /* 1. 타이포그래피 */
+    .home-container {
+        width: 100%;
+        max-width: 680px; /* [요청사항] PC에서 너무 넓어지지 않도록 단정하게 폭 제한 */
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; /* 내부 정렬은 좌측 고정 */
+        text-align: left; /* [요청사항] 모든 글자는 완벽한 좌측 정렬 */
+    }
+
+    /* 반응형 스플릿 레이아웃 (PC: 2단 분리 / 모바일: 1단 누적) */
+    .home-main-split {
+        display: flex;
+        gap: 40px;
+        width: 100%;
+        align-items: flex-start;
+    }
+
+    /* 텍스트 영역 */
+    .home-text-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    /* 타이포그래피 */
     .home-greeting {
         font-size: 13px;
         font-weight: 700; /* 볼드체 */
@@ -32,115 +56,104 @@
         font-size: 11px; /* 작은 회색 글씨 */
         color: var(--sub-color);
         line-height: 2.0;
-        max-width: 380px;
-        margin-bottom: 50px;
+        margin-bottom: 45px;
         opacity: 0.7;
         word-break: keep-all;
     }
 
-    /* 2. 세로 리스트형 메뉴 (레퍼런스 반영) */
+    /* 세로 리스트형 메뉴 (밑줄/테두리 없이 텍스트만) */
     .home-menu-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin-bottom: 60px;
+        gap: 14px;
+        margin-bottom: 50px;
+        width: 100%;
     }
 
     .home-menu-item {
-        background: none;
-        border: none;
-        text-align: left;
-        font-size: 12px;
-        color: var(--main-color);
-        cursor: pointer;
-        padding: 0;
-        font-family: inherit;
-        transition: color 0.3s ease;
+        background: none; border: none; text-align: left;
+        font-size: 12px; color: var(--main-color);
+        cursor: pointer; padding: 0; font-family: inherit;
+        transition: color 0.3s ease, padding-left 0.3s ease;
     }
-
     .home-menu-item:hover {
-        color: var(--point-color); /* 마우스 오버 시 포인트 컬러 */
-    }
-
-    /* 3. 미니멀 데일리 캘린더 */
-    .home-calendar-container {
-        width: 100%;
-        max-width: 250px;
-        margin-top: 10px;
-        padding-top: 30px;
-        border-top: 1px solid var(--divider-bg); /* 메뉴와 캘린더 사이의 은은한 구분선 */
-    }
-    .home-cal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-        font-size: 12px;
-        color: var(--main-color);
-    }
-    .home-cal-nav {
-        cursor: pointer;
-        color: var(--sub-color);
-        transition: color 0.2s;
-        padding: 0 10px;
-        font-size: 14px;
-    }
-    .home-cal-nav:hover { color: var(--point-color); }
-    
-    .home-cal-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 10px 0;
-        text-align: center;
-    }
-    .home-cal-day-header {
-        font-size: 10px;
-        color: var(--sub-color);
-        opacity: 0.5;
-        margin-bottom: 5px;
-        font-family: 'Courier New', Courier, monospace;
-    }
-    .home-cal-day {
-        font-size: 11px;
-        color: var(--main-color);
-        cursor: pointer;
-        padding: 4px 0;
-        transition: all 0.2s;
-        position: relative;
-        font-family: 'Courier New', Courier, monospace;
-    }
-    .home-cal-day:hover {
         color: var(--point-color);
-    }
-    .home-cal-day.empty {
-        pointer-events: none;
-        opacity: 0;
-    }
-    
-    /* 데일리가 작성된 날짜 마킹 (포인트 컬러 동그라미 표식) */
-    .home-cal-day.has-log {
-        font-weight: bold;
-        color: var(--point-color);
-    }
-    .home-cal-day.has-log::after {
-        content: '';
-        position: absolute;
-        bottom: 0px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 3px;
-        height: 3px;
-        background-color: var(--point-color);
-        border-radius: 50%;
-    }
-
-    @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+        padding-left: 4px; /* 마우스 올리면 부드럽게 살짝 밀림 (포인트색 강조) */
     }
 
     /* ==========================================================================
-       [홈 화면 즉시 작성용 모달] Daily 폼 완벽 이식
+       [비주얼] PC형 세로 이미지 vs 모바일형 가로 이미지 분리형 배치
+       ========================================================================== */
+    /* PC 전용 세로형 배치 */
+    .home-pc-img-section {
+        width: 200px;
+        flex-shrink: 0;
+        display: block;
+    }
+    .home-pc-img-section img {
+        width: 100%;
+        height: auto;
+        max-height: 480px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid var(--divider-bg);
+    }
+
+    /* 모바일 전용 가로형 탑 지붕 배치 (평소엔 숨김) */
+    .home-mobile-img-wrap {
+        display: none;
+        width: 100%;
+        margin-bottom: 30px;
+    }
+    .home-mobile-img-wrap img {
+        width: 100%;
+        height: 220px; /* 가로가 더 넓고 예쁜 비율 */
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid var(--divider-bg);
+    }
+
+    /* 모바일 환경 최적화 브레이크 포인트 */
+    @media (max-width: 768px) {
+        .home-main-split { display: block; } /* 1단으로 떨어짐 */
+        .home-pc-img-section { display: none; } /* PC 세로형 숨김 */
+        .home-mobile-img-wrap { display: block; } /* 모바일 가로형 등장 */
+    }
+
+    /* ==========================================================================
+       [기능] 미니멀 데일리 캘린더 엔진
+       ========================================================================== */
+    .home-calendar-container {
+        width: 100%;
+        max-width: 240px;
+        padding-top: 30px;
+        border-top: 1px solid var(--divider-bg);
+    }
+    .home-cal-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 15px; font-size: 12px; color: var(--main-color);
+    }
+    .home-cal-nav {
+        cursor: pointer; color: var(--sub-color); transition: color 0.2s;
+        padding: 0 10px; font-size: 14px;
+    }
+    .home-cal-nav:hover { color: var(--point-color); }
+    
+    .home-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px 0; text-align: center; }
+    .home-cal-day-header { font-size: 10px; color: var(--sub-color); opacity: 0.5; margin-bottom: 5px; font-family: 'Courier New', monospace; }
+    .home-cal-day { font-size: 11px; color: var(--main-color); cursor: pointer; padding: 4px 0; transition: all 0.2s; position: relative; font-family: 'Courier New', monospace; }
+    .home-cal-day:hover { color: var(--point-color); }
+    .home-cal-day.empty { pointer-events: none; opacity: 0; }
+    
+    /* 로그 기록이 존재하는 날짜 마킹 */
+    .home-cal-day.has-log { font-weight: bold; color: var(--point-color); }
+    .home-cal-day.has-log::after {
+        content: ''; position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%);
+        width: 3px; height: 3px; background-color: var(--point-color); border-radius: 50%;
+    }
+
+    /* ==========================================================================
+       [홈 팝업] 데일리 작성 팝업 (이미지 찌그러짐/이상한 여백 완벽 방지 교정)
        ========================================================================== */
     .home-daily-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -166,41 +179,34 @@
     }
     [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.6; pointer-events: none; }
 
-    .home-daily-add-img-btn {
-        display: inline-block; cursor: pointer; color: var(--sub-color); font-size: 18px;
-        transition: 0.2s; opacity: 0.4;
-    }
+    .home-daily-add-img-btn { display: inline-block; cursor: pointer; color: var(--sub-color); font-size: 18px; transition: 0.2s; opacity: 0.4; }
     .home-daily-add-img-btn:hover { opacity: 1; color: var(--point-color); }
     
-    .home-daily-preview-wrap { position: relative; display: none; margin-bottom: 10px; }
-    .home-daily-preview-wrap img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 4px; }
+    .home-daily-preview-wrap { position: relative; display: none; margin-bottom: 10px; width: 100%; text-align: center; }
+    
+    /* [버그 수정] 가로/세로 어떤 비율의 사진이 들어와도 절대 깨지거나 삐져나가지 않고 완벽 핏 보존 */
+    .home-daily-image-preview { 
+        max-width: 100%; height: auto; max-height: 300px; 
+        object-fit: contain; border-radius: 4px; border: 1px solid var(--divider-bg); display: block; margin: 0 auto;
+    }
     
     .home-daily-remove-preview {
         position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff;
         border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center; font-size: 9px;
+        display: flex; align-items: center; justify-content: center; font-size: 9px; z-index: 12;
     }
 
-    .home-daily-modal-footer {
-        display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--divider-bg); padding-top: 15px;
-    }
-    .home-daily-modal-date {
-        background: transparent; border: none; outline: none; color: var(--sub-color);
-        font-family: 'Noto Serif KR', serif; font-size: 12px; cursor: pointer;
-    }
-    .home-daily-modal-submit {
-        background: none; border: none; color: var(--point-color); font-size: 20px;
-        cursor: pointer; transition: 0.2s; opacity: 0.7; padding: 0 5px;
-    }
+    .home-daily-modal-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--divider-bg); padding-top: 15px; }
+    .home-daily-modal-date { background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 12px; cursor: pointer; }
+    .home-daily-modal-submit { background: none; border: none; color: var(--point-color); font-size: 20px; cursor: pointer; transition: 0.2s; opacity: 0.7; padding: 0 5px; }
     .home-daily-modal-submit:hover { opacity: 1; transform: translateX(3px); }
 
-    /* 드래그 툴바 */
+    /* 드래그 포맷 툴바 */
     .home-format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
         border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
-        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-        user-select: none; 
+        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
     }
     .home-format-toolbar button {
         background: none; border: none; color: var(--main-color); font-size: 14px;
@@ -209,21 +215,10 @@
     }
     .home-format-toolbar button:hover { background: rgba(0,0,0,0.05); }
     .home-format-toolbar .divider { width: 1px; height: 16px; background: var(--divider-bg); margin: 0 4px; }
-    
-    .home-color-picker-label {
-        display: flex; align-items: center; justify-content: center; width: 26px; height: 26px;
-        cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; overflow: hidden; margin: 0;
-    }
+    .home-color-picker-label { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; overflow: hidden; margin: 0; }
     .home-color-picker-label:hover { background: rgba(0,0,0,0.05); }
     .home-color-picker-label i { font-size: 14px; color: var(--main-color); pointer-events: none; }
     .home-native-color-picker { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; border: none; padding: 0; }
-
-    .color-btn { 
-        font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; 
-        border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px;
-    }
-    .btn-mint { color: #0E865E !important; background: #E1F9F1 !important; }
-    .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
 </style>
 
 <div id="home-format-toolbar" class="home-format-toolbar">
@@ -240,38 +235,50 @@
 </div>
 
 <div class="home-wrapper">
-    
-    <div class="home-greeting">
-        당신에게 닿는 모든 문장이 따뜻하기를.
-    </div>
-
-    <div class="home-main-text">
-        특별하지 않은 것들이 특별해지는 순간을 생각합니다.<br>
-        그래서 기록합니다. 잊지 않기 위해서가 아니라,<br>
-        이 순간이 존재했음을 어딘가에 남겨두고 싶어서.
-    </div>
-
-    <div class="home-sub-text">
-        서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
-    </div>
-
-    <div class="home-menu-list">
-        <button class="home-menu-item" onclick="loadPage('category/oneline.html')">손 끝에 남은 것</button>
-        <button class="home-menu-item" onclick="loadPage('category/daily.html')">데일리 로그</button>
-        <button class="home-menu-item" onclick="loadPage('category/archive.html')">아카이브 보관소</button>
-        <button class="home-menu-item" onclick="loadPage('category/memo.html')">편지 서랍</button>
+    <div class="home-container">
+        
+        <div class="home-mobile-img-wrap">
+            <img src="https://i.ibb.co/R4v4t2k7/7.jpg" alt="mobile theme grid">
         </div>
+        
+        <div class="home-main-split">
+            <div class="home-text-section">
+                <div class="home-greeting">당신에게 닿는 모든 문장이 따뜻하기를.</div>
 
-    <div class="home-calendar-container">
-        <div class="home-cal-header">
-            <i class="xi-angle-left home-cal-nav" onclick="changeHomeCalMonth(-1)"></i>
-            <span id="home-cal-month-display">2026년 6월</span>
-            <i class="xi-angle-right home-cal-nav" onclick="changeHomeCalMonth(1)"></i>
-        </div>
-        <div class="home-cal-grid" id="home-cal-grid">
+                <div class="home-main-text">
+                    특별하지 않은 것들이 특별해지는 순간을 생각합니다.<br>
+                    그래서 기록합니다. 잊지 않기 위해서가 아니라,<br>
+                    이 순간이 존재했음을 어딘가에 남겨두고 싶어서.
+                </div>
+
+                <div class="home-sub-text">
+                    서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
+                </div>
+
+                <div class="home-menu-list">
+                    <button class="home-menu-item" onclick="loadPage('category/oneline.html')">손 끝에 남은 것</button>
+                    <button class="home-menu-item" onclick="loadPage('category/daily.html')">데일리 로그</button>
+                    <button class="home-menu-item" onclick="loadPage('category/archive.html')">아카이브 보관소</button>
+                    <button class="home-menu-item" onclick="loadPage('category/memo.html')">편지 서랍</button>
+                    <button class="home-menu-item" onclick="loadPage('category/파일명.html')">메뉴 이름</button> -->
+                </div>
+
+                <div class="home-calendar-container">
+                    <div class="home-cal-header">
+                        <i class="xi-angle-left home-cal-nav" onclick="changeHomeCalMonth(-1)"></i>
+                        <span id="home-cal-month-display"></span>
+                        <i class="xi-angle-right home-cal-nav" onclick="changeHomeCalMonth(1)"></i>
+                    </div>
+                    <div class="home-cal-grid" id="home-cal-grid"></div>
+                </div>
             </div>
-    </div>
+            
+            <div class="home-pc-img-section">
+                <img src="https://i.ibb.co/xqx4ZSHF/8.jpg" alt="pc vertical theme grid">
+            </div>
+        </div>
 
+    </div>
 </div>
 
 <div id="home-daily-lightbox" class="home-daily-lightbox" onclick="if(event.target === this) closeHomeDailyModal()">
@@ -285,11 +292,11 @@
 
         <div class="home-daily-preview-wrap" id="home-daily-preview-wrap">
             <button class="home-daily-remove-preview" onclick="removeHomeDailyPreview()"><i class="xi-close"></i></button>
-            <img id="home-daily-image-preview" src="">
+            <img id="home-daily-image-preview" class="home-daily-image-preview" src="">
         </div>
 
         <input type="text" id="home-daily-modal-title" class="home-daily-modal-input" placeholder="Title" autocomplete="off">
-        <input type="text" id="home-daily-modal-tags" class="home-daily-modal-input" placeholder="Tags (e.g., #daily #mood)" autocomplete="off">
+        <input type="text" id="home-daily-modal-tags" class="home-daily-modal-input" placeholder="tags" autocomplete="off">
         
         <div id="home-daily-modal-content" class="home-daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="Write here..."></div>
 
@@ -304,7 +311,7 @@
 </div>
 
 <script>
-    // [중요] 카테고리 전환 시 오류 방지를 위해 모든 변수를 'var'로 세팅
+    // 카테고리 스와이프 간 런타임 에러 방지용 완벽 var 가드 처리
     var HOME_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
     var HOME_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
     var homeSupabase = window.supabase.createClient(HOME_URL, HOME_KEY);
@@ -315,22 +322,19 @@
     var homeDailyPosts = [];
     var homeSelectedFile = null;
 
-    // 초기화
     async function initHomeCalendar() {
         await fetchHomeDailyData();
         renderHomeCalendar();
     }
 
-    // DB에서 'daily' 카테고리 글만 싹 다 가져오기
     async function fetchHomeDailyData() {
         try {
             var { data, error } = await homeSupabase.from('posts').select('created_at').eq('category', 'daily');
             if (error) throw error;
             homeDailyPosts = data;
-        } catch (e) { console.error("달력 로드 실패:", e); }
+        } catch (e) { console.error(e); }
     }
 
-    // 캘린더 그리기
     function renderHomeCalendar() {
         $('#home-cal-month-display').text(`${homeCalYear}년 ${homeCalMonth}월`);
         
@@ -339,15 +343,10 @@
         
         var html = '';
         var dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-        dayNames.forEach(d => {
-            html += `<div class="home-cal-day-header">${d}</div>`;
-        });
+        dayNames.forEach(d => { html += `<div class="home-cal-day-header">${d}</div>`; });
         
-        for (var i = 0; i < firstDay; i++) {
-            html += `<div class="home-cal-day empty"></div>`;
-        }
+        for (var i = 0; i < firstDay; i++) { html += `<div class="home-cal-day empty"></div>`; }
         
-        // 작성된 날짜 찾기
         var logDays = new Set();
         homeDailyPosts.forEach(post => {
             var d = new Date(post.created_at);
@@ -358,14 +357,12 @@
 
         for (var i = 1; i <= daysInMonth; i++) {
             var hasLogClass = logDays.has(i) ? 'has-log' : '';
-            // 날짜를 누르면 즉시 팝업 오픈!
-            html += `<div class="home-cal-day fade-in-element ${hasLogClass}" onclick="openHomeDailyModal(${i})" title="클릭하여 일기 쓰기">${i}</div>`;
+            html += `<div class="home-cal-day fade-in-element ${hasLogClass}" onclick="openHomeDailyModal(${i})">${i}</div>`;
         }
         
         $('#home-cal-grid').html(html);
     }
 
-    // 달력 좌우 이동
     window.changeHomeCalMonth = function(dir) {
         homeCalMonth += dir;
         if (homeCalMonth > 12) { homeCalMonth = 1; homeCalYear++; }
@@ -373,9 +370,6 @@
         renderHomeCalendar();
     };
 
-    // ==========================================================================
-    // [홈 화면 팝업] 데일리 작성 기능 연동 (daily.html과 100% 동일한 로직)
-    // ==========================================================================
     window.openHomeDailyModal = function(day) {
         var mm = String(homeCalMonth).padStart(2, '0');
         var dd = String(day).padStart(2, '0');
@@ -389,9 +383,7 @@
         $('#home-daily-lightbox').css('display', 'flex').hide().fadeIn(200);
     };
 
-    window.closeHomeDailyModal = function() {
-        $('#home-daily-lightbox').fadeOut(200);
-    };
+    window.closeHomeDailyModal = function() { $('#home-daily-lightbox').fadeOut(200); };
 
     $('#home-daily-file-input').on('change', function(e) {
         var file = e.target.files[0];
@@ -420,20 +412,16 @@
         var dateVal = $('#home-daily-modal-date').val();
         var btn = $('#home-daily-submit-btn');
 
-        if (!textVal && !homeSelectedFile) {
-            alert("Please add an image or write something."); return;
-        }
+        if (!textVal && !homeSelectedFile) { alert("Please add an image or write something."); return; }
 
         try {
             btn.prop('disabled', true).css('opacity', '0.3');
-
             var finalImageUrl = "";
             if (homeSelectedFile) {
                 var fileExt = homeSelectedFile.name.split('.').pop();
                 var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
                 var { error: uploadError } = await homeSupabase.storage.from('images').upload(fileName, homeSelectedFile);
                 if (uploadError) throw uploadError;
-                
                 var { data: publicUrlData } = homeSupabase.storage.from('images').getPublicUrl(fileName);
                 finalImageUrl = publicUrlData.publicUrl;
             }
@@ -454,21 +442,11 @@
             if (error) throw error;
 
             closeHomeDailyModal();
-            
-            // 작성 완료 후 캘린더 새로고침 (포인트 마킹 생김)
             await fetchHomeDailyData();
             renderHomeCalendar(); 
-
-        } catch (error) {
-            alert('Failed to save.');
-        } finally {
-            btn.prop('disabled', false).css('opacity', '0.7');
-        }
+        } catch (error) { alert('Failed to save.'); } finally { btn.prop('disabled', false).css('opacity', '0.7'); }
     };
 
-    // ==========================================================================
-    // [홈 화면 팝업] 드래그 서식 툴바 로직 
-    // ==========================================================================
     var homeSavedSelectionRange = null;
     window.homeSaveSelection = function() {
         var selection = window.getSelection();
@@ -490,9 +468,7 @@
                 var node = selection.anchorNode;
                 var isInsideEditor = false;
                 while (node) {
-                    if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') {
-                        isInsideEditor = true; break;
-                    }
+                    if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') { isInsideEditor = true; break; }
                     node = node.parentNode;
                 }
                 if (isInsideEditor) {
@@ -512,14 +488,8 @@
     document.addEventListener('mouseup', homeCheckSelection);
     document.addEventListener('touchend', homeCheckSelection);
 
-    window.homeFormatText = function(command, value = null) {
-        document.execCommand(command, false, value); homeCheckSelection();
-    };
-    window.homeApplyColor = function(textColor, bgColor) {
-        document.execCommand('foreColor', false, textColor);
-        document.execCommand('backColor', false, bgColor); homeCheckSelection();
-    };
+    window.homeFormatText = function(command, value = null) { document.execCommand(command, false, value); homeCheckSelection(); };
+    window.homeApplyColor = function(textColor, bgColor) { document.execCommand('foreColor', false, textColor); document.execCommand('backColor', false, bgColor); homeCheckSelection(); };
 
-    // 스크립트 로드 시 캘린더 초기화
     setTimeout(() => { initHomeCalendar(); }, 100);
 </script>
