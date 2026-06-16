@@ -1,10 +1,11 @@
+<!-- 파일명: category/home.html -->
 <style>
     /* ==========================================================================
        [구조] 전체 컨테이너는 중앙 정렬 / 내부 텍스트는 좌측 정렬 및 폭 제한
        ========================================================================== */
     .home-wrapper {
         position: relative;
-        padding-top: 10px; /* [요청사항] 헤더와의 간격을 10px로 밀착 */
+        padding-top: 10px; /* 헤더와의 간격 10px 유지 */
         width: 100%;
         display: flex;
         justify-content: center; /* 컨텐츠 덩어리를 화면 중앙으로 배치 */
@@ -12,19 +13,19 @@
 
     .home-container {
         width: 100%;
-        max-width: 680px; /* [요청사항] PC에서 너무 넓어지지 않도록 단정하게 폭 제한 */
+        max-width: 680px; /* PC에서 너무 넓어지지 않도록 단정하게 폭 제한 */
         display: flex;
         flex-direction: column;
         align-items: flex-start; /* 내부 정렬은 좌측 고정 */
-        text-align: left; /* [요청사항] 모든 글자는 완벽한 좌측 정렬 */
+        text-align: left; /* 모든 글자는 완벽한 좌측 정렬 */
     }
 
     /* 반응형 스플릿 레이아웃 (PC: 2단 분리 / 모바일: 1단 누적) */
     .home-main-split {
         display: flex;
-        gap: 40px;
+        gap: 30px;
         width: 100%;
-        align-items: flex-start;
+        align-items: stretch; /* 카드와 이미지의 높이 밸런스를 위해 stretch 적용 */
     }
 
     /* 텍스트 영역 */
@@ -33,6 +34,24 @@
         display: flex;
         flex-direction: column;
         align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    /* [요청사항] PC 전용 옅은 회색 텍스트 묶음 카드 디자인 */
+    .home-text-card {
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    @media (min-width: 769px) {
+        .home-text-card {
+            background-color: #f4f5f6; /* 아주 옅은 회색 배경 */
+            padding: 30px;
+            border-radius: 18px; /* 레퍼런스풍 라운딩 */
+        }
     }
 
     /* 타이포그래피 */
@@ -40,7 +59,7 @@
         font-size: 13px;
         font-weight: 700; /* 볼드체 */
         color: var(--main-color);
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         letter-spacing: 0.5px;
     }
 
@@ -48,7 +67,7 @@
         font-size: 12px; /* 기본 폰트 12px */
         color: var(--main-color);
         line-height: 2.2;
-        margin-bottom: 30px;
+        margin-bottom: 25px;
         letter-spacing: 0.3px;
     }
 
@@ -56,29 +75,40 @@
         font-size: 11px; /* 작은 회색 글씨 */
         color: var(--sub-color);
         line-height: 2.0;
-        margin-bottom: 45px;
         opacity: 0.7;
         word-break: keep-all;
+        margin-bottom: 20px;
     }
 
-    /* 세로 리스트형 메뉴 (밑줄/테두리 없이 텍스트만) */
+    /* 바로가기 메뉴 영역 */
     .home-menu-list {
         display: flex;
         flex-direction: column;
-        gap: 14px;
-        margin-bottom: 50px;
         width: 100%;
+        margin-top: 5px;
     }
 
-    .home-menu-item {
-        background: none; border: none; text-align: left;
-        font-size: 12px; color: var(--main-color);
-        cursor: pointer; padding: 0; font-family: inherit;
-        transition: color 0.3s ease, padding-left 0.3s ease;
+    /* [요청사항] 이탤릭체 + 분호색 밑줄 단일 링크 디자인 */
+    .home-single-link {
+        background: none;
+        border: none;
+        text-align: left;
+        font-size: 12px;
+        font-style: italic; /* 이태릭 체 */
+        color: var(--main-color);
+        cursor: pointer;
+        padding: 0;
+        font-family: inherit;
+        display: inline-block;
+        text-decoration: underline; /* 바로 밑에 밑줄 */
+        text-decoration-color: #D04978; /* 밑줄 색은 분홍색 */
+        text-underline-offset: 3px; /* 밑줄 밀착도 조절 */
+        transition: color 0.2s ease, text-decoration-color 0.2s ease;
     }
-    .home-menu-item:hover {
-        color: var(--point-color);
-        padding-left: 4px; /* 마우스 올리면 부드럽게 살짝 밀림 (포인트색 강조) */
+
+    .home-single-link:hover {
+        color: #D04978;
+        text-decoration-color: var(--main-color);
     }
 
     /* ==========================================================================
@@ -86,16 +116,16 @@
        ========================================================================== */
     /* PC 전용 세로형 배치 */
     .home-pc-img-section {
-        width: 200px;
+        width: 220px;
         flex-shrink: 0;
         display: block;
     }
     .home-pc-img-section img {
         width: 100%;
-        height: auto;
+        height: 100%;
         max-height: 480px;
         object-fit: cover;
-        border-radius: 6px;
+        border-radius: 18px; /* 카드와 통일감 있는 라운딩 */
         border: 1px solid var(--divider-bg);
     }
 
@@ -103,13 +133,13 @@
     .home-mobile-img-wrap {
         display: none;
         width: 100%;
-        margin-bottom: 30px;
+        margin-bottom: 25px;
     }
     .home-mobile-img-wrap img {
         width: 100%;
-        height: 220px; /* 가로가 더 넓고 예쁜 비율 */
+        height: 220px;
         object-fit: cover;
-        border-radius: 6px;
+        border-radius: 12px;
         border: 1px solid var(--divider-bg);
     }
 
@@ -118,15 +148,17 @@
         .home-main-split { display: block; } /* 1단으로 떨어짐 */
         .home-pc-img-section { display: none; } /* PC 세로형 숨김 */
         .home-mobile-img-wrap { display: block; } /* 모바일 가로형 등장 */
+        .home-text-card { background-color: transparent; padding: 0; border-radius: 0; } /* 모바일은 투명하게 */
     }
 
     /* ==========================================================================
-       [기능] 미니멀 데일리 캘린더 엔진
+       [기능] 미니멀 데일리 캘린더 인터페이스
        ========================================================================== */
     .home-calendar-container {
         width: 100%;
         max-width: 240px;
         padding-top: 30px;
+        margin-top: 40px;
         border-top: 1px solid var(--divider-bg);
     }
     .home-cal-header {
@@ -153,7 +185,7 @@
     }
 
     /* ==========================================================================
-       [홈 팝업] 데일리 작성 팝업 (이미지 찌그러짐/이상한 여백 완벽 방지 교정)
+       [홈 팝업] 데일리 작성 팝업 폼
        ========================================================================== */
     .home-daily-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -183,8 +215,6 @@
     .home-daily-add-img-btn:hover { opacity: 1; color: var(--point-color); }
     
     .home-daily-preview-wrap { position: relative; display: none; margin-bottom: 10px; width: 100%; text-align: center; }
-    
-    /* [버그 수정] 가로/세로 어떤 비율의 사진이 들어와도 절대 깨지거나 삐져나가지 않고 완벽 핏 보존 */
     .home-daily-image-preview { 
         max-width: 100%; height: auto; max-height: 300px; 
         object-fit: contain; border-radius: 4px; border: 1px solid var(--divider-bg); display: block; margin: 0 auto;
@@ -230,39 +260,43 @@
     <label class="home-color-picker-label" onmousedown="homeSaveSelection()"><i class="xi-font"></i><input type="color" class="home-native-color-picker" oninput="homeApplyCustomColor('foreColor', this.value)" onchange="homeApplyCustomColor('foreColor', this.value)"></label>
     <label class="home-color-picker-label" onmousedown="homeSaveSelection()"><i class="xi-palette"></i><input type="color" class="home-native-color-picker" oninput="homeApplyCustomColor('backColor', this.value)" onchange="homeApplyCustomColor('backColor', this.value)"></label>
     <div class="divider"></div>
-    <button onmousedown="event.preventDefault(); homeApplyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
-    <button onmousedown="event.preventDefault(); homeApplyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
+    <button onmousedown="event.preventDefault(); applyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
+    <button onmousedown="event.preventDefault(); applyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
 </div>
 
 <div class="home-wrapper">
     <div class="home-container">
         
+        <!-- 모바일 전용 가로형 탑 지붕 이미지 -->
         <div class="home-mobile-img-wrap">
             <img src="https://i.ibb.co/R4v4t2k7/7.jpg" alt="mobile theme grid">
         </div>
         
         <div class="home-main-split">
+            <!-- 좌측: 본문 및 메뉴 트랙 -->
             <div class="home-text-section">
-                <div class="home-greeting">당신에게 닿는 모든 문장이 따뜻하기를.</div>
+                
+                <!-- [요청사항] 아주 옅은 회색으로 감싼 텍스트 카드 묶음 영역 (PC에서만 배경색 작동) -->
+                <div class="home-text-card">
+                    <div class="home-greeting">당신에게 닿는 모든 문장이 따뜻하기를.</div>
 
-                <div class="home-main-text">
-                    특별하지 않은 것들이 특별해지는 순간을 생각합니다.<br>
-                    그래서 기록합니다. 잊지 않기 위해서가 아니라,<br>
-                    이 순간이 존재했음을 어딘가에 남겨두고 싶어서.
+                    <div class="home-main-text">
+                        특별하지 않은 것들이 특별해지는 순간을 생각합니다.<br>
+                        그래서 기록합니다. 잊지 않기 위해서가 아니라,<br>
+                        이 순간이 존재했음을 어딘가에 남겨두고 싶어서.
+                    </div>
+
+                    <div class="home-sub-text">
+                        서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
+                    </div>
+
+                    <div class="home-menu-list">
+                        <!-- [요청사항] 이탤릭체 + 분홍색 밑줄 단일 바로가기 링크 형성 -->
+                        <button class="home-single-link" onclick="loadPage('category/oneline.html')">손 끝에 남은 것</button>
+                    </div>
                 </div>
 
-                <div class="home-sub-text">
-                    서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
-                </div>
-
-                <div class="home-menu-list">
-                    <button class="home-menu-item" onclick="loadPage('category/oneline.html')">손 끝에 남은 것</button>
-                    <button class="home-menu-item" onclick="loadPage('category/daily.html')">데일리 로그</button>
-                    <button class="home-menu-item" onclick="loadPage('category/archive.html')">아카이브 보관소</button>
-                    <button class="home-menu-item" onclick="loadPage('category/memo.html')">편지 서랍</button>
-                    <button class="home-menu-item" onclick="loadPage('category/파일명.html')">메뉴 이름</button> -->
-                </div>
-
+                <!-- 미니멀 데일리 캘린더 인터페이스 -->
                 <div class="home-calendar-container">
                     <div class="home-cal-header">
                         <i class="xi-angle-left home-cal-nav" onclick="changeHomeCalMonth(-1)"></i>
@@ -273,6 +307,7 @@
                 </div>
             </div>
             
+            <!-- PC 전용 우측 세로형 무드 가이드 스냅 -->
             <div class="home-pc-img-section">
                 <img src="https://i.ibb.co/xqx4ZSHF/8.jpg" alt="pc vertical theme grid">
             </div>
@@ -281,6 +316,7 @@
     </div>
 </div>
 
+<!-- 홈 팝업: 데일리 작성 모달 -->
 <div id="home-daily-lightbox" class="home-daily-lightbox" onclick="if(event.target === this) closeHomeDailyModal()">
     <div class="home-daily-lightbox-card">
         
@@ -311,7 +347,6 @@
 </div>
 
 <script>
-    // 카테고리 스와이프 간 런타임 에러 방지용 완벽 var 가드 처리
     var HOME_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
     var HOME_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
     var homeSupabase = window.supabase.createClient(HOME_URL, HOME_KEY);
@@ -422,7 +457,7 @@
                 var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
                 var { error: uploadError } = await homeSupabase.storage.from('images').upload(fileName, homeSelectedFile);
                 if (uploadError) throw uploadError;
-                var { data: publicUrlData } = homeSupabase.storage.from('images').getPublicUrl(fileName);
+                var { data: publicUrlData } = await homeSupabase.storage.from('images').getPublicUrl(fileName);
                 finalImageUrl = publicUrlData.publicUrl;
             }
 
