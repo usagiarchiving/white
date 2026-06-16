@@ -28,13 +28,10 @@
             <header id="header">
                 <div class="inner_header">
 <button id="theme-toggle" class="icon-btn" onclick="toggleTheme()" title="테마 변경">
-    <i id="theme-icon" class="xi-sun"></i> 
+    <i id="theme-icon" class="xi-toggle-off"></i>
 </button>
-
-<button id="btn-home" class="icon-btn" onclick="loadPage('category/home.html')" title="홈">
-    <i id="home-icon" class="xi-heart"></i>
-</button>
-
+<button id="btn-login" class="icon-btn" title="로그인"><i class="xi-log-in"></i></button>
+<button id="btn-logout" class="icon-btn" title="로그아웃" style="display:none;"><i class="xi-log-out"></i></button>
                     <div class="dropdown">
                         <div class="dropdown-bars" title="메뉴 열기">
                             <i id="menu-icon" class="xi-bars"></i>
@@ -66,7 +63,7 @@
             { name: 'List',     path: 'category/list.html',     active: false },
             { name: 'Todo',     path: 'category/todo.html',     active: false },
             { name: 'Playlist', path: 'category/playlist.html', active: false },
-            { name: '흐린 날의 고',   path: 'category/record.html',   active: false },
+            { name: '흐린 날의 고백',   path: 'category/record.html',   active: false },
             { name: 'Check',    path: 'category/check.html',    active: false }
         ];
     </script>
