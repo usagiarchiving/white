@@ -69,9 +69,9 @@ function setTheme(themeName) {
     localStorage.setItem('theme', themeName);
     document.documentElement.className = themeName;
     if(themeName === 'theme-dark') {
-        $('#theme-icon').removeClass('xi-toggle-off').addClass('xi-toggle-on');
+        $('#theme-icon').removeClass('xi-sun').addClass('xi-moon');
     } else {
-        $('#theme-icon').removeClass('xi-toggle-on').addClass('xi-toggle-off');
+        $('#theme-icon').removeClass('xi-moon').addClass('xi-sun');
     }
 }
 
