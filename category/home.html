@@ -1,84 +1,243 @@
-<!-- 파일명: category/home.html -->
 <style>
-    /* ==========================================================================
-       [디자인] iCloud 감성의 미니멀 홈 화면 
-       ========================================================================== */
     .home-wrapper {
+        position: relative;
+        padding-top: 20px; /* 요청사항: 헤더에서 20px 띄움 */
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        /* 헤더 영역을 제외한 중앙 정렬 */
-        min-height: calc(100vh - 250px);
-        text-align: center;
-        padding: 20px;
+        align-items: flex-start; /* 요청사항: 완벽한 좌측 정렬 */
+        text-align: left;
+        min-height: calc(100vh - 200px);
         animation: fadeUp 0.8s ease-out;
-        font-family: inherit; /* 네이티브 시스템 폰트 자연스럽게 상속 */
+        font-family: inherit;
     }
 
-    /* 강조 문구 (볼드체) */
+    /* 1. 타이포그래피 */
     .home-greeting {
-        font-size: 13px; 
-        font-weight: 700;
+        font-size: 13px;
+        font-weight: 700; /* 볼드체 */
         color: var(--main-color);
-        margin-bottom: 35px;
+        margin-bottom: 25px;
         letter-spacing: 0.5px;
     }
 
-    /* 메인 문구 */
     .home-main-text {
-        font-size: 12px;
+        font-size: 12px; /* 기본 폰트 12px */
         color: var(--main-color);
-        line-height: 2.2; /* 가독성을 위한 여유로운 줄간격 */
-        margin-bottom: 45px;
+        line-height: 2.2;
+        margin-bottom: 30px;
         letter-spacing: 0.3px;
     }
 
-    /* 서랍장 무드의 서브 문구 (작은 회색) */
     .home-sub-text {
-        font-size: 11px;
+        font-size: 11px; /* 작은 회색 글씨 */
         color: var(--sub-color);
         line-height: 2.0;
-        max-width: 280px; /* 텍스트가 예쁘게 줄바꿈되도록 폭 제한 */
-        margin-bottom: 55px;
+        max-width: 380px;
+        margin-bottom: 50px;
         opacity: 0.7;
         word-break: keep-all;
     }
 
-    /* 하단 이동 버튼 그룹 */
-    .home-btn-group {
+    /* 2. 세로 리스트형 메뉴 (레퍼런스 반영) */
+    .home-menu-list {
         display: flex;
-        gap: 15px;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 60px;
     }
 
-    /* 얇고 예쁜 네비게이션 버튼 */
-    .home-link-btn {
-        background: transparent;
-        border: 1px solid var(--divider-bg);
-        color: var(--sub-color);
-        font-size: 11.5px;
-        font-family: inherit;
-        padding: 8px 20px;
-        border-radius: 20px; /* 부드러운 알약 모양 */
+    .home-menu-item {
+        background: none;
+        border: none;
+        text-align: left;
+        font-size: 12px;
+        color: var(--main-color);
         cursor: pointer;
-        transition: all 0.3s ease;
-        outline: none;
+        padding: 0;
+        font-family: inherit;
+        transition: color 0.3s ease;
     }
 
-    /* 호버/터치 시 포인트 컬러로 부드럽게 전환 */
-    .home-link-btn:hover {
-        border-color: var(--point-color);
+    .home-menu-item:hover {
+        color: var(--point-color); /* 마우스 오버 시 포인트 컬러 */
+    }
+
+    /* 3. 미니멀 데일리 캘린더 */
+    .home-calendar-container {
+        width: 100%;
+        max-width: 250px;
+        margin-top: 10px;
+        padding-top: 30px;
+        border-top: 1px solid var(--divider-bg); /* 메뉴와 캘린더 사이의 은은한 구분선 */
+    }
+    .home-cal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        font-size: 12px;
+        color: var(--main-color);
+    }
+    .home-cal-nav {
+        cursor: pointer;
+        color: var(--sub-color);
+        transition: color 0.2s;
+        padding: 0 10px;
+        font-size: 14px;
+    }
+    .home-cal-nav:hover { color: var(--point-color); }
+    
+    .home-cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px 0;
+        text-align: center;
+    }
+    .home-cal-day-header {
+        font-size: 10px;
+        color: var(--sub-color);
+        opacity: 0.5;
+        margin-bottom: 5px;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    .home-cal-day {
+        font-size: 11px;
+        color: var(--main-color);
+        cursor: pointer;
+        padding: 4px 0;
+        transition: all 0.2s;
+        position: relative;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    .home-cal-day:hover {
         color: var(--point-color);
-        background: rgba(0, 0, 0, 0.01);
-        transform: translateY(-1px);
+    }
+    .home-cal-day.empty {
+        pointer-events: none;
+        opacity: 0;
+    }
+    
+    /* 데일리가 작성된 날짜 마킹 (포인트 컬러 동그라미 표식) */
+    .home-cal-day.has-log {
+        font-weight: bold;
+        color: var(--point-color);
+    }
+    .home-cal-day.has-log::after {
+        content: '';
+        position: absolute;
+        bottom: 0px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 3px;
+        height: 3px;
+        background-color: var(--point-color);
+        border-radius: 50%;
     }
 
-    /* 등장 애니메이션 */
     @keyframes fadeUp {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* ==========================================================================
+       [홈 화면 즉시 작성용 모달] Daily 폼 완벽 이식
+       ========================================================================== */
+    .home-daily-lightbox {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        z-index: 20000; align-items: center; justify-content: center; padding: 20px;
+    }
+    .home-daily-lightbox-card {
+        background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 6px;
+        padding: 30px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px;
+    }
+    .home-daily-modal-input {
+        background: transparent; border: none; border-bottom: 1px solid var(--divider-bg);
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 14px;
+        padding: 5px 0; outline: none; width: 100%; transition: 0.3s;
+    }
+    .home-daily-modal-input:focus { border-bottom-color: var(--point-color); }
+    
+    .home-daily-modal-editor {
+        width: 100%; min-height: 120px; background: transparent; border: none;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13.5px;
+        line-height: 1.8; outline: none; padding: 5px 0; word-break: break-all;
+    }
+    [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.6; pointer-events: none; }
+
+    .home-daily-add-img-btn {
+        display: inline-block; cursor: pointer; color: var(--sub-color); font-size: 18px;
+        transition: 0.2s; opacity: 0.4;
+    }
+    .home-daily-add-img-btn:hover { opacity: 1; color: var(--point-color); }
+    
+    .home-daily-preview-wrap { position: relative; display: none; margin-bottom: 10px; }
+    .home-daily-preview-wrap img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 4px; }
+    
+    .home-daily-remove-preview {
+        position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff;
+        border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 9px;
+    }
+
+    .home-daily-modal-footer {
+        display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--divider-bg); padding-top: 15px;
+    }
+    .home-daily-modal-date {
+        background: transparent; border: none; outline: none; color: var(--sub-color);
+        font-family: 'Noto Serif KR', serif; font-size: 12px; cursor: pointer;
+    }
+    .home-daily-modal-submit {
+        background: none; border: none; color: var(--point-color); font-size: 20px;
+        cursor: pointer; transition: 0.2s; opacity: 0.7; padding: 0 5px;
+    }
+    .home-daily-modal-submit:hover { opacity: 1; transform: translateX(3px); }
+
+    /* 드래그 툴바 */
+    .home-format-toolbar {
+        position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
+        border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
+        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        user-select: none; 
+    }
+    .home-format-toolbar button {
+        background: none; border: none; color: var(--main-color); font-size: 14px;
+        cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s;
+        display: flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+    }
+    .home-format-toolbar button:hover { background: rgba(0,0,0,0.05); }
+    .home-format-toolbar .divider { width: 1px; height: 16px; background: var(--divider-bg); margin: 0 4px; }
+    
+    .home-color-picker-label {
+        display: flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+        cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; overflow: hidden; margin: 0;
+    }
+    .home-color-picker-label:hover { background: rgba(0,0,0,0.05); }
+    .home-color-picker-label i { font-size: 14px; color: var(--main-color); pointer-events: none; }
+    .home-native-color-picker { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; border: none; padding: 0; }
+
+    .color-btn { 
+        font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; 
+        border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px;
+    }
+    .btn-mint { color: #0E865E !important; background: #E1F9F1 !important; }
+    .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
 </style>
+
+<div id="home-format-toolbar" class="home-format-toolbar">
+    <button onmousedown="event.preventDefault(); homeFormatText('bold')"><i class="xi-bold"></i></button>
+    <button onmousedown="event.preventDefault(); homeFormatText('italic')"><i class="xi-italic"></i></button>
+    <button onmousedown="event.preventDefault(); homeFormatText('underline')"><i class="xi-underline"></i></button>
+    <button onmousedown="event.preventDefault(); homeFormatText('strikeThrough')"><i class="xi-strikethrough"></i></button>
+    <div class="divider"></div>
+    <label class="home-color-picker-label" onmousedown="homeSaveSelection()"><i class="xi-font"></i><input type="color" class="home-native-color-picker" oninput="homeApplyCustomColor('foreColor', this.value)" onchange="homeApplyCustomColor('foreColor', this.value)"></label>
+    <label class="home-color-picker-label" onmousedown="homeSaveSelection()"><i class="xi-palette"></i><input type="color" class="home-native-color-picker" oninput="homeApplyCustomColor('backColor', this.value)" onchange="homeApplyCustomColor('backColor', this.value)"></label>
+    <div class="divider"></div>
+    <button onmousedown="event.preventDefault(); homeApplyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
+    <button onmousedown="event.preventDefault(); homeApplyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
+</div>
 
 <div class="home-wrapper">
     
@@ -96,10 +255,271 @@
         서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
     </div>
 
-    <div class="home-btn-group">
-        <!-- index.html의 로드 엔진을 호출하여 부드럽게 화면 이동 -->
-        <button class="home-link-btn" onclick="loadPage('category/oneline.html')">한 줄 기록</button>
-        <button class="home-link-btn" onclick="loadPage('category/daily.html')">데일리</button>
+    <div class="home-menu-list">
+        <button class="home-menu-item" onclick="loadPage('category/oneline.html')">손 끝에 남은 것</button>
+        <button class="home-menu-item" onclick="loadPage('category/daily.html')">데일리 로그</button>
+        <button class="home-menu-item" onclick="loadPage('category/archive.html')">아카이브 보관소</button>
+        <button class="home-menu-item" onclick="loadPage('category/memo.html')">편지 서랍</button>
+        </div>
+
+    <div class="home-calendar-container">
+        <div class="home-cal-header">
+            <i class="xi-angle-left home-cal-nav" onclick="changeHomeCalMonth(-1)"></i>
+            <span id="home-cal-month-display">2026년 6월</span>
+            <i class="xi-angle-right home-cal-nav" onclick="changeHomeCalMonth(1)"></i>
+        </div>
+        <div class="home-cal-grid" id="home-cal-grid">
+            </div>
     </div>
 
 </div>
+
+<div id="home-daily-lightbox" class="home-daily-lightbox" onclick="if(event.target === this) closeHomeDailyModal()">
+    <div class="home-daily-lightbox-card">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <label for="home-daily-file-input" class="home-daily-add-img-btn" title="Add Image"><i class="xi-image-o"></i></label>
+            <input type="file" id="home-daily-file-input" accept="image/*" style="display: none;">
+            <i class="xi-close" onclick="closeHomeDailyModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px;"></i>
+        </div>
+
+        <div class="home-daily-preview-wrap" id="home-daily-preview-wrap">
+            <button class="home-daily-remove-preview" onclick="removeHomeDailyPreview()"><i class="xi-close"></i></button>
+            <img id="home-daily-image-preview" src="">
+        </div>
+
+        <input type="text" id="home-daily-modal-title" class="home-daily-modal-input" placeholder="Title" autocomplete="off">
+        <input type="text" id="home-daily-modal-tags" class="home-daily-modal-input" placeholder="Tags (e.g., #daily #mood)" autocomplete="off">
+        
+        <div id="home-daily-modal-content" class="home-daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="Write here..."></div>
+
+        <div class="home-daily-modal-footer">
+            <input type="date" id="home-daily-modal-date" class="home-daily-modal-date" title="Change Date">
+            <button class="home-daily-modal-submit" id="home-daily-submit-btn" onclick="saveHomeDailyPost()">
+                <i class="xi-arrow-right"></i>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // [중요] 카테고리 전환 시 오류 방지를 위해 모든 변수를 'var'로 세팅
+    var HOME_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+    var HOME_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
+    var homeSupabase = window.supabase.createClient(HOME_URL, HOME_KEY);
+
+    var homeCalDate = new Date();
+    var homeCalYear = homeCalDate.getFullYear();
+    var homeCalMonth = homeCalDate.getMonth() + 1;
+    var homeDailyPosts = [];
+    var homeSelectedFile = null;
+
+    // 초기화
+    async function initHomeCalendar() {
+        await fetchHomeDailyData();
+        renderHomeCalendar();
+    }
+
+    // DB에서 'daily' 카테고리 글만 싹 다 가져오기
+    async function fetchHomeDailyData() {
+        try {
+            var { data, error } = await homeSupabase.from('posts').select('created_at').eq('category', 'daily');
+            if (error) throw error;
+            homeDailyPosts = data;
+        } catch (e) { console.error("달력 로드 실패:", e); }
+    }
+
+    // 캘린더 그리기
+    function renderHomeCalendar() {
+        $('#home-cal-month-display').text(`${homeCalYear}년 ${homeCalMonth}월`);
+        
+        var firstDay = new Date(homeCalYear, homeCalMonth - 1, 1).getDay();
+        var daysInMonth = new Date(homeCalYear, homeCalMonth, 0).getDate();
+        
+        var html = '';
+        var dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        dayNames.forEach(d => {
+            html += `<div class="home-cal-day-header">${d}</div>`;
+        });
+        
+        for (var i = 0; i < firstDay; i++) {
+            html += `<div class="home-cal-day empty"></div>`;
+        }
+        
+        // 작성된 날짜 찾기
+        var logDays = new Set();
+        homeDailyPosts.forEach(post => {
+            var d = new Date(post.created_at);
+            if (d.getFullYear() === homeCalYear && (d.getMonth() + 1) === homeCalMonth) {
+                logDays.add(d.getDate());
+            }
+        });
+
+        for (var i = 1; i <= daysInMonth; i++) {
+            var hasLogClass = logDays.has(i) ? 'has-log' : '';
+            // 날짜를 누르면 즉시 팝업 오픈!
+            html += `<div class="home-cal-day fade-in-element ${hasLogClass}" onclick="openHomeDailyModal(${i})" title="클릭하여 일기 쓰기">${i}</div>`;
+        }
+        
+        $('#home-cal-grid').html(html);
+    }
+
+    // 달력 좌우 이동
+    window.changeHomeCalMonth = function(dir) {
+        homeCalMonth += dir;
+        if (homeCalMonth > 12) { homeCalMonth = 1; homeCalYear++; }
+        else if (homeCalMonth < 1) { homeCalMonth = 12; homeCalYear--; }
+        renderHomeCalendar();
+    };
+
+    // ==========================================================================
+    // [홈 화면 팝업] 데일리 작성 기능 연동 (daily.html과 100% 동일한 로직)
+    // ==========================================================================
+    window.openHomeDailyModal = function(day) {
+        var mm = String(homeCalMonth).padStart(2, '0');
+        var dd = String(day).padStart(2, '0');
+        $('#home-daily-modal-date').val(`${homeCalYear}-${mm}-${dd}`);
+        
+        $('#home-daily-modal-title').val('');
+        $('#home-daily-modal-tags').val('');
+        $('#home-daily-modal-content').html('');
+        removeHomeDailyPreview();
+        
+        $('#home-daily-lightbox').css('display', 'flex').hide().fadeIn(200);
+    };
+
+    window.closeHomeDailyModal = function() {
+        $('#home-daily-lightbox').fadeOut(200);
+    };
+
+    $('#home-daily-file-input').on('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        homeSelectedFile = file;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            $('#home-daily-image-preview').attr('src', e.target.result);
+            $('#home-daily-preview-wrap').slideDown(200);
+        }
+        reader.readAsDataURL(file);
+    });
+
+    window.removeHomeDailyPreview = function() {
+        homeSelectedFile = null;
+        $('#home-daily-file-input').val('');
+        $('#home-daily-preview-wrap').slideUp(200, function() {
+            $('#home-daily-image-preview').attr('src', '');
+        });
+    };
+
+    window.saveHomeDailyPost = async function() {
+        var titleVal = $('#home-daily-modal-title').val().trim();
+        var tagsVal = $('#home-daily-modal-tags').val().trim(); 
+        var textVal = $('#home-daily-modal-content').html().trim();
+        var dateVal = $('#home-daily-modal-date').val();
+        var btn = $('#home-daily-submit-btn');
+
+        if (!textVal && !homeSelectedFile) {
+            alert("Please add an image or write something."); return;
+        }
+
+        try {
+            btn.prop('disabled', true).css('opacity', '0.3');
+
+            var finalImageUrl = "";
+            if (homeSelectedFile) {
+                var fileExt = homeSelectedFile.name.split('.').pop();
+                var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+                var { error: uploadError } = await homeSupabase.storage.from('images').upload(fileName, homeSelectedFile);
+                if (uploadError) throw uploadError;
+                
+                var { data: publicUrlData } = homeSupabase.storage.from('images').getPublicUrl(fileName);
+                finalImageUrl = publicUrlData.publicUrl;
+            }
+
+            var contentString = finalImageUrl + "|||" + textVal + "|||" + tagsVal;
+
+            var finalDate = new Date();
+            if (dateVal) {
+                var parts = dateVal.split('-');
+                finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
+            }
+            var offset = finalDate.getTimezoneOffset() * 60000;
+            var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+
+            var { error } = await homeSupabase.from('posts').insert([{ 
+                category: 'daily', title: titleVal, content: contentString, created_at: localISOString 
+            }]);
+            if (error) throw error;
+
+            closeHomeDailyModal();
+            
+            // 작성 완료 후 캘린더 새로고침 (포인트 마킹 생김)
+            await fetchHomeDailyData();
+            renderHomeCalendar(); 
+
+        } catch (error) {
+            alert('Failed to save.');
+        } finally {
+            btn.prop('disabled', false).css('opacity', '0.7');
+        }
+    };
+
+    // ==========================================================================
+    // [홈 화면 팝업] 드래그 서식 툴바 로직 
+    // ==========================================================================
+    var homeSavedSelectionRange = null;
+    window.homeSaveSelection = function() {
+        var selection = window.getSelection();
+        if (selection.rangeCount > 0) homeSavedSelectionRange = selection.getRangeAt(0);
+    };
+    window.homeApplyCustomColor = function(command, color) {
+        if (homeSavedSelectionRange) {
+            var selection = window.getSelection();
+            selection.removeAllRanges(); selection.addRange(homeSavedSelectionRange);
+        }
+        document.execCommand(command, false, color); homeCheckSelection();
+    };
+
+    function homeCheckSelection() {
+        setTimeout(() => {
+            var selection = window.getSelection();
+            var toolbar = document.getElementById('home-format-toolbar');
+            if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+                var node = selection.anchorNode;
+                var isInsideEditor = false;
+                while (node) {
+                    if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') {
+                        isInsideEditor = true; break;
+                    }
+                    node = node.parentNode;
+                }
+                if (isInsideEditor) {
+                    var range = selection.getRangeAt(0);
+                    var rect = range.getBoundingClientRect();
+                    toolbar.style.display = 'flex';
+                    var top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
+                    var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
+                    if (top < window.scrollY) top = rect.bottom + window.scrollY + 8;
+                    if (left < 10) left = 10;
+                    toolbar.style.top = top + 'px'; toolbar.style.left = left + 'px';
+                } else { toolbar.style.display = 'none'; }
+            } else { toolbar.style.display = 'none'; }
+        }, 100);
+    }
+    document.addEventListener('selectionchange', homeCheckSelection);
+    document.addEventListener('mouseup', homeCheckSelection);
+    document.addEventListener('touchend', homeCheckSelection);
+
+    window.homeFormatText = function(command, value = null) {
+        document.execCommand(command, false, value); homeCheckSelection();
+    };
+    window.homeApplyColor = function(textColor, bgColor) {
+        document.execCommand('foreColor', false, textColor);
+        document.execCommand('backColor', false, bgColor); homeCheckSelection();
+    };
+
+    // 스크립트 로드 시 캘린더 초기화
+    setTimeout(() => { initHomeCalendar(); }, 100);
+</script>
