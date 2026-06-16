@@ -236,15 +236,16 @@
 </div>
 
 <script>
-    const MEMO_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
-    const MEMO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    const memoSupabase = window.supabase.createClient(MEMO_URL, MEMO_KEY);
+    // [수정] const와 let을 var로 교체하여 카테고리 이동 시 생기는 변수 충돌(먹통 현상) 완벽 해결
+    var MEMO_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+    var MEMO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
+    var memoSupabase = window.supabase.createClient(MEMO_URL, MEMO_KEY);
 
     /* --- [에디터 & 툴바 핵심 로직] --- */
     
-    let savedSelectionRange = null;
+    var savedSelectionRange = null;
 
-    // [추가] 색상 선택기를 열기 직전에 드래그된 텍스트 위치를 기억하는 마법
+    // 색상 선택기를 열기 직전에 드래그된 텍스트 위치를 기억하는 마법
     window.saveSelection = function() {
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
@@ -252,7 +253,7 @@
         }
     };
 
-    // [추가] 색상 코드/팔레트에서 색을 골랐을 때 적용하는 마법
+    // 색상 코드/팔레트에서 색을 골랐을 때 적용하는 마법
     window.applyCustomColor = function(command, color) {
         if (savedSelectionRange) {
             const selection = window.getSelection();
@@ -462,7 +463,6 @@
                 const parts = dateVal.split('-');
                 finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
             }
-            // [시간 버그 수정] KST(로컬 타임) 기준으로 오프셋 적용
             const offset = finalDate.getTimezoneOffset() * 60000;
             const localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
 
@@ -526,7 +526,6 @@
                 const parts = newDateStr.split('-');
                 finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
             }
-            // [시간 버그 수정] KST(로컬 타임) 기준으로 오프셋 적용
             const offset = finalDate.getTimezoneOffset() * 60000;
             const localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
 
@@ -573,7 +572,7 @@
     });
 
     // 로드
-    setTimeout(() => { 
+    var memoTimeout = setTimeout(() => { 
         setDefaultDate();
         loadMemoPosts(); 
     }, 100);
