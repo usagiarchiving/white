@@ -19,21 +19,21 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* [요청 1] 맨 처음엔 구름 아이콘만 심플하게 (테두리 없음) */
+    /* 맨 처음 구름 아이콘 (색상 #f5c9d5로 변경) */
     #initial-upload-wrapper {
         text-align: center;
         margin-bottom: 25px;
     }
     .cloud-upload-btn {
-        cursor: pointer; font-size: 26px; color: var(--sub-color);
+        cursor: pointer; font-size: 26px; color: #f5c9d5; /* 요청하신 색상으로 변경 */
         transition: color 0.3s ease, transform 0.2s ease;
         display: inline-block; padding: 10px;
     }
     .cloud-upload-btn:hover { color: var(--point-color); transform: translateY(-2px); }
 
-    /* [요청 1] 사진을 고르면 나타나는 점선 테두리 입력칸 */
+    /* 사진을 고르면 나타나는 점선 테두리 입력칸 */
     .upload-container {
-        display: none; /* 처음엔 숨김 */
+        display: none; 
         border: 1px dashed var(--point-color); border-radius: 4px; padding: 20px;
         text-align: center; margin-bottom: 25px; background: transparent; position: relative;
     }
@@ -47,7 +47,7 @@
         display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
-    /* [요청 2] 제목, 기록 입력 폼 세로 분리 */
+    /* 제목, 기록 입력 폼 세로 분리 */
     .archive-input-item {
         width: 100%; background: transparent; border: none; color: var(--main-color);
         font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none;
@@ -86,7 +86,7 @@
     }
     .gallery-item:hover img { transform: scale(1.05); }
 
-    /* [요청 3] 호버 오버레이 (빨간 삭제 아이콘 완벽 제거) */
+    /* 호버 오버레이 */
     .gallery-overlay {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.3s ease;
@@ -106,7 +106,7 @@
         z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out; padding: 20px;
     }
     
-    /* [요청 4] 팝업 카드 본문 완전 흰색(#ffffff) */
+    /* 팝업 카드 본문 흰색(#ffffff) */
     .archive-lightbox-card {
         background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 4px;
         padding: 25px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto;
@@ -205,7 +205,6 @@
 
         selectedFile = file;
 
-        // [핵심] 파일의 원본 시간(lastModified)을 추출하여 캘린더에 세팅
         const fileDate = new Date(file.lastModified);
         const yyyy = fileDate.getFullYear();
         const mm = String(fileDate.getMonth() + 1).padStart(2, '0');
@@ -215,8 +214,8 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             $('#image-preview').attr('src', e.target.result);
-            $('#initial-upload-wrapper').hide(); // 구름 아이콘 숨기기
-            $('#upload-container').slideDown(250); // 작성칸 보이기
+            $('#initial-upload-wrapper').hide(); 
+            $('#upload-container').slideDown(250); 
         }
         reader.readAsDataURL(file);
     });
@@ -228,7 +227,7 @@
         $('#archive-title').val('');
         $('#archive-caption').val('');
         $('#upload-container').slideUp(200, function() {
-            $('#initial-upload-wrapper').fadeIn(200); // 구름 아이콘 다시 보이기
+            $('#initial-upload-wrapper').fadeIn(200); 
         });
     };
 
@@ -320,7 +319,7 @@
                 const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
                 const dd = String(dateObj.getDate()).padStart(2, '0');
                 const displayDate = `${yyyy}.${mm}.${dd}`;
-                const inputDate = `${yyyy}-${mm}-${dd}`; // 수정을 위한 YYYY-MM-DD 포맷
+                const inputDate = `${yyyy}-${mm}-${dd}`; 
 
                 let imageUrl = post.content;
                 let captionText = "";
@@ -334,12 +333,13 @@
                 const safeCaption = captionText ? captionText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 const searchText = `${post.title || ''} ${captionText} ${displayDate}`;
 
+                // [요청 반영] justify-content: flex-end 로 설정하여 날짜를 우측으로 배치
                 const postHtml = `
                     <div class="gallery-wrapper-item" data-search="${searchText}">
                         <div class="gallery-item fade-in-element" onclick="openArchiveLightbox(${post.id}, '${imageUrl}', '${safeTitle}', '${safeCaption}', '${displayDate}', '${inputDate}')">
                             <img src="${imageUrl}" alt="archive image" loading="lazy">
                             <div class="gallery-overlay">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                                <div style="display: flex; justify-content: flex-end; align-items: flex-start; width: 100%;">
                                     <span class="gallery-date">${displayDate}</span>
                                 </div>
                                 <div class="gallery-hover-title">${post.title || ''}</div>
@@ -400,7 +400,7 @@
         
         $('#edit-archive-title').val(title || '');
         $('#edit-archive-caption').val(caption || '');
-        $('#edit-archive-date').val(inputDate || ''); // 캘린더에 날짜 매핑
+        $('#edit-archive-date').val(inputDate || ''); 
         
         $('#lightbox-read-mode').show();
         $('#lightbox-edit-mode').hide();
