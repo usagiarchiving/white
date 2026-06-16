@@ -1,7 +1,7 @@
 <style>
     .daily-wrapper {
         position: relative;
-        padding-top: 15px; 
+        padding-top: 12px; /* [수정] 글로벌 헤더와의 여백을 완전히 없애서 위로 바짝 붙임 */
         height: calc(100vh - 180px);
         min-height: 500px;
         display: flex;
@@ -9,9 +9,19 @@
     }
 
     /* ==========================================================================
-       [요청] 검색창 레이아웃 (Memo와 동일)
+       [수정] 우측 상단 액션 바 (검색창과 글쓰기 버튼을 15px 간격으로 한 줄에 배치)
        ========================================================================== */
-    .search-wrapper { display: flex; justify-content: flex-end; margin-bottom: 25px; width: 100%; flex-shrink: 0; }
+    .daily-top-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 15px; /* [요청사항] 두 버튼 사이의 정확한 간격: 15px */
+        margin-bottom: 25px; /* 타이틀과의 아래쪽 여백 */
+        width: 100%;
+        flex-shrink: 0;
+    }
+
+    /* 검색창 디자인 */
     .search-inner { position: relative; display: flex; align-items: center; }
     #daily-search {
         background: transparent; border: none; border-bottom: 1px solid transparent;
@@ -25,28 +35,20 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* 상단 타임 컨트롤러 및 글쓰기 버튼 (2단 분리) */
-    .daily-header-bar {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-bottom: 30px;
-        flex-shrink: 0;
-    }
-
-    .daily-write-container {
-        width: 100%;
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 5px; 
-    }
+    /* 글쓰기 버튼 디자인 (버튼 크기와 패딩 축소) */
     .daily-write-btn {
         background: none; border: none; color: var(--sub-color); opacity: 0.35;
         font-size: 15px; cursor: pointer; transition: opacity 0.3s;
-        padding: 10px; margin-right: -10px; 
+        padding: 6px; /* [수정] 기존 10px에서 6px로 줄여 날렵하게 만듦 */
+        display: flex; align-items: center; justify-content: center;
     }
-    .daily-write-btn:hover { opacity: 0.7; }
+    .daily-write-btn:hover { opacity: 0.7; color: var(--point-color); }
 
+    /* 중앙 년/월 선택기 */
+    .daily-header-bar {
+        display: flex; flex-direction: column; align-items: center;
+        margin-bottom: 30px; flex-shrink: 0;
+    }
     .ym-selector-container {
         display: flex; align-items: center; justify-content: center;
     }
@@ -55,7 +57,6 @@
         letter-spacing: 3px; color: var(--main-color); cursor: pointer; transition: opacity 0.2s;
     }
     #ym-display:hover { opacity: 0.6; }
-    
     #ym-picker {
         background: transparent; border: none; color: var(--main-color);
         font-family: 'Noto Serif KR', serif; font-size: 14.5px; letter-spacing: 2px;
@@ -64,19 +65,13 @@
 
     /* 레이아웃: 좌측 탭 / 우측 본문 */
     .daily-layout {
-        display: flex;
-        gap: 40px; /* 기본 데스크탑 간격 */
-        flex: 1;
-        overflow: hidden; 
+        display: flex; gap: 40px; flex: 1; overflow: hidden; 
     }
-
-    /* [요청] 모바일 기준 좌우 여백 밸런스 조정 */
     @media (max-width: 768px) {
-        .daily-layout {
-            gap: 20px; /* 날짜 탭과 본문 사이의 간격을 줄여 양옆 여백 비율을 완벽하게 맞춤 */
-        }
+        .daily-layout { gap: 20px; } /* 모바일 좌우 밸런스 */
     }
 
+    /* 좌측 날짜 트랙 */
     .daily-tabs {
         width: 35px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px;
         height: 100%; overflow-y: auto; padding-bottom: 40px;
@@ -91,6 +86,7 @@
     .daily-tab-num:hover { opacity: 0.7; }
     .daily-tab-num.active { opacity: 1; color: var(--point-color); font-weight: bold; }
 
+    /* 우측 본문 영역 */
     .daily-content-area {
         flex: 1; height: 100%; overflow-y: auto; padding-bottom: 60px;
         display: flex; flex-direction: column; gap: 20px; 
@@ -98,21 +94,16 @@
     }
     .daily-content-area::-webkit-scrollbar { display: none; }
 
-    .daily-post-item {
-        display: flex; flex-direction: column; gap: 10px;
-    }
+    .daily-post-item { display: flex; flex-direction: column; gap: 10px; }
     
-    .daily-post-img-wrapper {
-        width: 100%;
-        cursor: pointer; /* 사진을 눌러도 수정/삭제 가능하게 포인터 추가 */
-    }
+    .daily-post-img-wrapper { width: 100%; cursor: pointer; }
     .daily-post-img {
         width: 100%; max-height: 450px; object-fit: cover;
         border-radius: 6px; border: 1px solid var(--divider-bg);
     }
 
     .daily-post-title {
-        font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);
+        font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color); cursor: pointer;
     }
     
     .daily-post-text {
@@ -231,17 +222,15 @@
 
 <div class="daily-wrapper">
     
-    <div class="search-wrapper">
+    <div class="daily-top-actions">
         <div class="search-inner">
             <input type="text" id="daily-search" autocomplete="off" placeholder="검색">
             <i class="xi-search" id="search-icon" title="검색 열기"></i>
         </div>
+        <button class="daily-write-btn" onclick="openDailyWriteModal()" title="일기 쓰기"><i class="xi-pen"></i></button>
     </div>
 
     <div class="daily-header-bar">
-        <div class="daily-write-container">
-            <button class="daily-write-btn" onclick="openDailyWriteModal()" title="일기 쓰기"><i class="xi-pen"></i></button>
-        </div>
         <div class="ym-selector-container">
             <span id="ym-display" onclick="showYMPicker()" title="년/월 변경"></span>
             <input type="month" id="ym-picker" style="display: none;" onchange="handleYMChange()" onblur="handleYMChange()">
@@ -250,7 +239,6 @@
 
     <div class="daily-layout">
         <div class="daily-tabs" id="daily-tabs"></div>
-
         <div class="daily-content-area" id="daily-content-area"></div>
     </div>
 
@@ -287,22 +275,24 @@
 </div>
 
 <script>
-    const DAILY_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
-    const DAILY_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    const dailySupabase = window.supabase.createClient(DAILY_URL, DAILY_KEY);
+    // ==========================================================================
+    // [중요] 카테고리 전환 시 오류 방지를 위해 모든 변수를 'var'로 변경했습니다!
+    // ==========================================================================
+    var DAILY_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+    var DAILY_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
+    var dailySupabase = window.supabase.createClient(DAILY_URL, DAILY_KEY);
 
-    let currentYear = new Date().getFullYear();
-    let currentMonth = new Date().getMonth() + 1;
-    let selectedDay = new Date().getDate(); 
+    var currentYear = new Date().getFullYear();
+    var currentMonth = new Date().getMonth() + 1;
+    var selectedDay = new Date().getDate(); 
     
-    let allDailyPosts = []; // 검색을 위해 해당 DB의 모든 데이터를 저장할 배열
-    let allMonthPosts = []; 
-    let selectedFile = null;
-    let isEditing = false;
+    var allDailyPosts = []; 
+    var allMonthPosts = []; 
+    var selectedFile = null;
+    var isEditing = false;
 
-    // --- [1] 초기 설정 ---
     function initDaily() {
-        const today = new Date();
+        var today = new Date();
         currentYear = today.getFullYear();
         currentMonth = today.getMonth() + 1;
         selectedDay = today.getDate();
@@ -313,7 +303,7 @@
 
     function updateYMDisplay() {
         $('#ym-display').text(`${currentYear}년 ${currentMonth}월`).show();
-        const mm = String(currentMonth).padStart(2, '0');
+        var mm = String(currentMonth).padStart(2, '0');
         $('#ym-picker').val(`${currentYear}-${mm}`).hide();
     }
 
@@ -323,9 +313,9 @@
     };
 
     window.handleYMChange = function() {
-        const val = $('#ym-picker').val();
+        var val = $('#ym-picker').val();
         if(val) {
-            const parts = val.split('-');
+            var parts = val.split('-');
             currentYear = parseInt(parts[0], 10);
             currentMonth = parseInt(parts[1], 10);
             selectedDay = 1; 
@@ -334,21 +324,20 @@
         filterMonthData();
     };
 
-    // --- [2] 좌측 탭 렌더링 ---
     function renderTabs() {
-        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        var daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         if (selectedDay > daysInMonth) selectedDay = daysInMonth; 
 
-        let html = '';
-        for(let i = 1; i <= daysInMonth; i++) {
-            const isActive = (i === selectedDay) ? 'active' : '';
-            const displayDay = String(i).padStart(2, '0');
+        var html = '';
+        for(var i = 1; i <= daysInMonth; i++) {
+            var isActive = (i === selectedDay) ? 'active' : '';
+            var displayDay = String(i).padStart(2, '0');
             html += `<span class="daily-tab-num fade-in-element ${isActive}" id="tab-day-${i}" onclick="selectDay(${i})">${displayDay}</span>`;
         }
         $('#daily-tabs').html(html);
 
         setTimeout(() => {
-            const activeTab = document.getElementById(`tab-day-${selectedDay}`);
+            var activeTab = document.getElementById(`tab-day-${selectedDay}`);
             if(activeTab) {
                 activeTab.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
@@ -362,16 +351,12 @@
         renderContentForSelectedDay();
     };
 
-    // --- [3] 데이터 로드 및 우측 본문 렌더링 ---
     async function fetchMonthData() {
         try {
-            // 전체 데이터를 다 가져옴 (글로벌 검색을 위해)
-            const { data, error } = await dailySupabase.from('posts').select('*').eq('category', 'daily');
+            var { data, error } = await dailySupabase.from('posts').select('*').eq('category', 'daily');
             if (error) throw error;
-
             allDailyPosts = data; 
             filterMonthData();
-
         } catch (error) {
             console.error("데이터 로드 실패:", error);
         }
@@ -379,19 +364,18 @@
 
     function filterMonthData() {
         allMonthPosts = allDailyPosts.filter(post => {
-            const pd = new Date(post.created_at);
+            var pd = new Date(post.created_at);
             return pd.getFullYear() === currentYear && (pd.getMonth() + 1) === currentMonth;
         });
-        
         renderTabs();
         renderContentForSelectedDay();
     }
 
     function renderContentForSelectedDay() {
-        const container = $('#daily-content-area');
+        var container = $('#daily-content-area');
         container.empty();
 
-        const dayPosts = allMonthPosts.filter(p => new Date(p.created_at).getDate() === selectedDay)
+        var dayPosts = allMonthPosts.filter(p => new Date(p.created_at).getDate() === selectedDay)
                                       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
         if(dayPosts.length === 0) {
@@ -402,19 +386,17 @@
         renderPostList(dayPosts, container, false);
     }
 
-    // 포스트 HTML 생성기 (일반 렌더링 & 검색 렌더링 공용)
     function renderPostList(postArray, container, isSearchResult) {
         postArray.forEach(post => {
-            let imageUrl = "";
-            let textHtml = post.content;
+            var imageUrl = "";
+            var textHtml = post.content;
             if (post.content && post.content.includes("|||")) {
-                const parts = post.content.split("|||");
+                var parts = post.content.split("|||");
                 imageUrl = parts[0];
                 textHtml = parts[1] || "";
             }
 
-            // [요청] 이미지만 올렸을 경우 사진을 눌러도 수정/삭제가 열리도록 img-wrapper에 onclick 부여
-            let imgBlock = "";
+            var imgBlock = "";
             if (imageUrl) {
                 imgBlock = `
                     <div class="daily-post-img-wrapper" onclick="toggleDailyAdmin(${post.id})">
@@ -423,19 +405,18 @@
                 `;
             }
 
-            let titleBlock = post.title ? `<div class="daily-post-title" onclick="toggleDailyAdmin(${post.id})">${post.title}</div>` : "";
+            var titleBlock = post.title ? `<div class="daily-post-title" onclick="toggleDailyAdmin(${post.id})">${post.title}</div>` : "";
             
-            // 검색 결과일 때만 해당 글의 날짜를 위에 조그맣게 표시
-            let searchDateBlock = "";
+            var searchDateBlock = "";
             if (isSearchResult) {
-                const pd = new Date(post.created_at);
+                var pd = new Date(post.created_at);
                 searchDateBlock = `<div style="font-size: 11px; color: var(--sub-color); margin-bottom: 5px;">${pd.getFullYear()}년 ${pd.getMonth()+1}월 ${pd.getDate()}일</div>`;
             }
 
-            const safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-            const safeText = textHtml ? textHtml.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+            var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+            var safeText = textHtml ? textHtml.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
 
-            const postHtml = `
+            var postHtml = `
                 <div class="daily-post-item fade-in-element" id="daily-post-${post.id}">
                     ${searchDateBlock}
                     ${imgBlock}
@@ -458,7 +439,7 @@
         $(`#daily-admin-${id}`).slideToggle(150).css('display', 'flex');
     };
 
-    // --- [5] 검색 기능 ---
+    // 검색 기능
     $('#search-icon').click(function() {
         $('#daily-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
         $(this).css('opacity', '0.7');
@@ -468,13 +449,13 @@
         if($(this).val().trim() === '') {
             $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
             $('#search-icon').css('opacity', '0.35');
-            renderContentForSelectedDay(); // 원상복구
+            renderContentForSelectedDay(); 
         }
     });
 
     $('#daily-search').on('input', function() {
-        const keyword = $(this).val().toLowerCase();
-        const container = $('#daily-content-area');
+        var keyword = $(this).val().toLowerCase();
+        var container = $('#daily-content-area');
         
         if (keyword.trim() === '') {
             renderContentForSelectedDay();
@@ -482,28 +463,25 @@
         }
         
         container.empty();
-        
-        // 전체 Daily 기록 중에서 키워드가 포함된 것 찾기
-        const matchedPosts = allDailyPosts.filter(post => {
-            let textHtml = post.content || '';
-            const safeTitle = post.title || '';
-            const pd = new Date(post.created_at);
-            const dateStr = `${pd.getFullYear()}년 ${pd.getMonth()+1}월 ${pd.getDate()}일`;
+        var matchedPosts = allDailyPosts.filter(post => {
+            var textHtml = post.content || '';
+            var safeTitle = post.title || '';
+            var pd = new Date(post.created_at);
+            var dateStr = `${pd.getFullYear()}년 ${pd.getMonth()+1}월 ${pd.getDate()}일`;
             
             return (textHtml.toLowerCase().includes(keyword) || 
                     safeTitle.toLowerCase().includes(keyword) ||
                     dateStr.includes(keyword));
-        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // 검색 결과는 최신순 나열
+        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); 
 
         if(matchedPosts.length === 0) {
             container.html('<p style="font-size: 12px; color: var(--sub-color); opacity: 0.5; font-family: \'Noto Serif KR\', serif; padding-top: 20px;">검색 결과가 없습니다.</p>');
             return;
         }
 
-        renderPostList(matchedPosts, container, true); // true = 검색결과 모드 (날짜표시)
+        renderPostList(matchedPosts, container, true);
     });
 
-    // --- [6] 모달 창 및 작성 로직 ---
     window.openDailyWriteModal = function() {
         isEditing = false;
         $('#daily-edit-id').val('');
@@ -512,8 +490,8 @@
         $('#daily-modal-content').html('');
         removeDailyPreview();
 
-        const mm = String(currentMonth).padStart(2, '0');
-        const dd = String(selectedDay).padStart(2, '0');
+        var mm = String(currentMonth).padStart(2, '0');
+        var dd = String(selectedDay).padStart(2, '0');
         $('#daily-modal-date').val(`${currentYear}-${mm}-${dd}`);
 
         $('#daily-lightbox').css('display', 'flex').hide().fadeIn(200);
@@ -534,10 +512,10 @@
             removeDailyPreview();
         }
 
-        const dateObj = new Date(createdAt);
-        const yyyy = dateObj.getFullYear();
-        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const dd = String(dateObj.getDate()).padStart(2, '0');
+        var dateObj = new Date(createdAt);
+        var yyyy = dateObj.getFullYear();
+        var mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        var dd = String(dateObj.getDate()).padStart(2, '0');
         $('#daily-modal-date').val(`${yyyy}-${mm}-${dd}`);
 
         $('#daily-lightbox').css('display', 'flex').hide().fadeIn(200);
@@ -548,10 +526,10 @@
     };
 
     $('#daily-file-input').on('change', function(e) {
-        const file = e.target.files[0];
+        var file = e.target.files[0];
         if (!file) return;
         selectedFile = file;
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(e) {
             $('#daily-image-preview').attr('src', e.target.result);
             $('#daily-preview-wrap').slideDown(200);
@@ -569,10 +547,10 @@
     };
 
     window.saveDailyPost = async function() {
-        const titleVal = $('#daily-modal-title').val().trim();
-        const textVal = $('#daily-modal-content').html().trim();
-        const dateVal = $('#daily-modal-date').val();
-        const btn = $('#daily-submit-btn');
+        var titleVal = $('#daily-modal-title').val().trim();
+        var textVal = $('#daily-modal-content').html().trim();
+        var dateVal = $('#daily-modal-date').val();
+        var btn = $('#daily-submit-btn');
 
         if (!textVal && !selectedFile && !$('#daily-edit-img-url').val()) {
             alert("사진이나 기록을 남겨주세요."); return;
@@ -581,36 +559,36 @@
         try {
             btn.prop('disabled', true).css('opacity', '0.3');
 
-            let finalImageUrl = isEditing ? $('#daily-edit-img-url').val() : "";
+            var finalImageUrl = isEditing ? $('#daily-edit-img-url').val() : "";
 
             if (selectedFile) {
-                const fileExt = selectedFile.name.split('.').pop();
-                const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-                const { error: uploadError } = await dailySupabase.storage.from('images').upload(fileName, selectedFile);
+                var fileExt = selectedFile.name.split('.').pop();
+                var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+                var { error: uploadError } = await dailySupabase.storage.from('images').upload(fileName, selectedFile);
                 if (uploadError) throw uploadError;
                 
-                const { data: publicUrlData } = dailySupabase.storage.from('images').getPublicUrl(fileName);
+                var { data: publicUrlData } = dailySupabase.storage.from('images').getPublicUrl(fileName);
                 finalImageUrl = publicUrlData.publicUrl;
             }
 
-            const contentString = finalImageUrl ? (finalImageUrl + "|||" + textVal) : textVal;
+            var contentString = finalImageUrl ? (finalImageUrl + "|||" + textVal) : textVal;
 
-            let finalDate = new Date();
+            var finalDate = new Date();
             if (dateVal) {
-                const parts = dateVal.split('-');
+                var parts = dateVal.split('-');
                 finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
             }
-            const offset = finalDate.getTimezoneOffset() * 60000;
-            const localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+            var offset = finalDate.getTimezoneOffset() * 60000;
+            var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
 
             if (isEditing) {
-                const postId = $('#daily-edit-id').val();
-                const { error } = await dailySupabase.from('posts').update({ 
+                var postId = $('#daily-edit-id').val();
+                var { error } = await dailySupabase.from('posts').update({ 
                     title: titleVal, content: contentString, created_at: localISOString 
                 }).eq('id', postId);
                 if (error) throw error;
             } else {
-                const { error } = await dailySupabase.from('posts').insert([{ 
+                var { error } = await dailySupabase.from('posts').insert([{ 
                     category: 'daily', title: titleVal, content: contentString, created_at: localISOString 
                 }]);
                 if (error) throw error;
@@ -619,7 +597,7 @@
             closeDailyModal();
             
             if (dateVal) {
-                const parts = dateVal.split('-');
+                var parts = dateVal.split('-');
                 currentYear = parseInt(parts[0], 10);
                 currentMonth = parseInt(parts[1], 10);
                 selectedDay = parseInt(parts[2], 10);
@@ -637,21 +615,20 @@
     window.deleteDailyPost = async function(id) {
         if (!confirm("이 기록을 지우시겠습니까?")) return;
         try {
-            const { error } = await dailySupabase.from('posts').delete().eq('id', id);
+            var { error } = await dailySupabase.from('posts').delete().eq('id', id);
             if (error) throw error;
             fetchMonthData();
         } catch (error) { alert('삭제하지 못했습니다.'); }
     };
 
-    // --- [7] 웹 에디터 툴바 로직 ---
-    let savedSelectionRange = null;
+    var savedSelectionRange = null;
     window.saveSelection = function() {
-        const selection = window.getSelection();
+        var selection = window.getSelection();
         if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0);
     };
     window.applyCustomColor = function(command, color) {
         if (savedSelectionRange) {
-            const selection = window.getSelection();
+            var selection = window.getSelection();
             selection.removeAllRanges(); selection.addRange(savedSelectionRange);
         }
         document.execCommand(command, false, color); checkSelection();
@@ -659,11 +636,11 @@
 
     function checkSelection() {
         setTimeout(() => {
-            const selection = window.getSelection();
-            const toolbar = document.getElementById('format-toolbar');
+            var selection = window.getSelection();
+            var toolbar = document.getElementById('format-toolbar');
             if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-                let node = selection.anchorNode;
-                let isInsideEditor = false;
+                var node = selection.anchorNode;
+                var isInsideEditor = false;
                 while (node) {
                     if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') {
                         isInsideEditor = true; break;
@@ -671,11 +648,11 @@
                     node = node.parentNode;
                 }
                 if (isInsideEditor) {
-                    const range = selection.getRangeAt(0);
-                    const rect = range.getBoundingClientRect();
+                    var range = selection.getRangeAt(0);
+                    var rect = range.getBoundingClientRect();
                     toolbar.style.display = 'flex';
-                    let top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
-                    let left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
+                    var top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
+                    var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
                     if (top < window.scrollY) top = rect.bottom + window.scrollY + 8;
                     if (left < 10) left = 10;
                     toolbar.style.top = top + 'px'; toolbar.style.left = left + 'px';
@@ -695,6 +672,5 @@
         document.execCommand('backColor', false, bgColor); checkSelection();
     };
 
-    // 초기화
     setTimeout(() => { initDaily(); }, 100);
 </script>
