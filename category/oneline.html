@@ -1,4 +1,3 @@
-<!-- 파일명: category/oneline.html -->
 <style>
     /* 1. 모바일 맞춤 레이아웃 */
     .oneline-read-mode {
@@ -72,7 +71,6 @@
     }
 </style>
 
-<!-- 글자 드래그 시 나타나는 플로팅 툴바 -->
 <div id="format-toolbar" class="format-toolbar">
     <button onmousedown="event.preventDefault(); formatText('bold')" title="굵게"><i class="xi-bold"></i></button>
     <button onmousedown="event.preventDefault(); formatText('italic')" title="기울임"><i class="xi-italic"></i></button>
@@ -117,14 +115,14 @@
 
 <script>
     /** ==========================================================================
-     * [독립형 아키텍처] Supabase 및 툴바 로직 
+     * [독립형 아키텍처] Supabase 및 툴바 로직 (var 처리로 재진입 먹통 현상 해결)
      * ========================================================================== */
-    const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
+    var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     /* --- [에디터 & 툴바 로직] --- */
-    let savedSelectionRange = null;
+    var savedSelectionRange = null;
 
     window.saveSelection = function() {
         const selection = window.getSelection();
