@@ -1,13 +1,29 @@
 <style>
     .daily-wrapper {
         position: relative;
-        padding-top: 15px; /* 상단 글로벌 메뉴와 여유 간격 추가 */
-        /* 독립 스크롤을 위해 전체 높이 고정 (헤더 등 제외한 영역) */
+        padding-top: 15px; 
         height: calc(100vh - 180px);
         min-height: 500px;
         display: flex;
         flex-direction: column;
     }
+
+    /* ==========================================================================
+       [요청] 검색창 레이아웃 (Memo와 동일)
+       ========================================================================== */
+    .search-wrapper { display: flex; justify-content: flex-end; margin-bottom: 25px; width: 100%; flex-shrink: 0; }
+    .search-inner { position: relative; display: flex; align-items: center; }
+    #daily-search {
+        background: transparent; border: none; border-bottom: 1px solid transparent;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px;
+        outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0;
+        transition: width 0.4s ease, opacity 0.3s, border-color 0.4s;
+    }
+    #search-icon {
+        position: absolute; right: 0; color: var(--sub-color); opacity: 0.35;
+        cursor: pointer; font-size: 15px; transition: opacity 0.3s; z-index: 10;
+    }
+    #search-icon:hover { opacity: 0.7; }
 
     /* 상단 타임 컨트롤러 및 글쓰기 버튼 (2단 분리) */
     .daily-header-bar {
@@ -18,151 +34,94 @@
         flex-shrink: 0;
     }
 
-    /* 우측 상단 미니멀 글쓰기 버튼 영역 */
     .daily-write-container {
         width: 100%;
         display: flex;
         justify-content: flex-end;
-        margin-bottom: 5px; /* 버튼과 년월 사이의 간격 */
+        margin-bottom: 5px; 
     }
     .daily-write-btn {
-        background: none;
-        border: none;
-        color: var(--sub-color);
-        opacity: 0.35;
-        font-size: 15px;
-        cursor: pointer;
-        transition: opacity 0.3s;
-        /* 모바일 터치를 위해 눈에 안 보이는 패딩(클릭 영역) 확대 */
-        padding: 10px; 
-        margin-right: -10px; /* 패딩 때문에 밀려나는 우측 여백 보정 */
+        background: none; border: none; color: var(--sub-color); opacity: 0.35;
+        font-size: 15px; cursor: pointer; transition: opacity 0.3s;
+        padding: 10px; margin-right: -10px; 
     }
     .daily-write-btn:hover { opacity: 0.7; }
 
-    /* 년/월 선택기 */
     .ym-selector-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: flex; align-items: center; justify-content: center;
     }
     #ym-display {
-        font-family: 'Noto Serif KR', serif;
-        font-size: 14.5px;
-        font-weight: 400;
-        letter-spacing: 3px; 
-        color: var(--main-color);
-        cursor: pointer;
-        transition: opacity 0.2s;
+        font-family: 'Noto Serif KR', serif; font-size: 14.5px; font-weight: 400;
+        letter-spacing: 3px; color: var(--main-color); cursor: pointer; transition: opacity 0.2s;
     }
     #ym-display:hover { opacity: 0.6; }
     
     #ym-picker {
-        background: transparent;
-        border: none;
-        color: var(--main-color);
-        font-family: 'Noto Serif KR', serif;
-        font-size: 14.5px;
-        letter-spacing: 2px;
-        outline: none;
-        cursor: pointer;
-        text-align: center;
+        background: transparent; border: none; color: var(--main-color);
+        font-family: 'Noto Serif KR', serif; font-size: 14.5px; letter-spacing: 2px;
+        outline: none; cursor: pointer; text-align: center;
     }
 
-    /* 레이아웃: 좌측 탭 / 우측 본문 (독립 스크롤) */
+    /* 레이아웃: 좌측 탭 / 우측 본문 */
     .daily-layout {
         display: flex;
-        gap: 40px; 
+        gap: 40px; /* 기본 데스크탑 간격 */
         flex: 1;
         overflow: hidden; 
     }
 
-    /* 좌측 날짜 트랙 */
+    /* [요청] 모바일 기준 좌우 여백 밸런스 조정 */
+    @media (max-width: 768px) {
+        .daily-layout {
+            gap: 20px; /* 날짜 탭과 본문 사이의 간격을 줄여 양옆 여백 비율을 완벽하게 맞춤 */
+        }
+    }
+
     .daily-tabs {
-        width: 35px;
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        height: 100%;
-        overflow-y: auto;
-        padding-bottom: 40px;
-        -ms-overflow-style: none; 
-        scrollbar-width: none;
+        width: 35px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px;
+        height: 100%; overflow-y: auto; padding-bottom: 40px;
+        -ms-overflow-style: none; scrollbar-width: none;
     }
     .daily-tabs::-webkit-scrollbar { display: none; }
     
     .daily-tab-num {
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 13.5px;
-        color: var(--sub-color);
-        opacity: 0.35;
-        cursor: pointer;
-        transition: 0.2s ease;
-        text-align: left;
+        font-family: 'Courier New', Courier, monospace; font-size: 13.5px; color: var(--sub-color);
+        opacity: 0.35; cursor: pointer; transition: 0.2s ease; text-align: left;
     }
     .daily-tab-num:hover { opacity: 0.7; }
-    .daily-tab-num.active {
-        opacity: 1;
-        color: var(--point-color);
-        font-weight: bold;
-    }
+    .daily-tab-num.active { opacity: 1; color: var(--point-color); font-weight: bold; }
 
-    /* 우측 본문 영역 */
     .daily-content-area {
-        flex: 1;
-        height: 100%;
-        overflow-y: auto;
-        padding-bottom: 60px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px; /* [요청] 본문 사이 간격을 20px로 수정 */
-        -ms-overflow-style: none;
-        scrollbar-width: none;
+        flex: 1; height: 100%; overflow-y: auto; padding-bottom: 60px;
+        display: flex; flex-direction: column; gap: 20px; 
+        -ms-overflow-style: none; scrollbar-width: none;
     }
     .daily-content-area::-webkit-scrollbar { display: none; }
 
-    /* 개별 포스트 아이템 */
     .daily-post-item {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+        display: flex; flex-direction: column; gap: 10px;
     }
     
-    /* 이미지 정렬 */
     .daily-post-img-wrapper {
         width: 100%;
+        cursor: pointer; /* 사진을 눌러도 수정/삭제 가능하게 포인터 추가 */
     }
     .daily-post-img {
-        width: 100%;
-        max-height: 450px; 
-        object-fit: cover;
-        border-radius: 6px;
-        border: 1px solid var(--divider-bg);
+        width: 100%; max-height: 450px; object-fit: cover;
+        border-radius: 6px; border: 1px solid var(--divider-bg);
     }
 
     .daily-post-title {
-        font-family: 'Noto Serif KR', serif;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--main-color);
+        font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);
     }
     
     .daily-post-text {
-        font-family: 'Noto Serif KR', serif;
-        font-size: 13.5px;
-        color: var(--main-color);
-        line-height: 1.8;
-        word-break: break-all;
-        white-space: pre-wrap;
-        cursor: pointer; 
+        font-family: 'Noto Serif KR', serif; font-size: 13.5px; color: var(--main-color);
+        line-height: 1.8; word-break: break-all; white-space: pre-wrap; cursor: pointer; 
     }
 
-    /* 클릭 시 나타나는 수정/삭제 버튼 */
     .daily-admin-menu {
-        display: none; 
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 4px;
+        display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;
     }
     .admin-btn {
         background: none; border: none; font-size: 11.5px;
@@ -171,22 +130,18 @@
     .admin-btn.edit { color: var(--point-color); }
     .admin-btn.delete { color: #ff3b30; }
 
-    /* ==========================================================================
-       모달 (화이트 큐브 팝업 카드)
-       ========================================================================== */
+    /* 모달 */
     .daily-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
         z-index: 20000; align-items: center; justify-content: center; padding: 20px;
     }
     .daily-lightbox-card {
-        background: #ffffff; 
-        border: 1px solid var(--divider-bg); border-radius: 6px;
+        background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 6px;
         padding: 30px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
         box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px;
     }
 
-    /* 팝업 내 입력 폼 */
     .daily-modal-title {
         background: transparent; border: none; border-bottom: 1px solid var(--divider-bg);
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 14px;
@@ -201,7 +156,6 @@
     }
     [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.6; pointer-events: none; }
 
-    /* 이미지 첨부 버튼 */
     .daily-add-img-btn {
         display: inline-block; cursor: pointer; color: var(--sub-color); font-size: 18px;
         transition: 0.2s; opacity: 0.4;
@@ -212,8 +166,7 @@
     .daily-preview-wrap img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 4px; }
     
     .daily-remove-preview {
-        position: absolute; top: -6px; right: -6px; 
-        background: var(--point-color); color: #fff;
+        position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff;
         border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer;
         display: flex; align-items: center; justify-content: center; font-size: 9px;
     }
@@ -278,6 +231,13 @@
 
 <div class="daily-wrapper">
     
+    <div class="search-wrapper">
+        <div class="search-inner">
+            <input type="text" id="daily-search" autocomplete="off" placeholder="검색">
+            <i class="xi-search" id="search-icon" title="검색 열기"></i>
+        </div>
+    </div>
+
     <div class="daily-header-bar">
         <div class="daily-write-container">
             <button class="daily-write-btn" onclick="openDailyWriteModal()" title="일기 쓰기"><i class="xi-pen"></i></button>
@@ -314,7 +274,6 @@
         </div>
 
         <input type="text" id="daily-modal-title" class="daily-modal-title" placeholder="title" autocomplete="off">
-        
         <div id="daily-modal-content" class="daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="기록..."></div>
 
         <div class="daily-modal-footer">
@@ -336,6 +295,7 @@
     let currentMonth = new Date().getMonth() + 1;
     let selectedDay = new Date().getDate(); 
     
+    let allDailyPosts = []; // 검색을 위해 해당 DB의 모든 데이터를 저장할 배열
     let allMonthPosts = []; 
     let selectedFile = null;
     let isEditing = false;
@@ -371,7 +331,7 @@
             selectedDay = 1; 
         }
         updateYMDisplay();
-        fetchMonthData();
+        filterMonthData();
     };
 
     // --- [2] 좌측 탭 렌더링 ---
@@ -405,20 +365,26 @@
     // --- [3] 데이터 로드 및 우측 본문 렌더링 ---
     async function fetchMonthData() {
         try {
+            // 전체 데이터를 다 가져옴 (글로벌 검색을 위해)
             const { data, error } = await dailySupabase.from('posts').select('*').eq('category', 'daily');
             if (error) throw error;
 
-            allMonthPosts = data.filter(post => {
-                const pd = new Date(post.created_at);
-                return pd.getFullYear() === currentYear && (pd.getMonth() + 1) === currentMonth;
-            });
-            
-            renderTabs();
-            renderContentForSelectedDay();
+            allDailyPosts = data; 
+            filterMonthData();
 
         } catch (error) {
             console.error("데이터 로드 실패:", error);
         }
+    }
+
+    function filterMonthData() {
+        allMonthPosts = allDailyPosts.filter(post => {
+            const pd = new Date(post.created_at);
+            return pd.getFullYear() === currentYear && (pd.getMonth() + 1) === currentMonth;
+        });
+        
+        renderTabs();
+        renderContentForSelectedDay();
     }
 
     function renderContentForSelectedDay() {
@@ -433,7 +399,12 @@
             return;
         }
 
-        dayPosts.forEach(post => {
+        renderPostList(dayPosts, container, false);
+    }
+
+    // 포스트 HTML 생성기 (일반 렌더링 & 검색 렌더링 공용)
+    function renderPostList(postArray, container, isSearchResult) {
+        postArray.forEach(post => {
             let imageUrl = "";
             let textHtml = post.content;
             if (post.content && post.content.includes("|||")) {
@@ -442,21 +413,31 @@
                 textHtml = parts[1] || "";
             }
 
+            // [요청] 이미지만 올렸을 경우 사진을 눌러도 수정/삭제가 열리도록 img-wrapper에 onclick 부여
             let imgBlock = "";
             if (imageUrl) {
                 imgBlock = `
-                    <div class="daily-post-img-wrapper">
+                    <div class="daily-post-img-wrapper" onclick="toggleDailyAdmin(${post.id})">
                         <img class="daily-post-img" src="${imageUrl}" loading="lazy">
                     </div>
                 `;
             }
 
-            let titleBlock = post.title ? `<div class="daily-post-title">${post.title}</div>` : "";
+            let titleBlock = post.title ? `<div class="daily-post-title" onclick="toggleDailyAdmin(${post.id})">${post.title}</div>` : "";
+            
+            // 검색 결과일 때만 해당 글의 날짜를 위에 조그맣게 표시
+            let searchDateBlock = "";
+            if (isSearchResult) {
+                const pd = new Date(post.created_at);
+                searchDateBlock = `<div style="font-size: 11px; color: var(--sub-color); margin-bottom: 5px;">${pd.getFullYear()}년 ${pd.getMonth()+1}월 ${pd.getDate()}일</div>`;
+            }
+
             const safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
             const safeText = textHtml ? textHtml.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
 
             const postHtml = `
                 <div class="daily-post-item fade-in-element" id="daily-post-${post.id}">
+                    ${searchDateBlock}
                     ${imgBlock}
                     ${titleBlock}
                     <div class="daily-post-text" onclick="toggleDailyAdmin(${post.id})">${textHtml}</div>
@@ -477,7 +458,52 @@
         $(`#daily-admin-${id}`).slideToggle(150).css('display', 'flex');
     };
 
-    // --- [4] 모달 창 및 작성 로직 ---
+    // --- [5] 검색 기능 ---
+    $('#search-icon').click(function() {
+        $('#daily-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
+        $(this).css('opacity', '0.7');
+    });
+    
+    $('#daily-search').blur(function() {
+        if($(this).val().trim() === '') {
+            $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
+            $('#search-icon').css('opacity', '0.35');
+            renderContentForSelectedDay(); // 원상복구
+        }
+    });
+
+    $('#daily-search').on('input', function() {
+        const keyword = $(this).val().toLowerCase();
+        const container = $('#daily-content-area');
+        
+        if (keyword.trim() === '') {
+            renderContentForSelectedDay();
+            return;
+        }
+        
+        container.empty();
+        
+        // 전체 Daily 기록 중에서 키워드가 포함된 것 찾기
+        const matchedPosts = allDailyPosts.filter(post => {
+            let textHtml = post.content || '';
+            const safeTitle = post.title || '';
+            const pd = new Date(post.created_at);
+            const dateStr = `${pd.getFullYear()}년 ${pd.getMonth()+1}월 ${pd.getDate()}일`;
+            
+            return (textHtml.toLowerCase().includes(keyword) || 
+                    safeTitle.toLowerCase().includes(keyword) ||
+                    dateStr.includes(keyword));
+        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // 검색 결과는 최신순 나열
+
+        if(matchedPosts.length === 0) {
+            container.html('<p style="font-size: 12px; color: var(--sub-color); opacity: 0.5; font-family: \'Noto Serif KR\', serif; padding-top: 20px;">검색 결과가 없습니다.</p>');
+            return;
+        }
+
+        renderPostList(matchedPosts, container, true); // true = 검색결과 모드 (날짜표시)
+    });
+
+    // --- [6] 모달 창 및 작성 로직 ---
     window.openDailyWriteModal = function() {
         isEditing = false;
         $('#daily-edit-id').val('');
@@ -617,7 +643,7 @@
         } catch (error) { alert('삭제하지 못했습니다.'); }
     };
 
-    // --- [5] 웹 에디터 툴바 로직 ---
+    // --- [7] 웹 에디터 툴바 로직 ---
     let savedSelectionRange = null;
     window.saveSelection = function() {
         const selection = window.getSelection();
