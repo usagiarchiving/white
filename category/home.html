@@ -1,78 +1,546 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
-    <title>토끼굴</title>
-    
-    <link rel="apple-touch-icon" href="https://i.ibb.co/tTdNpX19/IMG-2904.jpg">
-    <link rel="icon" href="https://i.ibb.co/tTdNpX19/IMG-2904.jpg">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&display=swap" />
-    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
-    
-    <link rel="stylesheet" href="style.css" />
-    
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
+<style>
+    /* ==========================================================================
+       [구조] 중앙 정렬된 컨테이너 속 완벽한 좌측 정렬 및 블록화
+       ========================================================================== */
+    .home-wrapper {
+        position: relative;
+        padding-top: 10px; /* 헤더와의 간격 밀착 */
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
 
-    <div class="wrap">
-        <div class="container">
-            
-            <header id="header">
-                <div class="inner">
-                    <h1 class="logo"><a href="#" onclick="loadPage('category/home.html'); return false;">토끼굴</a></h1>
-                    <div class="header-right">
-                        
-                        <button id="theme-toggle" class="icon-btn" onclick="toggleTheme()" title="테마 변경">
-                            <i id="theme-icon" class="xi-sun"></i>
-                        </button>
-                        
-                        <button id="btn-home" class="icon-btn" onclick="loadPage('category/home.html')" title="홈으로">
-                            <i id="home-icon" class="xi-heart"></i>
-                        </button>
+    .home-container {
+        width: 100%;
+        max-width: 680px; 
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+    }
 
-                        <div class="dropdown">
-                            <button class="dropdown-bars icon-btn"><i id="menu-icon" class="xi-bars"></i></button>
-                            <div class="dropdown-inner" id="dropdown-menu"></div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+    /* 모바일 전용 가로형 이미지 (평소 숨김) */
+    .home-mobile-img-wrap {
+        display: none;
+        width: 100%;
+        height: 220px;
+        margin-bottom: 25px;
+    }
+    .home-mobile-img-wrap img {
+        width: 100%; height: 100%;
+        object-fit: cover; object-position: center;
+        border-radius: 4px; border: 1px solid var(--divider-bg);
+    }
 
-            <main id="main">
-                <div class="inner_index">
-                    <div id="content-area"></div>
-                </div>
-            </main>
+    /* ==========================================================================
+       [1단] 좌측: 텍스트 / 우측: PC형 이미지
+       ========================================================================== */
+    .home-row-1 {
+        display: flex;
+        align-items: center;
+        gap: 40px;
+        width: 100%;
+        margin-bottom: 30px;
+    }
 
+    .home-text-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    /* 타이포그래피 */
+    .home-greeting {
+        font-size: 13px; font-weight: 700; color: var(--main-color);
+        margin-bottom: 20px; letter-spacing: 0.5px;
+    }
+    .home-main-text {
+        font-size: 12px; color: var(--main-color); line-height: 2.2;
+        margin-bottom: 25px; letter-spacing: 0.3px;
+    }
+    .home-sub-text {
+        font-size: 11px; color: var(--sub-color); line-height: 2.0;
+        opacity: 0.7; word-break: keep-all; margin-bottom: 0;
+    }
+
+    /* 우측 이미지 */
+    .home-pc-img-section {
+        width: 180px; height: 240px; flex-shrink: 0;
+    }
+    .home-pc-img-section img {
+        width: 100%; height: 100%;
+        object-fit: cover; object-position: center;
+        border-radius: 4px; border: 1px solid var(--divider-bg);
+    }
+
+    /* ==========================================================================
+       [2단] 단일 바로가기 링크 (이탤릭 + 연핑크 밑줄)
+       ========================================================================== */
+    .home-row-2 {
+        width: 100%;
+        margin-bottom: 45px;
+    }
+    .home-single-link {
+        background: none; border: none; padding: 0; cursor: pointer;
+        font-family: inherit; font-size: 12px; font-style: italic; color: var(--main-color);
+        text-decoration: underline; 
+        text-decoration-color: #FDEDF4;
+        text-decoration-thickness: 4px;
+        text-underline-offset: 2px;
+        transition: color 0.2s ease, text-decoration-color 0.2s ease;
+    }
+    .home-single-link:hover {
+        color: #D04978; 
+        text-decoration-color: #D04978;
+    }
+
+    /* ==========================================================================
+       [3단] 캘린더 (비율 찌그러짐 완벽 방지)
+       ========================================================================== */
+    .home-row-3 {
+        width: 100%;
+        display: flex;
+        justify-content: flex-start;
+    }
+    .home-calendar-container {
+        width: 100%; max-width: 250px; 
+        padding-top: 10px;
+    }
+    
+    .home-cal-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 15px; font-size: 12px; color: var(--main-color);
+    }
+    
+    .ym-selector-container { display: flex; align-items: center; justify-content: center; }
+    
+    /* 캘린더 월/년 텍스트 */
+    #home-cal-month-display {
+        cursor: pointer; letter-spacing: 2px; transition: opacity 0.2s;
+    }
+    #home-cal-month-display:hover { opacity: 0.6; }
+    
+    #home-cal-picker {
+        background: transparent; border: none; color: var(--main-color);
+        font-family: 'Noto Serif KR', serif; font-size: 12px; letter-spacing: 1px;
+        outline: none; cursor: pointer; text-align: center;
+    }
+
+    .home-cal-nav {
+        cursor: pointer; color: var(--sub-color); transition: color 0.2s;
+        padding: 0 10px; font-size: 14px;
+    }
+    .home-cal-nav:hover { color: var(--point-color); }
+    
+    .home-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+    .home-cal-day-header { font-size: 10px; color: var(--sub-color); opacity: 0.5; margin-bottom: 5px; font-family: 'Courier New', monospace; }
+    
+    /* [버그 수정] 가로/세로 비율을 1:1 정사각형으로 강제 고정 */
+    .home-cal-day-wrap {
+        display: flex; justify-content: center; align-items: center;
+        width: 100%;
+        aspect-ratio: 1 / 1; 
+    }
+    /* 꽉 찬 사각형 안에서 85% 사이즈의 예쁜 동그라미로 렌더링 */
+    .home-cal-day { 
+        width: 85%; height: 85%; display: flex; justify-content: center; align-items: center;
+        font-size: 11px; color: var(--main-color); cursor: pointer; 
+        border-radius: 50%; transition: background-color 0.2s, color 0.2s;
+        font-family: 'Courier New', monospace; 
+    }
+    .home-cal-day:hover { background-color: rgba(0,0,0,0.04); }
+    .home-cal-day.empty { pointer-events: none; opacity: 0; }
+    
+    /* 기록이 있는 날: 연핑크 동그라미 배경 */
+    .home-cal-day.has-log { background-color: #FDEDF4; }
+    
+    /* 오늘 날짜: 찐핑크 폰트 색상 */
+    .home-cal-day.is-today { color: #D04978; font-weight: bold; }
+
+    /* 반응형 브레이크 포인트 */
+    @media (max-width: 768px) {
+        .home-row-1 { flex-direction: column; gap: 0; margin-bottom: 25px; }
+        .home-pc-img-section { display: none; } /* PC 이미지 숨김 */
+        .home-mobile-img-wrap { display: block; } /* 모바일 이미지 등장 */
+        .home-row-3 { justify-content: center; }
+        .home-calendar-container { max-width: 100%; border-top: 1px solid var(--divider-bg); padding-top: 20px;} /* 모바일 꽉 차게 */
+    }
+
+    /* ==========================================================================
+       [홈 팝업] 데일리 작성 팝업 폼
+       ========================================================================== */
+    .home-daily-lightbox {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        z-index: 20000; align-items: center; justify-content: center; padding: 20px;
+    }
+    .home-daily-lightbox-card {
+        background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 6px;
+        padding: 30px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px;
+    }
+    .home-daily-modal-input {
+        background: transparent; border: none; border-bottom: 1px solid var(--divider-bg);
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 14px;
+        padding: 5px 0; outline: none; width: 100%; transition: 0.3s;
+    }
+    .home-daily-modal-input:focus { border-bottom-color: var(--point-color); }
+    
+    .home-daily-modal-editor {
+        width: 100%; min-height: 120px; background: transparent; border: none;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13.5px;
+        line-height: 1.8; outline: none; padding: 5px 0; word-break: break-all;
+    }
+    [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.6; pointer-events: none; }
+
+    .home-daily-add-img-btn { display: inline-block; cursor: pointer; color: var(--sub-color); font-size: 18px; transition: 0.2s; opacity: 0.4; }
+    .home-daily-add-img-btn:hover { opacity: 1; color: var(--point-color); }
+    
+    .home-daily-preview-wrap { position: relative; display: none; margin-bottom: 10px; width: 100%; text-align: center; }
+    .home-daily-image-preview { 
+        max-width: 100%; height: auto; max-height: 300px; 
+        object-fit: contain; border-radius: 4px; border: 1px solid var(--divider-bg); display: block; margin: 0 auto;
+    }
+    
+    .home-daily-remove-preview {
+        position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff;
+        border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 9px; z-index: 12;
+    }
+
+    .home-daily-modal-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--divider-bg); padding-top: 15px; }
+    .home-daily-modal-date { background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 12px; cursor: pointer; }
+    .home-daily-modal-submit { background: none; border: none; color: var(--point-color); font-size: 20px; cursor: pointer; transition: 0.2s; opacity: 0.7; padding: 0 5px; }
+    .home-daily-modal-submit:hover { opacity: 1; transform: translateX(3px); }
+
+    /* 드래그 포맷 툴바 */
+    .home-format-toolbar {
+        position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
+        border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
+        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
+    }
+    .home-format-toolbar button {
+        background: none; border: none; color: var(--main-color); font-size: 14px;
+        cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s;
+        display: flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+    }
+    .home-format-toolbar button:hover { background: rgba(0,0,0,0.05); }
+    .home-format-toolbar .divider { width: 1px; height: 16px; background: var(--divider-bg); margin: 0 4px; }
+    .home-color-picker-label { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; overflow: hidden; margin: 0; }
+    .home-color-picker-label:hover { background: rgba(0,0,0,0.05); }
+    .home-color-picker-label i { font-size: 14px; color: var(--main-color); pointer-events: none; }
+    .home-native-color-picker { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; border: none; padding: 0; }
+
+    .color-btn { 
+        font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; 
+        border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px;
+    }
+    .btn-mint { color: #0E865E !important; background: #E1F9F1 !important; }
+    .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
+</style>
+
+<div id="home-format-toolbar" class="home-format-toolbar">
+    <button onmousedown="event.preventDefault(); homeFormatText('bold')"><i class="xi-bold"></i></button>
+    <button onmousedown="event.preventDefault(); homeFormatText('italic')"><i class="xi-italic"></i></button>
+    <button onmousedown="event.preventDefault(); homeFormatText('underline')"><i class="xi-underline"></i></button>
+    <button onmousedown="event.preventDefault(); homeFormatText('strikeThrough')"><i class="xi-strikethrough"></i></button>
+    <div class="divider"></div>
+    <label class="home-color-picker-label" onmousedown="homeSaveSelection()"><i class="xi-font"></i><input type="color" class="home-native-color-picker" oninput="homeApplyCustomColor('foreColor', this.value)" onchange="homeApplyCustomColor('foreColor', this.value)"></label>
+    <label class="home-color-picker-label" onmousedown="homeSaveSelection()"><i class="xi-palette"></i><input type="color" class="home-native-color-picker" oninput="homeApplyCustomColor('backColor', this.value)" onchange="homeApplyCustomColor('backColor', this.value)"></label>
+    <div class="divider"></div>
+    <button onmousedown="event.preventDefault(); homeApplyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
+    <button onmousedown="event.preventDefault(); homeApplyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
+</div>
+
+<div class="home-wrapper fade-in-element">
+    <div class="home-container">
+        
+        <div class="home-mobile-img-wrap">
+            <img src="https://i.ibb.co/R4v4t2k7/7.jpg" alt="mobile theme">
         </div>
+        
+        <div class="home-row-1">
+            <div class="home-text-section">
+                <div class="home-greeting">당신에게 닿는 모든 문장이 따뜻하기를.</div>
+                <div class="home-main-text">
+                    특별하지 않은 것들이 특별해지는 순간을 생각합니다.<br>
+                    그래서 기록합니다. 잊지 않기 위해서가 아니라,<br>
+                    이 순간이 존재했음을 어딘가에 남겨두고 싶어서.
+                </div>
+                <div class="home-sub-text">
+                    서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
+                </div>
+            </div>
+            
+            <div class="home-pc-img-section">
+                <img src="https://i.ibb.co/xqx4ZSHF/8.jpg" alt="pc vertical theme">
+            </div>
+        </div>
+
+        <div class="home-row-2">
+            <button class="home-single-link" onclick="loadPage('category/oneline.html')">손 끝에 남은 것</button>
+        </div>
+
+        <div class="home-row-3">
+            <div class="home-calendar-container">
+                <div class="home-cal-header">
+                    <i class="xi-angle-left home-cal-nav" onclick="changeHomeCalMonth(-1)"></i>
+                    <div class="ym-selector-container">
+                        <span id="home-cal-month-display" onclick="showHomeYMPicker()" title="Change Month"></span>
+                        <input type="month" id="home-cal-picker" style="display: none;" onchange="handleHomeYMChange()" onblur="handleHomeYMChange()">
+                    </div>
+                    <i class="xi-angle-right home-cal-nav" onclick="changeHomeCalMonth(1)"></i>
+                </div>
+                <div class="home-cal-grid" id="home-cal-grid"></div>
+            </div>
+        </div>
+
     </div>
+</div>
 
-    <script>
-        const CATEGORIES = [
-            { name: 'Home',     path: 'category/home.html',     active: true },
-            { name: 'Notice',   path: 'category/notice.html',   active: false },
-            { name: '하시온',    path: 'category/hasion.html',   active: true },
-            { name: '한 줄 기록', path: 'category/oneline.html',  active: true },
-            { name: 'Archive',  path: 'category/archive.html',  active: true },
-            { name: 'Memo',     path: 'category/memo.html',     active: true },
-            { name: 'Daily',    path: 'category/daily.html',    active: true }, 
-            { name: 'Log',      path: 'category/log.html',      active: true }, 
-            { name: 'List',     path: 'category/list.html',     active: false },
-            { name: 'Todo',     path: 'category/todo.html',     active: false },
-            { name: 'Playlist', path: 'category/playlist.html', active: false },
-            { name: 'Record',   path: 'category/record.html',   active: false },
-            { name: 'Check',    path: 'category/check.html',    active: false }
-        ];
-    </script>
-    <script src="script.js"></script>
+<div id="home-daily-lightbox" class="home-daily-lightbox" onclick="if(event.target === this) closeHomeDailyModal()">
+    <div class="home-daily-lightbox-card">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <label for="home-daily-file-input" class="home-daily-add-img-btn" title="Add Image"><i class="xi-image-o"></i></label>
+            <input type="file" id="home-daily-file-input" accept="image/*" style="display: none;">
+            <i class="xi-close" onclick="closeHomeDailyModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px;"></i>
+        </div>
 
-</body>
-</html>
+        <div class="home-daily-preview-wrap" id="home-daily-preview-wrap">
+            <button class="home-daily-remove-preview" onclick="removeHomeDailyPreview()"><i class="xi-close"></i></button>
+            <img id="home-daily-image-preview" class="home-daily-image-preview" src="">
+        </div>
+
+        <input type="text" id="home-daily-modal-title" class="home-daily-modal-input" placeholder="Title" autocomplete="off">
+        <input type="text" id="home-daily-modal-tags" class="home-daily-modal-input" placeholder="tags" autocomplete="off">
+        
+        <div id="home-daily-modal-content" class="home-daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="Write here..."></div>
+
+        <div class="home-daily-modal-footer">
+            <input type="date" id="home-daily-modal-date" class="home-daily-modal-date" title="Change Date">
+            <button class="home-daily-modal-submit" id="home-daily-submit-btn" onclick="saveHomeDailyPost()">
+                <i class="xi-arrow-right"></i>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    var HOME_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+    var HOME_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
+    var homeSupabase = window.supabase.createClient(HOME_URL, HOME_KEY);
+
+    var homeCalDate = new Date();
+    var homeCalYear = homeCalDate.getFullYear();
+    var homeCalMonth = homeCalDate.getMonth() + 1;
+    var homeDailyPosts = [];
+    var homeSelectedFile = null;
+
+    async function initHomeCalendar() {
+        await fetchHomeDailyData();
+        renderHomeCalendar();
+    }
+
+    async function fetchHomeDailyData() {
+        try {
+            var { data, error } = await homeSupabase.from('posts').select('created_at').eq('category', 'daily');
+            if (error) throw error;
+            homeDailyPosts = data;
+        } catch (e) { console.error(e); }
+    }
+
+    function renderHomeCalendar() {
+        var displayStr = `${homeCalYear}년 ${homeCalMonth}월`;
+        $('#home-cal-month-display').text(displayStr).show();
+        var mm = String(homeCalMonth).padStart(2, '0');
+        $('#home-cal-picker').val(`${homeCalYear}-${mm}`).hide();
+        
+        var firstDay = new Date(homeCalYear, homeCalMonth - 1, 1).getDay();
+        var daysInMonth = new Date(homeCalYear, homeCalMonth, 0).getDate();
+        
+        var html = '';
+        var dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        dayNames.forEach(d => { html += `<div class="home-cal-day-header">${d}</div>`; });
+        
+        for (var i = 0; i < firstDay; i++) { 
+            html += `<div class="home-cal-day-wrap"><div class="home-cal-day empty"></div></div>`; 
+        }
+        
+        // 데일리 로그 작성된 날짜 취합
+        var logDays = new Set();
+        homeDailyPosts.forEach(post => {
+            var d = new Date(post.created_at);
+            if (d.getFullYear() === homeCalYear && (d.getMonth() + 1) === homeCalMonth) {
+                logDays.add(d.getDate());
+            }
+        });
+
+        // 오늘 날짜 확인용
+        var today = new Date();
+        var isCurrentMonth = (today.getFullYear() === homeCalYear && (today.getMonth() + 1) === homeCalMonth);
+        var todayDate = today.getDate();
+
+        for (var i = 1; i <= daysInMonth; i++) {
+            var classes = ['home-cal-day'];
+            if (logDays.has(i)) classes.push('has-log'); // 글쓴 날 연핑크 배경
+            if (isCurrentMonth && i === todayDate) classes.push('is-today'); // 오늘 찐핑크 글씨
+
+            html += `<div class="home-cal-day-wrap"><div class="${classes.join(' ')}" onclick="openHomeDailyModal(${i})">${i}</div></div>`;
+        }
+        
+        $('#home-cal-grid').html(html);
+    }
+
+    // 연/월 텍스트 클릭 시 변경 인풋 활성화
+    window.showHomeYMPicker = function() {
+        $('#home-cal-month-display').hide();
+        $('#home-cal-picker').show().focus();
+    };
+
+    window.handleHomeYMChange = function() {
+        var val = $('#home-cal-picker').val();
+        if(val) {
+            var parts = val.split('-');
+            homeCalYear = parseInt(parts[0], 10);
+            homeCalMonth = parseInt(parts[1], 10);
+        }
+        $('#home-cal-picker').hide();
+        $('#home-cal-month-display').show();
+        renderHomeCalendar();
+    };
+
+    window.changeHomeCalMonth = function(dir) {
+        homeCalMonth += dir;
+        if (homeCalMonth > 12) { homeCalMonth = 1; homeCalYear++; }
+        else if (homeCalMonth < 1) { homeCalMonth = 12; homeCalYear--; }
+        renderHomeCalendar();
+    };
+
+    window.openHomeDailyModal = function(day) {
+        var mm = String(homeCalMonth).padStart(2, '0');
+        var dd = String(day).padStart(2, '0');
+        $('#home-daily-modal-date').val(`${homeCalYear}-${mm}-${dd}`);
+        
+        $('#home-daily-modal-title').val('');
+        $('#home-daily-modal-tags').val('');
+        $('#home-daily-modal-content').html('');
+        removeHomeDailyPreview();
+        
+        $('#home-daily-lightbox').css('display', 'flex').hide().fadeIn(200);
+    };
+
+    window.closeHomeDailyModal = function() { $('#home-daily-lightbox').fadeOut(200); };
+
+    $('#home-daily-file-input').on('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        homeSelectedFile = file;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            $('#home-daily-image-preview').attr('src', e.target.result);
+            $('#home-daily-preview-wrap').slideDown(200);
+        }
+        reader.readAsDataURL(file);
+    });
+
+    window.removeHomeDailyPreview = function() {
+        homeSelectedFile = null;
+        $('#home-daily-file-input').val('');
+        $('#home-daily-preview-wrap').slideUp(200, function() {
+            $('#home-daily-image-preview').attr('src', '');
+        });
+    };
+
+    window.saveHomeDailyPost = async function() {
+        var titleVal = $('#home-daily-modal-title').val().trim();
+        var tagsVal = $('#home-daily-modal-tags').val().trim(); 
+        var textVal = $('#home-daily-modal-content').html().trim();
+        var dateVal = $('#home-daily-modal-date').val();
+        var btn = $('#home-daily-submit-btn');
+
+        if (!textVal && !homeSelectedFile) { alert("Please add an image or write something."); return; }
+
+        try {
+            btn.prop('disabled', true).css('opacity', '0.3');
+            var finalImageUrl = "";
+            if (homeSelectedFile) {
+                var fileExt = homeSelectedFile.name.split('.').pop();
+                var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+                var { error: uploadError } = await homeSupabase.storage.from('images').upload(fileName, homeSelectedFile);
+                if (uploadError) throw uploadError;
+                var { data: publicUrlData } = homeSupabase.storage.from('images').getPublicUrl(fileName);
+                finalImageUrl = publicUrlData.publicUrl;
+            }
+
+            var contentString = finalImageUrl + "|||" + textVal + "|||" + tagsVal;
+
+            var finalDate = new Date();
+            if (dateVal) {
+                var parts = dateVal.split('-');
+                finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
+            }
+            var offset = finalDate.getTimezoneOffset() * 60000;
+            var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+
+            var { error } = await homeSupabase.from('posts').insert([{ 
+                category: 'daily', title: titleVal, content: contentString, created_at: localISOString 
+            }]);
+            if (error) throw error;
+
+            closeHomeDailyModal();
+            
+            // 작성 즉시 캘린더 리렌더링하여 마킹 표시
+            await fetchHomeDailyData();
+            renderHomeCalendar(); 
+        } catch (error) { alert('Failed to save.'); } finally { btn.prop('disabled', false).css('opacity', '0.7'); }
+    };
+
+    var homeSavedSelectionRange = null;
+    window.homeSaveSelection = function() {
+        var selection = window.getSelection();
+        if (selection.rangeCount > 0) homeSavedSelectionRange = selection.getRangeAt(0);
+    };
+    window.homeApplyCustomColor = function(command, color) {
+        if (homeSavedSelectionRange) {
+            var selection = window.getSelection();
+            selection.removeAllRanges(); selection.addRange(homeSavedSelectionRange);
+        }
+        document.execCommand(command, false, color); homeCheckSelection();
+    };
+
+    function homeCheckSelection() {
+        setTimeout(() => {
+            var selection = window.getSelection();
+            var toolbar = document.getElementById('home-format-toolbar');
+            if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+                var node = selection.anchorNode;
+                var isInsideEditor = false;
+                while (node) {
+                    if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') { isInsideEditor = true; break; }
+                    node = node.parentNode;
+                }
+                if (isInsideEditor) {
+                    var range = selection.getRangeAt(0);
+                    var rect = range.getBoundingClientRect();
+                    toolbar.style.display = 'flex';
+                    var top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
+                    var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
+                    if (top < window.scrollY) top = rect.bottom + window.scrollY + 8;
+                    if (left < 10) left = 10;
+                    toolbar.style.top = top + 'px'; toolbar.style.left = left + 'px';
+                } else { toolbar.style.display = 'none'; }
+            } else { toolbar.style.display = 'none'; }
+        }, 100);
+    }
+    document.addEventListener('selectionchange', homeCheckSelection);
+    document.addEventListener('mouseup', homeCheckSelection);
+    document.addEventListener('touchend', homeCheckSelection);
+
+    window.homeFormatText = function(command, value = null) { document.execCommand(command, false, value); homeCheckSelection(); };
+    window.homeApplyColor = function(textColor, bgColor) { document.execCommand('foreColor', false, textColor); document.execCommand('backColor', false, bgColor); homeCheckSelection(); };
+
+    setTimeout(() => { initHomeCalendar(); }, 100);
+</script>
