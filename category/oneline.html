@@ -1,3 +1,4 @@
+<!-- 파일명: category/oneline.html -->
 <style>
     /* 1. 모바일 맞춤 레이아웃 */
     .oneline-read-mode {
@@ -71,6 +72,7 @@
     }
 </style>
 
+<!-- 글자 드래그 시 나타나는 플로팅 툴바 -->
 <div id="format-toolbar" class="format-toolbar">
     <button onmousedown="event.preventDefault(); formatText('bold')" title="굵게"><i class="xi-bold"></i></button>
     <button onmousedown="event.preventDefault(); formatText('italic')" title="기울임"><i class="xi-italic"></i></button>
@@ -194,22 +196,19 @@
 
     /* --- [UI 상호작용 및 기존 로직] --- */
 
-    // 입력창 포커스 시 테두리 색상 변경
     $('#oneline-input').on('focus', function() {
         $('.input-container').css('border-color', 'var(--point-color)');
     }).on('blur', function() {
         $('.input-container').css('border-color', 'var(--divider-bg)');
     });
 
-    // 엔터키 전송 연동 (div contenteditable에 맞게 수정)
     $('#oneline-input').on('keypress', function(e) {
         if (e.which === 13) { 
-            e.preventDefault(); // 줄바꿈 방지 (한 줄 기록)
+            e.preventDefault(); 
             addOneLinePost(); 
         }
     });
 
-    // 검색창 로직
     $('#search-icon').click(function() {
         $('#oneline-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
         $(this).css('opacity', '0.7');
@@ -275,7 +274,6 @@
                     </span>
                 `;
 
-                // 웹 에디터가 적용되므로 HTML 그대로 불러옴
                 const postHtml = `
                     <div class="feed-item fade-in-element" id="post-${post.id}" style="padding: 18px 0; border-bottom: 1px solid var(--divider-bg); display: flex; flex-direction: column; gap: 8px;">
                         
@@ -330,7 +328,6 @@
     }
 
     async function saveEdit(id) {
-        // html()로 읽어옵니다
         const newContent = $(`#edit-content-${id}`).html().trim();
         const newTimeStr = $(`#edit-time-${id}`).val().trim();
 
@@ -341,9 +338,27 @@
         }
 
         try {
-            const cleanTime = newTimeStr.replace(/\./g, '/');
-            let finalTimeISO = new Date(cleanTime).toISOString();
-            if (finalTimeISO === "Invalid Date") finalTimeISO = new Date().toISOString(); 
+            let finalTimeISO;
+            // [버그 수정 1] 사용자가 입력한 날짜를 한국 시간 기준으로 파싱하여 Z(영국시간) 강제 변환 막기
+            const timeMatch = newTimeStr.match(/(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})/);
+            
+            if (timeMatch) {
+                const year = parseInt(timeMatch[1], 10);
+                const month = parseInt(timeMatch[2], 10) - 1;
+                const day = parseInt(timeMatch[3], 10);
+                const hour = parseInt(timeMatch[4], 10);
+                const min = parseInt(timeMatch[5], 10);
+                
+                const localDate = new Date(year, month, day, hour, min);
+                const offset = localDate.getTimezoneOffset() * 60000;
+                // 끝에 Z를 떼고 순수 로컬 시간 텍스트로 보존
+                finalTimeISO = new Date(localDate.getTime() - offset).toISOString().slice(0, -1);
+            } else {
+                // 완전히 잘못 썼을 경우에만 현재(한국) 시간 대입
+                const now = new Date();
+                const offset = now.getTimezoneOffset() * 60000;
+                finalTimeISO = new Date(now.getTime() - offset).toISOString().slice(0, -1);
+            }
 
             const { error } = await supabaseClient
                 .from('posts')
@@ -359,22 +374,24 @@
 
     async function addOneLinePost() {
         const inputEl = $('#oneline-input');
-        // html()로 읽어옵니다
         const content = inputEl.html().trim();
 
         if (!content || content === '<br>') return; 
 
         try {
             inputEl.prop('contenteditable', false);
+            
+            // [버그 수정 2] 새 글을 작성할 때도 Z(영국시간)가 붙지 않도록 한국 표준시 오프셋 적용
             const now = new Date(); 
-            const localISOString = now.toISOString();
+            const offset = now.getTimezoneOffset() * 60000;
+            const localISOString = new Date(now.getTime() - offset).toISOString().slice(0, -1);
 
             const { error } = await supabaseClient
                 .from('posts')
                 .insert([{ category: 'oneline', content: content, created_at: localISOString }]);
 
             if (error) throw error;
-            inputEl.html(''); // 입력창 비우기
+            inputEl.html(''); 
             
             $('#oneline-search').val('').trigger('blur'); 
             loadOneLinePosts();
@@ -397,6 +414,5 @@
         }
     }
 
-    // 초기 로드
     setTimeout(() => { loadOneLinePosts(); }, 100);
 </script>
