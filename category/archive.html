@@ -19,13 +19,13 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* 맨 처음 구름 아이콘 (색상 #f5c9d5로 변경) */
+    /* 맨 처음 구름 아이콘 */
     #initial-upload-wrapper {
         text-align: center;
         margin-bottom: 25px;
     }
     .cloud-upload-btn {
-        cursor: pointer; font-size: 26px; color: #f5c9d5; /* 요청하신 색상으로 변경 */
+        cursor: pointer; font-size: 26px; color: #f5c9d5; 
         transition: color 0.3s ease, transform 0.2s ease;
         display: inline-block; padding: 10px;
     }
@@ -47,7 +47,7 @@
         display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
-    /* 제목, 기록 입력 폼 세로 분리 */
+    /* 입력 폼 아이템 스타일 */
     .archive-input-item {
         width: 100%; background: transparent; border: none; color: var(--main-color);
         font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none;
@@ -86,7 +86,7 @@
     }
     .gallery-item:hover img { transform: scale(1.05); }
 
-    /* 호버 오버레이 */
+    /* 호버 오버레이 (날짜 우측 배치) */
     .gallery-overlay {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.3s ease;
@@ -141,6 +141,8 @@
             <input type="text" id="archive-title" class="archive-input-item" autocomplete="off" placeholder="title" style="text-align: center;">
             <textarea id="archive-caption" class="archive-input-item" placeholder="caption" style="min-height: 60px; resize: none; line-height: 1.6;"></textarea>
             
+            <input type="text" id="archive-tags" class="archive-input-item" autocomplete="off" placeholder="tags (예: #일상 #여행)">
+            
             <div class="archive-footer-group">
                 <input type="date" id="archive-date-picker" title="날짜 변경">
                 <button class="archive-submit-btn" id="submit-btn" onclick="uploadArchivePost()" title="업로드">
@@ -166,7 +168,9 @@
                 <div id="lightbox-archive-title" style="font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);"></div>
                 <div id="lightbox-archive-date" style="font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--sub-color);"></div>
             </div>
-            <div id="lightbox-archive-caption" style="font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color); line-height: 1.7; word-break: break-all;"></div>
+            <div id="lightbox-archive-caption" style="font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color); line-height: 1.7; word-break: break-all; margin-bottom: 12px;"></div>
+            
+            <div id="lightbox-archive-tags" style="font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--point-color); opacity: 0.8; word-break: break-all; letter-spacing: 0.5px;"></div>
             
             <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
                 <i class="xi-pen" onclick="startArchiveEdit()" title="수정" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='0.35'"></i>
@@ -177,6 +181,8 @@
         <div id="lightbox-edit-mode" style="display: none; flex-direction: column; gap: 12px;">
             <input type="text" id="edit-archive-title" placeholder="title" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
             <textarea id="edit-archive-caption" placeholder="caption" style="width:100%; min-height:80px; background:transparent; border:1px solid var(--point-color); border-radius:2px; color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:10px; outline:none; resize:none; line-height:1.6;"></textarea>
+            
+            <input type="text" id="edit-archive-tags" placeholder="tags" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
             
             <input type="date" id="edit-archive-date" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
             
@@ -190,7 +196,7 @@
 </div>
 
 <script>
-    // [수정] const와 let을 var로 교체하여 카테고리 재진입 시 생기는 먹통 에러 차단
+    // [보정] 카테고리 재진입 먹통 버그 방지를 위해 글로벌 변수 var 유지
     var ARCHIVE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
     var ARCHIVE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
     var archiveSupabase = window.supabase.createClient(ARCHIVE_URL, ARCHIVE_KEY);
@@ -199,7 +205,7 @@
     var currentLightboxPostId = null;
     var currentLightboxImageUrl = "";
 
-    // 1. 파일 선택 시: 사진의 원본 메타데이터(수정일)를 읽어서 날짜에 기본 세팅
+    // 1. 파일 선택 시
     $('#archive-file-input').on('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -227,18 +233,19 @@
         $('#archive-file-input').val('');
         $('#archive-title').val('');
         $('#archive-caption').val('');
+        $('#archive-tags').val('');
         $('#upload-container').slideUp(200, function() {
             $('#initial-upload-wrapper').fadeIn(200); 
         });
     };
 
-    // 3. 사진 업로드
+    // 3. 사진 업로드 및 데이터 저장 (태그 정보 결합 저장)
     window.uploadArchivePost = async function() {
         if (!selectedFile) return;
 
         const titleVal = $('#archive-title').val().trim();
         const captionVal = $('#archive-caption').val().trim();
-        const dateVal = $('#archive-date-picker').val();
+        const tagsVal = $('#archive-tags').val().trim();
         const btn = $('#submit-btn');
 
         try {
@@ -258,9 +265,10 @@
                 .getPublicUrl(fileName);
             
             const imageUrl = publicUrlData.publicUrl;
-            const contentString = imageUrl + "|||" + captionVal;
+            
+            // [중요] 이미지 주소 ||| 캡션 ||| 태그 구조로 한 줄에 묶어 저장
+            const contentString = imageUrl + "|||" + captionVal + "|||" + tagsVal;
 
-            // KST 한국 시간 세팅 (캘린더 값 기준)
             let finalDate = new Date();
             if (dateVal) {
                 const parts = dateVal.split('-');
@@ -306,7 +314,6 @@
                 return;
             }
 
-            // 날짜 기준 내림차순 정렬
             data.sort((a, b) => {
                 const dateA = a.created_at.split('T')[0];
                 const dateB = b.created_at.split('T')[0];
@@ -324,19 +331,26 @@
 
                 let imageUrl = post.content;
                 let captionText = "";
+                let tagsText = "";
+                
+                // 데이터 분리 추출 (태그 영역까지 분할 허용)
                 if (post.content && post.content.includes("|||")) {
                     const parts = post.content.split("|||");
                     imageUrl = parts[0];
                     captionText = parts[1] || "";
+                    tagsText = parts[2] || "";
                 }
 
                 const safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 const safeCaption = captionText ? captionText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                const searchText = `${post.title || ''} ${captionText} ${displayDate}`;
+                const safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                
+                // [요청사항] 검색 필터 인덱스에 태그 텍스트(tagsText)를 주입하여 검색 연동 완료
+                const searchText = `${post.title || ''} ${captionText} ${tagsText} ${displayDate}`;
 
                 const postHtml = `
                     <div class="gallery-wrapper-item" data-search="${searchText}">
-                        <div class="gallery-item fade-in-element" onclick="openArchiveLightbox(${post.id}, '${imageUrl}', '${safeTitle}', '${safeCaption}', '${displayDate}', '${inputDate}')">
+                        <div class="gallery-item fade-in-element" onclick="openArchiveLightbox(${post.id}, '${imageUrl}', '${safeTitle}', '${safeCaption}', '${safeTags}', '${displayDate}', '${inputDate}')">
                             <img src="${imageUrl}" alt="archive image" loading="lazy">
                             <div class="gallery-overlay">
                                 <div style="display: flex; justify-content: flex-end; align-items: flex-start; width: 100%;">
@@ -389,17 +403,20 @@
     };
 
     // 7. 라이트박스 열기/닫기
-    window.openArchiveLightbox = function(id, url, title, caption, displayDate, inputDate) {
+    window.openArchiveLightbox = function(id, url, title, caption, tags, displayDate, inputDate) {
         currentLightboxPostId = id;
         currentLightboxImageUrl = url;
         
         $('#lightbox-archive-img').attr('src', url);
         $('#lightbox-archive-title').text(title || '');
         $('#lightbox-archive-caption').html((caption || '').replace(/\n/g, '<br>'));
-        $('#lightbox-archive-date').text(displayDate || '');
+        
+        // 팝업 내부 카드에 태그 텍스트 바인딩
+        $('#lightbox-archive-tags').text(tags || '');
         
         $('#edit-archive-title').val(title || '');
         $('#edit-archive-caption').val(caption || '');
+        $('#edit-archive-tags').val(tags || ''); // 수정창 폼 세팅
         $('#edit-archive-date').val(inputDate || ''); 
         
         $('#lightbox-read-mode').show();
@@ -411,7 +428,7 @@
         $('#archive-lightbox').fadeOut(150);
     };
 
-    // 8. 팝업 내 수정/저장 (날짜 포함)
+    // 8. 팝업 내 수정/저장
     window.startArchiveEdit = function() {
         $('#lightbox-read-mode').hide();
         $('#lightbox-edit-mode').fadeIn(200).css('display', 'flex');
@@ -423,8 +440,11 @@
     window.saveArchiveEdit = async function() {
         const newTitle = $('#edit-archive-title').val().trim();
         const newCaption = $('#edit-archive-caption').val().trim();
+        const newTags = $('#edit-archive-tags').val().trim();
         const newDateStr = $('#edit-archive-date').val();
-        const newContentStr = currentLightboxImageUrl + "|||" + newCaption;
+        
+        // 새로운 태그 정보를 포함한 content 문자열 재구축
+        const newContentStr = currentLightboxImageUrl + "|||" + newCaption + "|||" + newTags;
         
         try {
             let finalDate = new Date();
@@ -449,7 +469,7 @@
             
             $('#lightbox-archive-title').text(newTitle);
             $('#lightbox-archive-caption').html(newCaption.replace(/\n/g, '<br>'));
-            $('#lightbox-archive-date').text(`${yy}.${m}.${d}`);
+            $('#lightbox-archive-tags').text(newTags); // 화면 태그 업데이트
             
             cancelArchiveEdit();
             loadGalleryPosts(); 
