@@ -1,40 +1,105 @@
-<div class="category-content" style="padding-top: 10px;">
-    <section style="margin-bottom: 40px;">
-        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 16px; color: var(--title-color);">
-            환영합니다.
-        </h2>
-        <p style="color: var(--sub-color); letter-spacing: -0.02em;">
-            이곳은 저만의 사유와 기록이 머무는 토끼굴입니다.<br>
-            천천히 둘러보시며 고요한 시간을 보내시길 바랍니다.
-        </p>
-    </section>
+<!-- 파일명: category/home.html -->
+<style>
+    /* ==========================================================================
+       [디자인] iCloud 감성의 미니멀 홈 화면 
+       ========================================================================== */
+    .home-wrapper {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        /* 헤더 영역을 제외한 중앙 정렬 */
+        min-height: calc(100vh - 250px);
+        text-align: center;
+        padding: 20px;
+        animation: fadeUp 0.8s ease-out;
+        font-family: inherit; /* 네이티브 시스템 폰트 자연스럽게 상속 */
+    }
 
-    <section style="border-top: 1px solid var(--divider-bg); padding-top: 30px;">
-        <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: var(--title-color);">
-            최근 기록
-        </h3>
-        
-        <ul style="list-style: none; padding: 0; margin: 0;">
-            <li style="margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px dashed var(--divider-bg);">
-                <a href="#" onclick="loadPage('category/log_detail.html'); return false;" style="display: block;">
-                    <span style="display: block; font-size: 1.05rem; color: var(--main-color); margin-bottom: 4px;">
-                        조용히 쌓여가는 생각의 파편들
-                    </span>
-                    <span style="font-size: 0.85rem; color: var(--sub-color);">
-                        2026. 06. 15
-                    </span>
-                </a>
-            </li>
-            <li style="margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px dashed var(--divider-bg);">
-                <a href="#" onclick="loadPage('category/log_detail2.html'); return false;" style="display: block;">
-                    <span style="display: block; font-size: 1.05rem; color: var(--main-color); margin-bottom: 4px;">
-                        새로운 프로젝트를 시작하며
-                    </span>
-                    <span style="font-size: 0.85rem; color: var(--sub-color);">
-                        2026. 06. 10
-                    </span>
-                </a>
-            </li>
-        </ul>
-    </section>
+    /* 강조 문구 (볼드체) */
+    .home-greeting {
+        font-size: 13px; 
+        font-weight: 700;
+        color: var(--main-color);
+        margin-bottom: 35px;
+        letter-spacing: 0.5px;
+    }
+
+    /* 메인 문구 */
+    .home-main-text {
+        font-size: 12px;
+        color: var(--main-color);
+        line-height: 2.2; /* 가독성을 위한 여유로운 줄간격 */
+        margin-bottom: 45px;
+        letter-spacing: 0.3px;
+    }
+
+    /* 서랍장 무드의 서브 문구 (작은 회색) */
+    .home-sub-text {
+        font-size: 11px;
+        color: var(--sub-color);
+        line-height: 2.0;
+        max-width: 280px; /* 텍스트가 예쁘게 줄바꿈되도록 폭 제한 */
+        margin-bottom: 55px;
+        opacity: 0.7;
+        word-break: keep-all;
+    }
+
+    /* 하단 이동 버튼 그룹 */
+    .home-btn-group {
+        display: flex;
+        gap: 15px;
+    }
+
+    /* 얇고 예쁜 네비게이션 버튼 */
+    .home-link-btn {
+        background: transparent;
+        border: 1px solid var(--divider-bg);
+        color: var(--sub-color);
+        font-size: 11.5px;
+        font-family: inherit;
+        padding: 8px 20px;
+        border-radius: 20px; /* 부드러운 알약 모양 */
+        cursor: pointer;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+    /* 호버/터치 시 포인트 컬러로 부드럽게 전환 */
+    .home-link-btn:hover {
+        border-color: var(--point-color);
+        color: var(--point-color);
+        background: rgba(0, 0, 0, 0.01);
+        transform: translateY(-1px);
+    }
+
+    /* 등장 애니메이션 */
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="home-wrapper">
+    
+    <div class="home-greeting">
+        당신에게 닿는 모든 문장이 따뜻하기를.
+    </div>
+
+    <div class="home-main-text">
+        특별하지 않은 것들이 특별해지는 순간을 생각합니다.<br>
+        그래서 기록합니다. 잊지 않기 위해서가 아니라,<br>
+        이 순간이 존재했음을 어딘가에 남겨두고 싶어서.
+    </div>
+
+    <div class="home-sub-text">
+        서랍을 열면 약간 빛바랜 리본이 나오고, 그 아래엔 누군가에게 받은 엽서가 있고, 엽서 뒤에는 제가 쓰다 만 편지가 접혀 있는. 그런 공간
+    </div>
+
+    <div class="home-btn-group">
+        <!-- index.html의 로드 엔진을 호출하여 부드럽게 화면 이동 -->
+        <button class="home-link-btn" onclick="loadPage('category/oneline.html')">한 줄 기록</button>
+        <button class="home-link-btn" onclick="loadPage('category/daily.html')">데일리</button>
+    </div>
+
 </div>
