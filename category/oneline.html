@@ -1,3 +1,4 @@
+<!-- 파일명: category/oneline.html -->
 <style>
     /* 1. 모바일 맞춤 레이아웃 */
     .oneline-read-mode {
@@ -71,6 +72,7 @@
     }
 </style>
 
+<!-- 글자 드래그 시 나타나는 플로팅 툴바 -->
 <div id="format-toolbar" class="format-toolbar">
     <button onmousedown="event.preventDefault(); formatText('bold')" title="굵게"><i class="xi-bold"></i></button>
     <button onmousedown="event.preventDefault(); formatText('italic')" title="기울임"><i class="xi-italic"></i></button>
@@ -115,14 +117,14 @@
 
 <script>
     /** ==========================================================================
-     * [독립형 아키텍처] Supabase 및 툴바 로직 (var 처리로 재진입 먹통 현상 해결)
+     * [독립형 아키텍처] Supabase 및 툴바 로직 
      * ========================================================================== */
-    var SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
-    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     /* --- [에디터 & 툴바 로직] --- */
-    var savedSelectionRange = null;
+    let savedSelectionRange = null;
 
     window.saveSelection = function() {
         const selection = window.getSelection();
@@ -337,6 +339,7 @@
 
         try {
             let finalTimeISO;
+            // [버그 수정 1] 사용자가 입력한 날짜를 한국 시간 기준으로 파싱하여 Z(영국시간) 강제 변환 막기
             const timeMatch = newTimeStr.match(/(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})/);
             
             if (timeMatch) {
@@ -348,8 +351,10 @@
                 
                 const localDate = new Date(year, month, day, hour, min);
                 const offset = localDate.getTimezoneOffset() * 60000;
+                // 끝에 Z를 떼고 순수 로컬 시간 텍스트로 보존
                 finalTimeISO = new Date(localDate.getTime() - offset).toISOString().slice(0, -1);
             } else {
+                // 완전히 잘못 썼을 경우에만 현재(한국) 시간 대입
                 const now = new Date();
                 const offset = now.getTimezoneOffset() * 60000;
                 finalTimeISO = new Date(now.getTime() - offset).toISOString().slice(0, -1);
@@ -376,6 +381,7 @@
         try {
             inputEl.prop('contenteditable', false);
             
+            // [버그 수정 2] 새 글을 작성할 때도 Z(영국시간)가 붙지 않도록 한국 표준시 오프셋 적용
             const now = new Date(); 
             const offset = now.getTimezoneOffset() * 60000;
             const localISOString = new Date(now.getTime() - offset).toISOString().slice(0, -1);
