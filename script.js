@@ -6,6 +6,18 @@
  */
 
 $(document).ready(function () {
+    // [추가] index.html의 마스터 주머니를 읽어서 메뉴판 동적 인쇄
+    if (typeof CATEGORIES !== 'undefined') {
+        const menuContainer = $('#dropdown-menu');
+        menuContainer.empty(); // 기존 메뉴 초기화
+        
+        CATEGORIES.forEach(cat => {
+            if (cat.active) {
+                menuContainer.append(`<a href="#" onclick="loadPage('${cat.path}'); return false;">${cat.name}</a>`);
+            }
+        });
+    }
+
     $(".dropdown-bars").click(function (e) {
         e.stopPropagation();
         $(".dropdown-inner").slideToggle(250); 
