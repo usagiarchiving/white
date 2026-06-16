@@ -1,3 +1,4 @@
+<!-- 파일명: category/memo.html -->
 <style>
     /* ==========================================================================
        [디자인] 편지지 테마의 완벽한 메모장 UI & 웹 에디터 엔진
@@ -168,6 +169,7 @@
     }
 </style>
 
+<!-- 글자 드래그 시 나타나는 플로팅 툴바 -->
 <div id="format-toolbar" class="format-toolbar">
     <button onmousedown="event.preventDefault(); formatText('bold')" title="굵게"><i class="xi-bold"></i></button>
     <button onmousedown="event.preventDefault(); formatText('italic')" title="기울임"><i class="xi-italic"></i></button>
@@ -200,8 +202,10 @@
         </div>
     </div>
 
+    <!-- 제목 입력 -->
     <input type="text" id="memo-title" class="memo-title-input" autocomplete="off" placeholder="title">
 
+    <!-- 편지지 테마 -->
     <div class="memo-paper-input">
         
         <div class="memo-header-input">
@@ -210,6 +214,7 @@
         </div>
 
         <div style="position: relative; width: 100%;">
+            <!-- 텍스트 에어리어 대신 contenteditable DIV 적용 -->
             <div id="memo-content" class="memo-editor" contenteditable="true" spellcheck="false"></div>
         </div>
 
@@ -228,9 +233,11 @@
         </button>
     </div>
     
+    <!-- 피드 목록 영역 -->
     <div class="feed-container" id="memo-feed"></div>
 </div>
 
+<!-- 원본 이미지 보기 라이트박스 -->
 <div id="memo-lightbox" class="memo-lightbox" onclick="closeMemoLightbox()">
     <img id="lightbox-img" src="" alt="원본 이미지">
 </div>
@@ -241,10 +248,8 @@
     const memoSupabase = window.supabase.createClient(MEMO_URL, MEMO_KEY);
 
     /* --- [에디터 & 툴바 핵심 로직] --- */
-    
     let savedSelectionRange = null;
 
-    // [추가] 색상 선택기를 열기 직전에 드래그된 텍스트 위치를 기억하는 마법
     window.saveSelection = function() {
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
@@ -252,7 +257,6 @@
         }
     };
 
-    // [추가] 색상 코드/팔레트에서 색을 골랐을 때 적용하는 마법
     window.applyCustomColor = function(command, color) {
         if (savedSelectionRange) {
             const selection = window.getSelection();
@@ -263,7 +267,6 @@
         checkSelection();
     };
 
-    // 선택 영역 감지 및 툴바 위치 계산
     function checkSelection() {
         setTimeout(() => {
             const selection = window.getSelection();
@@ -273,7 +276,6 @@
                 let node = selection.anchorNode;
                 let isInsideEditor = false;
                 
-                // 선택 영역이 contenteditable 에디터 내부인지 확인
                 while (node) {
                     if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') {
                         isInsideEditor = true; break;
@@ -286,11 +288,9 @@
                     const rect = range.getBoundingClientRect();
                     toolbar.style.display = 'flex';
                     
-                    // 글자 바로 위에 툴바 띄우기
                     let top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
                     let left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
                     
-                    // 모바일 화면 밖으로 나가지 않게 보정
                     if (top < window.scrollY) top = rect.bottom + window.scrollY + 8;
                     if (left < 10) left = 10;
                     
@@ -309,13 +309,11 @@
     document.addEventListener('mouseup', checkSelection);
     document.addEventListener('touchend', checkSelection);
 
-    // 텍스트 서식 적용 함수
     window.formatText = function(command, value = null) {
         document.execCommand(command, false, value);
         checkSelection();
     };
 
-    // 핑크, 민트 컬러 프리셋 적용 함수
     window.applyColor = function(textColor, bgColor) {
         document.execCommand('foreColor', false, textColor);
         document.execCommand('backColor', false, bgColor);
@@ -323,7 +321,6 @@
     };
 
     /* --- [UI 상호작용 로직] --- */
-
     $('#memo-to').on('focus', function() { $('#label-to').addClass('active'); }).on('blur', function() { $('#label-to').removeClass('active'); });
     $('#memo-from').on('focus', function() { $('#label-from').addClass('active'); }).on('blur', function() { $('#label-from').removeClass('active'); });
 
@@ -335,7 +332,6 @@
         $('#memo-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
-    // 1. 메모 로드
     async function loadMemoPosts() {
         const feedContainer = $('#memo-feed');
         feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">서랍을 여는 중입니다...</p>');
@@ -384,10 +380,12 @@
                 const postHtml = `
                     <div class="feed-item fade-in-element" id="post-${post.id}">
                         
+                        <!-- 리스트 제목 -->
                         <div class="memo-accordion-header" id="accordion-header-${post.id}" onclick="toggleMemoAccordion(${post.id})">
                             ${displayTitle}
                         </div>
                         
+                        <!-- 숨겨진 본문 영역 -->
                         <div class="memo-accordion-body" id="accordion-body-${post.id}">
                             <div class="read-mode memo-read-mode">
                                 <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; word-break: break-all; font-size: 13px; flex: 1; white-space: pre-wrap;">${parsedContent}</span>
@@ -402,11 +400,10 @@
                                 <i class="xi-trash" onclick="deleteMemoPost(${post.id})" title="삭제" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'; this.style.color='#ff3b30'" onmouseout="this.style.opacity='0.35'; this.style.color='var(--sub-color)'"></i>
                             </div>
                             
+                            <!-- 수정 모드 폼 -->
                             <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
                                 <input type="text" id="edit-title-${post.id}" value="${post.title || ''}" placeholder="title" style="width:100%; margin-bottom:5px; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none; text-align:center;">
-                                
                                 <div id="edit-content-${post.id}" contenteditable="true" spellcheck="false" style="width: 100%; min-height: 150px; background: transparent; border: 1px solid var(--point-color); border-radius:2px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 15px; outline: none; line-height:1.7; word-break: break-all;">${displayContent}</div>
-                                
                                 <input type="date" id="edit-date-${post.id}" value="${editDateString}" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
                             </div>
 
@@ -424,7 +421,6 @@
         }
     }
 
-    // 아코디언 애니메이션 
     window.toggleMemoAccordion = function(id) {
         const header = $(`#accordion-header-${id}`);
         const body = $(`#accordion-body-${id}`);
@@ -439,7 +435,7 @@
         });
     }
 
-    // 메모 전송 (HTML 저장)
+    // 메모 전송 (HTML 저장 + 시간 버그 수정)
     async function addMemoPost() {
         const titleVal = $('#memo-title').val().trim();
         const toVal = $('#memo-to').val().trim();
@@ -462,7 +458,10 @@
                 const parts = dateVal.split('-');
                 finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
             }
-            const localISOString = finalDate.toISOString();
+            
+            // [버그 수정 1] KST(로컬 타임) 기준으로 오프셋을 적용해 Z(영국시간) 강제 변환 막기
+            const offset = finalDate.getTimezoneOffset() * 60000;
+            const localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
 
             const { error } = await memoSupabase.from('posts').insert([{ 
                 category: 'memo', 
@@ -489,7 +488,6 @@
         }
     }
 
-    // 라이트박스
     function openMemoLightbox(src) {
         $('#lightbox-img').attr('src', src);
         $('#memo-lightbox').css('display', 'flex').fadeIn(150);
@@ -511,6 +509,7 @@
         postEl.find('.read-actions').fadeIn(200).css('display', 'flex'); 
     }
 
+    // 메모 수정 (시간 버그 수정)
     async function saveMemoEdit(id) {
         const newTitle = $(`#edit-title-${id}`).val().trim();
         const newContent = $(`#edit-content-${id}`).html().trim();
@@ -524,7 +523,10 @@
                 const parts = newDateStr.split('-');
                 finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
             }
-            const localISOString = finalDate.toISOString();
+            
+            // [버그 수정 2] KST(로컬 타임) 기준으로 오프셋을 적용해 Z(영국시간) 강제 변환 막기
+            const offset = finalDate.getTimezoneOffset() * 60000;
+            const localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
 
             const { error } = await memoSupabase.from('posts').update({ 
                 title: newTitle, 
