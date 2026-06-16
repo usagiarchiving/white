@@ -19,8 +19,7 @@
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    </head>
+</head>
 
 <body>
     <div id="wrap">
@@ -39,28 +38,36 @@
                         <div class="dropdown-bars" title="메뉴 열기">
                             <i id="menu-icon" class="xi-bars"></i>
                         </div>
-                        <div class="dropdown-inner">
-                            <a href="#" onclick="loadPage('category/home.html'); return false;">Home</a>
-                            <a href="#" onclick="loadPage('category/notice.html'); return false;">Notice</a>
-                            <a href="#" onclick="loadPage('category/oneline.html'); return false;">한 줄 기록</a>
-                            <a href="#" onclick="loadPage('category/archive.html'); return false;">Archive</a>
-                            <a href="#" onclick="loadPage('category/memo.html'); return false;">Memo</a>
-                            <a href="#" onclick="loadPage('category/log.html'); return false;">Log</a>
-                            <a href="#" onclick="loadPage('category/list.html'); return false;">List</a>
-                        </div>
+                        <div class="dropdown-inner" id="dropdown-menu"></div>
                     </div>
                 </div>
             </header>
 
             <main id="main">
                 <div class="inner_index">
-                    <div id="content-area">
-                        </div>
+                    <div id="content-area"></div>
                 </div>
             </main>
 
         </div>
     </div>
+
+    <script>
+        const CATEGORIES = [
+            { name: 'Home',     path: 'category/home.html',     active: true },
+            { name: 'Notice',   path: 'category/notice.html',   active: false },
+            { name: '한 줄 기록', path: 'category/oneline.html',  active: true },
+            { name: 'Archive',  path: 'category/archive.html',  active: true },
+            { name: 'Memo',     path: 'category/memo.html',     active: true },
+            { name: 'Daily',    path: 'category/daily.html',    active: true }, // 새로 노출 추가!
+            { name: 'Log',      path: 'category/log.html',      active: true }, // 새로 노출 추가!
+            { name: 'List',     path: 'category/list.html',     active: false },
+            { name: 'Todo',     path: 'category/todo.html',     active: false },
+            { name: 'Playlist', path: 'category/playlist.html', active: false },
+            { name: 'Record',   path: 'category/record.html',   active: false },
+            { name: 'Check',    path: 'category/check.html',    active: false }
+        ];
+    </script>
 
     <script src="script.js"></script>
 </body>
