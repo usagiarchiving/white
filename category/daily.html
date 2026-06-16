@@ -1,27 +1,23 @@
 <style>
     .daily-wrapper {
         position: relative;
-        padding-top: 12px; /* [수정] 글로벌 헤더와의 여백을 완전히 없애서 위로 바짝 붙임 */
+        padding-top: 12px; 
         height: calc(100vh - 180px);
         min-height: 500px;
         display: flex;
         flex-direction: column;
     }
 
-    /* ==========================================================================
-       [수정] 우측 상단 액션 바 (검색창과 글쓰기 버튼을 15px 간격으로 한 줄에 배치)
-       ========================================================================== */
     .daily-top-actions {
         display: flex;
         justify-content: flex-end;
         align-items: center;
-        gap: 15px; /* [요청사항] 두 버튼 사이의 정확한 간격: 15px */
-        margin-bottom: 25px; /* 타이틀과의 아래쪽 여백 */
+        gap: 15px; 
+        margin-bottom: 25px; 
         width: 100%;
         flex-shrink: 0;
     }
 
-    /* 검색창 디자인 */
     .search-inner { position: relative; display: flex; align-items: center; }
     #daily-search {
         background: transparent; border: none; border-bottom: 1px solid transparent;
@@ -35,16 +31,14 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* 글쓰기 버튼 디자인 (버튼 크기와 패딩 축소) */
     .daily-write-btn {
         background: none; border: none; color: var(--sub-color); opacity: 0.35;
         font-size: 15px; cursor: pointer; transition: opacity 0.3s;
-        padding: 6px; /* [수정] 기존 10px에서 6px로 줄여 날렵하게 만듦 */
+        padding: 6px; 
         display: flex; align-items: center; justify-content: center;
     }
     .daily-write-btn:hover { opacity: 0.7; color: var(--point-color); }
 
-    /* 중앙 년/월 선택기 */
     .daily-header-bar {
         display: flex; flex-direction: column; align-items: center;
         margin-bottom: 30px; flex-shrink: 0;
@@ -63,15 +57,13 @@
         outline: none; cursor: pointer; text-align: center;
     }
 
-    /* 레이아웃: 좌측 탭 / 우측 본문 */
     .daily-layout {
         display: flex; gap: 40px; flex: 1; overflow: hidden; 
     }
     @media (max-width: 768px) {
-        .daily-layout { gap: 20px; } /* 모바일 좌우 밸런스 */
+        .daily-layout { gap: 20px; } 
     }
 
-    /* 좌측 날짜 트랙 */
     .daily-tabs {
         width: 35px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px;
         height: 100%; overflow-y: auto; padding-bottom: 40px;
@@ -86,7 +78,6 @@
     .daily-tab-num:hover { opacity: 0.7; }
     .daily-tab-num.active { opacity: 1; color: var(--point-color); font-weight: bold; }
 
-    /* 우측 본문 영역 */
     .daily-content-area {
         flex: 1; height: 100%; overflow-y: auto; padding-bottom: 60px;
         display: flex; flex-direction: column; gap: 20px; 
@@ -111,8 +102,20 @@
         line-height: 1.8; word-break: break-all; white-space: pre-wrap; cursor: pointer; 
     }
 
+    /* 클릭 시 나타나는 묶음 패널 (태그 + 버튼) */
+    .daily-admin-panel {
+        display: none; flex-direction: column; align-items: flex-end; gap: 6px; margin-top: 4px;
+    }
+    
+    /* [요청] 태그 출력 스타일 (클릭 시 보이는 영역) */
+    .daily-post-tags {
+        font-family: 'Noto Serif KR', serif; font-size: 12px; 
+        color: var(--point-color); opacity: 0.9; cursor: pointer; transition: opacity 0.2s;
+    }
+    .daily-post-tags:hover { opacity: 0.6; }
+
     .daily-admin-menu {
-        display: none; justify-content: flex-end; gap: 12px; margin-top: 4px;
+        display: flex; justify-content: flex-end; gap: 12px; width: 100%;
     }
     .admin-btn {
         background: none; border: none; font-size: 11.5px;
@@ -121,7 +124,6 @@
     .admin-btn.edit { color: var(--point-color); }
     .admin-btn.delete { color: #ff3b30; }
 
-    /* 모달 */
     .daily-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -133,12 +135,12 @@
         box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px;
     }
 
-    .daily-modal-title {
+    .daily-modal-input {
         background: transparent; border: none; border-bottom: 1px solid var(--divider-bg);
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 14px;
         padding: 5px 0; outline: none; width: 100%; transition: 0.3s;
     }
-    .daily-modal-title:focus { border-bottom-color: var(--point-color); }
+    .daily-modal-input:focus { border-bottom-color: var(--point-color); }
     
     .daily-modal-editor {
         width: 100%; min-height: 120px; background: transparent; border: none;
@@ -175,7 +177,6 @@
     }
     .daily-modal-submit:hover { opacity: 1; transform: translateX(3px); }
 
-    /* 드래그 툴바 */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
         border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
@@ -224,15 +225,15 @@
     
     <div class="daily-top-actions">
         <div class="search-inner">
-            <input type="text" id="daily-search" autocomplete="off" placeholder="검색">
-            <i class="xi-search" id="search-icon" title="검색 열기"></i>
+            <input type="text" id="daily-search" autocomplete="off" placeholder="Search">
+            <i class="xi-search" id="search-icon" title="Search"></i>
         </div>
-        <button class="daily-write-btn" onclick="openDailyWriteModal()" title="일기 쓰기"><i class="xi-pen"></i></button>
+        <button class="daily-write-btn" onclick="openDailyWriteModal()" title="Write"><i class="xi-pen"></i></button>
     </div>
 
     <div class="daily-header-bar">
         <div class="ym-selector-container">
-            <span id="ym-display" onclick="showYMPicker()" title="년/월 변경"></span>
+            <span id="ym-display" onclick="showYMPicker()" title="Change Month"></span>
             <input type="month" id="ym-picker" style="display: none;" onchange="handleYMChange()" onblur="handleYMChange()">
         </div>
     </div>
@@ -251,7 +252,7 @@
         <input type="hidden" id="daily-edit-img-url" value="">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <label for="daily-file-input" class="daily-add-img-btn" title="사진 첨부"><i class="xi-image-o"></i></label>
+            <label for="daily-file-input" class="daily-add-img-btn" title="Add Image"><i class="xi-image-o"></i></label>
             <input type="file" id="daily-file-input" accept="image/*" style="display: none;">
             <i class="xi-close" onclick="closeDailyModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px;"></i>
         </div>
@@ -261,11 +262,14 @@
             <img id="daily-image-preview" src="">
         </div>
 
-        <input type="text" id="daily-modal-title" class="daily-modal-title" placeholder="title" autocomplete="off">
-        <div id="daily-modal-content" class="daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="기록..."></div>
+        <input type="text" id="daily-modal-title" class="daily-modal-input" placeholder="Title" autocomplete="off">
+        
+        <input type="text" id="daily-modal-tags" class="daily-modal-input" placeholder="Tags (e.g., #daily #mood)" autocomplete="off">
+        
+        <div id="daily-modal-content" class="daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="Write here..."></div>
 
         <div class="daily-modal-footer">
-            <input type="date" id="daily-modal-date" class="daily-modal-date" title="날짜 변경">
+            <input type="date" id="daily-modal-date" class="daily-modal-date" title="Change Date">
             <button class="daily-modal-submit" id="daily-submit-btn" onclick="saveDailyPost()">
                 <i class="xi-arrow-right"></i>
             </button>
@@ -275,9 +279,6 @@
 </div>
 
 <script>
-    // ==========================================================================
-    // [중요] 카테고리 전환 시 오류 방지를 위해 모든 변수를 'var'로 변경했습니다!
-    // ==========================================================================
     var DAILY_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
     var DAILY_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
     var dailySupabase = window.supabase.createClient(DAILY_URL, DAILY_KEY);
@@ -379,7 +380,7 @@
                                       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
         if(dayPosts.length === 0) {
-            container.html('<p style="font-size: 12px; color: var(--sub-color); opacity: 0.5; font-family: \'Noto Serif KR\', serif; padding-top: 20px;">이날의 기록이 없습니다.</p>');
+            container.html('<p style="font-size: 12px; color: var(--sub-color); opacity: 0.5; font-family: \'Noto Serif KR\', serif; padding-top: 20px;">No entries for this day.</p>');
             return;
         }
 
@@ -390,10 +391,14 @@
         postArray.forEach(post => {
             var imageUrl = "";
             var textHtml = post.content;
+            var tagsText = "";
+            
+            // 데이터 3단 분리 (이미지 ||| 캡션 ||| 태그)
             if (post.content && post.content.includes("|||")) {
                 var parts = post.content.split("|||");
                 imageUrl = parts[0];
                 textHtml = parts[1] || "";
+                tagsText = parts[2] || "";
             }
 
             var imgBlock = "";
@@ -415,6 +420,10 @@
 
             var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
             var safeText = textHtml ? textHtml.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+            var safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+
+            // [요청] 클릭 시 등장하는 태그 + 관리버튼 묶음 패널
+            var tagsBlock = tagsText ? `<div class="daily-post-tags" onclick="searchByTag('${safeTags}')">${tagsText}</div>` : "";
 
             var postHtml = `
                 <div class="daily-post-item fade-in-element" id="daily-post-${post.id}">
@@ -423,9 +432,12 @@
                     ${titleBlock}
                     <div class="daily-post-text" onclick="toggleDailyAdmin(${post.id})">${textHtml}</div>
                     
-                    <div class="daily-admin-menu" id="daily-admin-${post.id}">
-                        <button class="admin-btn edit" onclick="openDailyEditModal(${post.id}, '${imageUrl}', '${safeTitle}', '${safeText}', '${post.created_at}')">수정</button>
-                        <button class="admin-btn delete" onclick="deleteDailyPost(${post.id})">삭제</button>
+                    <div class="daily-admin-panel" id="daily-admin-${post.id}">
+                        ${tagsBlock}
+                        <div class="daily-admin-menu">
+                            <button class="admin-btn edit" onclick="openDailyEditModal(${post.id}, '${imageUrl}', '${safeTitle}', '${safeText}', '${safeTags}', '${post.created_at}')">Edit</button>
+                            <button class="admin-btn delete" onclick="deleteDailyPost(${post.id})">Delete</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -435,8 +447,15 @@
         container.scrollTop(0);
     }
 
+    // 본문 클릭 시 태그와 버튼이 묶인 패널 등장
     window.toggleDailyAdmin = function(id) {
         $(`#daily-admin-${id}`).slideToggle(150).css('display', 'flex');
+    };
+
+    // 해시태그 텍스트 클릭 시 자동 검색 연동
+    window.searchByTag = function(tagStr) {
+        $('#daily-search').val(tagStr).focus();
+        $('#daily-search').trigger('input');
     };
 
     // 검색 기능
@@ -466,16 +485,26 @@
         var matchedPosts = allDailyPosts.filter(post => {
             var textHtml = post.content || '';
             var safeTitle = post.title || '';
+            
+            // 태그 정보도 검색 대상에 포함
+            var tagsText = "";
+            if (post.content && post.content.includes("|||")) {
+                var parts = post.content.split("|||");
+                textHtml = parts[1] || "";
+                tagsText = parts[2] || "";
+            }
+
             var pd = new Date(post.created_at);
             var dateStr = `${pd.getFullYear()}년 ${pd.getMonth()+1}월 ${pd.getDate()}일`;
             
             return (textHtml.toLowerCase().includes(keyword) || 
                     safeTitle.toLowerCase().includes(keyword) ||
+                    tagsText.toLowerCase().includes(keyword) ||
                     dateStr.includes(keyword));
         }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); 
 
         if(matchedPosts.length === 0) {
-            container.html('<p style="font-size: 12px; color: var(--sub-color); opacity: 0.5; font-family: \'Noto Serif KR\', serif; padding-top: 20px;">검색 결과가 없습니다.</p>');
+            container.html('<p style="font-size: 12px; color: var(--sub-color); opacity: 0.5; font-family: \'Noto Serif KR\', serif; padding-top: 20px;">No results found.</p>');
             return;
         }
 
@@ -487,6 +516,7 @@
         $('#daily-edit-id').val('');
         $('#daily-edit-img-url').val('');
         $('#daily-modal-title').val('');
+        $('#daily-modal-tags').val(''); // 태그 초기화
         $('#daily-modal-content').html('');
         removeDailyPreview();
 
@@ -497,12 +527,13 @@
         $('#daily-lightbox').css('display', 'flex').hide().fadeIn(200);
     };
 
-    window.openDailyEditModal = function(id, imgUrl, title, text, createdAt) {
+    window.openDailyEditModal = function(id, imgUrl, title, text, tags, createdAt) {
         isEditing = true;
         $('#daily-edit-id').val(id);
         $('#daily-edit-img-url').val(imgUrl);
         
         $('#daily-modal-title').val(title);
+        $('#daily-modal-tags').val(tags); // 기존 태그 불러오기
         $('#daily-modal-content').html(text);
         
         if(imgUrl) {
@@ -548,12 +579,13 @@
 
     window.saveDailyPost = async function() {
         var titleVal = $('#daily-modal-title').val().trim();
+        var tagsVal = $('#daily-modal-tags').val().trim(); // 태그 읽기
         var textVal = $('#daily-modal-content').html().trim();
         var dateVal = $('#daily-modal-date').val();
         var btn = $('#daily-submit-btn');
 
         if (!textVal && !selectedFile && !$('#daily-edit-img-url').val()) {
-            alert("사진이나 기록을 남겨주세요."); return;
+            alert("Please add an image or write something."); return;
         }
 
         try {
@@ -571,7 +603,8 @@
                 finalImageUrl = publicUrlData.publicUrl;
             }
 
-            var contentString = finalImageUrl ? (finalImageUrl + "|||" + textVal) : textVal;
+            // [핵심] 이미지 ||| 텍스트 ||| 태그 구조로 3단 합체 저장
+            var contentString = finalImageUrl + "|||" + textVal + "|||" + tagsVal;
 
             var finalDate = new Date();
             if (dateVal) {
@@ -606,19 +639,19 @@
             fetchMonthData(); 
 
         } catch (error) {
-            alert('기록을 저장하지 못했습니다.');
+            alert('Failed to save.');
         } finally {
             btn.prop('disabled', false).css('opacity', '0.7');
         }
     };
 
     window.deleteDailyPost = async function(id) {
-        if (!confirm("이 기록을 지우시겠습니까?")) return;
+        if (!confirm("Are you sure you want to delete this?")) return;
         try {
             var { error } = await dailySupabase.from('posts').delete().eq('id', id);
             if (error) throw error;
             fetchMonthData();
-        } catch (error) { alert('삭제하지 못했습니다.'); }
+        } catch (error) { alert('Failed to delete.'); }
     };
 
     var savedSelectionRange = null;
