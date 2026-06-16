@@ -20,28 +20,26 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
 
-    <div class="wrap">
-        <div class="container">
+<body>
+    <div id="wrap">
+        <div id="container">
             
             <header id="header">
-                <div class="inner">
-                    <h1 class="logo"><a href="#" onclick="loadPage('category/home.html'); return false;">토끼굴</a></h1>
-                    <div class="header-right">
-                        
-                        <button id="theme-toggle" class="icon-btn" onclick="toggleTheme()" title="테마 변경">
-                            <i id="theme-icon" class="xi-sun"></i>
-                        </button>
-                        
-                        <button id="btn-home" class="icon-btn" onclick="loadPage('category/home.html')" title="홈으로">
-                            <i id="home-icon" class="xi-heart"></i>
-                        </button>
+                <div class="inner_header">
+<button id="theme-toggle" class="icon-btn" onclick="toggleTheme()" title="테마 변경">
+    <i id="theme-icon" class="xi-sun"></i> 
+</button>
 
-                        <div class="dropdown">
-                            <button class="dropdown-bars icon-btn"><i id="menu-icon" class="xi-bars"></i></button>
-                            <div class="dropdown-inner" id="dropdown-menu"></div>
+<button id="btn-home" class="icon-btn" onclick="loadPage('category/home.html')" title="홈">
+    <i id="home-icon" class="xi-heart"></i>
+</button>
+
+                    <div class="dropdown">
+                        <div class="dropdown-bars" title="메뉴 열기">
+                            <i id="menu-icon" class="xi-bars"></i>
                         </div>
+                        <div class="dropdown-inner" id="dropdown-menu"></div>
                     </div>
                 </div>
             </header>
@@ -59,12 +57,12 @@
         const CATEGORIES = [
             { name: 'Home',     path: 'category/home.html',     active: true },
             { name: 'Notice',   path: 'category/notice.html',   active: false },
-            { name: '하시온',    path: 'category/hasion.html',   active: true },
+            { name: '하시온',    path: 'category/hasion.html',    active: true },
             { name: '한 줄 기록', path: 'category/oneline.html',  active: true },
             { name: 'Archive',  path: 'category/archive.html',  active: true },
             { name: 'Memo',     path: 'category/memo.html',     active: true },
-            { name: 'Daily',    path: 'category/daily.html',    active: true }, 
-            { name: 'Log',      path: 'category/log.html',      active: true }, 
+            { name: 'Daily',    path: 'category/daily.html',    active: true }, // 새로 노출 추가!
+            { name: 'Log',      path: 'category/log.html',      active: true }, // 새로 노출 추가!
             { name: 'List',     path: 'category/list.html',     active: false },
             { name: 'Todo',     path: 'category/todo.html',     active: false },
             { name: 'Playlist', path: 'category/playlist.html', active: false },
@@ -72,7 +70,7 @@
             { name: 'Check',    path: 'category/check.html',    active: false }
         ];
     </script>
-    <script src="script.js"></script>
 
+    <script src="script.js"></script>
 </body>
 </html>
