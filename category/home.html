@@ -27,7 +27,7 @@
     }
     .home-mobile-img-wrap img {
         width: 100%; height: 100%;
-        object-fit: cover; object-position: center; /* 비율 유지, 중간 기준 자르기 */
+        object-fit: cover; object-position: center;
         border-radius: 4px; border: 1px solid var(--divider-bg);
     }
 
@@ -36,7 +36,7 @@
        ========================================================================== */
     .home-row-1 {
         display: flex;
-        align-items: center; /* 텍스트와 이미지의 세로 중앙 정렬 */
+        align-items: center;
         gap: 40px;
         width: 100%;
         margin-bottom: 30px;
@@ -63,13 +63,13 @@
         opacity: 0.7; word-break: keep-all; margin-bottom: 0;
     }
 
-    /* 우측 이미지 (너무 길지 않게 사이즈 축소 및 비율 고정) */
+    /* 우측 이미지 */
     .home-pc-img-section {
         width: 180px; height: 240px; flex-shrink: 0;
     }
     .home-pc-img-section img {
         width: 100%; height: 100%;
-        object-fit: cover; object-position: center; /* 어떤 사진이든 예쁘게 잘림 */
+        object-fit: cover; object-position: center;
         border-radius: 4px; border: 1px solid var(--divider-bg);
     }
 
@@ -84,18 +84,18 @@
         background: none; border: none; padding: 0; cursor: pointer;
         font-family: inherit; font-size: 12px; font-style: italic; color: var(--main-color);
         text-decoration: underline; 
-        text-decoration-color: #FDEDF4; /* 툴바에 쓴 연핑크색 */
-        text-decoration-thickness: 4px; /* 눈에 띄게 두께 부여 */
+        text-decoration-color: #FDEDF4;
+        text-decoration-thickness: 4px;
         text-underline-offset: 2px;
         transition: color 0.2s ease, text-decoration-color 0.2s ease;
     }
     .home-single-link:hover {
-        color: #D04978; /* 툴바에 쓴 찐핑크색 */
+        color: #D04978; 
         text-decoration-color: #D04978;
     }
 
     /* ==========================================================================
-       [3단] 캘린더 (모바일 풀사이즈 연동)
+       [3단] 캘린더 (비율 찌그러짐 완벽 방지)
        ========================================================================== */
     .home-row-3 {
         width: 100%;
@@ -114,7 +114,7 @@
     
     .ym-selector-container { display: flex; align-items: center; justify-content: center; }
     
-    /* 캘린더 월/년 텍스트: 클릭 기능 복구 및 자간 넓힘 */
+    /* 캘린더 월/년 텍스트 */
     #home-cal-month-display {
         cursor: pointer; letter-spacing: 2px; transition: opacity 0.2s;
     }
@@ -132,14 +132,18 @@
     }
     .home-cal-nav:hover { color: var(--point-color); }
     
-    .home-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px 0; text-align: center; }
+    .home-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
     .home-cal-day-header { font-size: 10px; color: var(--sub-color); opacity: 0.5; margin-bottom: 5px; font-family: 'Courier New', monospace; }
     
+    /* [버그 수정] 가로/세로 비율을 1:1 정사각형으로 강제 고정 */
     .home-cal-day-wrap {
         display: flex; justify-content: center; align-items: center;
+        width: 100%;
+        aspect-ratio: 1 / 1; 
     }
+    /* 꽉 찬 사각형 안에서 85% 사이즈의 예쁜 동그라미로 렌더링 */
     .home-cal-day { 
-        width: 26px; height: 26px; display: flex; justify-content: center; align-items: center;
+        width: 85%; height: 85%; display: flex; justify-content: center; align-items: center;
         font-size: 11px; color: var(--main-color); cursor: pointer; 
         border-radius: 50%; transition: background-color 0.2s, color 0.2s;
         font-family: 'Courier New', monospace; 
@@ -147,10 +151,10 @@
     .home-cal-day:hover { background-color: rgba(0,0,0,0.04); }
     .home-cal-day.empty { pointer-events: none; opacity: 0; }
     
-    /* [요청] 기록이 있는 날: 연핑크 동그라미 배경 */
+    /* 기록이 있는 날: 연핑크 동그라미 배경 */
     .home-cal-day.has-log { background-color: #FDEDF4; }
     
-    /* [요청] 오늘 날짜: 찐핑크 폰트 색상 */
+    /* 오늘 날짜: 찐핑크 폰트 색상 */
     .home-cal-day.is-today { color: #D04978; font-weight: bold; }
 
     /* 반응형 브레이크 포인트 */
@@ -390,7 +394,7 @@
         $('#home-cal-grid').html(html);
     }
 
-    // [기능 복구] 연/월 텍스트 클릭 시 변경 인풋 활성화
+    // 연/월 텍스트 클릭 시 변경 인풋 활성화
     window.showHomeYMPicker = function() {
         $('#home-cal-month-display').hide();
         $('#home-cal-picker').show().focus();
