@@ -1,217 +1,208 @@
+<!-- 파일명: category/archive.html -->
 <style>
     .archive-wrapper {
         position: relative;
         padding-top: 10px;
     }
 
+    /* 1. [요청] 검색창 레이아웃 (Memo와 동일) */
+    .search-wrapper { display: flex; justify-content: flex-end; margin-bottom: 25px; width: 100%; }
+    .search-inner { position: relative; display: flex; align-items: center; }
+    #archive-search {
+        background: transparent; border: none; border-bottom: 1px solid transparent;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px;
+        outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0;
+        transition: width 0.4s ease, opacity 0.3s, border-color 0.4s;
+    }
+    #search-icon {
+        position: absolute; right: 0; color: var(--sub-color); opacity: 0.35;
+        cursor: pointer; font-size: 15px; transition: opacity 0.3s; z-index: 10;
+    }
+    #search-icon:hover { opacity: 0.7; }
+
     /* 이미지 업로드 영역 디자인 */
     .upload-container {
         border: 1px dashed var(--point-color);
         border-radius: 4px;
-        padding: 30px 20px;
+        padding: 20px;
         text-align: center;
         margin-bottom: 25px;
         background: transparent;
         transition: background 0.3s ease, border-color 0.3s ease;
         position: relative;
     }
-    .upload-container:hover {
-        background: rgba(0, 0, 0, 0.02);
-    }
+    .upload-container:hover { background: rgba(0, 0, 0, 0.02); }
     
+    /* 3. [요청] 화살표 아이콘 및 불필요한 텍스트 제거 */
     .upload-btn-label {
         display: inline-block;
         color: var(--point-color);
-        font-family: 'Noto Serif KR', serif;
-        font-size: 13px;
         cursor: pointer;
-        padding: 8px 16px;
+        padding: 6px 12px;
+        font-size: 18px; /* 아이콘 크기 확대 */
         border: 1px solid var(--point-color);
         border-radius: 20px;
         transition: 0.2s;
     }
-    .upload-btn-label:hover {
-        background: var(--point-color);
-        color: #fff;
-    }
+    .upload-btn-label:hover { background: var(--point-color); color: #fff; }
 
     /* 선택된 이미지 미리보기 */
-    #image-preview-wrapper {
-        display: none;
-        margin-top: 20px;
-        position: relative;
-    }
+    #image-preview-wrapper { display: none; margin-top: 15px; position: relative; }
     #image-preview {
-        max-width: 100%;
-        max-height: 250px;
-        border-radius: 4px;
-        object-fit: contain;
-        border: 1px solid var(--divider-bg);
+        max-width: 100%; max-height: 200px; border-radius: 4px;
+        object-fit: contain; border: 1px solid var(--divider-bg);
     }
     #remove-preview {
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        background: #ff3b30;
-        color: #fff;
-        border: none;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        position: absolute; top: -10px; right: -10px; background: #ff3b30; color: #fff;
+        border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
-    /* 캡션(제목) 입력 및 전송 영역 */
+    /* 2. [요청] 이름과 캡션 입력 분리 */
     .archive-input-group {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-top: 20px;
-        border-bottom: 1px solid var(--divider-bg);
-        padding-bottom: 8px;
+        display: flex; align-items: center; gap: 15px; margin-top: 20px;
+        border-bottom: 1px solid var(--divider-bg); padding-bottom: 8px;
     }
-    #archive-caption {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: var(--main-color);
-        font-family: 'Noto Serif KR', serif;
-        font-size: 13px;
-        outline: none;
+    .archive-input-item {
+        flex: 1; background: transparent; border: none; color: var(--main-color);
+        font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none;
     }
     .archive-submit-btn {
-        background: none;
-        border: none;
-        color: var(--point-color);
-        font-family: 'Noto Serif KR', serif;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        padding: 0;
-        white-space: nowrap;
-        transition: opacity 0.2s ease;
+        background: none; border: none; color: var(--point-color);
+        font-family: 'Noto Serif KR', serif; font-size: 13px; font-weight: 600;
+        cursor: pointer; padding: 0; white-space: nowrap; transition: opacity 0.2s ease;
     }
 
-    /* 갤러리 그리드 레이아웃 */
+    /* 5. [요청] 정사각형 격자 간격 축소 */
     .gallery-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-        gap: 15px;
-        margin-top: 30px;
-        padding-bottom: 40px;
+        gap: 5px; /* 기존 15px -> 5px로 대폭 축소 */
+        margin-top: 20px; padding-bottom: 40px;
     }
     @media (min-width: 768px) {
-        .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+        .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; } /* 기존 20px -> 10px */
     }
 
     .gallery-item {
-        position: relative;
-        aspect-ratio: 1; /* 완벽한 정사각형 */
-        border-radius: 4px;
-        overflow: hidden;
-        cursor: pointer;
-        border: 1px solid var(--divider-bg);
-        background: rgba(0,0,0,0.02);
+        position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden;
+        cursor: pointer; border: 1px solid var(--divider-bg); background: rgba(0,0,0,0.02);
     }
     .gallery-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover; /* 정사각형에 맞게 꽉 채움 */
-        transition: transform 0.4s ease;
+        width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;
     }
-    .gallery-item:hover img {
-        transform: scale(1.05);
-    }
+    .gallery-item:hover img { transform: scale(1.05); }
 
-    /* 이미지 호버 시 나타나는 오버레이 (날짜, 삭제 버튼) */
+    /* 이미지 호버 시 나타나는 오버레이 (날짜, 삭제 버튼 + 4. [요청] 제목 노출) */
     .gallery-overlay {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.4);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 10px;
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.3s ease;
+        display: flex; flex-direction: column; justify-content: space-between; padding: 10px;
     }
-    .gallery-item:hover .gallery-overlay {
-        opacity: 1;
-    }
-    .gallery-date {
-        color: rgba(255,255,255,0.9);
-        font-family: 'Noto Serif KR', serif;
-        font-size: 10px;
-        text-align: left;
-    }
-    .gallery-delete {
-        color: #ff3b30;
-        align-self: flex-end;
-        cursor: pointer;
-        font-size: 14px;
-    }
-    .gallery-caption-text {
-        font-size: 12px;
-        color: var(--main-color);
-        font-family: 'Noto Serif KR', serif;
-        margin-top: 8px;
-        text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .gallery-item:hover .gallery-overlay { opacity: 1; }
+    .gallery-date { color: rgba(255,255,255,0.9); font-family: 'Noto Serif KR', serif; font-size: 10px; }
+    .gallery-delete { color: #ff3b30; cursor: pointer; font-size: 14px; }
+    .gallery-hover-title {
+        color: rgba(255,255,255,1); font-family: 'Noto Serif KR', serif; font-size: 12px; font-weight: 600;
+        text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
-    /* 라이트박스 */
+    /* 4. [요청] 라이트박스를 모달(카드) 형태로, 배경은 블러 처리 */
     .archive-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-        z-index: 20000; align-items: center; justify-content: center; flex-direction: column; cursor: zoom-out;
+        background: rgba(150, 150, 150, 0.2); /* 까만색 대신 아주 연하고 투명한 톤 */
+        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out; padding: 20px;
     }
-    .archive-lightbox img {
-        max-width: 90%; max-height: 80%; object-fit: contain; border-radius: 4px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: memoZoom 0.25s ease-out;
+    
+    /* 팝업 카드 배경은 바탕색(var(--bg-color)) 유지 */
+    .archive-lightbox-card {
+        background: var(--bg-color); border: 1px solid var(--divider-bg); border-radius: 4px;
+        padding: 25px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1); cursor: default;
+        animation: memoZoom 0.25s ease-out; display: flex; flex-direction: column; gap: 15px;
     }
-    .archive-lightbox-caption {
-        color: rgba(255,255,255,0.8); font-family: 'Noto Serif KR', serif; font-size: 13px;
-        margin-top: 20px; animation: memoZoom 0.25s ease-out;
+    .archive-lightbox-card img {
+        width: 100%; max-height: 45vh; object-fit: contain; border-radius: 2px;
     }
+    @keyframes memoZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>
 
 <div class="archive-wrapper">
     
-    <div class="upload-container">
-        <input type="file" id="archive-file-input" accept="image/*" style="display: none;">
-        
-        <label for="archive-file-input" class="upload-btn-label">
-            <i class="xi-camera-o"></i> 사진 고르기
-        </label>
-        <p style="font-size: 11px; color: var(--sub-color); margin-top: 10px; font-family: 'Noto Serif KR', serif;">
-            소중한 순간을 보관소에 남겨두세요.
-        </p>
+    <!-- 1. 검색창 -->
+    <div class="search-wrapper">
+        <div class="search-inner">
+            <input type="text" id="archive-search" autocomplete="off" placeholder="검색">
+            <i class="xi-search" id="search-icon" title="검색 열기"></i>
+        </div>
+    </div>
 
+    <div class="upload-container">
+        <!-- 3. 업로드 버튼 (화살표) -->
+        <input type="file" id="archive-file-input" accept="image/*" style="display: none;">
+        <label for="archive-file-input" class="upload-btn-label" title="사진 고르기">
+            <i class="xi-arrow-up"></i>
+        </label>
+
+        <!-- 미리보기 및 분리된 입력창 -->
         <div id="image-preview-wrapper">
             <button id="remove-preview" onclick="removePreview()"><i class="xi-close"></i></button>
             <img id="image-preview" src="">
             
+            <!-- 2. 이름, 기록 분리 -->
             <div class="archive-input-group">
-                <input type="text" id="archive-caption" autocomplete="off" placeholder="사진에 대한 짧은 기록 (선택)">
-                <button class="archive-submit-btn" id="submit-btn" onclick="uploadArchivePost()">기록하기</button>
+                <input type="text" id="archive-title" class="archive-input-item" autocomplete="off" placeholder="이름" style="flex: 0.8;">
+                <input type="text" id="archive-caption" class="archive-input-item" autocomplete="off" placeholder="기록">
+                <button class="archive-submit-btn" id="submit-btn" onclick="uploadArchivePost()">
+                    <i class="xi-arrow-right" style="font-size: 16px;"></i>
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- 갤러리 격자 영역 -->
     <div class="gallery-grid" id="gallery-feed"></div>
 
 </div>
 
-<div id="archive-lightbox" class="archive-lightbox" onclick="closeArchiveLightbox()">
-    <img id="lightbox-archive-img" src="">
-    <div class="archive-lightbox-caption" id="lightbox-archive-caption"></div>
+<!-- 4. 원본 이미지 보기 라이트박스 (카드형 팝업) -->
+<div id="archive-lightbox" class="archive-lightbox" onclick="if(event.target === this) closeArchiveLightbox()">
+    <div class="archive-lightbox-card" id="archive-lightbox-card">
+        
+        <!-- 이미지 영역 -->
+        <div style="text-align: center; width: 100%; background: rgba(0,0,0,0.02); border-radius: 2px;">
+            <img id="lightbox-archive-img" src="">
+        </div>
+        
+        <!-- 읽기 모드 (제목, 날짜, 캡션, 수정/삭제) -->
+        <div id="lightbox-read-mode">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; border-bottom: 1px solid var(--divider-bg); padding-bottom: 8px;">
+                <div id="lightbox-archive-title" style="font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);"></div>
+                <div id="lightbox-archive-date" style="font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--sub-color);"></div>
+            </div>
+            
+            <div id="lightbox-archive-caption" style="font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color); line-height: 1.7; word-break: break-all;"></div>
+            
+            <!-- Memo와 동일한 미니멀 디자인의 수정/삭제 버튼 -->
+            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
+                <i class="xi-pen" onclick="startArchiveEdit()" title="수정" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='0.35'"></i>
+                <i class="xi-trash" onclick="deleteArchiveFromLightbox()" title="삭제" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'; this.style.color='#ff3b30'" onmouseout="this.style.opacity='0.35'; this.style.color='var(--sub-color)'"></i>
+            </div>
+        </div>
+
+        <!-- 수정 모드 폼 -->
+        <div id="lightbox-edit-mode" style="display: none; flex-direction: column; gap: 12px;">
+            <input type="text" id="edit-archive-title" placeholder="이름" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+            <textarea id="edit-archive-caption" placeholder="기록" style="width:100%; min-height:80px; background:transparent; border:1px solid var(--point-color); border-radius:2px; color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:10px; outline:none; resize:none; line-height:1.6;"></textarea>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 4px;">
+                <button onclick="saveArchiveEdit()" style="background:none; border:none; color:var(--point-color); font-size: 11px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">저장</button>
+                <button onclick="cancelArchiveEdit()" style="background:none; border:none; color:var(--sub-color); font-size: 11px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">취소</button>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <script>
@@ -220,6 +211,8 @@
     const archiveSupabase = window.supabase.createClient(ARCHIVE_URL, ARCHIVE_KEY);
 
     let selectedFile = null;
+    let currentLightboxPostId = null;
+    let currentLightboxImageUrl = "";
 
     // 1. 파일 선택 시 미리보기 띄우기
     $('#archive-file-input').on('change', function(e) {
@@ -231,7 +224,7 @@
         reader.onload = function(e) {
             $('#image-preview').attr('src', e.target.result);
             $('#image-preview-wrapper').slideDown(250);
-            $('.upload-btn-label').hide(); // 버튼 숨기기
+            $('.upload-btn-label').hide(); 
         }
         reader.readAsDataURL(file);
     });
@@ -240,64 +233,62 @@
     window.removePreview = function() {
         selectedFile = null;
         $('#archive-file-input').val('');
+        $('#archive-title').val('');
         $('#archive-caption').val('');
         $('#image-preview-wrapper').slideUp(200, function() {
             $('.upload-btn-label').fadeIn(200);
         });
     };
 
-    // 3. 사진 업로드 및 데이터베이스 저장 (대망의 핵심 로직)
+    // 3. 사진 업로드 및 데이터베이스 저장 (KST 시간 로직 유지)
     window.uploadArchivePost = async function() {
         if (!selectedFile) return;
 
-        const caption = $('#archive-caption').val().trim();
+        const titleVal = $('#archive-title').val().trim();
+        const captionVal = $('#archive-caption').val().trim();
         const btn = $('#submit-btn');
 
         try {
-            btn.prop('disabled', true).text('보관 중...');
+            btn.prop('disabled', true).css('opacity', '0.5');
 
-            // (1) 파일 이름 겹치지 않게 무작위 생성 (현재시간 + 난수)
             const fileExt = selectedFile.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-            // (2) Supabase Storage 'images' 버킷에 파일 업로드
             const { data: uploadData, error: uploadError } = await archiveSupabase.storage
                 .from('images')
                 .upload(fileName, selectedFile);
 
             if (uploadError) throw uploadError;
 
-            // (3) 업로드된 파일의 공개 URL 가져오기
             const { data: publicUrlData } = archiveSupabase.storage
                 .from('images')
                 .getPublicUrl(fileName);
             
             const imageUrl = publicUrlData.publicUrl;
 
-            // (4) KST 한국 시간 생성 (영국시간 Z 떼기)
+            // [핵심] 이미지 URL과 캡션을 조합하여 content에 저장 (나중에 분리하기 위함)
+            const contentString = imageUrl + "|||" + captionVal;
+
             const now = new Date(); 
             const offset = now.getTimezoneOffset() * 60000;
             const localISOString = new Date(now.getTime() - offset).toISOString().slice(0, -1);
 
-            // (5) DB 'posts' 테이블에 저장 (category: 'archive', content: 이미지URL, title: 캡션)
             const { error: dbError } = await archiveSupabase.from('posts').insert([{ 
                 category: 'archive', 
-                content: imageUrl, 
-                title: caption,
+                content: contentString, 
+                title: titleVal,
                 created_at: localISOString 
             }]);
 
             if (dbError) throw dbError;
 
-            // 완료 후 초기화
             removePreview();
             loadGalleryPosts();
 
         } catch (error) {
-            console.error(error);
-            alert('사진을 보관하지 못했습니다. (Storage 설정이 Public인지 확인해 주세요.)');
+            alert('사진을 보관하지 못했습니다.');
         } finally {
-            btn.prop('disabled', false).text('기록하기');
+            btn.prop('disabled', false).css('opacity', '1');
         }
     };
 
@@ -327,19 +318,34 @@
                 const dd = String(dateObj.getDate()).padStart(2, '0');
                 const displayDate = `${yyyy}.${mm}.${dd}`;
 
-                const captionHTML = post.title ? `<div class="gallery-caption-text">${post.title}</div>` : '';
+                // content 분리 로직 (과거 URL만 있던 데이터도 호환)
+                let imageUrl = post.content;
+                let captionText = "";
+                if (post.content && post.content.includes("|||")) {
+                    const parts = post.content.split("|||");
+                    imageUrl = parts[0];
+                    captionText = parts[1] || "";
+                }
 
-                // 이미지 격자 아이템 생성
+                // 텍스트 이스케이프 (따옴표 오류 방지)
+                const safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                const safeCaption = captionText ? captionText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                
+                // 검색용 텍스트 (이름 + 캡션 + 날짜)
+                const searchText = `${post.title || ''} ${captionText} ${displayDate}`;
+
                 const postHtml = `
-                    <div>
-                        <div class="gallery-item fade-in-element" onclick="openArchiveLightbox('${post.content}', '${post.title ? post.title.replace(/'/g, "\\'") : ''}')">
-                            <img src="${post.content}" alt="archive image" loading="lazy">
+                    <div class="gallery-wrapper-item" data-search="${searchText}">
+                        <div class="gallery-item fade-in-element" onclick="openArchiveLightbox(${post.id}, '${imageUrl}', '${safeTitle}', '${safeCaption}', '${displayDate}')">
+                            <img src="${imageUrl}" alt="archive image" loading="lazy">
                             <div class="gallery-overlay">
-                                <span class="gallery-date">${displayDate}</span>
-                                <i class="xi-trash gallery-delete" title="삭제" onclick="event.stopPropagation(); deleteArchivePost(${post.id})"></i>
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                                    <span class="gallery-date">${displayDate}</span>
+                                    <i class="xi-trash gallery-delete" title="삭제" onclick="event.stopPropagation(); deleteArchivePost(${post.id})"></i>
+                                </div>
+                                <div class="gallery-hover-title">${post.title || ''}</div>
                             </div>
                         </div>
-                        ${captionHTML}
                     </div>
                 `;
                 feedContainer.append(postHtml);
@@ -350,26 +356,93 @@
         }
     }
 
-    // 5. 사진 삭제
+    // 5. 검색창 로직 (Memo 방과 완벽하게 동일)
+    $('#search-icon').click(function() {
+        $('#archive-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
+        $(this).css('opacity', '0.7');
+    });
+    $('#archive-search').blur(function() {
+        if($(this).val().trim() === '') {
+            $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
+            $('#search-icon').css('opacity', '0.35');
+        }
+    });
+    $('#archive-search').on('input', function() {
+        const keyword = $(this).val().toLowerCase();
+        $('.gallery-wrapper-item').each(function() {
+            const dataText = $(this).attr('data-search').toLowerCase();
+            if (dataText.includes(keyword)) { $(this).show(); } else { $(this).hide(); }
+        });
+    });
+
+    // 6. 삭제 로직
     window.deleteArchivePost = async function(id) {
         if (!confirm("이 사진을 보관소에서 영구 삭제하시겠습니까?")) return;
         try {
             const { error } = await archiveSupabase.from('posts').delete().eq('id', id);
             if (error) throw error;
             loadGalleryPosts();
-        } catch (error) {
-            alert('삭제하지 못했습니다.');
-        }
+        } catch (error) { alert('삭제하지 못했습니다.'); }
+    };
+    window.deleteArchiveFromLightbox = function() {
+        deleteArchivePost(currentLightboxPostId);
+        closeArchiveLightbox();
     };
 
-    // 6. 라이트박스 (원본 크기로 보기)
-    window.openArchiveLightbox = function(src, caption) {
-        $('#lightbox-archive-img').attr('src', src);
-        $('#lightbox-archive-caption').text(caption || '');
-        $('#archive-lightbox').css('display', 'flex').fadeIn(150);
+    // 7. 팝업(모달 카드) 관리 로직
+    window.openArchiveLightbox = function(id, url, title, caption, date) {
+        currentLightboxPostId = id;
+        currentLightboxImageUrl = url;
+        
+        $('#lightbox-archive-img').attr('src', url);
+        $('#lightbox-archive-title').text(title || '');
+        $('#lightbox-archive-caption').html((caption || '').replace(/\n/g, '<br>'));
+        $('#lightbox-archive-date').text(date || '');
+        
+        $('#edit-archive-title').val(title || '');
+        $('#edit-archive-caption').val(caption || '');
+        
+        $('#lightbox-read-mode').show();
+        $('#lightbox-edit-mode').hide();
+        
+        $('#archive-lightbox').css('display', 'flex').hide().fadeIn(150);
     };
+    
     window.closeArchiveLightbox = function() {
         $('#archive-lightbox').fadeOut(150);
+    };
+
+    // 8. 팝업 내 수정/저장 로직
+    window.startArchiveEdit = function() {
+        $('#lightbox-read-mode').hide();
+        $('#lightbox-edit-mode').fadeIn(200).css('display', 'flex');
+    };
+    
+    window.cancelArchiveEdit = function() {
+        $('#lightbox-edit-mode').hide();
+        $('#lightbox-read-mode').fadeIn(200);
+    };
+    
+    window.saveArchiveEdit = async function() {
+        const newTitle = $('#edit-archive-title').val().trim();
+        const newCaption = $('#edit-archive-caption').val().trim();
+        const newContentStr = currentLightboxImageUrl + "|||" + newCaption;
+        
+        try {
+            const { error } = await archiveSupabase.from('posts').update({ 
+                title: newTitle, 
+                content: newContentStr 
+            }).eq('id', currentLightboxPostId);
+            
+            if (error) throw error;
+            
+            $('#lightbox-archive-title').text(newTitle);
+            $('#lightbox-archive-caption').html(newCaption.replace(/\n/g, '<br>'));
+            cancelArchiveEdit();
+            loadGalleryPosts(); 
+        } catch (error) {
+            alert('수정에 실패했습니다.');
+        }
     };
 
     // 초기 로드
