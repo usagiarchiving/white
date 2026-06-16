@@ -19,13 +19,13 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* 맨 처음 구름 아이콘 (색상 #f5c9d5로 변경) */
+    /* 맨 처음 구름 아이콘 */
     #initial-upload-wrapper {
         text-align: center;
         margin-bottom: 25px;
     }
     .cloud-upload-btn {
-        cursor: pointer; font-size: 26px; color: #f5c9d5;
+        cursor: pointer; font-size: 26px; color: #f5c9d5; 
         transition: color 0.3s ease, transform 0.2s ease;
         display: inline-block; padding: 10px;
     }
@@ -113,7 +113,11 @@
         box-shadow: 0 15px 40px rgba(0,0,0,0.1); cursor: default;
         animation: memoZoom 0.25s ease-out; display: flex; flex-direction: column; gap: 15px;
     }
-    .archive-lightbox-card img { width: 100%; max-height: 45vh; object-fit: contain; border-radius: 2px; }
+    /* [버그 수정] 원본 이미지 팝업 사이즈 최적화 및 불필요한 배경 제거 */
+    .archive-lightbox-card img { 
+        max-width: 100%; height: auto; max-height: 60vh; 
+        object-fit: contain; border-radius: 2px; margin: 0 auto; display: block; 
+    }
     @keyframes memoZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>
 
@@ -141,7 +145,7 @@
             <input type="text" id="archive-title" class="archive-input-item" autocomplete="off" placeholder="Title" style="text-align: center;">
             <textarea id="archive-caption" class="archive-input-item" placeholder="Caption" style="min-height: 60px; resize: none; line-height: 1.6;"></textarea>
             
-            <input type="text" id="archive-tags" class="archive-input-item" autocomplete="off" placeholder="Tags (e.g., #daily #film)">
+            <input type="text" id="archive-tags" class="archive-input-item" autocomplete="off" placeholder="tags">
             
             <div class="archive-footer-group">
                 <input type="date" id="archive-date-picker" title="Change Date">
@@ -159,7 +163,7 @@
 <div id="archive-lightbox" class="archive-lightbox" onclick="if(event.target === this) closeArchiveLightbox()">
     <div class="archive-lightbox-card" id="archive-lightbox-card">
         
-        <div style="text-align: center; width: 100%; background: rgba(0,0,0,0.02); border-radius: 2px;">
+        <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
             <img id="lightbox-archive-img" src="">
         </div>
         
@@ -168,9 +172,10 @@
                 <div id="lightbox-archive-title" style="font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);"></div>
                 <div id="lightbox-archive-date" style="font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--sub-color);"></div>
             </div>
-            <div id="lightbox-archive-caption" style="font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color); line-height: 1.7; word-break: break-all; margin-bottom: 12px;"></div>
             
-            <div id="lightbox-archive-tags" style="font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--point-color); opacity: 0.8; word-break: break-all; letter-spacing: 0.5px;"></div>
+            <div id="lightbox-archive-caption" style="font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color); line-height: 1.7; word-break: break-all; margin-bottom: 8px;"></div>
+            
+            <div id="lightbox-archive-tags" onclick="triggerTagSearch(this.innerText)" style="font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color); cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--point-color)'" onmouseout="this.style.color='var(--sub-color)'"></div>
             
             <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
                 <i class="xi-pen" onclick="startArchiveEdit()" title="Edit" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='0.35'"></i>
@@ -182,7 +187,7 @@
             <input type="text" id="edit-archive-title" placeholder="Title" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
             <textarea id="edit-archive-caption" placeholder="Caption" style="width:100%; min-height:80px; background:transparent; border:1px solid var(--point-color); border-radius:2px; color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:10px; outline:none; resize:none; line-height:1.6;"></textarea>
             
-            <input type="text" id="edit-archive-tags" placeholder="Tags (e.g., #daily #film)" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+            <input type="text" id="edit-archive-tags" placeholder="tags" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
             
             <input type="date" id="edit-archive-date" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
             
@@ -205,18 +210,18 @@
     var currentLightboxImageUrl = "";
 
     $('#archive-file-input').on('change', function(e) {
-        const file = e.target.files[0];
+        var file = e.target.files[0];
         if (!file) return;
 
         selectedFile = file;
 
-        const fileDate = new Date(file.lastModified);
-        const yyyy = fileDate.getFullYear();
-        const mm = String(fileDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(fileDate.getDate()).padStart(2, '0');
+        var fileDate = new Date(file.lastModified);
+        var yyyy = fileDate.getFullYear();
+        var mm = String(fileDate.getMonth() + 1).padStart(2, '0');
+        var dd = String(fileDate.getDate()).padStart(2, '0');
         $('#archive-date-picker').val(`${yyyy}-${mm}-${dd}`);
 
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(e) {
             $('#image-preview').attr('src', e.target.result);
             $('#initial-upload-wrapper').hide(); 
@@ -230,7 +235,7 @@
         $('#archive-file-input').val('');
         $('#archive-title').val('');
         $('#archive-caption').val('');
-        $('#archive-tags').val(''); // 태그 초기화 추가
+        $('#archive-tags').val(''); // 태그 초기화
         $('#upload-container').slideUp(200, function() {
             $('#initial-upload-wrapper').fadeIn(200); 
         });
@@ -239,42 +244,40 @@
     window.uploadArchivePost = async function() {
         if (!selectedFile) return;
 
-        const titleVal = $('#archive-title').val().trim();
-        const captionVal = $('#archive-caption').val().trim();
-        const tagsVal = $('#archive-tags').val().trim(); // 태그 값 가져오기
-        const dateVal = $('#archive-date-picker').val();
-        const btn = $('#submit-btn');
+        var titleVal = $('#archive-title').val().trim();
+        var captionVal = $('#archive-caption').val().trim();
+        var tagsVal = $('#archive-tags').val().trim(); // 태그 값 가져오기
+        var dateVal = $('#archive-date-picker').val();
+        var btn = $('#submit-btn');
 
         try {
             btn.prop('disabled', true).css('opacity', '0.3');
 
-            const fileExt = selectedFile.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            var fileExt = selectedFile.name.split('.').pop();
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-            const { data: uploadData, error: uploadError } = await archiveSupabase.storage
+            var { data: uploadData, error: uploadError } = await archiveSupabase.storage
                 .from('images')
                 .upload(fileName, selectedFile);
 
             if (uploadError) throw uploadError;
 
-            const { data: publicUrlData } = archiveSupabase.storage
+            var { data: publicUrlData } = archiveSupabase.storage
                 .from('images')
                 .getPublicUrl(fileName);
             
-            const imageUrl = publicUrlData.publicUrl;
-            
-            // 태그 정보까지 3단으로 결합 저장
-            const contentString = imageUrl + "|||" + captionVal + "|||" + tagsVal;
+            var imageUrl = publicUrlData.publicUrl;
+            var contentString = imageUrl + "|||" + captionVal + "|||" + tagsVal;
 
-            let finalDate = new Date();
+            var finalDate = new Date();
             if (dateVal) {
-                const parts = dateVal.split('-');
+                var parts = dateVal.split('-');
                 finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
             }
-            const offset = finalDate.getTimezoneOffset() * 60000;
-            const localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+            var offset = finalDate.getTimezoneOffset() * 60000;
+            var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
 
-            const { error: dbError } = await archiveSupabase.from('posts').insert([{ 
+            var { error: dbError } = await archiveSupabase.from('posts').insert([{ 
                 category: 'archive', 
                 content: contentString, 
                 title: titleVal,
@@ -294,11 +297,11 @@
     };
 
     async function loadGalleryPosts() {
-        const feedContainer = $('#gallery-feed');
+        var feedContainer = $('#gallery-feed');
         feedContainer.html('<p style="grid-column: 1 / -1; text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
 
         try {
-            const { data, error } = await archiveSupabase.from('posts')
+            var { data, error } = await archiveSupabase.from('posts')
                 .select('*')
                 .eq('category', 'archive');
                 
@@ -311,40 +314,38 @@
             }
 
             data.sort((a, b) => {
-                const dateA = a.created_at.split('T')[0];
-                const dateB = b.created_at.split('T')[0];
+                var dateA = a.created_at.split('T')[0];
+                var dateB = b.created_at.split('T')[0];
                 if (dateA === dateB) return b.id - a.id; 
                 return new Date(dateB) - new Date(dateA);
             });
 
             data.forEach(post => {
-                const dateObj = new Date(post.created_at);
-                const yyyy = dateObj.getFullYear();
-                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const dd = String(dateObj.getDate()).padStart(2, '0');
-                const displayDate = `${yyyy}.${mm}.${dd}`;
-                const inputDate = `${yyyy}-${mm}-${dd}`; 
+                var dateObj = new Date(post.created_at);
+                var yyyy = dateObj.getFullYear();
+                var mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                var dd = String(dateObj.getDate()).padStart(2, '0');
+                var displayDate = `${yyyy}.${mm}.${dd}`;
+                var inputDate = `${yyyy}-${mm}-${dd}`; 
 
-                let imageUrl = post.content;
-                let captionText = "";
-                let tagsText = "";
+                var imageUrl = post.content;
+                var captionText = "";
+                var tagsText = "";
                 
-                // 태그 텍스트 분리
                 if (post.content && post.content.includes("|||")) {
-                    const parts = post.content.split("|||");
+                    var parts = post.content.split("|||");
                     imageUrl = parts[0];
                     captionText = parts[1] || "";
                     tagsText = parts[2] || "";
                 }
 
-                const safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                const safeCaption = captionText ? captionText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                const safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                var safeCaption = captionText ? captionText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                var safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 
-                // 검색 색인에 태그 포함
-                const searchText = `${post.title || ''} ${captionText} ${tagsText} ${displayDate}`;
+                var searchText = `${post.title || ''} ${captionText} ${tagsText} ${displayDate}`;
 
-                const postHtml = `
+                var postHtml = `
                     <div class="gallery-wrapper-item" data-search="${searchText}">
                         <div class="gallery-item fade-in-element" onclick="openArchiveLightbox(${post.id}, '${imageUrl}', '${safeTitle}', '${safeCaption}', '${safeTags}', '${displayDate}', '${inputDate}')">
                             <img src="${imageUrl}" alt="archive image" loading="lazy">
@@ -365,6 +366,15 @@
         }
     }
 
+    // [추가] 태그 클릭 시 검색창을 열고 검색 실행
+    window.triggerTagSearch = function(tagText) {
+        if(!tagText) return;
+        closeArchiveLightbox();
+        $('#archive-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(tagText).focus();
+        $('#search-icon').css('opacity', '0.7');
+        $('#archive-search').trigger('input'); // 검색어 필터 즉시 적용
+    };
+
     $('#search-icon').click(function() {
         $('#archive-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
         $(this).css('opacity', '0.7');
@@ -376,9 +386,9 @@
         }
     });
     $('#archive-search').on('input', function() {
-        const keyword = $(this).val().toLowerCase();
+        var keyword = $(this).val().toLowerCase();
         $('.gallery-wrapper-item').each(function() {
-            const dataText = $(this).attr('data-search').toLowerCase();
+            var dataText = $(this).attr('data-search').toLowerCase();
             if (dataText.includes(keyword)) { $(this).show(); } else { $(this).hide(); }
         });
     });
@@ -386,7 +396,7 @@
     window.deleteArchivePost = async function(id) {
         if (!confirm("Are you sure you want to delete this?")) return;
         try {
-            const { error } = await archiveSupabase.from('posts').delete().eq('id', id);
+            var { error } = await archiveSupabase.from('posts').delete().eq('id', id);
             if (error) throw error;
             loadGalleryPosts();
         } catch (error) { alert('Failed to delete.'); }
@@ -396,7 +406,6 @@
         closeArchiveLightbox();
     };
 
-    // openArchiveLightbox 파라미터에 tags 추가 연동
     window.openArchiveLightbox = function(id, url, title, caption, tags, displayDate, inputDate) {
         currentLightboxPostId = id;
         currentLightboxImageUrl = url;
@@ -404,12 +413,12 @@
         $('#lightbox-archive-img').attr('src', url);
         $('#lightbox-archive-title').text(title || '');
         $('#lightbox-archive-caption').html((caption || '').replace(/\n/g, '<br>'));
-        $('#lightbox-archive-tags').text(tags || ''); // 팝업 태그 세팅
+        $('#lightbox-archive-tags').text(tags || ''); // 태그 세팅
         $('#lightbox-archive-date').text(displayDate || '');
         
         $('#edit-archive-title').val(title || '');
         $('#edit-archive-caption').val(caption || '');
-        $('#edit-archive-tags').val(tags || ''); // 수정창 태그 세팅
+        $('#edit-archive-tags').val(tags || '');
         $('#edit-archive-date').val(inputDate || ''); 
         
         $('#lightbox-read-mode').show();
@@ -417,6 +426,7 @@
         
         $('#archive-lightbox').css('display', 'flex').hide().fadeIn(150);
     };
+    
     window.closeArchiveLightbox = function() {
         $('#archive-lightbox').fadeOut(150);
     };
@@ -431,24 +441,23 @@
     };
     
     window.saveArchiveEdit = async function() {
-        const newTitle = $('#edit-archive-title').val().trim();
-        const newCaption = $('#edit-archive-caption').val().trim();
-        const newTags = $('#edit-archive-tags').val().trim(); // 태그 값 가져오기
-        const newDateStr = $('#edit-archive-date').val();
+        var newTitle = $('#edit-archive-title').val().trim();
+        var newCaption = $('#edit-archive-caption').val().trim();
+        var newTags = $('#edit-archive-tags').val().trim();
+        var newDateStr = $('#edit-archive-date').val();
         
-        // 다시 3단 결합하여 저장
-        const newContentStr = currentLightboxImageUrl + "|||" + newCaption + "|||" + newTags;
+        var newContentStr = currentLightboxImageUrl + "|||" + newCaption + "|||" + newTags;
         
         try {
-            let finalDate = new Date();
+            var finalDate = new Date();
             if (newDateStr) {
-                const parts = newDateStr.split('-');
+                var parts = newDateStr.split('-');
                 finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
             }
-            const offset = finalDate.getTimezoneOffset() * 60000;
-            const localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+            var offset = finalDate.getTimezoneOffset() * 60000;
+            var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
 
-            const { error } = await archiveSupabase.from('posts').update({ 
+            var { error } = await archiveSupabase.from('posts').update({ 
                 title: newTitle, 
                 content: newContentStr,
                 created_at: localISOString
@@ -456,13 +465,13 @@
             
             if (error) throw error;
             
-            const yy = finalDate.getFullYear();
-            const m = String(finalDate.getMonth() + 1).padStart(2, '0');
-            const d = String(finalDate.getDate()).padStart(2, '0');
+            var yy = finalDate.getFullYear();
+            var m = String(finalDate.getMonth() + 1).padStart(2, '0');
+            var d = String(finalDate.getDate()).padStart(2, '0');
             
             $('#lightbox-archive-title').text(newTitle);
             $('#lightbox-archive-caption').html(newCaption.replace(/\n/g, '<br>'));
-            $('#lightbox-archive-tags').text(newTags); // 태그 UI 갱신
+            $('#lightbox-archive-tags').text(newTags); 
             $('#lightbox-archive-date').text(`${yy}.${m}.${d}`);
             
             cancelArchiveEdit();
