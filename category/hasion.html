@@ -118,24 +118,29 @@
     }
 
     /* ==========================================================================
-       [🚨 1차 검증: 인라인 이미지 여백 진공 압축기 및 우클릭 복구]
+       [🚨 1차 검증: 인라인 이미지 여백 진공 압축 및 겹침 방지 다단 그리드]
        ========================================================================== */
     .editor-img-wrap {
-        display: inline-block; position: relative; vertical-align: top; 
+        position: relative; vertical-align: top; 
         margin: 0 0 6px 0; 
         cursor: pointer; transition: width 0.2s ease;
+        box-sizing: border-box;
     }
-    .img-full { width: 100%; }
-    .img-half { width: 49%; margin-right: 1%; }
-    .img-third { width: 32%; margin-right: 1%; }
+    
+    /* 🚨 100%일 때는 display: block 으로 줘서 겹침을 원천 차단하고 아래로 밀리게 합니다. */
+    .img-full { width: 100%; display: block; margin: 0 auto 6px auto; }
+    
+    /* 🚨 2단, 3단 클릭 시 띄어쓰기 여백(약 4px)을 고려해 calc()로 여백을 빼주어 티스토리처럼 딱 붙게 만듭니다. */
+    .img-half { width: calc(50% - 5px); display: inline-block; margin: 0 4px 6px 0; }
+    .img-third { width: calc(33.3% - 6px); display: inline-block; margin: 0 4px 6px 0; }
     
     .editor-img-wrap img {
         width: 100%; height: auto; display: block; border-radius: 4px;
         border: 1px solid var(--divider-bg); 
-        pointer-events: none; /* 에디터 크기 조절을 위한 유리막 */
+        pointer-events: none; /* 에디터 클릭 제어용 유리막 */
     }
 
-    /* 🚨 [추가된 핀셋 코드] 읽기 모드에서는 유리막을 걷어내어 이미지 우클릭/꾹 누르기(저장) 완벽 허용 */
+    /* 읽기 모드에서는 유리막을 걷어내어 이미지 우클릭/꾹 누르기(저장) 완벽 허용 */
     .read-mode .editor-img-wrap img {
         pointer-events: auto;
         -webkit-touch-callout: default;
@@ -330,27 +335,23 @@
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
+    /* 🚨 [수정] 여러 장의 사진이 서로의 태그 안에 갇혀 겹치는(Nesting) 현상을 방지하기 위해 
+       각 사진을 별도 렌더링 후 한 번에 문자열로 이어 붙여 일괄 삽입합니다. */
     $('#hasion-file-input').on('change', async function(e) {
         var files = Array.from(e.target.files);
         if(!files.length) return;
         
-        var earliestDate = new Date();
-        var minTime = Infinity;
-        files.forEach(f => {
-            if(f.lastModified < minTime) {
-                minTime = f.lastModified;
-                earliestDate = new Date(f.lastModified);
-            }
-        });
-        
-        var yyyy = earliestDate.getFullYear();
-        var mm = String(earliestDate.getMonth()+1).padStart(2, '0');
-        var dd = String(earliestDate.getDate()).padStart(2, '0');
+        // 가장 처음 선택된 사진의 날짜로 달력 세팅
+        var firstDate = new Date(files[0].lastModified);
+        var yyyy = firstDate.getFullYear();
+        var mm = String(firstDate.getMonth()+1).padStart(2, '0');
+        var dd = String(firstDate.getDate()).padStart(2, '0');
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
         
         $('#submit-btn').prop('disabled', true).css('opacity', '0.3');
         $('.hasion-img-add-btn').css('opacity', '0.3');
         
+        var allImgHtml = '';
         for(var file of files) {
             var fileExt = file.name.split('.').pop();
             var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -358,10 +359,15 @@
             
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                var imgHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>`;
-                $('#hasion-content').focus();
-                document.execCommand('insertHTML', false, imgHtml);
+                // 🚨 꾹 눌러서 드래그 재배치 가능하도록 draggable="true" 속성 추가
+                allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false" draggable="true"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>`;
             }
+        }
+        
+        // 이미지가 모두 준비되면 한 번에 에디터에 쏘기 (끝에 공백을 주어 커서가 빠져나올 수 있게 함)
+        if(allImgHtml !== '') {
+            $('#hasion-content').focus();
+            document.execCommand('insertHTML', false, allImgHtml + '&nbsp;');
         }
         
         $('#submit-btn').prop('disabled', false).css('opacity', '0.7');
@@ -369,6 +375,7 @@
         $(this).val('');
     });
 
+    // 🚨 2단, 3단 그리드 사이클 클릭 이벤트 (티스토리 방식)
     $(document).on('click', '.editor-img-wrap', function(e) {
         if ($(this).closest('.read-mode').length > 0) return; 
         
@@ -518,6 +525,7 @@
         body.slideToggle(400); 
     };
 
+    /* 🚨 수정 모드에서의 사진 추가 일괄 삽입 */
     window.uploadEditImages = async function(id, inputEl) {
         var files = Array.from(inputEl.files);
         if(!files.length) return;
@@ -525,16 +533,21 @@
         var btnWrap = $(`#edit-actions-${id}`);
         btnWrap.css('opacity', '0.3').css('pointer-events', 'none');
         
+        var allImgHtml = '';
         for(var file of files) {
             var fileExt = file.name.split('.').pop();
             var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
             var { error } = await hasionSupabase.storage.from('images').upload(fileName, file);
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                var imgHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>`;
-                $(`#edit-content-${id}`).append(imgHtml);
+                allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false" draggable="true"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>`;
             }
         }
+        
+        if(allImgHtml !== '') {
+            $(`#edit-content-${id}`).append(allImgHtml + '&nbsp;');
+        }
+        
         btnWrap.css('opacity', '1').css('pointer-events', 'auto');
         $(inputEl).val('');
     };
