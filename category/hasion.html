@@ -85,28 +85,26 @@
     .hasion-submit-btn:hover { opacity: 1; transform: translateX(3px); }
 
     /* ==========================================================================
-       [피드 영역 철벽 보호 & HTML 라이브 렌더링 박스 (해결 완료)]
+       [피드 영역 & HTML 라이브 렌더링 박스 방어막]
        ========================================================================== */
     .feed-item {
         width: 100%; max-width: 100%; box-sizing: border-box;
-        /* 🚨 꼬리가 잘리지 않도록 overflow: hidden 해제 완료 */
+        /* 말풍선 꼬리가 짤리지 않도록 overflow 속성을 아예 제거했습니다. */
     }
     
     .feed-text {
         width: 100%; max-width: 100%; box-sizing: border-box;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; 
         word-break: break-all; word-wrap: break-word; font-size: 13px; white-space: pre-wrap; 
-        /* 🚨 꼬리가 잘리지 않도록 overflow: hidden 해제 완료 */
     }
 
-    .feed-text > img {
+    .feed-text img, .custom-html-box img {
         max-width: 100% !important; height: auto !important; box-sizing: border-box;
     }
 
-    /* 🚨 여백 폭탄 압축기 (HTML 코드 전용 캔버스) */
+    /* 🚨 아이메시지 꼬리 잘림 & 여백 폭발 방지 캡슐 */
     .custom-html-box {
         width: 100%; box-sizing: border-box; margin: 10px 0;
-        /* 아래 코드들이 부모의 pre-wrap과 넓은 줄 간격을 무력화시켜 여백을 압축합니다. */
         white-space: normal !important; 
         line-height: normal !important; 
         letter-spacing: normal !important;
@@ -117,17 +115,22 @@
     .custom-html-box * {
         box-sizing: border-box;
     }
+    .custom-html-box svg {
+        display: block !important; /* SVG 꼬리 붕 뜨는 현상 방지 */
+    }
 
     /* ==========================================================================
-       [인라인 이미지 & 드래그 툴바]
+       [🚨 1차 검증: 인라인 이미지 여백 진공 압축기]
        ========================================================================== */
     .editor-img-wrap {
-        display: inline-block; position: relative; vertical-align: top; margin: 4px 1%;
+        display: inline-block; position: relative; vertical-align: top; 
+        margin: 0 0 6px 0; /* 좌우 여백을 없애고 오직 하단 6px 간격만 허용! */
         cursor: pointer; transition: width 0.2s ease;
     }
-    .img-full { width: 98%; }
-    .img-half { width: 48%; }
-    .img-third { width: 31%; }
+    /* 사진 폭을 100%로 꽉 채워 띄어쓰기가 비집고 들어올 틈을 차단합니다. */
+    .img-full { width: 100%; }
+    .img-half { width: 49%; margin-right: 1%; }
+    .img-third { width: 32%; margin-right: 1%; }
     
     .editor-img-wrap img {
         width: 100%; height: auto; display: block; border-radius: 4px;
@@ -351,12 +354,8 @@
             
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                var imgHtml = `
-                    <span class="editor-img-wrap img-full" contenteditable="false">
-                        <img src="${data.publicUrl}">
-                        <div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div>
-                    </span>&nbsp;
-                `;
+                // 🚨 투명 띄어쓰기(&nbsp;)를 완벽히 제거하여 불필요한 줄바꿈 여백을 차단합니다.
+                var imgHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>`;
                 $('#hasion-content').focus();
                 document.execCommand('insertHTML', false, imgHtml);
             }
@@ -521,7 +520,8 @@
             var { error } = await hasionSupabase.storage.from('images').upload(fileName, file);
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                var imgHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>&nbsp;`;
+                // 🚨 수정 모드에서도 투명 띄어쓰기(&nbsp;)를 완벽히 제거
+                var imgHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>`;
                 $(`#edit-content-${id}`).append(imgHtml);
             }
         }
