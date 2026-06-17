@@ -1,13 +1,12 @@
 <style>
     /* ==========================================================================
-       [기본 구조 및 튀어나옴 방지 (철벽 보호)]
+       [기본 구조]
        ========================================================================== */
     .hasion-wrapper {
         position: relative;
         padding-top: 10px;
         width: 100%;
         max-width: 100%;
-        overflow: hidden;
         box-sizing: border-box;
     }
 
@@ -44,7 +43,7 @@
     .tag-pill:hover { color: var(--point-color); border-color: var(--point-color); }
 
     /* ==========================================================================
-       [입력 캔버스 철벽 보호 & UI 재배치]
+       [입력 캔버스 UI]
        ========================================================================== */
     .hasion-title-input {
         display: block; width: 100%; max-width: 250px; margin: 0 auto 15px auto; box-sizing: border-box;
@@ -57,14 +56,14 @@
     .hasion-paper-input {
         background: #ffffff; padding: 25px 25px 15px 25px; margin-bottom: 12px;
         border-radius: 6px; border: 1px solid var(--divider-bg);
-        width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;
+        width: 100%; max-width: 100%; box-sizing: border-box;
     }
 
     .hasion-editor {
         width: 100%; max-width: 100%; min-height: 120px; background: transparent; border: none;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
         line-height: 1.8; outline: none; padding: 0; position: relative; z-index: 2;
-        word-break: break-all; word-wrap: break-word; box-sizing: border-box; overflow: hidden;
+        word-break: break-all; word-wrap: break-word; box-sizing: border-box;
     }
     [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.5; pointer-events: none; }
 
@@ -86,37 +85,37 @@
     .hasion-submit-btn:hover { opacity: 1; transform: translateX(3px); }
 
     /* ==========================================================================
-       [피드 영역 철벽 보호 & HTML 라이브 렌더링 박스]
+       [피드 영역 철벽 보호 & HTML 라이브 렌더링 박스 (해결 완료)]
        ========================================================================== */
     .feed-item {
-        width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;
+        width: 100%; max-width: 100%; box-sizing: border-box;
+        /* 🚨 꼬리가 잘리지 않도록 overflow: hidden 해제 완료 */
     }
     
     .feed-text {
-        width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;
+        width: 100%; max-width: 100%; box-sizing: border-box;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; 
         word-break: break-all; word-wrap: break-word; font-size: 13px; white-space: pre-wrap; 
+        /* 🚨 꼬리가 잘리지 않도록 overflow: hidden 해제 완료 */
     }
 
-    .feed-text img, .custom-html-box img {
+    .feed-text > img {
         max-width: 100% !important; height: auto !important; box-sizing: border-box;
     }
 
-    /* [🚨핵심 방어막] 라이브 HTML 렌더링 컨테이너의 CSS 오염 방지 */
+    /* 🚨 여백 폭탄 압축기 (HTML 코드 전용 캔버스) */
     .custom-html-box {
-        width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;
-        white-space: normal; margin: 10px 0;
-        /* 아래 코드들이 외부 CSS(line-height: 1.8)를 무효화시켜 말풍선을 원본 그대로 보호합니다. */
+        width: 100%; box-sizing: border-box; margin: 10px 0;
+        /* 아래 코드들이 부모의 pre-wrap과 넓은 줄 간격을 무력화시켜 여백을 압축합니다. */
+        white-space: normal !important; 
         line-height: normal !important; 
-        font-size: initial !important; 
+        letter-spacing: normal !important;
+        word-break: normal !important;
+        word-wrap: normal !important;
+        overflow: visible !important; /* 꼬리 구출 */
     }
     .custom-html-box * {
-        max-width: 100%;
         box-sizing: border-box;
-    }
-    /* 꼬리가 붕 뜨는 걸 막기 위해 SVG를 block으로 고정 */
-    .custom-html-box svg {
-        display: block !important;
     }
 
     /* ==========================================================================
@@ -255,7 +254,6 @@
         document.execCommand(command, false, color); checkSelection();
     };
 
-    // 정확한 픽셀 사이즈 적용 (HTML DOM 제어 방식)
     window.applyExactFontSize = function(size) {
         if (savedSelectionRange) {
             var selection = window.getSelection();
@@ -265,18 +263,17 @@
             if(!editor || editor.getAttribute('contenteditable') !== 'true') return;
         }
         
-        document.execCommand("fontSize", false, "7"); // 폰트 사이즈 7로 임시 마킹
+        document.execCommand("fontSize", false, "7"); 
         var fontElements = document.getElementsByTagName("font");
         for (var i = 0; i < fontElements.length; i++) {
             if (fontElements[i].size == "7") {
                 fontElements[i].removeAttribute("size");
-                fontElements[i].style.fontSize = size + "px"; // 픽셀 크기로 교체
+                fontElements[i].style.fontSize = size + "px"; 
             }
         }
         checkSelection();
     };
 
-    // 플러스, 마이너스 버튼 제어 로직
     window.adjustFontSize = function(delta) {
         var input = document.getElementById('fontSizeInput');
         var currentSize = parseInt(input.value) || 13;
@@ -418,35 +415,29 @@
                 var contentHtml = post.content;
                 var tagsText = "";
                 
-                // 1. 데이터 분리 (본문 ||| 태그)
                 if (post.content && post.content.includes("|||")) {
                     var parts = post.content.split("|||");
                     contentHtml = parts[0];
                     tagsText = parts[1] || "";
                 }
 
-                // 2. [가장 중요한 핵심] 백틱(```) 코드를 분석하여 실제 HTML/JS 캔버스로 변환!
                 var displayContent = contentHtml.replace(/```([\s\S]*?)```/g, function(match, innerHtml) {
                     var temp = document.createElement('div');
-                    // 에디터가 임의로 생성한 태그들을 순수 텍스트 줄바꿈으로 디코딩
                     var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n')
                                                  .replace(/<\/div>/gi, '\n')
                                                  .replace(/<\/p>/gi, '\n');
                     temp.innerHTML = formattedHtml;
                     var rawCode = temp.textContent || temp.innerText || "";
                     
-                    // 철벽 렌더링 박스로 포장해서 리턴
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
 
-                // 태그 파싱 (#단어)
                 var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
                 var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 var safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 
-                // data-search 속성에 HTML 태그가 들어가지 않도록 순수 텍스트로만 조합
                 var plainSearchText = `${post.title || ''} ${tagsText} ${displayDate}`.replace(/"/g, "");
                 var tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${safeTags}')">${tagsText}</div>` : "";
 
@@ -499,7 +490,6 @@
                 $('#tags-panel').html('<span style="font-size:11px; color:var(--sub-color);">태그가 없습니다.</span>');
             }
 
-            // [마법] 렌더링 된 커스텀 HTML 박스 안에 있는 <script> 태그 실행을 보장합니다.
             setTimeout(() => {
                 $('.custom-html-box script').each(function() {
                     try { eval($(this).text()); } catch(e) {}
@@ -677,4 +667,3 @@
         loadHasionPosts(); 
     }, 100);
 </script>
-
