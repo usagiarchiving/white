@@ -89,7 +89,6 @@
        ========================================================================== */
     .feed-item {
         width: 100%; max-width: 100%; box-sizing: border-box;
-        /* 말풍선 꼬리가 짤리지 않도록 overflow 속성을 아예 제거했습니다. */
     }
     
     .feed-text {
@@ -110,13 +109,13 @@
         letter-spacing: normal !important;
         word-break: normal !important;
         word-wrap: normal !important;
-        overflow: visible !important; /* 꼬리 구출 */
+        overflow: visible !important;
     }
     .custom-html-box * {
         box-sizing: border-box;
     }
     .custom-html-box svg {
-        display: block !important; /* SVG 꼬리 붕 뜨는 현상 방지 */
+        display: block !important;
     }
 
     /* ==========================================================================
@@ -127,7 +126,6 @@
         margin: 0 0 6px 0; /* 좌우 여백을 없애고 오직 하단 6px 간격만 허용! */
         cursor: pointer; transition: width 0.2s ease;
     }
-    /* 사진 폭을 100%로 꽉 채워 띄어쓰기가 비집고 들어올 틈을 차단합니다. */
     .img-full { width: 100%; }
     .img-half { width: 49%; margin-right: 1%; }
     .img-third { width: 32%; margin-right: 1%; }
@@ -354,7 +352,6 @@
             
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                // 🚨 투명 띄어쓰기(&nbsp;)를 완벽히 제거하여 불필요한 줄바꿈 여백을 차단합니다.
                 var imgHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>`;
                 $('#hasion-content').focus();
                 document.execCommand('insertHTML', false, imgHtml);
@@ -428,13 +425,16 @@
                     temp.innerHTML = formattedHtml;
                     var rawCode = temp.textContent || temp.innerText || "";
                     
-                    // [수정] 유령 공백(&nbsp;)과 줄바꿈을 압축하여 여백 폭발 및 꼬리 띄워짐 완전 해결
+                    // 유령 공백(&nbsp;)과 줄바꿈을 압축하여 아이메시지 꼬리 및 레이아웃 복원
                     rawCode = rawCode.replace(/\u00A0/g, ' ')
                                      .replace(/>\s+</g, '><')
                                      .trim();
                     
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
+
+                // 🚨 [추가된 핀셋 코드] 사진과 사진 사이의 무의미한 공백, 엔터, <div> 태그 등을 완벽하게 압축하여 6px 여백 유지
+                displayContent = displayContent.replace(/(<\/span>)(?:\s|&nbsp;|<br\s*\/?>|<\/?div>|<\/?p>)*(<span class="editor-img-wrap)/gi, '$1$2');
 
                 var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
@@ -525,7 +525,6 @@
             var { error } = await hasionSupabase.storage.from('images').upload(fileName, file);
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                // 🚨 수정 모드에서도 투명 띄어쓰기(&nbsp;)를 완벽히 제거
                 var imgHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>`;
                 $(`#edit-content-${id}`).append(imgHtml);
             }
