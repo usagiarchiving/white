@@ -204,7 +204,7 @@
 </div>
 
 <div id="archive-lightbox" class="archive-lightbox" onclick="if(event.target === this) closeArchiveLightbox()">
-    <div class="archive-lightbox-card" id="archive-lightbox-card" onclick="event.stopPropagation()">
+    <div class="archive-lightbox-card" id="archive-lightbox-card">
         
         <div id="lightbox-archive-img-container" style="display: flex; flex-direction: column; width: 100%;">
         </div>
@@ -229,7 +229,7 @@
             <input type="text" id="edit-archive-title" placeholder="Title" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
             <textarea id="edit-archive-caption" placeholder="Caption" style="width:100%; min-height:80px; background:transparent; border:1px solid var(--point-color); border-radius:2px; color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:10px; outline:none; resize:none; line-height:1.6;"></textarea>
             
-            <input type="text" id="edit-archive-tags" placeholder="Tags (e.g., #daily #film)" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+            <input type="text" id="edit-archive-tags" placeholder="Tags" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
             
             <input type="date" id="edit-archive-date" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
             
@@ -251,6 +251,9 @@
     var mainFileIndex = 0;
     var currentLightboxPostId = null;
     var currentLightboxImageUrl = "";
+    
+    // 🚨 1. 팝업 더블클릭 오작동 방지를 위한 타이머 변수
+    var archiveLightboxOpenTime = 0; 
 
     // 1. 파일 다중 선택 핸들링
     $('#archive-file-input').on('change', function(e) {
@@ -456,9 +459,10 @@
                 var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
-                var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                var safeCaption = captionText ? captionText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                var safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                // 🚨 2. 구문 오류(SyntaxError) 해결: 줄바꿈(\n)과 특수문자를 완벽하게 안전 처리
+                var safeTitle = post.title ? post.title.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
+                var safeCaption = captionText ? captionText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
+                var safeTags = tagsText ? tagsText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
                 
                 var searchText = `${post.title || ''} ${captionText} ${tagsText} ${displayDate}`;
 
@@ -542,6 +546,7 @@
     };
 
     window.openArchiveLightbox = function(id, urlsStr, title, caption, tags, displayDate, inputDate) {
+        archiveLightboxOpenTime = Date.now(); // 🚨 열린 시점 기록
         currentLightboxPostId = id;
         currentLightboxImageUrl = urlsStr; // 묶음 URL 원본 저장
         
@@ -567,6 +572,8 @@
     };
     
     window.closeArchiveLightbox = function() {
+        // 🚨 더블클릭 오작동 방어: 열린 지 0.3초 이내의 닫기 명령은 가볍게 무시합니다.
+        if (Date.now() - archiveLightboxOpenTime < 300) return; 
         $('#archive-lightbox').fadeOut(150);
     };
 
