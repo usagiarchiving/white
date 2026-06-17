@@ -204,7 +204,7 @@
 </div>
 
 <div id="archive-lightbox" class="archive-lightbox" onclick="if(event.target === this) closeArchiveLightbox()">
-    <div class="archive-lightbox-card" id="archive-lightbox-card">
+    <div class="archive-lightbox-card" id="archive-lightbox-card" onclick="event.stopPropagation()">
         
         <div id="lightbox-archive-img-container" style="display: flex; flex-direction: column; width: 100%;">
         </div>
@@ -229,7 +229,7 @@
             <input type="text" id="edit-archive-title" placeholder="Title" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
             <textarea id="edit-archive-caption" placeholder="Caption" style="width:100%; min-height:80px; background:transparent; border:1px solid var(--point-color); border-radius:2px; color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:10px; outline:none; resize:none; line-height:1.6;"></textarea>
             
-            <input type="text" id="edit-archive-tags" placeholder="Tags" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+            <input type="text" id="edit-archive-tags" placeholder="Tags (e.g., #daily #film)" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
             
             <input type="date" id="edit-archive-date" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
             
@@ -243,7 +243,6 @@
 </div>
 
 <script>
-    // [핵심 변경] 새로운 수파베이스 URL과 KEY가 적용되었습니다!
     var ARCHIVE_URL = 'https://qefyxypznhovdshagcpc.supabase.co';
     var ARCHIVE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlZnl4eXB6bmhvdmRzaGFnY3BjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzc2MTIsImV4cCI6MjA5NzIxMzYxMn0.RuAe5F5uOinYWDYmmF7YaNTuvhY_H41AhnX8orN6v_Y';
     var archiveSupabase = window.supabase.createClient(ARCHIVE_URL, ARCHIVE_KEY);
