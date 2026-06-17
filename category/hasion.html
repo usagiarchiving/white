@@ -428,6 +428,11 @@
                     temp.innerHTML = formattedHtml;
                     var rawCode = temp.textContent || temp.innerText || "";
                     
+                    // [수정] 유령 공백(&nbsp;)과 줄바꿈을 압축하여 여백 폭발 및 꼬리 띄워짐 완전 해결
+                    rawCode = rawCode.replace(/\u00A0/g, ' ')
+                                     .replace(/>\s+</g, '><')
+                                     .trim();
+                    
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
 
