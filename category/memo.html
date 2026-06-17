@@ -8,7 +8,7 @@
         padding-top: 10px;
     }
 
-    /* 검색창 & 태그 아이콘 레이아웃 [수정: 태그 아이콘 추가를 위한 gap 설정] */
+    /* 검색창 & 태그 아이콘 레이아웃 */
     .search-wrapper { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; width: 100%; gap: 15px; }
     
     #tags-toggle-btn { cursor: pointer; color: var(--sub-color); font-size: 18px; transition: color 0.3s; }
@@ -27,7 +27,7 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* [추가] 태그 모음 패널 및 디자인 */
+    /* 태그 모음 패널 및 디자인 */
     #tags-panel {
         display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; 
         padding: 15px; background: rgba(0,0,0,0.02); border-radius: 6px; 
@@ -79,13 +79,6 @@
         word-break: break-all;
     }
 
-    /* [추가] 편지지 내부 태그 입력칸 */
-    .memo-tags-input {
-        width: 100%; background: transparent; border: none; outline: none;
-        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 11.5px;
-        margin-top: 15px; border-top: 1px dashed var(--divider-bg); padding-top: 10px;
-    }
-
     /* 하단 날짜, From 영역 */
     .memo-footer-input { display: flex; flex-direction: column; align-items: flex-end; margin-top: 12px; gap: 0px; }
     .memo-date-picker {
@@ -95,8 +88,14 @@
     }
     .memo-date-picker:hover { opacity: 1; }
 
-    /* 화살표 전송 버튼 */
-    .memo-submit-container { display: flex; justify-content: flex-end; margin-bottom: 45px; padding-right: 10px; }
+    /* [수정] 태그 입력칸 (편지지 외부, 좌측 하단) */
+    .memo-tags-input {
+        width: 150px; background: transparent; border: none; outline: none;
+        color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px;
+    }
+
+    /* [수정] 화살표 전송 버튼 및 태그 컨테이너 */
+    .memo-submit-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 45px; padding: 0 5px; }
     .memo-submit-btn {
         background: none; border: none; color: var(--point-color); cursor: pointer;
         font-size: 24px; padding: 5px; opacity: 0.6; transition: opacity 0.2s, transform 0.2s;
@@ -176,7 +175,6 @@
 <div class="memo-wrapper">
     
     <div class="search-wrapper">
-        <!-- [추가] 태그 아이콘 -->
         <i class="xi-tags" id="tags-toggle-btn" title="태그 모음 열기"></i>
         <div class="search-inner">
             <input type="text" id="memo-search" autocomplete="off" placeholder="검색">
@@ -184,7 +182,6 @@
         </div>
     </div>
     
-    <!-- [추가] 태그 패널 -->
     <div id="tags-panel"></div>
 
     <input type="text" id="memo-title" class="memo-title-input" autocomplete="off" placeholder="title">
@@ -198,9 +195,6 @@
         <div style="position: relative; width: 100%;">
             <div id="memo-content" class="memo-editor" contenteditable="true" spellcheck="false"></div>
         </div>
-        
-        <!-- [추가] 태그 입력칸 -->
-        <input type="text" id="memo-tags" class="memo-tags-input" autocomplete="off" placeholder="Tags (예: #아이디어 #기록)">
 
         <div class="memo-footer-input">
             <input type="date" id="memo-date-picker" class="memo-date-picker" title="날짜 변경">
@@ -211,7 +205,9 @@
         </div>
     </div>
     
+    <!-- [수정] 태그칸과 화살표 버튼을 같은 줄에 배치 -->
     <div class="memo-submit-container">
+        <input type="text" id="memo-tags" class="memo-tags-input" autocomplete="off" placeholder="tags">
         <button class="memo-submit-btn" onclick="addMemoPost()" title="전송">
             <i class="xi-arrow-right"></i>
         </button>
@@ -328,7 +324,7 @@
                 return new Date(dateB) - new Date(dateA);
             });
 
-            var allTags = new Set(); // [추가] 태그 수집기
+            var allTags = new Set();
 
             data.forEach(post => {
                 const dateObj = new Date(post.created_at);
@@ -344,7 +340,6 @@
                 const fallbackTitle = `♡`;
                 const displayTitle = post.title ? post.title : fallbackTitle;
 
-                // [추가] 데이터 분리 (본문 ||| 태그)
                 let rawContent = post.content;
                 let tagsText = "";
                 
@@ -354,7 +349,6 @@
                     tagsText = parts[1] || "";
                 }
 
-                // 태그 파싱 (#단어 추출)
                 let matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
@@ -368,10 +362,12 @@
                 }
                 
                 const parsedContent = parseMemoMarkdown(displayContent);
-                const searchText = `${post.title || ''} ${tagsText} ${displayTimeHTML}`;
+                
+                // [수정] data-search 속성에 HTML 태그가 들어가지 않도록 순수 텍스트로만 조합
+                const plainSearchText = `${post.title || ''} ${tagsText} ${yyyy}년 ${mm}월 ${dd}일`.replace(/"/g, "");
 
                 const postHtml = `
-                    <div class="feed-item fade-in-element" id="post-${post.id}" data-search="${searchText}">
+                    <div class="feed-item fade-in-element" id="post-${post.id}" data-search="${plainSearchText}">
                         
                         <div class="memo-accordion-header" id="accordion-header-${post.id}" onclick="toggleMemoAccordion(${post.id})">
                             ${displayTitle}
@@ -398,7 +394,8 @@
                                 
                                 <div id="edit-content-${post.id}" contenteditable="true" spellcheck="false" style="width: 100%; min-height: 150px; background: transparent; border: 1px solid var(--point-color); border-radius:2px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 15px; outline: none; line-height:1.7; word-break: break-all;">${displayContent}</div>
                                 
-                                <input type="text" id="edit-tags-${post.id}" value="${safeTags}" placeholder="Tags (예: #아이디어)" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none;">
+                                <!-- [수정] 수정 모드 태그칸 예시 텍스트 삭제 -->
+                                <input type="text" id="edit-tags-${post.id}" value="${safeTags}" placeholder="tags" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none;">
 
                                 <input type="date" id="edit-date-${post.id}" value="${editDateString}" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
                             </div>
@@ -413,7 +410,6 @@
                 feedContainer.append(postHtml);
             });
 
-            // [추가] 추출된 전체 태그 렌더링
             if (allTags.size > 0) {
                 let tagsHtml = Array.from(allTags).map(tag => `<span class="tag-pill" onclick="triggerTagSearch('${tag}')">${tag}</span>`).join('');
                 $('#tags-panel').html(tagsHtml);
@@ -447,7 +443,7 @@
         const toVal = $('#memo-to').val().trim();
         const contentVal = $('#memo-content').html().trim();
         const fromVal = $('#memo-from').val().trim();
-        const tagsVal = $('#memo-tags').val().trim(); // [추가] 태그 값
+        const tagsVal = $('#memo-tags').val().trim(); 
         const dateVal = $('#memo-date-picker').val();
 
         if (!contentVal || contentVal === '<br>') return; 
@@ -457,7 +453,6 @@
         finalContent += contentVal;
         if (fromVal) finalContent += `<div style="text-align: right; margin-top: 15px; color: var(--sub-color);">from. ${fromVal}</div>`;
 
-        // [추가] 태그 합치기
         let finalContentWithTags = finalContent + "|||" + tagsVal;
 
         try {
@@ -484,7 +479,7 @@
             $('#memo-to').val('');
             $('#memo-content').html(''); 
             $('#memo-from').val('');
-            $('#memo-tags').val(''); // 태그 초기화
+            $('#memo-tags').val(''); 
             $('#memo-search').val('').trigger('blur');
             $('#memo-title, #memo-to, #memo-from, #memo-content, #memo-tags').blur();
             setDefaultDate(); 
@@ -522,7 +517,7 @@
     async function saveMemoEdit(id) {
         const newTitle = $(`#edit-title-${id}`).val().trim();
         const newContent = $(`#edit-content-${id}`).html().trim();
-        const newTags = $(`#edit-tags-${id}`).val().trim(); // [추가] 태그 값
+        const newTags = $(`#edit-tags-${id}`).val().trim(); 
         const newDateStr = $(`#edit-date-${id}`).val();
         
         if (!newContent) { alert("내용을 적어주세요."); return; }
@@ -558,7 +553,7 @@
         } catch (error) { alert('삭제하지 못했습니다.'); }
     }
 
-    // [추가] 태그 토글 및 검색 기능
+    // 태그 토글 및 검색 기능
     $('#tags-toggle-btn').click(function() {
         $('#tags-panel').slideToggle(200);
         $(this).toggleClass('active');
