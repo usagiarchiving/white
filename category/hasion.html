@@ -65,6 +65,14 @@
         line-height: 1.8; outline: none; padding: 0; position: relative; z-index: 2;
         word-break: break-all; word-wrap: break-word; box-sizing: border-box;
     }
+    
+    /* 🚨 [추가된 부분] 줄바꿈(엔터) 시 브라우저가 생성하는 태그 폰트 크기 강제 고정 */
+    .hasion-editor div, .hasion-editor p {
+        font-size: 13px;
+        line-height: 1.8;
+        margin: 0; padding: 0;
+    }
+
     [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.5; pointer-events: none; }
 
     .hasion-editor-wrapper { position: relative; width: 100%; }
@@ -97,6 +105,13 @@
         word-break: break-all; word-wrap: break-word; font-size: 13px; white-space: pre-wrap; 
     }
 
+    /* 🚨 [추가된 부분] 피드(목록)에서도 줄바꿈 태그 폰트 크기 일괄 고정 */
+    .feed-text div, .feed-text p {
+        font-size: 13px;
+        line-height: 1.8;
+        margin: 0; padding: 0;
+    }
+
     .feed-text img, .custom-html-box img {
         max-width: 100% !important; height: auto !important; box-sizing: border-box;
     }
@@ -121,7 +136,6 @@
     /* ==========================================================================
        [에디터 인라인 이미지 규격 및 읽기 모드 유리막 제거]
        ========================================================================== */
-    /* 🚨 회원님이 작성하신 완벽한 티스토리 레이아웃 CSS를 1px도 건드리지 않았습니다! */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
         margin: 0 0 6px 0; 
@@ -136,7 +150,7 @@
         border: 1px solid var(--divider-bg); pointer-events: none;
     }
 
-    /* 🚨 읽기 모드에서는 유리막을 걷어내어 이미지 우클릭/꾹 누르기(저장) 완벽 허용 */
+    /* 읽기 모드에서는 유리막을 걷어내어 이미지 우클릭/꾹 누르기(저장) 완벽 허용 */
     .read-mode .editor-img-wrap img {
         pointer-events: auto;
         -webkit-touch-callout: default;
@@ -331,12 +345,10 @@
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
-    /* 🚨 [수정 1] 사진 겹침 현상 방지: 여러 장 올릴 때 일괄로 HTML 묶어서 한 번에 장전 (첫 사진 날짜 적용) */
     $('#hasion-file-input').on('change', async function(e) {
         var files = Array.from(e.target.files);
         if(!files.length) return;
         
-        // 1. 가장 처음 선택된 사진의 날짜 기준으로 달력 픽스
         var firstDate = new Date(files[0].lastModified);
         var yyyy = firstDate.getFullYear();
         var mm = String(firstDate.getMonth()+1).padStart(2, '0');
@@ -354,13 +366,10 @@
             
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                // 🚨 draggable="true" 속성을 추가하여 모바일에서도 꾹 눌러서 이동(드래그 앤 드롭) 가능하게 허용
-                // 🚨 사진 간 최소한의 공백(' ')을 두어 100%->49% 변환 시 그리드가 제대로 작동하도록 보조
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false" draggable="true"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span> `;
             }
         }
         
-        // 2. 다 모인 사진 묶음을 에디터에 한 번에 쏘기 (비동기로 인한 커서 꼬임 원천 차단)
         if(allImgHtml !== '') {
             $('#hasion-content').focus();
             document.execCommand('insertHTML', false, allImgHtml);
@@ -371,7 +380,6 @@
         $(this).val('');
     });
 
-    /* 회원님이 작성하신 티스토리 방식 다단 그리드 로직 완벽 보존 */
     $(document).on('click', '.editor-img-wrap', function(e) {
         if ($(this).closest('.read-mode').length > 0) return; 
         
@@ -385,7 +393,6 @@
         }
     });
 
-    // 데이터 로드
     async function loadHasionPosts() {
         var feedContainer = $('#hasion-feed');
         feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
@@ -434,7 +441,6 @@
                     temp.innerHTML = formattedHtml;
                     var rawCode = temp.textContent || temp.innerText || "";
                     
-                    // 🚨 유령 공백(&nbsp;)과 줄바꿈을 압축하여 아이메시지 꼬리 및 레이아웃 복원
                     rawCode = rawCode.replace(/\u00A0/g, ' ')
                                      .replace(/>\s+</g, '><')
                                      .trim();
@@ -442,7 +448,6 @@
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
 
-                // 🚨 [추가된 핀셋 코드] 사진과 사진 사이의 무의미한 공백, 엔터 등을 압축하여 그리드가 아래로 밀리지 않게 함
                 displayContent = displayContent.replace(/(<\/span>)(?:\s|&nbsp;|<br\s*\/?>|<\/?div>|<\/?p>)*(<span class="editor-img-wrap)/gi, '$1$2');
 
                 var matches = tagsText.match(/#[^\s#]+/g);
@@ -521,7 +526,6 @@
         body.slideToggle(400); 
     };
 
-    /* 🚨 [수정 2] 수정 모드에서도 사진 여러 장 올릴 때 일괄 묶음 삽입 적용 */
     window.uploadEditImages = async function(id, inputEl) {
         var files = Array.from(inputEl.files);
         if(!files.length) return;
