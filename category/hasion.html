@@ -1,21 +1,26 @@
+<!-- 파일명: category/hasion.html -->
 <style>
-    .archive-wrapper {
+    /* ==========================================================================
+       [기본 구조 및 튀어나옴 방지 (철벽 보호)]
+       ========================================================================== */
+    .hasion-wrapper {
         position: relative;
         padding-top: 10px;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
     }
 
-    /* 검색창 & 태그 아이콘 레이아웃 */
     .search-wrapper { 
         display: flex; justify-content: flex-end; align-items: center; 
         margin-bottom: 20px; width: 100%; gap: 15px; 
     }
-    #tags-toggle-btn {
-        cursor: pointer; color: var(--sub-color); font-size: 18px; transition: color 0.3s;
-    }
+    #tags-toggle-btn { cursor: pointer; color: var(--sub-color); font-size: 18px; transition: color 0.3s; }
     #tags-toggle-btn:hover, #tags-toggle-btn.active { color: var(--point-color); }
     
     .search-inner { position: relative; display: flex; align-items: center; }
-    #archive-search {
+    #hasion-search {
         background: transparent; border: none; border-bottom: 1px solid transparent;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px;
         outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0;
@@ -27,10 +32,9 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* 태그 모음 패널 */
     #tags-panel {
         display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; 
-        padding: 15px; background: rgba(0,0,0,0.02); border-radius: 6px; 
+        padding: 15px; background: #ffffff; border-radius: 6px; 
         border: 1px solid var(--divider-bg);
     }
     .tag-pill {
@@ -40,385 +44,357 @@
     }
     .tag-pill:hover { color: var(--point-color); border-color: var(--point-color); }
 
-    /* 맨 처음 구름 아이콘 */
-    #initial-upload-wrapper {
-        text-align: center; margin-bottom: 25px;
-    }
-    .cloud-upload-btn {
-        cursor: pointer; font-size: 26px; color: #f5c9d5; 
-        transition: color 0.3s ease, transform 0.2s ease;
-        display: inline-block; padding: 10px;
-    }
-    .cloud-upload-btn:hover { color: var(--point-color); transform: translateY(-2px); }
-
-    /* 점선 테두리 입력칸 */
-    .upload-container {
-        display: none; 
-        border: 1px dashed var(--point-color); border-radius: 4px; padding: 20px;
-        text-align: center; margin-bottom: 25px; background: transparent; position: relative;
-    }
-    #remove-preview {
-        position: absolute; top: -10px; right: -10px; background: #ff3b30; color: #fff;
-        border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        z-index: 20;
+    /* ==========================================================================
+       [입력 캔버스 철벽 보호]
+       ========================================================================== */
+    .hasion-paper-input {
+        background: #ffffff; padding: 25px; margin-bottom: 25px;
+        border-radius: 6px; border: 1px solid var(--divider-bg);
+        width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;
     }
 
-    /* 다중 이미지 썸네일 프리뷰 */
-    .preview-grid {
-        display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px;
-        -ms-overflow-style: none; scrollbar-width: none;
+    .hasion-title-input {
+        display: block; width: 100%; box-sizing: border-box;
+        background: transparent; border: none; border-bottom: 1px solid var(--divider-bg);
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600;
+        text-align: center; outline: none; padding: 6px 0; margin-bottom: 15px; transition: border-color 0.3s ease;
     }
-    .preview-grid::-webkit-scrollbar { display: none; }
-    
-    .preview-thumb-wrap {
-        position: relative; width: 100px; height: 100px; flex-shrink: 0;
-        cursor: pointer; border-radius: 4px; border: 2px solid transparent;
-        transition: border-color 0.2s;
-    }
-    .preview-thumb-wrap.is-main { border-color: var(--point-color); }
-    .preview-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
-    
-    .main-badge {
-        position: absolute; top: 4px; left: 4px; background: var(--point-color); color: #fff;
-        font-size: 9px; padding: 2px 5px; border-radius: 2px; display: none; z-index: 5;
-    }
-    .preview-thumb-wrap.is-main .main-badge { display: block; }
+    .hasion-title-input:focus { border-bottom-color: var(--point-color); }
 
-    /* 제목, 기록, 태그 입력 폼 */
-    .archive-input-item {
-        width: 100%; background: transparent; border: none; color: var(--main-color);
-        font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none;
-        border-bottom: 1px solid var(--divider-bg); padding-bottom: 8px;
+    .hasion-editor {
+        width: 100%; max-width: 100%; min-height: 120px; background: transparent; border: none;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
+        line-height: 1.8; outline: none; padding: 0; position: relative; z-index: 2;
+        word-break: break-all; word-wrap: break-word; box-sizing: border-box; overflow: hidden;
+    }
+    [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.5; pointer-events: none; }
+
+    /* ==========================================================================
+       [피드 영역 철벽 보호 & HTML 라이브 렌더링 박스]
+       ========================================================================== */
+    .feed-item {
+        width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;
     }
     
-    .archive-footer-group {
-        display: flex; justify-content: space-between; align-items: center; margin-top: 15px;
+    .feed-text {
+        width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; 
+        word-break: break-all; word-wrap: break-word; font-size: 13px; white-space: pre-wrap; 
     }
-    #archive-date-picker {
+
+    /* 피드 내부 이미지 절대 밖으로 못 나가게 고정 */
+    .feed-text img, .custom-html-box img {
+        max-width: 100% !important; height: auto !important; box-sizing: border-box;
+    }
+
+    /* 라이브 HTML 렌더링 컨테이너 설정 (철벽) */
+    .custom-html-box {
+        width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;
+        white-space: normal; /* 코드 내부는 일반 웹페이지처럼 줄바꿈 처리 */
+        margin: 10px 0;
+    }
+    .custom-html-box * {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* ==========================================================================
+       [인라인 이미지 & 드래그 툴바]
+       ========================================================================== */
+    .editor-img-wrap {
+        display: inline-block; position: relative; vertical-align: top; margin: 4px 1%;
+        cursor: pointer; transition: width 0.2s ease;
+    }
+    .img-full { width: 98%; }
+    .img-half { width: 48%; }
+    .img-third { width: 31%; }
+    
+    .editor-img-wrap img {
+        width: 100%; height: auto; display: block; border-radius: 4px;
+        border: 1px solid var(--divider-bg); pointer-events: none;
+    }
+    
+    .img-del-btn {
+        position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.3); color: #fff;
+        width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center;
+        justify-content: center; font-size: 10px; cursor: pointer; z-index: 10;
+        transition: background 0.2s;
+    }
+    .img-del-btn:hover { background: #ff3b30; }
+    .read-mode .img-del-btn { display: none !important; }
+
+    .hasion-footer-input { 
+        display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; 
+    }
+    .hasion-date-picker {
         background: transparent; border: none; outline: none; color: var(--sub-color);
-        font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;
+        font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s;
     }
-    .archive-submit-btn {
-        background: none; border: none; color: var(--point-color);
-        cursor: pointer; padding: 5px; font-size: 20px; transition: 0.2s; opacity: 0.7;
-    }
-    .archive-submit-btn:hover { opacity: 1; transform: translateX(3px); }
+    .hasion-date-picker:hover { opacity: 1; }
 
-    /* 갤러리 그리드 */
-    .gallery-grid {
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-        gap: 5px; margin-top: 20px; padding-bottom: 40px;
+    .hasion-img-add-btn {
+        cursor: pointer; font-size: 18px; color: var(--sub-color); 
+        margin-right: 15px; transition: color 0.2s;
     }
-    @media (min-width: 768px) {
-        .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .hasion-img-add-btn:hover { color: var(--point-color); }
+    
+    .hasion-submit-btn {
+        background: none; border: none; color: var(--point-color); cursor: pointer;
+        font-size: 18px; padding: 5px; opacity: 0.7; transition: opacity 0.2s, transform 0.2s;
     }
+    .hasion-submit-btn:hover { opacity: 1; transform: translateX(3px); }
 
-    .gallery-item {
-        position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden;
-        cursor: pointer; border: 1px solid var(--divider-bg); background: rgba(0,0,0,0.02);
+    /* 드래그 툴바 */
+    .format-toolbar {
+        position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
+        border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
+        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
     }
-    .gallery-item img {
-        width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;
-    }
-    .gallery-item:hover img { transform: scale(1.05); }
+    .format-toolbar button { background: none; border: none; color: var(--main-color); font-size: 14px; cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
+    .format-toolbar button:hover { background: rgba(0,0,0,0.05); }
+    .format-toolbar .divider { width: 1px; height: 16px; background: var(--divider-bg); margin: 0 4px; }
+    .color-picker-label { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; overflow: hidden; margin: 0; }
+    .color-picker-label:hover { background: rgba(0,0,0,0.05); }
+    .color-picker-label i { font-size: 14px; color: var(--main-color); pointer-events: none; }
+    .native-color-picker { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; border: none; padding: 0; }
+    .color-btn { font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px; }
+    .btn-mint { color: #0E865E !important; background: #E1F9F1 !important; }
+    .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
 
-    .gallery-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.3s ease;
-        display: flex; flex-direction: column; justify-content: space-between; padding: 10px;
-    }
-    .gallery-item:hover .gallery-overlay { opacity: 1; }
-    .gallery-date { color: rgba(255,255,255,0.9); font-family: 'Noto Serif KR', serif; font-size: 10px; }
-    .gallery-hover-title {
-        color: rgba(255,255,255,1); font-family: 'Noto Serif KR', serif; font-size: 12px; font-weight: 600;
-        text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    /* 숫자 입력 화살표 숨김 */
+    #fontSizeInput::-webkit-outer-spin-button,
+    #fontSizeInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-    /* 팝업 배경 및 카드 */
-    .archive-lightbox {
-        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-        z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out; padding: 20px;
+    /* 리스트 디자인 (아코디언) */
+    .hasion-accordion-header {
+        font-size: 13.5px; font-family: 'Noto Serif KR', serif; font-weight: normal; 
+        color: var(--main-color); cursor: pointer; padding: 12px 0 6px 0; 
+        border-bottom: 1px solid var(--divider-bg); transition: color 0.3s ease;
+        display: flex; align-items: center; justify-content: space-between;
     }
-    .archive-lightbox-card {
-        background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 4px;
-        padding: 25px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.1); cursor: default;
-        animation: memoZoom 0.25s ease-out; display: flex; flex-direction: column; gap: 15px;
-    }
-    @keyframes memoZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .hasion-accordion-header.open { color: var(--point-color); border-bottom-color: transparent; }
+    .hasion-accordion-header:hover { color: var(--point-color); }
+    .hasion-accordion-body { display: none; padding: 15px 0 30px 0; border-bottom: 1px solid var(--divider-bg); }
 </style>
 
-<div class="archive-wrapper">
+<div id="format-toolbar" class="format-toolbar">
+    <button onmousedown="event.preventDefault(); formatText('bold')"><i class="xi-bold"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('italic')"><i class="xi-italic"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('underline')"><i class="xi-underline"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('strikeThrough')"><i class="xi-strikethrough"></i></button>
+    
+    <div class="divider"></div>
+    
+    <label class="color-picker-label" onmousedown="saveSelection()"><i class="xi-font"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('foreColor', this.value)" onchange="applyCustomColor('foreColor', this.value)"></label>
+    <label class="color-picker-label" onmousedown="saveSelection()"><i class="xi-palette"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('backColor', this.value)" onchange="applyCustomColor('backColor', this.value)"></label>
+    
+    <div class="divider"></div>
+    <button onmousedown="event.preventDefault(); applyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
+    <button onmousedown="event.preventDefault(); applyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
+    
+    <!-- 텍스트 사이즈 (px) 조절기 -->
+    <div class="divider"></div>
+    <div style="display:flex; align-items:center; gap:2px; padding:0 4px;">
+        <button onmousedown="event.preventDefault(); adjustFontSize(-1)" title="작게" style="width:20px;"><i class="xi-minus"></i></button>
+        <input type="number" id="fontSizeInput" value="13" style="width:34px; height:20px; background:transparent; border:1px solid var(--divider-bg); border-radius:3px; text-align:center; font-size:11px; color:var(--main-color); outline:none; -moz-appearance: textfield;" onchange="applyExactFontSize(this.value)">
+        <button onmousedown="event.preventDefault(); adjustFontSize(1)" title="크게" style="width:20px;"><i class="xi-plus"></i></button>
+        <span style="font-size:11px; color:var(--sub-color); margin-left:2px;">px</span>
+    </div>
+</div>
+
+<div class="hasion-wrapper">
     
     <div class="search-wrapper">
         <i class="xi-tags" id="tags-toggle-btn" title="태그 모음 열기"></i>
         <div class="search-inner">
-            <input type="text" id="archive-search" autocomplete="off" placeholder="Search">
+            <input type="text" id="hasion-search" autocomplete="off" placeholder="Search">
             <i class="xi-search" id="search-icon" title="Search"></i>
         </div>
     </div>
     
     <div id="tags-panel"></div>
 
-    <div id="initial-upload-wrapper">
-        <input type="file" id="archive-file-input" accept="image/*" multiple style="display: none;">
-        <label for="archive-file-input" class="cloud-upload-btn" title="Upload">
-            <i class="xi-cloud"></i>
-        </label>
-    </div>
+    <div class="hasion-paper-input">
+        <input type="text" id="hasion-title" class="hasion-title-input" autocomplete="off" placeholder="Title">
+        
+        <div id="hasion-content" class="hasion-editor" contenteditable="true" spellcheck="false" placeholder="당신의 조각을 이곳에 남겨주세요..."></div>
+        
+        <input type="text" id="hasion-tags" class="hasion-title-input" style="font-size: 12px; margin-top: 15px; margin-bottom: 0;" autocomplete="off" placeholder="Tags (예: #기록 #사진)">
 
-    <div id="upload-container" class="upload-container">
-        <button id="remove-preview" onclick="removePreview()"><i class="xi-close"></i></button>
-        
-        <div class="preview-grid" id="preview-grid"></div>
-        
-        <div style="text-align: left; margin-bottom: 15px;">
-            <label style="font-size: 12.5px; color: var(--main-color); cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                <input type="checkbox" id="group-upload-cb" onchange="toggleGroupMode()" style="accent-color: var(--point-color);"> 
-                여러 장을 하나의 세트로 묶어서 올리기
-            </label>
-            <div id="group-help" style="display: none; font-size: 11.5px; color: var(--point-color); margin-top: 6px; padding-left: 20px;">
-                * 썸네일을 눌러 세트의 대표 사진을 선택하세요.
-            </div>
-        </div>
-        
-        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
-            <input type="text" id="archive-title" class="archive-input-item" autocomplete="off" placeholder="Title" style="text-align: center;">
-            <textarea id="archive-caption" class="archive-input-item" placeholder="Caption" style="min-height: 60px; resize: none; line-height: 1.6;"></textarea>
-            
-            <input type="text" id="archive-tags" class="archive-input-item" autocomplete="off" placeholder="Tags (e.g., #daily #film)">
-            
-            <div class="archive-footer-group">
-                <input type="date" id="archive-date-picker" title="Change Date">
-                <button class="archive-submit-btn" id="submit-btn" onclick="uploadArchivePost()" title="Submit">
-                    <i class="xi-arrow-right"></i>
-                </button>
+        <div class="hasion-footer-input">
+            <input type="date" id="hasion-date-picker" class="hasion-date-picker" title="날짜">
+            <div style="display: flex; align-items: center;">
+                <label for="hasion-file-input" class="hasion-img-add-btn" title="사진 추가"><i class="xi-image-o"></i></label>
+                <input type="file" id="hasion-file-input" accept="image/*" multiple style="display:none;">
+                <button class="hasion-submit-btn" id="submit-btn" onclick="addHasionPost()"><i class="xi-arrow-right"></i></button>
             </div>
         </div>
     </div>
-
-    <div class="gallery-grid" id="gallery-feed"></div>
-
-</div>
-
-<div id="archive-lightbox" class="archive-lightbox" onclick="if(event.target === this) closeArchiveLightbox()">
-    <div class="archive-lightbox-card" id="archive-lightbox-card">
-        
-        <div id="lightbox-archive-img-container" style="display: flex; flex-direction: column; width: 100%;">
-        </div>
-        
-        <div id="lightbox-read-mode">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; border-bottom: 1px solid var(--divider-bg); padding-bottom: 8px;">
-                <div id="lightbox-archive-title" style="font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);"></div>
-                <div id="lightbox-archive-date" style="font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--sub-color);"></div>
-            </div>
-            
-            <div id="lightbox-archive-caption" style="font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color); line-height: 1.7; word-break: break-all; margin-bottom: 8px;"></div>
-            
-            <div id="lightbox-archive-tags" onclick="triggerTagSearch(this.innerText)" style="font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color); cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--point-color)'" onmouseout="this.style.color='var(--sub-color)'"></div>
-            
-            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
-                <i class="xi-pen" onclick="startArchiveEdit()" title="Edit" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='0.35'"></i>
-                <i class="xi-trash" onclick="deleteArchiveFromLightbox()" title="Delete" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'; this.style.color='#ff3b30'" onmouseout="this.style.opacity='0.35'; this.style.color='var(--sub-color)'"></i>
-            </div>
-        </div>
-
-        <div id="lightbox-edit-mode" style="display: none; flex-direction: column; gap: 12px;">
-            <input type="text" id="edit-archive-title" placeholder="Title" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
-            <textarea id="edit-archive-caption" placeholder="Caption" style="width:100%; min-height:80px; background:transparent; border:1px solid var(--point-color); border-radius:2px; color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:10px; outline:none; resize:none; line-height:1.6;"></textarea>
-            
-            <input type="text" id="edit-archive-tags" placeholder="Tags (e.g., #daily #film)" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
-            
-            <input type="date" id="edit-archive-date" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
-            
-            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 4px;">
-                <button onclick="saveArchiveEdit()" style="background:none; border:none; color:var(--point-color); font-size: 11px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">Save</button>
-                <button onclick="cancelArchiveEdit()" style="background:none; border:none; color:var(--sub-color); font-size: 11px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">Cancel</button>
-            </div>
-        </div>
-
-    </div>
+    
+    <div class="feed-container" id="hasion-feed"></div>
 </div>
 
 <script>
-    var ARCHIVE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
-    var ARCHIVE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    var archiveSupabase = window.supabase.createClient(ARCHIVE_URL, ARCHIVE_KEY);
+    var HASION_URL = 'https://dvalxqujceuhfshatilq.supabase.co';
+    var HASION_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YWx4cXVqY2V1aGZzaGF0aWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzg3MTksImV4cCI6MjA5NzIxNDcxOX0.6ZabNquhVkOnboWyQPSybP6S5S5iGjjYcpspcLM0vr0';
+    var hasionSupabase = window.supabase.createClient(HASION_URL, HASION_KEY);
 
-    var selectedFiles = [];
-    var mainFileIndex = 0;
-    var currentLightboxPostId = null;
-    var currentLightboxImageUrl = "";
+    /* --- [에디터 & 툴바 로직] --- */
+    var savedSelectionRange = null;
+    window.saveSelection = function() {
+        var selection = window.getSelection();
+        if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0);
+    };
 
-    // 1. 파일 다중 선택 핸들링
-    $('#archive-file-input').on('change', function(e) {
-        if (!e.target.files || e.target.files.length === 0) return;
+    window.applyCustomColor = function(command, color) {
+        if (savedSelectionRange) {
+            var selection = window.getSelection();
+            selection.removeAllRanges(); selection.addRange(savedSelectionRange);
+        }
+        document.execCommand(command, false, color); checkSelection();
+    };
 
-        selectedFiles = Array.from(e.target.files);
-        mainFileIndex = 0; // 초기값은 항상 0번 사진이 대표
+    // 정확한 픽셀 사이즈 적용 (HTML DOM 제어 방식)
+    window.applyExactFontSize = function(size) {
+        if (savedSelectionRange) {
+            var selection = window.getSelection();
+            selection.removeAllRanges(); selection.addRange(savedSelectionRange);
+        } else {
+            var editor = document.activeElement;
+            if(!editor || editor.getAttribute('contenteditable') !== 'true') return;
+        }
+        
+        document.execCommand("fontSize", false, "7"); // 폰트 사이즈 7로 임시 마킹
+        var fontElements = document.getElementsByTagName("font");
+        for (var i = 0; i < fontElements.length; i++) {
+            if (fontElements[i].size == "7") {
+                fontElements[i].removeAttribute("size");
+                fontElements[i].style.fontSize = size + "px"; // 픽셀 크기로 교체
+            }
+        }
+        checkSelection();
+    };
 
-        var fileDate = new Date(selectedFiles[0].lastModified);
-        var yyyy = fileDate.getFullYear();
-        var mm = String(fileDate.getMonth() + 1).padStart(2, '0');
-        var dd = String(fileDate.getDate()).padStart(2, '0');
-        $('#archive-date-picker').val(`${yyyy}-${mm}-${dd}`);
+    // 플러스, 마이너스 버튼 제어 로직
+    window.adjustFontSize = function(delta) {
+        var input = document.getElementById('fontSizeInput');
+        var currentSize = parseInt(input.value) || 13;
+        var newSize = currentSize + delta;
+        if(newSize < 8) newSize = 8;
+        if(newSize > 72) newSize = 72;
+        input.value = newSize;
+        applyExactFontSize(newSize);
+    };
 
-        renderPreviews();
-        $('#initial-upload-wrapper').hide(); 
-        $('#upload-container').slideDown(250); 
+    function checkSelection() {
+        setTimeout(() => {
+            var selection = window.getSelection();
+            var toolbar = document.getElementById('format-toolbar');
+            if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+                var node = selection.anchorNode;
+                var isInsideEditor = false;
+                while (node) {
+                    if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') { isInsideEditor = true; break; }
+                    node = node.parentNode;
+                }
+                if (isInsideEditor) {
+                    var range = selection.getRangeAt(0);
+                    var rect = range.getBoundingClientRect();
+                    toolbar.style.display = 'flex';
+                    var top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
+                    var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
+                    if (top < window.scrollY) top = rect.bottom + window.scrollY + 8;
+                    if (left < 10) left = 10;
+                    toolbar.style.top = top + 'px'; toolbar.style.left = left + 'px';
+                } else { toolbar.style.display = 'none'; }
+            } else { toolbar.style.display = 'none'; }
+        }, 100);
+    }
+    document.addEventListener('selectionchange', checkSelection);
+    document.addEventListener('mouseup', checkSelection);
+    document.addEventListener('touchend', checkSelection);
+
+    window.formatText = function(command, value = null) { document.execCommand(command, false, value); checkSelection(); };
+    window.applyColor = function(textColor, bgColor) { document.execCommand('foreColor', false, textColor); document.execCommand('backColor', false, bgColor); checkSelection(); };
+
+    function setDefaultDate() {
+        var today = new Date();
+        var yyyy = today.getFullYear();
+        var mm = String(today.getMonth() + 1).padStart(2, '0');
+        var dd = String(today.getDate()).padStart(2, '0');
+        $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
+    }
+
+    $('#hasion-file-input').on('change', async function(e) {
+        var files = Array.from(e.target.files);
+        if(!files.length) return;
+        
+        var earliestDate = new Date();
+        var minTime = Infinity;
+        files.forEach(f => {
+            if(f.lastModified < minTime) {
+                minTime = f.lastModified;
+                earliestDate = new Date(f.lastModified);
+            }
+        });
+        
+        var yyyy = earliestDate.getFullYear();
+        var mm = String(earliestDate.getMonth()+1).padStart(2, '0');
+        var dd = String(earliestDate.getDate()).padStart(2, '0');
+        $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
+        
+        $('#submit-btn').prop('disabled', true).css('opacity', '0.3');
+        $('.hasion-img-add-btn').css('opacity', '0.3');
+        
+        for(var file of files) {
+            var fileExt = file.name.split('.').pop();
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, file);
+            
+            if(!error) {
+                var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
+                var imgHtml = `
+                    <span class="editor-img-wrap img-full" contenteditable="false">
+                        <img src="${data.publicUrl}">
+                        <div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div>
+                    </span>&nbsp;
+                `;
+                $('#hasion-content').focus();
+                document.execCommand('insertHTML', false, imgHtml);
+            }
+        }
+        
+        $('#submit-btn').prop('disabled', false).css('opacity', '0.7');
+        $('.hasion-img-add-btn').css('opacity', '1');
+        $(this).val('');
     });
 
-    // 썸네일 생성 및 대표 사진 렌더링
-    window.renderPreviews = function() {
-        var isGroup = $('#group-upload-cb').is(':checked');
-        $('#preview-grid').empty();
+    $(document).on('click', '.editor-img-wrap', function(e) {
+        if ($(this).closest('.read-mode').length > 0) return; 
         
-        selectedFiles.forEach((file, index) => {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var mainClass = (isGroup && index === mainFileIndex) ? 'is-main' : '';
-                var html = `
-                    <div class="preview-thumb-wrap ${mainClass}" onclick="setMainFile(${index})">
-                        <div class="main-badge">대표</div>
-                        <img src="${e.target.result}">
-                    </div>
-                `;
-                $('#preview-grid').append(html);
-            }
-            reader.readAsDataURL(file);
-        });
-    };
-
-    // 묶음 옵션 토글
-    window.toggleGroupMode = function() {
-        var isGroup = $('#group-upload-cb').is(':checked');
-        if (isGroup) $('#group-help').slideDown(150);
-        else $('#group-help').slideUp(150);
-        renderPreviews();
-    };
-
-    // 대표 사진 지정
-    window.setMainFile = function(index) {
-        if (!$('#group-upload-cb').is(':checked')) return; 
-        mainFileIndex = index;
-        renderPreviews();
-    };
-
-    window.removePreview = function() {
-        selectedFiles = [];
-        mainFileIndex = 0;
-        $('#archive-file-input').val('');
-        $('#archive-title').val('');
-        $('#archive-caption').val('');
-        $('#archive-tags').val(''); 
-        $('#group-upload-cb').prop('checked', false);
-        $('#group-help').hide();
-        $('#upload-container').slideUp(200, function() {
-            $('#initial-upload-wrapper').fadeIn(200); 
-        });
-    };
-
-    // 2. 다중 업로드 및 DB 저장
-    window.uploadArchivePost = async function() {
-        if (selectedFiles.length === 0) return;
-
-        var titleVal = $('#archive-title').val().trim();
-        var captionVal = $('#archive-caption').val().trim();
-        var tagsVal = $('#archive-tags').val().trim(); 
-        var dateVal = $('#archive-date-picker').val();
-        var isGroup = $('#group-upload-cb').is(':checked');
-        var btn = $('#submit-btn');
-
-        try {
-            btn.prop('disabled', true).css('opacity', '0.3');
-
-            var uploadedUrls = [];
-            var fileDates = [];
-            
-            // 모든 파일 스토리지 업로드
-            for (var file of selectedFiles) {
-                var fileExt = file.name.split('.').pop();
-                var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-                var { error: uploadError } = await archiveSupabase.storage.from('images').upload(fileName, file);
-                if (uploadError) throw uploadError;
-
-                var { data: publicUrlData } = archiveSupabase.storage.from('images').getPublicUrl(fileName);
-                uploadedUrls.push(publicUrlData.publicUrl);
-                fileDates.push(new Date(file.lastModified));
-            }
-
-            if (isGroup) {
-                // [묶음 모드] 한 게시물로 저장 (::: 구분자 사용)
-                if (mainFileIndex > 0) {
-                    var mUrl = uploadedUrls.splice(mainFileIndex, 1)[0];
-                    uploadedUrls.unshift(mUrl);
-                    var mDate = fileDates.splice(mainFileIndex, 1)[0];
-                    fileDates.unshift(mDate);
-                }
-                
-                var contentString = uploadedUrls.join(":::") + "|||" + captionVal + "|||" + tagsVal;
-                var finalDate = new Date(fileDates[0]);
-                
-                if (dateVal) { 
-                    var parts = dateVal.split('-');
-                    finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
-                }
-                var offset = finalDate.getTimezoneOffset() * 60000;
-                var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
-
-                var { error: dbError } = await archiveSupabase.from('posts').insert([{ 
-                    category: 'archive', content: contentString, title: titleVal, created_at: localISOString 
-                }]);
-                if (dbError) throw dbError;
-
-            } else {
-                // [개별 모드] 각각 독립적인 게시물로 저장 (각 원본 사진의 생성 시간 유지)
-                var insertArray = [];
-                for (var i = 0; i < uploadedUrls.length; i++) {
-                    var contentString = uploadedUrls[i] + "|||" + captionVal + "|||" + tagsVal;
-                    var finalDate = new Date(fileDates[i]); // 개별 원본 시간 사용
-                    
-                    if (dateVal) { 
-                        var parts = dateVal.split('-');
-                        finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
-                    }
-                    var offset = finalDate.getTimezoneOffset() * 60000;
-                    var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
-
-                    insertArray.push({
-                        category: 'archive', content: contentString, title: titleVal, created_at: localISOString
-                    });
-                }
-
-                var { error: dbError } = await archiveSupabase.from('posts').insert(insertArray);
-                if (dbError) throw dbError;
-            }
-
-            removePreview();
-            loadGalleryPosts();
-
-        } catch (error) {
-            alert('Failed to upload.');
-        } finally {
-            btn.prop('disabled', false).css('opacity', '0.7');
+        e.preventDefault();
+        if($(this).hasClass('img-full')) {
+            $(this).removeClass('img-full').addClass('img-half');
+        } else if($(this).hasClass('img-half')) {
+            $(this).removeClass('img-half').addClass('img-third');
+        } else {
+            $(this).removeClass('img-third').addClass('img-full');
         }
-    };
+    });
 
-    // 3. 갤러리 로드 및 태그 생성
-    async function loadGalleryPosts() {
-        var feedContainer = $('#gallery-feed');
-        feedContainer.html('<p style="grid-column: 1 / -1; text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
+    // 데이터 로드
+    async function loadHasionPosts() {
+        var feedContainer = $('#hasion-feed');
+        feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
 
         try {
-            var { data, error } = await archiveSupabase.from('posts').select('*').eq('category', 'archive');
+            var { data, error } = await hasionSupabase.from('posts').select('*').eq('category', 'hasion');
             if (error) throw error;
             
             feedContainer.empty();
             if (data.length === 0) {
-                feedContainer.html('<p style="grid-column: 1 / -1; text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">No archives found.</p>');
+                feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">작성된 기록이 없습니다.</p>');
                 return;
             }
 
@@ -429,7 +405,7 @@
                 return new Date(dateB) - new Date(dateA);
             });
 
-            var allTags = new Set(); // 전체 태그 수집
+            var allTags = new Set();
 
             data.forEach(post => {
                 var dateObj = new Date(post.created_at);
@@ -439,42 +415,77 @@
                 var displayDate = `${yyyy}.${mm}.${dd}`;
                 var inputDate = `${yyyy}-${mm}-${dd}`; 
 
-                var imageUrls = post.content.split("|||")[0] || "";
-                var mainImgUrl = imageUrls.split(":::")[0];
-                var isMulti = imageUrls.includes(":::"); // 세트 이미지 여부
-
-                var captionText = "";
+                var contentHtml = post.content;
                 var tagsText = "";
                 
+                // 1. 데이터 분리 (본문 ||| 태그)
                 if (post.content && post.content.includes("|||")) {
                     var parts = post.content.split("|||");
-                    captionText = parts[1] || "";
-                    tagsText = parts[2] || "";
+                    contentHtml = parts[0];
+                    tagsText = parts[1] || "";
                 }
 
-                // 태그 파싱 (#으로 시작하는 단어 추출)
+                // 2. [가장 중요한 핵심] 백틱(```) 코드를 분석하여 실제 HTML/JS 캔버스로 변환!
+                var displayContent = contentHtml.replace(/```([\s\S]*?)```/g, function(match, innerHtml) {
+                    var temp = document.createElement('div');
+                    // 에디터가 임의로 생성한 태그들을 순수 텍스트 줄바꿈으로 디코딩
+                    var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n')
+                                                 .replace(/<\/div>/gi, '\n')
+                                                 .replace(/<\/p>/gi, '\n');
+                    temp.innerHTML = formattedHtml;
+                    var rawCode = temp.textContent || temp.innerText || "";
+                    
+                    // 철벽 렌더링 박스로 포장해서 리턴 (안에서 스크립트도 렌더링됨)
+                    return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
+                });
+
+                // 태그 파싱 (#단어)
                 var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
                 var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                var safeCaption = captionText ? captionText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 var safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 
-                var searchText = `${post.title || ''} ${captionText} ${tagsText} ${displayDate}`;
-
-                // 세트 이미지일 경우 우측 상단에 겹친 아이콘 표시
-                var multiIconHtml = isMulti ? `<i class="xi-library" style="position:absolute; top:8px; right:8px; color:rgba(255,255,255,0.9); text-shadow:0 1px 3px rgba(0,0,0,0.3); font-size:14px; z-index:5;"></i>` : "";
+                var searchText = `${post.title || ''} ${tagsText} ${displayDate}`;
+                var tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${safeTags}')">${tagsText}</div>` : "";
 
                 var postHtml = `
-                    <div class="gallery-wrapper-item" data-search="${searchText}">
-                        <div class="gallery-item fade-in-element" onclick="openArchiveLightbox(${post.id}, '${imageUrls}', '${safeTitle}', '${safeCaption}', '${safeTags}', '${displayDate}', '${inputDate}')">
-                            ${multiIconHtml}
-                            <img src="${mainImgUrl}" alt="archive image" loading="lazy">
-                            <div class="gallery-overlay">
-                                <div style="display: flex; justify-content: flex-end; align-items: flex-start; width: 100%;">
-                                    <span class="gallery-date">${displayDate}</span>
+                    <div class="feed-item fade-in-element" id="post-${post.id}" data-search="${searchText}">
+                        <div class="hasion-accordion-header" id="accordion-header-${post.id}" onclick="toggleHasionAccordion(${post.id})">
+                            <span style="flex:1; font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${post.title || '무제'}</span>
+                            <span style="font-size:11px; color:var(--sub-color); margin-left:15px; flex-shrink:0;">${displayDate}</span>
+                        </div>
+                        
+                        <div class="hasion-accordion-body" id="accordion-body-${post.id}">
+                            <div class="read-mode">
+                                <!-- 여기서 디코딩된 코드가 실제 화면으로 나옴! -->
+                                <div class="feed-text">${displayContent}</div>
+                                ${tagsDisplayHtml}
+                                
+                                <div class="read-actions" style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
+                                    <i class="xi-pen" onclick="startHasionEdit(${post.id})" title="수정" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='0.35'"></i>
+                                    <i class="xi-trash" onclick="deleteHasionPost(${post.id})" title="삭제" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'; this.style.color='#ff3b30'" onmouseout="this.style.opacity='0.35'; this.style.color='var(--sub-color)'"></i>
                                 </div>
-                                <div class="gallery-hover-title">${post.title || ''}</div>
+                            </div>
+                            
+                            <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
+                                <input type="text" id="edit-title-${post.id}" value="${post.title || ''}" placeholder="Title" style="width:100%; margin-bottom:5px; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; font-weight:600; padding:6px 0; outline:none; text-align:center;">
+                                
+                                <!-- 에디터(수정 모드)에서는 렌더링된 코드가 아닌 백틱이 살아있는 원본 contentHtml 주입! -->
+                                <div id="edit-content-${post.id}" class="hasion-editor" contenteditable="true" spellcheck="false" style="min-height: 150px; border: 1px solid var(--point-color); border-radius:4px; padding: 15px;">${contentHtml}</div>
+                                
+                                <input type="text" id="edit-tags-${post.id}" value="${safeTags}" placeholder="Tags" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none;">
+                                
+                                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;">
+                                    <input type="date" id="edit-date-${post.id}" value="${inputDate}" style="width: 110px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
+                                    
+                                    <div style="display: flex; gap: 12px; align-items: center;" id="edit-actions-${post.id}">
+                                        <label for="edit-file-${post.id}" class="hasion-img-add-btn" style="margin:0; font-size:16px;" title="사진 추가"><i class="xi-image-o"></i></label>
+                                        <input type="file" id="edit-file-${post.id}" accept="image/*" multiple style="display:none;" onchange="uploadEditImages(${post.id}, this)">
+                                        <button onclick="saveHasionEdit(${post.id})" style="background:none; border:none; color:var(--point-color); font-size: 11.5px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">저장</button>
+                                        <button onclick="cancelHasionEdit(${post.id})" style="background:none; border:none; color:var(--sub-color); font-size: 11.5px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">취소</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -482,111 +493,119 @@
                 feedContainer.append(postHtml);
             });
 
-            // 추출된 전체 태그 렌더링
             if (allTags.size > 0) {
                 var tagsHtml = Array.from(allTags).map(tag => `<span class="tag-pill" onclick="triggerTagSearch('${tag}')">${tag}</span>`).join('');
                 $('#tags-panel').html(tagsHtml);
             } else {
-                $('#tags-panel').html('<span style="font-size:11px; color:var(--sub-color);">생성된 태그가 없습니다.</span>');
+                $('#tags-panel').html('<span style="font-size:11px; color:var(--sub-color);">태그가 없습니다.</span>');
             }
 
+            // [마법] 렌더링 된 커스텀 HTML 박스 안에 있는 <script> 태그 실행을 보장합니다.
+            setTimeout(() => {
+                $('.custom-html-box script').each(function() {
+                    try { eval($(this).text()); } catch(e) {}
+                });
+            }, 100);
+
         } catch (error) {
-            feedContainer.html('<p style="grid-column: 1 / -1; text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">Failed to load.</p>');
+            feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">Failed to load.</p>');
         }
     }
 
-    // 4. 태그 및 검색 제어
-    $('#tags-toggle-btn').click(function() {
-        $('#tags-panel').slideToggle(200);
-        $(this).toggleClass('active');
-    });
-
-    window.triggerTagSearch = function(tagText) {
-        if(!tagText) return;
-        closeArchiveLightbox();
-        $('#archive-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(tagText).focus();
-        $('#search-icon').css('opacity', '0.7');
-        $('#archive-search').trigger('input'); 
+    window.toggleHasionAccordion = function(id) {
+        var header = $(`#accordion-header-${id}`);
+        var body = $(`#accordion-body-${id}`);
+        header.toggleClass('open');
+        body.slideToggle(400); 
     };
 
-    $('#search-icon').click(function() {
-        $('#archive-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
-        $(this).css('opacity', '0.7');
-    });
-    $('#archive-search').blur(function() {
-        if($(this).val().trim() === '') {
-            $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
-            $('#search-icon').css('opacity', '0.35');
+    window.uploadEditImages = async function(id, inputEl) {
+        var files = Array.from(inputEl.files);
+        if(!files.length) return;
+        
+        var btnWrap = $(`#edit-actions-${id}`);
+        btnWrap.css('opacity', '0.3').css('pointer-events', 'none');
+        
+        for(var file of files) {
+            var fileExt = file.name.split('.').pop();
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, file);
+            if(!error) {
+                var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
+                var imgHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"><div class="img-del-btn" onclick="this.parentElement.remove()" title="삭제"><i class="xi-close"></i></div></span>&nbsp;`;
+                $(`#edit-content-${id}`).append(imgHtml);
+            }
         }
-    });
-    $('#archive-search').on('input', function() {
-        var keyword = $(this).val().toLowerCase();
-        $('.gallery-wrapper-item').each(function() {
-            var dataText = $(this).attr('data-search').toLowerCase();
-            if (dataText.includes(keyword)) { $(this).show(); } else { $(this).hide(); }
-        });
-    });
+        btnWrap.css('opacity', '1').css('pointer-events', 'auto');
+        $(inputEl).val('');
+    };
 
-    // 5. 삭제 및 라이트박스 제어
-    window.deleteArchivePost = async function(id) {
-        if (!confirm("Are you sure you want to delete this?")) return;
+    window.addHasionPost = async function() {
+        var titleVal = $('#hasion-title').val().trim();
+        var contentVal = $('#hasion-content').html().trim();
+        var tagsVal = $('#hasion-tags').val().trim();
+        var dateVal = $('#hasion-date-picker').val();
+
+        if (!contentVal || contentVal === '<br>') return; 
+
+        var finalContent = contentVal + "|||" + tagsVal;
+
         try {
-            var { error } = await archiveSupabase.from('posts').delete().eq('id', id);
+            $('#submit-btn').prop('disabled', true);
+            
+            var finalDate = new Date();
+            if (dateVal) {
+                var parts = dateVal.split('-');
+                finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
+            }
+            var offset = finalDate.getTimezoneOffset() * 60000;
+            var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+
+            var { error } = await hasionSupabase.from('posts').insert([{ 
+                category: 'hasion', 
+                title: titleVal, 
+                content: finalContent, 
+                created_at: localISOString 
+            }]);
+            
             if (error) throw error;
-            loadGalleryPosts();
-        } catch (error) { alert('Failed to delete.'); }
-    };
-    window.deleteArchiveFromLightbox = function() {
-        deleteArchivePost(currentLightboxPostId);
-        closeArchiveLightbox();
-    };
-
-    window.openArchiveLightbox = function(id, urlsStr, title, caption, tags, displayDate, inputDate) {
-        currentLightboxPostId = id;
-        currentLightboxImageUrl = urlsStr; // 묶음 URL 원본 저장
-        
-        // 여러 장의 이미지를 세로로 쫙 펼쳐서 렌더링
-        var urls = urlsStr.split(":::");
-        var imgsHtml = urls.map(u => `<img src="${u}" style="max-width: 100%; height: auto; object-fit: contain; border-radius: 2px; margin: 0 auto 15px auto; display: block; border: 1px solid var(--divider-bg);">`).join('');
-        $('#lightbox-archive-img-container').html(imgsHtml);
-        
-        $('#lightbox-archive-title').text(title || '');
-        $('#lightbox-archive-caption').html((caption || '').replace(/\n/g, '<br>'));
-        $('#lightbox-archive-tags').text(tags || ''); 
-        $('#lightbox-archive-date').text(displayDate || '');
-        
-        $('#edit-archive-title').val(title || '');
-        $('#edit-archive-caption').val(caption || '');
-        $('#edit-archive-tags').val(tags || '');
-        $('#edit-archive-date').val(inputDate || ''); 
-        
-        $('#lightbox-read-mode').show();
-        $('#lightbox-edit-mode').hide();
-        
-        $('#archive-lightbox').css('display', 'flex').hide().fadeIn(150);
-    };
-    
-    window.closeArchiveLightbox = function() {
-        $('#archive-lightbox').fadeOut(150);
+            
+            $('#hasion-title').val('');
+            $('#hasion-content').html(''); 
+            $('#hasion-tags').val('');
+            $('#hasion-search').val('').trigger('blur');
+            setDefaultDate(); 
+            
+            loadHasionPosts();
+        } catch (error) {
+            alert('기록을 남기지 못했습니다.');
+        } finally {
+            $('#submit-btn').prop('disabled', false);
+        }
     };
 
-    window.startArchiveEdit = function() {
-        $('#lightbox-read-mode').hide();
-        $('#lightbox-edit-mode').fadeIn(200).css('display', 'flex');
-    };
-    window.cancelArchiveEdit = function() {
-        $('#lightbox-edit-mode').hide();
-        $('#lightbox-read-mode').fadeIn(200);
+    window.startHasionEdit = function(id) {
+        var postEl = $(`#post-${id}`);
+        postEl.find('.read-mode').hide();
+        postEl.find('.edit-mode').fadeIn(200).css('display', 'flex');
     };
     
-    window.saveArchiveEdit = async function() {
-        var newTitle = $('#edit-archive-title').val().trim();
-        var newCaption = $('#edit-archive-caption').val().trim();
-        var newTags = $('#edit-archive-tags').val().trim();
-        var newDateStr = $('#edit-archive-date').val();
+    window.cancelHasionEdit = function(id) {
+        var postEl = $(`#post-${id}`);
+        postEl.find('.edit-mode').hide();
+        postEl.find('.read-mode').fadeIn(200).css('display', 'block');
+    };
+
+    window.saveHasionEdit = async function(id) {
+        var newTitle = $(`#edit-title-${id}`).val().trim();
+        var newContent = $(`#edit-content-${id}`).html().trim();
+        var newTags = $(`#edit-tags-${id}`).val().trim();
+        var newDateStr = $(`#edit-date-${id}`).val();
         
-        var newContentStr = currentLightboxImageUrl + "|||" + newCaption + "|||" + newTags;
-        
+        if (!newContent || newContent === '<br>') { alert("내용을 적어주세요."); return; }
+
+        var finalContent = newContent + "|||" + newTags;
+
         try {
             var finalDate = new Date();
             if (newDateStr) {
@@ -596,30 +615,66 @@
             var offset = finalDate.getTimezoneOffset() * 60000;
             var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
 
-            var { error } = await archiveSupabase.from('posts').update({ 
+            var { error } = await hasionSupabase.from('posts').update({ 
                 title: newTitle, 
-                content: newContentStr,
-                created_at: localISOString
-            }).eq('id', currentLightboxPostId);
+                content: finalContent, 
+                created_at: localISOString 
+            }).eq('id', id);
             
             if (error) throw error;
-            
-            var yy = finalDate.getFullYear();
-            var m = String(finalDate.getMonth() + 1).padStart(2, '0');
-            var d = String(finalDate.getDate()).padStart(2, '0');
-            
-            $('#lightbox-archive-title').text(newTitle);
-            $('#lightbox-archive-caption').html(newCaption.replace(/\n/g, '<br>'));
-            $('#lightbox-archive-tags').text(newTags); 
-            $('#lightbox-archive-date').text(`${yy}.${m}.${d}`);
-            
-            cancelArchiveEdit();
-            loadGalleryPosts(); 
-        } catch (error) {
-            alert('Failed to save.');
-        }
+            loadHasionPosts();
+        } catch (error) { alert('수정에 실패했습니다.'); }
     };
 
-    setTimeout(() => { loadGalleryPosts(); }, 100);
-</script>
+    window.deleteHasionPost = async function(id) {
+        if (!confirm("이 기록을 삭제하시겠습니까?")) return;
+        try {
+            var { error } = await hasionSupabase.from('posts').delete().eq('id', id);
+            if (error) throw error;
+            loadHasionPosts();
+        } catch (error) { alert('삭제하지 못했습니다.'); }
+    };
 
+    $('#tags-toggle-btn').click(function() {
+        $('#tags-panel').slideToggle(200);
+        $(this).toggleClass('active');
+    });
+
+    window.triggerTagSearch = function(tagText) {
+        if(!tagText) return;
+        var pureTag = tagText.match(/#[^\s#]+/)[0] || tagText;
+        $('#hasion-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag).focus();
+        $('#search-icon').css('opacity', '0.7');
+        $('#hasion-search').trigger('input'); 
+    };
+
+    $('#search-icon').click(function() {
+        $('#hasion-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
+        $(this).css('opacity', '0.7');
+    });
+    $('#hasion-search').blur(function() {
+        if($(this).val().trim() === '') {
+            $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
+            $('#search-icon').css('opacity', '0.35');
+        }
+    });
+    
+    $('#hasion-search').on('input', function() {
+        var keyword = $(this).val().toLowerCase();
+        $('.feed-item').each(function() {
+            var dataText = $(this).attr('data-search').toLowerCase();
+            var bodyText = $(this).find('.feed-text').text().toLowerCase();
+            
+            if (dataText.includes(keyword) || bodyText.includes(keyword)) { 
+                $(this).show(); 
+            } else { 
+                $(this).hide(); 
+            }
+        });
+    });
+
+    var hasionTimeout = setTimeout(() => { 
+        setDefaultDate();
+        loadHasionPosts(); 
+    }, 100);
+</script>
