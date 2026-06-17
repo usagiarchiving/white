@@ -1,3 +1,4 @@
+<!-- 파일명: category/memo.html -->
 <style>
     /* ==========================================================================
        [디자인] 편지지 테마의 완벽한 메모장 UI & 웹 에디터 엔진
@@ -7,8 +8,12 @@
         padding-top: 10px;
     }
 
-    /* 검색창 레이아웃 */
-    .search-wrapper { display: flex; justify-content: flex-end; margin-bottom: 25px; width: 100%; }
+    /* 검색창 & 태그 아이콘 레이아웃 [수정: 태그 아이콘 추가를 위한 gap 설정] */
+    .search-wrapper { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; width: 100%; gap: 15px; }
+    
+    #tags-toggle-btn { cursor: pointer; color: var(--sub-color); font-size: 18px; transition: color 0.3s; }
+    #tags-toggle-btn:hover, #tags-toggle-btn.active { color: var(--point-color); }
+    
     .search-inner { position: relative; display: flex; align-items: center; }
     #memo-search {
         background: transparent; border: none; border-bottom: 1px solid transparent;
@@ -21,6 +26,19 @@
         cursor: pointer; font-size: 15px; transition: opacity 0.3s; z-index: 10;
     }
     #search-icon:hover { opacity: 0.7; }
+
+    /* [추가] 태그 모음 패널 및 디자인 */
+    #tags-panel {
+        display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; 
+        padding: 15px; background: rgba(0,0,0,0.02); border-radius: 6px; 
+        border: 1px solid var(--divider-bg);
+    }
+    .tag-pill {
+        font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color);
+        cursor: pointer; padding: 4px 10px; border-radius: 12px; 
+        background: #fff; border: 1px solid var(--divider-bg); transition: all 0.2s;
+    }
+    .tag-pill:hover { color: var(--point-color); border-color: var(--point-color); }
 
     /* 제목 입력칸 */
     .memo-title-input {
@@ -53,7 +71,7 @@
     .memo-to-input { width: 150px; }
     .memo-from-input { width: 100px; text-align: left; }
 
-    /* 본문 텍스트 에어리어를 웹 에디터(contenteditable div)로 교체 */
+    /* 본문 텍스트 에어리어를 웹 에디터로 교체 */
     .memo-editor {
         width: 100%; min-height: 96px; background: transparent; border: none;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
@@ -61,11 +79,11 @@
         word-break: break-all;
     }
 
-    /* Placeholder 위치 조정 */
-    .memo-placeholder {
-        position: absolute; top: 0; left: 0; color: var(--sub-color);
-        font-family: 'Noto Serif KR', serif; font-size: 13px; line-height: 32px;
-        pointer-events: none; opacity: 0.5; transition: opacity 0.3s ease; z-index: 1;
+    /* [추가] 편지지 내부 태그 입력칸 */
+    .memo-tags-input {
+        width: 100%; background: transparent; border: none; outline: none;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 11.5px;
+        margin-top: 15px; border-top: 1px dashed var(--divider-bg); padding-top: 10px;
     }
 
     /* 하단 날짜, From 영역 */
@@ -85,9 +103,7 @@
     }
     .memo-submit-btn:hover { opacity: 1; transform: translateX(5px); }
 
-    /* ==========================================================================
-       [기능] 드래그 서식 툴바 (노션 스타일)
-       ========================================================================== */
+    /* 드래그 서식 툴바 */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
         border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
@@ -104,30 +120,16 @@
     .format-toolbar button:hover { background: rgba(0,0,0,0.05); }
     .format-toolbar .divider { width: 1px; height: 16px; background: var(--divider-bg); margin: 0 4px; }
     
-    /* [요청] 자유 색상 선택기 스타일 */
-    .color-picker-label {
-        display: flex; align-items: center; justify-content: center;
-        width: 26px; height: 26px; cursor: pointer; border-radius: 4px; transition: 0.2s;
-        position: relative; overflow: hidden; margin: 0;
-    }
+    .color-picker-label { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; overflow: hidden; margin: 0; }
     .color-picker-label:hover { background: rgba(0,0,0,0.05); }
     .color-picker-label i { font-size: 14px; color: var(--main-color); pointer-events: none; }
-    .native-color-picker {
-        position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer;
-        top: 0; left: 0; border: none; padding: 0;
-    }
+    .native-color-picker { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; border: none; padding: 0; }
 
-    /* 민트 & 핑크 프리셋 버튼 */
-    .color-btn { 
-        font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; 
-        border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px;
-    }
+    .color-btn { font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px; }
     .btn-mint { color: #0E865E !important; background: #E1F9F1 !important; }
     .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
 
-    /* ==========================================================================
-       [기능] 아코디언 리스트 레이아웃 
-       ========================================================================== */
+    /* 아코디언 리스트 레이아웃 */
     .memo-accordion-header {
         font-size: 13px; font-family: 'Noto Serif KR', serif; font-weight: normal; 
         color: var(--main-color); cursor: pointer; padding: 12px 0 4px 0; 
@@ -139,24 +141,14 @@
     
     .memo-accordion-body { display: none; padding: 2px 0 25px 0; border-bottom: 1px solid var(--divider-bg); }
 
-    /* 이미지 최적화 및 팝업(라이트박스) */
+    /* 이미지 최적화 및 팝업 */
     .memo-img-container { margin: 15px 0; text-align: left; }
-    .memo-attached-img {
-        max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 2px;
-        cursor: pointer; border: 1px solid var(--divider-bg); transition: opacity 0.2s ease;
-    }
+    .memo-attached-img { max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 2px; cursor: pointer; border: 1px solid var(--divider-bg); transition: opacity 0.2s ease; }
     .memo-attached-img:hover { opacity: 0.85; }
     .memo-img-caption { display: block; font-size: 11px; color: var(--sub-color); margin-top: 6px; font-style: italic; }
 
-    .memo-lightbox {
-        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-        z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out;
-    }
-    .memo-lightbox img {
-        max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 4px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: memoZoom 0.25s ease-out;
-    }
+    .memo-lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out; }
+    .memo-lightbox img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 4px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: memoZoom 0.25s ease-out; }
     @keyframes memoZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     /* 본문 */
@@ -173,20 +165,10 @@
     <button onmousedown="event.preventDefault(); formatText('italic')" title="기울임"><i class="xi-italic"></i></button>
     <button onmousedown="event.preventDefault(); formatText('underline')" title="밑줄"><i class="xi-underline"></i></button>
     <button onmousedown="event.preventDefault(); formatText('strikeThrough')" title="취소선"><i class="xi-strikethrough"></i></button>
-    
     <div class="divider"></div>
-    
-    <label class="color-picker-label" title="텍스트 색상" onmousedown="saveSelection()">
-        <i class="xi-font"></i>
-        <input type="color" class="native-color-picker" oninput="applyCustomColor('foreColor', this.value)" onchange="applyCustomColor('foreColor', this.value)">
-    </label>
-    <label class="color-picker-label" title="배경 형광펜 색상" onmousedown="saveSelection()">
-        <i class="xi-palette"></i>
-        <input type="color" class="native-color-picker" oninput="applyCustomColor('backColor', this.value)" onchange="applyCustomColor('backColor', this.value)">
-    </label>
-    
+    <label class="color-picker-label" title="텍스트 색상" onmousedown="saveSelection()"><i class="xi-font"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('foreColor', this.value)" onchange="applyCustomColor('foreColor', this.value)"></label>
+    <label class="color-picker-label" title="배경 형광펜 색상" onmousedown="saveSelection()"><i class="xi-palette"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('backColor', this.value)" onchange="applyCustomColor('backColor', this.value)"></label>
     <div class="divider"></div>
-    
     <button onmousedown="event.preventDefault(); applyColor('#0E865E', '#E1F9F1')" title="민트 펜" class="color-btn btn-mint">M</button>
     <button onmousedown="event.preventDefault(); applyColor('#D04978', '#FDEDF4')" title="핑크 펜" class="color-btn btn-pink">P</button>
 </div>
@@ -194,16 +176,20 @@
 <div class="memo-wrapper">
     
     <div class="search-wrapper">
+        <!-- [추가] 태그 아이콘 -->
+        <i class="xi-tags" id="tags-toggle-btn" title="태그 모음 열기"></i>
         <div class="search-inner">
             <input type="text" id="memo-search" autocomplete="off" placeholder="검색">
             <i class="xi-search" id="search-icon" title="검색 열기"></i>
         </div>
     </div>
+    
+    <!-- [추가] 태그 패널 -->
+    <div id="tags-panel"></div>
 
     <input type="text" id="memo-title" class="memo-title-input" autocomplete="off" placeholder="title">
 
     <div class="memo-paper-input">
-        
         <div class="memo-header-input">
             <span class="memo-label" id="label-to">To.</span>
             <input type="text" id="memo-to" class="memo-to-input" autocomplete="off">
@@ -212,6 +198,9 @@
         <div style="position: relative; width: 100%;">
             <div id="memo-content" class="memo-editor" contenteditable="true" spellcheck="false"></div>
         </div>
+        
+        <!-- [추가] 태그 입력칸 -->
+        <input type="text" id="memo-tags" class="memo-tags-input" autocomplete="off" placeholder="Tags (예: #아이디어 #기록)">
 
         <div class="memo-footer-input">
             <input type="date" id="memo-date-picker" class="memo-date-picker" title="날짜 변경">
@@ -236,16 +225,13 @@
 </div>
 
 <script>
-    // [수정] const와 let을 var로 교체하여 카테고리 이동 시 생기는 변수 충돌(먹통 현상) 완벽 해결
     var MEMO_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
     var MEMO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
     var memoSupabase = window.supabase.createClient(MEMO_URL, MEMO_KEY);
 
     /* --- [에디터 & 툴바 핵심 로직] --- */
-    
     var savedSelectionRange = null;
 
-    // 색상 선택기를 열기 직전에 드래그된 텍스트 위치를 기억하는 마법
     window.saveSelection = function() {
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
@@ -253,7 +239,6 @@
         }
     };
 
-    // 색상 코드/팔레트에서 색을 골랐을 때 적용하는 마법
     window.applyCustomColor = function(command, color) {
         if (savedSelectionRange) {
             const selection = window.getSelection();
@@ -264,7 +249,6 @@
         checkSelection();
     };
 
-    // 선택 영역 감지 및 툴바 위치 계산
     function checkSelection() {
         setTimeout(() => {
             const selection = window.getSelection();
@@ -274,7 +258,6 @@
                 let node = selection.anchorNode;
                 let isInsideEditor = false;
                 
-                // 선택 영역이 contenteditable 에디터 내부인지 확인
                 while (node) {
                     if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') {
                         isInsideEditor = true; break;
@@ -287,11 +270,9 @@
                     const rect = range.getBoundingClientRect();
                     toolbar.style.display = 'flex';
                     
-                    // 글자 바로 위에 툴바 띄우기
                     let top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
                     let left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
                     
-                    // 모바일 화면 밖으로 나가지 않게 보정
                     if (top < window.scrollY) top = rect.bottom + window.scrollY + 8;
                     if (left < 10) left = 10;
                     
@@ -310,21 +291,10 @@
     document.addEventListener('mouseup', checkSelection);
     document.addEventListener('touchend', checkSelection);
 
-    // 텍스트 서식 적용 함수
-    window.formatText = function(command, value = null) {
-        document.execCommand(command, false, value);
-        checkSelection();
-    };
-
-    // 핑크, 민트 컬러 프리셋 적용 함수
-    window.applyColor = function(textColor, bgColor) {
-        document.execCommand('foreColor', false, textColor);
-        document.execCommand('backColor', false, bgColor);
-        checkSelection();
-    };
+    window.formatText = function(command, value = null) { document.execCommand(command, false, value); checkSelection(); };
+    window.applyColor = function(textColor, bgColor) { document.execCommand('foreColor', false, textColor); document.execCommand('backColor', false, bgColor); checkSelection(); };
 
     /* --- [UI 상호작용 로직] --- */
-
     $('#memo-to').on('focus', function() { $('#label-to').addClass('active'); }).on('blur', function() { $('#label-to').removeClass('active'); });
     $('#memo-from').on('focus', function() { $('#label-from').addClass('active'); }).on('blur', function() { $('#label-from').removeClass('active'); });
 
@@ -351,13 +321,14 @@
                 return;
             }
 
-            // 오직 날짜(YYYY-MM-DD) 기준 최신순 + 같은 날짜면 등록순 고정
             data.sort((a, b) => {
                 const dateA = a.created_at.split('T')[0];
                 const dateB = b.created_at.split('T')[0];
                 if (dateA === dateB) return b.id - a.id; 
                 return new Date(dateB) - new Date(dateA);
             });
+
+            var allTags = new Set(); // [추가] 태그 수집기
 
             data.forEach(post => {
                 const dateObj = new Date(post.created_at);
@@ -373,7 +344,23 @@
                 const fallbackTitle = `♡`;
                 const displayTitle = post.title ? post.title : fallbackTitle;
 
-                const rawContent = post.content;
+                // [추가] 데이터 분리 (본문 ||| 태그)
+                let rawContent = post.content;
+                let tagsText = "";
+                
+                if (rawContent && rawContent.includes("|||")) {
+                    let parts = rawContent.split("|||");
+                    rawContent = parts[0];
+                    tagsText = parts[1] || "";
+                }
+
+                // 태그 파싱 (#단어 추출)
+                let matches = tagsText.match(/#[^\s#]+/g);
+                if(matches) matches.forEach(m => allTags.add(m));
+
+                let safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                let tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${safeTags}')">${tagsText}</div>` : "";
+
                 let displayContent = rawContent;
                 if (!rawContent.includes('<div')) {
                     displayContent = displayContent.replace(/\n\nfrom\.\s*(.*)$/, '<div style="text-align: right; margin-top: 15px; color: var(--sub-color);">from. $1</div>');
@@ -381,9 +368,10 @@
                 }
                 
                 const parsedContent = parseMemoMarkdown(displayContent);
+                const searchText = `${post.title || ''} ${tagsText} ${displayTimeHTML}`;
 
                 const postHtml = `
-                    <div class="feed-item fade-in-element" id="post-${post.id}">
+                    <div class="feed-item fade-in-element" id="post-${post.id}" data-search="${searchText}">
                         
                         <div class="memo-accordion-header" id="accordion-header-${post.id}" onclick="toggleMemoAccordion(${post.id})">
                             ${displayTitle}
@@ -391,8 +379,10 @@
                         
                         <div class="memo-accordion-body" id="accordion-body-${post.id}">
                             <div class="read-mode memo-read-mode">
-                                <span class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; word-break: break-all; font-size: 13px; flex: 1; white-space: pre-wrap;">${parsedContent}</span>
-                                
+                                <div style="flex: 1;">
+                                    <div class="feed-text" style="color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; word-break: break-all; font-size: 13px; white-space: pre-wrap;">${parsedContent}</div>
+                                    ${tagsDisplayHtml}
+                                </div>
                                 <span class="feed-time" style="color: var(--sub-color); font-family: 'Noto Serif KR', serif; opacity: 0.8; white-space: nowrap; z-index: 5;">
                                     ${displayTimeHTML}
                                 </span>
@@ -408,6 +398,8 @@
                                 
                                 <div id="edit-content-${post.id}" contenteditable="true" spellcheck="false" style="width: 100%; min-height: 150px; background: transparent; border: 1px solid var(--point-color); border-radius:2px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 15px; outline: none; line-height:1.7; word-break: break-all;">${displayContent}</div>
                                 
+                                <input type="text" id="edit-tags-${post.id}" value="${safeTags}" placeholder="Tags (예: #아이디어)" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none;">
+
                                 <input type="date" id="edit-date-${post.id}" value="${editDateString}" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
                             </div>
 
@@ -420,6 +412,15 @@
                 `;
                 feedContainer.append(postHtml);
             });
+
+            // [추가] 추출된 전체 태그 렌더링
+            if (allTags.size > 0) {
+                let tagsHtml = Array.from(allTags).map(tag => `<span class="tag-pill" onclick="triggerTagSearch('${tag}')">${tag}</span>`).join('');
+                $('#tags-panel').html(tagsHtml);
+            } else {
+                $('#tags-panel').html('<span style="font-size:11px; color:var(--sub-color);">생성된 태그가 없습니다.</span>');
+            }
+
         } catch (error) {
             feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">기록을 불러오지 못했습니다.</p>');
         }
@@ -430,7 +431,7 @@
         const header = $(`#accordion-header-${id}`);
         const body = $(`#accordion-body-${id}`);
         header.toggleClass('open');
-        body.slideToggle(500); 
+        body.slideToggle(400); 
     };
 
     function parseMemoMarkdown(content) {
@@ -446,6 +447,7 @@
         const toVal = $('#memo-to').val().trim();
         const contentVal = $('#memo-content').html().trim();
         const fromVal = $('#memo-from').val().trim();
+        const tagsVal = $('#memo-tags').val().trim(); // [추가] 태그 값
         const dateVal = $('#memo-date-picker').val();
 
         if (!contentVal || contentVal === '<br>') return; 
@@ -454,6 +456,9 @@
         if (toVal) finalContent += `<div style="text-align: left; margin-bottom: 15px; color: var(--sub-color);">To. ${toVal}</div>`;
         finalContent += contentVal;
         if (fromVal) finalContent += `<div style="text-align: right; margin-top: 15px; color: var(--sub-color);">from. ${fromVal}</div>`;
+
+        // [추가] 태그 합치기
+        let finalContentWithTags = finalContent + "|||" + tagsVal;
 
         try {
             $('.memo-submit-btn').prop('disabled', true);
@@ -469,7 +474,7 @@
             const { error } = await memoSupabase.from('posts').insert([{ 
                 category: 'memo', 
                 title: titleVal, 
-                content: finalContent, 
+                content: finalContentWithTags, 
                 created_at: localISOString 
             }]);
             
@@ -479,8 +484,9 @@
             $('#memo-to').val('');
             $('#memo-content').html(''); 
             $('#memo-from').val('');
+            $('#memo-tags').val(''); // 태그 초기화
             $('#memo-search').val('').trigger('blur');
-            $('#memo-title, #memo-to, #memo-from, #memo-content').blur();
+            $('#memo-title, #memo-to, #memo-from, #memo-content, #memo-tags').blur();
             setDefaultDate(); 
             
             loadMemoPosts();
@@ -516,9 +522,12 @@
     async function saveMemoEdit(id) {
         const newTitle = $(`#edit-title-${id}`).val().trim();
         const newContent = $(`#edit-content-${id}`).html().trim();
+        const newTags = $(`#edit-tags-${id}`).val().trim(); // [추가] 태그 값
         const newDateStr = $(`#edit-date-${id}`).val();
         
         if (!newContent) { alert("내용을 적어주세요."); return; }
+
+        let newContentWithTags = newContent + "|||" + newTags;
 
         try {
             let finalDate = new Date();
@@ -531,7 +540,7 @@
 
             const { error } = await memoSupabase.from('posts').update({ 
                 title: newTitle, 
-                content: newContent, 
+                content: newContentWithTags, 
                 created_at: localISOString 
             }).eq('id', id);
             
@@ -549,7 +558,20 @@
         } catch (error) { alert('삭제하지 못했습니다.'); }
     }
 
-    // 검색 
+    // [추가] 태그 토글 및 검색 기능
+    $('#tags-toggle-btn').click(function() {
+        $('#tags-panel').slideToggle(200);
+        $(this).toggleClass('active');
+    });
+
+    window.triggerTagSearch = function(tagText) {
+        if(!tagText) return;
+        let pureTag = tagText.match(/#[^\s#]+/)[0] || tagText;
+        $('#memo-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag).focus();
+        $('#search-icon').css('opacity', '0.7');
+        $('#memo-search').trigger('input'); 
+    };
+
     $('#search-icon').click(function() {
         $('#memo-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
         $(this).css('opacity', '0.7');
@@ -560,14 +582,19 @@
             $('#search-icon').css('opacity', '0.35');
         }
     });
+
+    // 내용, 제목, 태그 통합 검색 필터
     $('#memo-search').on('input', function() {
         const keyword = $(this).val().toLowerCase();
         $('.feed-item').each(function() {
-            const title = $(this).find('.memo-accordion-header').text().toLowerCase();
-            const text = $(this).find('.feed-text').text().toLowerCase();
-            const time = $(this).find('.feed-time').text().toLowerCase();
+            const dataText = $(this).attr('data-search').toLowerCase();
+            const bodyText = $(this).find('.feed-text').text().toLowerCase();
             
-            if ((title + " " + text + " " + time).includes(keyword)) { $(this).show(); } else { $(this).hide(); }
+            if (dataText.includes(keyword) || bodyText.includes(keyword)) { 
+                $(this).show(); 
+            } else { 
+                $(this).hide(); 
+            }
         });
     });
 
