@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>토끼굴 - Todo</title>
     
+    <!-- XEIcon 및 Pretendard 폰트 로드 -->
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     
@@ -37,7 +38,7 @@
         * {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
             box-sizing: border-box;
-            letter-spacing: -0.015em; /* 9px에 최적화된 자간 압축 */
+            letter-spacing: -0.015em;
             margin: 0; padding: 0;
         }
 
@@ -96,7 +97,7 @@
         .nav-btn.active { color: var(--main-color); }
 
         /* ==========================================================================
-           3. 퀵 애드 (1줄 추가 바)
+           3. 퀵 애드 (1줄 추가 바) & 하트 툴바(팔레트)
            ========================================================================== */
         .quick-add-bar {
             display: flex; align-items: center; gap: 8px;
@@ -104,6 +105,7 @@
             border-radius: 8px; padding: 8px 12px; margin-bottom: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             flex-shrink: 0;
+            position: relative;
         }
         .quick-add-input {
             flex: 1; border: none; background: transparent; color: var(--main-color);
@@ -118,14 +120,27 @@
         }
         .btn-icon:hover { color: var(--main-color); }
 
+        .color-palette {
+            display: none; position: absolute; top: calc(100% + 8px); left: 12px;
+            background: var(--card-bg); border: 1px solid var(--divider-bg); border-radius: 8px;
+            padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 2000;
+            flex-wrap: wrap; width: 140px; gap: 8px; justify-content: center;
+        }
+        .color-palette button {
+            background: none; border: none; font-size: 14px; cursor: pointer;
+            transition: transform 0.2s; width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .color-palette button:hover { transform: scale(1.2); }
+
         /* ==========================================================================
-           4. 매트릭스 UI (여백 압축 및 방향 교정)
+           4. 매트릭스 UI
            ========================================================================== */
         .matrix-grid {
             display: grid;
             grid-template-columns: 16px 1fr 1fr;
             grid-template-rows: 14px 1fr 1fr;
-            gap: 6px; /* 10px -> 6px로 축소 */
+            gap: 6px; 
             flex: 1;
             min-height: 0; 
         }
@@ -136,7 +151,7 @@
         }
         .m-header-left { 
             font-size: 9.5px; font-weight: 600; color: #666; 
-            writing-mode: vertical-rl; text-orientation: upright; /* 글자 정방향으로 세우기 */
+            writing-mode: vertical-rl; text-orientation: upright;
             letter-spacing: 2px;
             text-align: center; display: flex; align-items: center; justify-content: center;
         }
@@ -157,7 +172,7 @@
         }
 
         /* ==========================================================================
-           5. 투두 아이템 디자인 (좌측 정렬 완벽 적용)
+           5. 투두 아이템 디자인
            ========================================================================== */
         .todo-item {
             display: flex; align-items: flex-start; gap: 6px;
@@ -183,15 +198,14 @@
         .day-date { 
             font-size: 10px; width: 22px; height: 22px; 
             display: flex; align-items: center; justify-content: center; border-radius: 50%;
-            transition: 0.2s; border: none; /* 테두리 제거 */
+            transition: 0.2s; border: none; 
         }
         
-        /* 🚨 동그라미 연핑크 로직 */
         .day-col.is-today .day-date { background: #FDEDF4; color: #D04978; font-weight: bold; }
         .day-col.is-selected:not(.is-today) .day-date { background: rgba(0,0,0,0.05); } 
 
         /* ==========================================================================
-           7. 캘린더 (테두리 삭제 및 회색점 마킹)
+           7. 캘린더
            ========================================================================== */
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 600; font-size: 10px; }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
@@ -203,11 +217,9 @@
         }
         .cal-day-cell:hover { background: rgba(0,0,0,0.03); }
         
-        /* 🚨 동그라미 연핑크 로직 */
         .cal-day-cell.is-today { background: #FDEDF4; color: #D04978; font-weight: bold; }
         .cal-day-cell.is-selected:not(.is-today) { background: rgba(0,0,0,0.05); }
         
-        /* 할 일이 있는 날엔 숫자 아래 작고 세련된 점 마킹 */
         .cal-day-cell.has-todo::after {
             content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
             width: 3px; height: 3px; background: var(--sub-color); border-radius: 50%; opacity: 0.5;
@@ -239,24 +251,93 @@
         .detail-modal-card {
             background: var(--card-bg); border-radius: 12px; padding: 20px; width: 100%; max-width: 400px;
             display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            position: relative;
         }
-        .modal-input-row { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--divider-bg); padding-bottom: 6px; }
+        .modal-input-row { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--divider-bg); padding-bottom: 6px; position: relative;}
         .modal-input { flex: 1; border: none; background: transparent; }
         
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
         .modal-btn { background: none; border: none; font-weight: 600; cursor: pointer; }
+
+        /* ==========================================================================
+           9. 📊 신규: 통계 (Statistics) UI
+           ========================================================================== */
+        .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 600; font-size: 10px; }
+        
+        /* 모바일 2단, PC 다단 유동 그리드 최적화 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        @media (min-width: 600px) {
+            .stats-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+        }
+        
+        .stats-card {
+            background: var(--card-bg); border-radius: 12px; padding: 15px 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.015); cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .stats-card-title { font-size: 14px; }
+        .mini-cal {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; width: 100%;
+        }
+        .mini-day {
+            aspect-ratio: 1/1; border-radius: 2px; background: rgba(0,0,0,0.03);
+            transition: background 0.2s;
+        }
+        .stats-card-total { font-size: 10px; color: var(--main-color); font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+
+        /* 통계 상세 오버레이 (독립 뷰) */
+        #stats-detail-overlay {
+            background: var(--back-color); align-items: flex-start; justify-content: flex-start;
+            padding: 0; display: none; flex-direction: column; z-index: 30000;
+        }
+        .stats-detail-header {
+            position: sticky; top: 0; background: rgba(250, 250, 250, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            width: 100%; padding: 15px; display: flex; align-items: center; justify-content: space-between; z-index: 10;
+            border-bottom: 1px solid var(--divider-bg);
+        }
+        .stats-detail-content { padding: 15px; width: 100%; flex: 1; overflow-y: auto; padding-bottom: 50px; }
+        
+        .sd-summary-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        .sd-summary-box {
+            flex: 1; background: var(--card-bg); border-radius: 12px; padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.015); text-align: center;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .sd-summary-val { font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .sd-summary-label { font-size: 9px; color: var(--sub-color); }
+
+        .sd-chart-container {
+            background: var(--card-bg); border-radius: 12px; padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.015); margin-top: 20px;
+        }
+        .sd-chart-title { font-size: 10px; font-weight: 600; margin-bottom: 20px; }
+        .sd-chart {
+            display: flex; justify-content: space-between; align-items: flex-end; height: 120px;
+            padding-bottom: 5px; border-bottom: 1px solid var(--divider-bg);
+        }
+        .sd-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; height: 100%; justify-content: flex-end; }
+        .sd-bar { width: 22px; border-radius: 4px 4px 0 0; background: rgba(0,0,0,0.05); min-height: 2px; position: relative; transition: height 0.4s ease; }
+        .sd-bar-label { font-size: 8px; color: var(--sub-color); margin-top: 6px; }
+        .sd-bar-val { position: absolute; top: -14px; width: 100%; text-align: center; font-size: 8px; font-weight: bold; color: var(--main-color); }
     </style>
 </head>
 <body>
 
 <div class="todo-wrapper">
 
+    <!-- TAB 1: MATRIX HOME -->
     <div id="todo-tab-matrix" class="todo-tab-content active">
         <div class="quick-add-bar">
-            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="cycleQaColor()">
-                <i class="xi-heart"></i>
+            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('qa')">
+                <i class="xi-heart-o"></i>
             </button>
             <input type="hidden" id="qa-color-val" value="gray">
+            
+            <div id="qa-color-palette" class="color-palette"></div>
             
             <input type="text" id="qa-input" class="quick-add-input" placeholder="" autocomplete="off" onkeypress="if(event.keyCode===13) quickAddTodo()">
             
@@ -289,6 +370,7 @@
         <div class="inbox-area" id="quad-0"></div>
     </div>
 
+    <!-- TAB 2: WEEKLY DASHBOARD -->
     <div id="todo-tab-weekly" class="todo-tab-content">
         <div class="weekly-header">
             <i class="xi-angle-left btn-icon" onclick="changeWeek(-1)"></i>
@@ -300,6 +382,7 @@
         <div class="inbox-area" style="flex: 1;" id="weekly-list"></div>
     </div>
 
+    <!-- TAB 3: CALENDAR -->
     <div id="todo-tab-calendar" class="todo-tab-content">
         <div class="cal-header">
             <i class="xi-angle-left btn-icon" onclick="changeMonth(-1)"></i>
@@ -311,13 +394,27 @@
         <div class="inbox-area" style="flex: 1; margin-top: 20px;" id="cal-list"></div>
     </div>
 
+    <!-- 📊 TAB 4: STATISTICS (신규 추가) -->
+    <div id="todo-tab-stats" class="todo-tab-content">
+        <div class="stats-header">
+            <i class="xi-angle-left btn-icon" onclick="changeStatsMonth(-1)"></i>
+            <span id="stats-month-display"></span>
+            <i class="xi-angle-right btn-icon" onclick="changeStatsMonth(1)"></i>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
     <div class="todo-bottom-nav">
         <button class="nav-btn active" onclick="switchTab('matrix', this)"><i class="xi-border-all"></i></button>
-        <button class="nav-btn" onclick="switchTab('weekly', this)"><i class="xi-view-day"></i></button> <button class="nav-btn" onclick="switchTab('calendar', this)"><i class="xi-calendar"></i></button>
+        <button class="nav-btn" onclick="switchTab('weekly', this)"><i class="xi-view-day"></i></button>
+        <button class="nav-btn" onclick="switchTab('calendar', this)"><i class="xi-calendar"></i></button>
+        <button class="nav-btn" onclick="switchTab('stats', this)"><i class="xi-chart-bar"></i></button>
     </div>
 
 </div>
 
+<!-- 액션 시트 -->
 <div id="action-sheet-overlay" class="modal-overlay" onclick="closeActionSheet()">
     <div class="action-sheet" id="action-sheet" onclick="event.stopPropagation()">
         <input type="hidden" id="action-target-id">
@@ -329,13 +426,19 @@
     </div>
 </div>
 
+<!-- 자세히 추가/수정 모달 -->
 <div id="detail-modal-overlay" class="modal-overlay" onclick="closeDetailedModal()">
     <div class="detail-modal-card" onclick="event.stopPropagation()">
         <input type="hidden" id="dm-id">
         
         <div class="modal-input-row">
-            <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="cycleDmColor()"><i class="xi-heart"></i></button>
+            <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('dm')">
+                <i class="xi-heart-o"></i>
+            </button>
             <input type="hidden" id="dm-color-val" value="gray">
+            
+            <div id="dm-color-palette" class="color-palette" style="top: 100%; left: 0;"></div>
+            
             <input type="text" id="dm-input" class="modal-input" placeholder="" autocomplete="off">
         </div>
         
@@ -372,6 +475,41 @@
     </div>
 </div>
 
+<!-- 📊 통계 상세 모달 오버레이 (풀 스크린) -->
+<div id="stats-detail-overlay" class="modal-overlay">
+    <div class="stats-detail-header">
+        <i class="xi-angle-left btn-icon" style="font-size: 16px;" onclick="closeStatsDetail()"></i>
+        <div style="flex:1; text-align:center;" id="sd-header-title"><i class="xi-heart"></i></div>
+        <div style="width: 16px;"></div> 
+    </div>
+    <div class="stats-detail-content">
+        
+        <div class="stats-header" style="justify-content: center; gap: 20px;">
+            <i class="xi-angle-left btn-icon" onclick="changeStatsMonth(-1)"></i>
+            <span id="sd-month-display" style="font-size: 12px;"></span>
+            <i class="xi-angle-right btn-icon" onclick="changeStatsMonth(1)"></i>
+        </div>
+
+        <div class="sd-summary-row">
+            <div class="sd-summary-box">
+                <div class="sd-summary-val" id="sd-val-days"><i class="xi-check-circle" style="color:var(--cat-green);"></i> <span>0일</span></div>
+                <div class="sd-summary-label">실천</div>
+            </div>
+            <div class="sd-summary-box">
+                <div class="sd-summary-val" id="sd-val-total"><i class="xi-fire" style="color:var(--cat-red);"></i> <span>0</span></div>
+                <div class="sd-summary-label">누적</div>
+            </div>
+        </div>
+        
+        <div class="cal-grid" id="sd-cal-grid" style="margin-bottom: 25px;"></div>
+        
+        <div class="sd-chart-container">
+            <div class="sd-chart-title">최근 추이 (주차별 실천 완료수)</div>
+            <div class="sd-chart" id="sd-chart"></div>
+        </div>
+    </div>
+</div>
+
 <script>
     /* ==========================================================================
        [🚨 Supabase 실서버 연동 🚨]
@@ -381,12 +519,14 @@
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const colors = ['gray', 'red', 'orange', 'yellow', 'green', 'blue', 'navy', 'purple'];
-    let qaColorIndex = 0;
-    let dmColorIndex = 0;
-
-    let todosData = []; // Supabase에서 불러온 진짜 데이터 저장소
+    
+    let todosData = []; 
     let currentDate = new Date();
     let selectedDate = new Date();
+    
+    // 통계 전용 날짜 및 상태 변수
+    let statsDate = new Date();
+    let currentStatsCategory = null;
 
     // 서버 데이터 가져오기
     async function fetchTodos() {
@@ -399,16 +539,52 @@
         }
     }
 
-    function cycleColor(currentIndex, btnId, valId) {
-        currentIndex = (currentIndex + 1) % colors.length;
-        const colorName = colors[currentIndex];
-        $(`#${btnId}`).css('color', `var(--cat-${colorName})`);
-        $(`#${valId}`).val(colorName);
-        return currentIndex;
-    }
-    window.cycleQaColor = () => { qaColorIndex = cycleColor(qaColorIndex, 'qa-color-btn', 'qa-color-val'); };
-    window.cycleDmColor = () => { dmColorIndex = cycleColor(dmColorIndex, 'dm-color-btn', 'dm-color-val'); };
+    /* ==========================================================================
+       [팔레트(툴바) 토글 및 색상 선택 로직]
+       ========================================================================== */
+    window.togglePalette = function(type) {
+        const palette = $(`#${type}-color-palette`);
+        const currentVal = $(`#${type}-color-val`).val();
+        
+        if (palette.is(':visible')) {
+            palette.hide();
+            return;
+        }
+        
+        $('.color-palette').hide();
+        
+        palette.empty();
+        colors.forEach(color => {
+            const isSelected = color === currentVal;
+            const iconClass = color === 'gray' ? 'xi-heart-o' : 'xi-heart';
+            
+            palette.append(`
+                <button style="color: var(--cat-${color}); opacity: ${isSelected ? '1' : '0.5'};" 
+                        onclick="selectColor('${color}', '${type}')">
+                    <i class="${iconClass}"></i>
+                </button>
+            `);
+        });
+        
+        palette.css('display', 'flex');
+    };
 
+    window.selectColor = function(color, type) {
+        $(`#${type}-color-val`).val(color);
+        const iconClass = color === 'gray' ? 'xi-heart-o' : 'xi-heart';
+        $(`#${type}-color-btn`).html(`<i class="${iconClass}"></i>`).css('color', `var(--cat-${color})`);
+        $(`#${type}-color-palette`).hide();
+    };
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#qa-color-btn, #qa-color-palette, #dm-color-btn, #dm-color-palette').length) {
+            $('.color-palette').hide();
+        }
+    });
+
+    /* ==========================================================================
+       [기존 뷰 렌더링 함수들]
+       ========================================================================== */
     window.switchTab = function(tabName, btn) {
         $('.todo-tab-content').removeClass('active');
         $(`#todo-tab-${tabName}`).addClass('active');
@@ -425,7 +601,7 @@
     }
 
     function createTodoHTML(todo) {
-        const heartClass = todo.is_completed ? 'xi-heart-o' : 'xi-heart';
+        const heartClass = todo.category === 'gray' ? 'xi-heart-o' : 'xi-heart';
         const compClass = todo.is_completed ? 'completed' : '';
         const colorHex = `var(--cat-${todo.category})`;
         const targetStr = todo.target_date ? `<span style="font-size: 8px;">${todo.target_date.substring(5).replace('-','.')}</span>` : '';
@@ -545,7 +721,156 @@
         renderDateList('cal-list');
     }
 
-    // 🚨 DB Insert (1줄 추가)
+    /* ==========================================================================
+       [📊 신규: 통계 렌더링 로직]
+       ========================================================================== */
+    function renderStatsMain() {
+        const y = statsDate.getFullYear();
+        const m = statsDate.getMonth() + 1;
+        $('#stats-month-display').text(`${y}년 ${m}월`);
+
+        const grid = $('#stats-grid');
+        grid.empty();
+
+        const firstDay = new Date(y, m - 1, 1).getDay();
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const monthPrefix = `${y}-${String(m).padStart(2, '0')}`;
+
+        colors.forEach(color => {
+            const catTodos = todosData.filter(t => t.category === color && t.target_date && t.target_date.startsWith(monthPrefix));
+            
+            let html = `<div class="stats-card" onclick="openStatsDetail('${color}')">`;
+            html += `<div class="stats-card-title"><i class="xi-heart" style="color: var(--cat-${color}); font-size: 16px;"></i></div>`;
+            html += `<div class="mini-cal">`;
+            
+            // 시작 요일 앞의 빈칸 맞추기
+            for (let i = 0; i < firstDay; i++) {
+                html += `<div class="mini-day" style="background: transparent;"></div>`;
+            }
+
+            let completedCount = 0;
+
+            // 해당 월의 날짜 미니 블록 채우기
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dStr = `${monthPrefix}-${String(i).padStart(2, '0')}`;
+                const dayTodos = catTodos.filter(t => t.target_date === dStr);
+                const total = dayTodos.length;
+                const completed = dayTodos.filter(t => t.is_completed).length;
+
+                let bgStyle = ``;
+                if (total > 0 && completed > 0) {
+                    // 완료율 계산 (그라데이션 효과). 최소 투명도 0.3 보장
+                    const ratio = Math.max(0.3, completed / total);
+                    bgStyle = `background: var(--cat-${color}); opacity: ${ratio};`;
+                    completedCount += completed;
+                }
+
+                html += `<div class="mini-day" style="${bgStyle}"></div>`;
+            }
+
+            html += `</div>`; 
+            html += `<div class="stats-card-total"><i class="xi-check-circle"></i> ${completedCount}</div>`;
+            html += `</div>`; 
+
+            grid.append(html);
+        });
+    }
+
+    window.changeStatsMonth = function(dir) {
+        statsDate.setMonth(statsDate.getMonth() + dir);
+        if ($('#stats-detail-overlay').is(':visible') && currentStatsCategory) {
+            renderStatsDetail(currentStatsCategory);
+        } else {
+            renderStatsMain();
+        }
+    };
+
+    window.openStatsDetail = function(color) {
+        currentStatsCategory = color;
+        $('#sd-header-title').html(`<i class="xi-heart" style="color: var(--cat-${color}); font-size: 16px;"></i>`);
+        renderStatsDetail(color);
+        $('#stats-detail-overlay').css('display', 'flex').hide().fadeIn(150);
+    };
+
+    window.closeStatsDetail = function() {
+        $('#stats-detail-overlay').fadeOut(150, function() {
+            currentStatsCategory = null;
+        });
+    };
+
+    function renderStatsDetail(color) {
+        const y = statsDate.getFullYear();
+        const m = statsDate.getMonth() + 1;
+        $('#sd-month-display').text(`${y}년 ${m}월`);
+
+        const monthPrefix = `${y}-${String(m).padStart(2, '0')}`;
+        const catTodos = todosData.filter(t => t.category === color && t.target_date && t.target_date.startsWith(monthPrefix));
+        const completedTodos = catTodos.filter(t => t.is_completed);
+
+        // 1. 상단 요약 박스 세팅
+        const uniqueDays = new Set(completedTodos.map(t => t.target_date));
+        $('#sd-val-days span').text(`${uniqueDays.size}일`);
+        $('#sd-val-total span').text(`${completedTodos.length}`);
+        
+        // 2. 월간 상세 달력 렌더링
+        const grid = $('#sd-cal-grid');
+        grid.empty();
+        const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
+        daysKor.forEach(d => grid.append(`<div class="cal-day-name">${d}</div>`));
+
+        const firstDay = new Date(y, m - 1, 1).getDay();
+        const daysInMonth = new Date(y, m, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) grid.append('<div></div>');
+
+        let weeklyCounts = [0, 0, 0, 0, 0]; 
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dStr = `${monthPrefix}-${String(i).padStart(2, '0')}`;
+            const dayTodos = completedTodos.filter(t => t.target_date === dStr);
+            
+            // 주차별 카운팅 (차트용)
+            const weekIdx = Math.floor((i - 1 + firstDay) / 7);
+            if (weekIdx < 5) weeklyCounts[weekIdx] += dayTodos.length;
+
+            let classes = "cal-day-cell";
+            let inlineStyle = "";
+            let extraHtml = "";
+
+            if (dayTodos.length > 0) {
+                inlineStyle = `background: var(--cat-${color}); color: #fff; font-weight: bold;`;
+                if (dayTodos.length > 1) {
+                    extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7px; color:var(--cat-${color});">+${dayTodos.length - 1}</div>`;
+                }
+            }
+
+            grid.append(`<div class="${classes}" style="${inlineStyle}">${i}${extraHtml}</div>`);
+        }
+
+        // 3. 최근 추이(Bar Chart) 렌더링
+        const chart = $('#sd-chart');
+        chart.empty();
+        const maxCount = Math.max(...weeklyCounts, 1); 
+
+        for (let w = 0; w < 5; w++) {
+            const count = weeklyCounts[w];
+            const heightPct = (count / maxCount) * 100;
+            const barBg = count > 0 ? `var(--cat-${color})` : 'rgba(0,0,0,0.05)';
+            
+            let html = `<div class="sd-bar-wrap">
+                <div class="sd-bar" style="height: ${heightPct}%; background: ${barBg};">
+                    ${count > 0 ? `<div class="sd-bar-val">${count}</div>` : ''}
+                </div>
+                <div class="sd-bar-label">${w+1}주차</div>
+            </div>`;
+            chart.append(html);
+        }
+    }
+
+
+    /* ==========================================================================
+       [DB 액션 로직 (이하 기존과 동일)]
+       ========================================================================== */
     window.quickAddTodo = async function() {
         const content = $('#qa-input').val().trim();
         if (!content) return;
@@ -562,11 +887,11 @@
         if (!error && data) {
             todosData.push(data[0]);
             $('#qa-input').val('');
+            selectColor('gray', 'qa');
             refreshAllViews();
         }
     };
 
-    // 🚨 DB Insert/Update (자세히 추가/수정)
     window.saveDetailedTodo = async function() {
         const id = $('#dm-id').val();
         const content = $('#dm-input').val().trim();
@@ -604,7 +929,6 @@
     };
     window.closeActionSheet = function() { $('#action-sheet-overlay').fadeOut(150); };
 
-    // 🚨 DB Update (상태 변경)
     window.toggleComplete = async function() {
         const id = $('#action-target-id').val();
         const todo = todosData.find(t => t.id == id);
@@ -618,7 +942,6 @@
         closeActionSheet();
     };
 
-    // 🚨 DB Update (날짜 미루기)
     window.moveToDate = async function(dayType) {
         const id = $('#action-target-id').val();
         let d = new Date();
@@ -634,7 +957,6 @@
         closeActionSheet();
     };
 
-    // 🚨 DB Delete
     window.deleteTodo = async function() {
         const id = $('#action-target-id').val();
         const { error } = await supabase.from('todos').delete().eq('id', id);
@@ -655,20 +977,14 @@
                 $('#dm-input').val(todo.content);
                 $('#dm-quad').val(todo.matrix_quadrant);
                 $('#dm-date').val(todo.target_date);
-                
-                dmColorIndex = colors.indexOf(todo.category) > -1 ? colors.indexOf(todo.category) : 0;
-                $('#dm-color-val').val(todo.category);
-                $('#dm-color-btn').css('color', `var(--cat-${todo.category})`);
+                selectColor(todo.category, 'dm'); 
             }
         } else {
             $('#dm-id').val('');
             $('#dm-input').val('');
             $('#dm-date').val(getFormatDate(new Date()));
             $('#dm-quad').val($('#qa-quad').val());
-            
-            dmColorIndex = qaColorIndex;
-            $('#dm-color-val').val($('#qa-color-val').val());
-            $('#dm-color-btn').css('color', $('#qa-color-btn').css('color'));
+            selectColor($('#qa-color-val').val(), 'dm'); 
         }
         $('#detail-modal-overlay').css('display', 'flex').hide().fadeIn(150);
     };
@@ -679,11 +995,16 @@
         renderMatrix();
         renderWeekly();
         renderCalendar();
+        renderStatsMain();
+        // 통계 상세뷰가 열려있을 때 실시간 반영
+        if ($('#stats-detail-overlay').is(':visible') && currentStatsCategory) {
+            renderStatsDetail(currentStatsCategory);
+        }
     }
 
     // 초기화 실행
     $(document).ready(function() {
-        fetchTodos(); // 로드 시 실제 DB 데이터 호출
+        fetchTodos(); 
     });
 
 </script>
