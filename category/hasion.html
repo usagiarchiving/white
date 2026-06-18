@@ -35,8 +35,6 @@
         padding: 11px; background: #ffffff; border-radius: 6px; 
         border: 1px solid var(--divider-bg);
     }
-    
-    /* 🚨 태그 라운드가 서로 딱 붙지 않게 상하좌우 안전 여백 추가 */
     .tag-pill {
         display: inline-block;
         font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color);
@@ -131,18 +129,18 @@
     .custom-html-box svg { display: block !important; }
 
     /* ==========================================================================
-       [🚨 에디터 인라인 이미지 규격 (완벽한 자동 양옆 6px 정렬)]
+       [🚨 에디터 인라인 이미지 규격 (완벽한 자동 2px 그리드)]
        ========================================================================== */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
-        margin: 0 0 6px 0; cursor: pointer; transition: width 0.25s ease;
+        margin: 0 0 2px 0; cursor: pointer; transition: width 0.25s ease;
         box-sizing: border-box; border-radius: 4px; overflow: hidden;
     }
     
-    /* 깔끔하게 6px 여백을 유지하면서 1단, 2단, 3단이 퍼즐처럼 떨어지도록 수학 계산 */
-    .img-full { width: 100%; display: block; }
-    .img-half { width: calc(50% - 3px); display: inline-block; margin-right: 6px; }
-    .img-third { width: calc(33.333% - 4px); display: inline-block; margin-right: 6px; }
+    /* 🚨 2px 여백과 에디터 내의 유령공백을 고려한 완벽한 1/2/3단 계산식 */
+    .img-full { width: 100%; display: block; margin-bottom: 2px; }
+    .img-half { width: calc(49.2% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
+    .img-third { width: calc(32.5% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
     
     .editor-img-wrap img {
         width: 100%; height: auto; display: block; 
@@ -155,11 +153,11 @@
     .img-del-btn { display: none !important; }
 
     /* ==========================================================================
-       [원본 보기 라이트박스 팝업]
+       [🚨 원본 보기 라이트박스 팝업 (개방감 블러 적용)]
        ========================================================================== */
     .hasion-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out;
     }
     .hasion-lightbox img {
@@ -169,45 +167,13 @@
     @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     /* ==========================================================================
-       [사진 조율 팝업 UI]
+       [드래그 텍스트 툴바]
        ========================================================================== */
-    .img-setting-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: transparent; z-index: 99999; display: none; align-items: flex-end; justify-content: center; opacity: 0;
-        padding-bottom: 40px; transition: opacity 0.2s ease;
-    }
-    .img-setting-card {
-        background: rgba(255, 255, 255, 0.85); 
-        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-        padding: 12px 15px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
-        border: 1px solid rgba(0,0,0,0.05); transform: translateY(15px);
-        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        display: flex; flex-direction: column; gap: 8px; width: max-content;
-    }
-    .img-setting-overlay.active { opacity: 1; display: flex; }
-    .img-setting-overlay.active .img-setting-card { transform: translateY(0); }
-
-    .setting-row { display: flex; gap: 6px; justify-content: center; }
-    
-    .setting-btn {
-        padding: 8px 12px; border: none; background: rgba(0,0,0,0.03); 
-        border-radius: 8px; color: var(--main-color);
-        font-family: 'Noto Serif KR', serif; font-size: 11.5px; cursor: pointer;
-        transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .setting-btn i { font-size: 15px; color: var(--point-color); transition: transform 0.2s; }
-    .setting-btn:hover { background: rgba(0,0,0,0.08); }
-    .setting-btn:hover i { transform: scale(1.1); }
-    
-    .setting-btn.btn-delete i { color: #ff3b30; }
-    .setting-btn.btn-delete:hover { background: rgba(255,59,48,0.1); color: #ff3b30; }
-
-    /* 드래그 툴바 */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
         border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999; align-items: center; gap: 4px; 
-        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
+        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
     }
     .format-toolbar button { background: none; border: none; color: var(--main-color); font-size: 14px; cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
     .format-toolbar button:hover { background: rgba(0,0,0,0.05); }
@@ -221,7 +187,34 @@
     .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
     #fontSizeInput::-webkit-outer-spin-button, #fontSizeInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-    .hasion-accordion-header { font-size: 13.5px; font-family: 'Noto Serif KR', serif; font-weight: normal; color: var(--main-color); cursor: pointer; padding: 12px 0 6px 0; border-bottom: 1px solid var(--divider-bg); transition: color 0.3s ease; display: flex; align-items: center; justify-content: space-between; }
+    /* ==========================================================================
+       [🚨 신규: 작고 미니멀한 1줄짜리 사진 조율 툴바]
+       ========================================================================== */
+    .img-format-toolbar {
+        position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
+        border: 1px solid var(--point-color); border-radius: 8px; padding: 4px 6px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 9999;
+        align-items: center; gap: 2px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        user-select: none; flex-direction: row;
+        animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .img-format-toolbar button {
+        background: none; border: none; color: var(--main-color); font-size: 16px;
+        cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s;
+        display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+    }
+    .img-format-toolbar button:hover { background: rgba(0,0,0,0.05); color: var(--point-color); }
+    .img-format-toolbar .divider { width: 1px; height: 18px; background: var(--divider-bg); margin: 0 4px; }
+    .img-format-toolbar .btn-delete { color: #ff3b30; }
+    .img-format-toolbar .btn-delete:hover { background: rgba(255,59,48,0.1); color: #ff3b30; }
+
+    /* 리스트 디자인 (아코디언) */
+    .hasion-accordion-header {
+        font-size: 13.5px; font-family: 'Noto Serif KR', serif; font-weight: normal; 
+        color: var(--main-color); cursor: pointer; padding: 12px 0 6px 0; 
+        border-bottom: 1px solid var(--divider-bg); transition: color 0.3s ease;
+        display: flex; align-items: center; justify-content: space-between;
+    }
     .hasion-accordion-header.open { color: var(--point-color); border-bottom-color: transparent; }
     .hasion-accordion-header:hover { color: var(--point-color); }
     .hasion-accordion-body { display: none; padding: 15px 0 30px 0; border-bottom: 1px solid var(--divider-bg); }
@@ -232,16 +225,12 @@
     <button onmousedown="event.preventDefault(); formatText('italic')"><i class="xi-italic"></i></button>
     <button onmousedown="event.preventDefault(); formatText('underline')"><i class="xi-underline"></i></button>
     <button onmousedown="event.preventDefault(); formatText('strikeThrough')"><i class="xi-strikethrough"></i></button>
-    
     <div class="divider"></div>
-    
     <label class="color-picker-label" onmousedown="saveSelection()"><i class="xi-font"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('foreColor', this.value)" onchange="applyCustomColor('foreColor', this.value)"></label>
     <label class="color-picker-label" onmousedown="saveSelection()"><i class="xi-palette"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('backColor', this.value)" onchange="applyCustomColor('backColor', this.value)"></label>
-    
     <div class="divider"></div>
     <button onmousedown="event.preventDefault(); applyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
     <button onmousedown="event.preventDefault(); applyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
-    
     <div class="divider"></div>
     <div style="display:flex; align-items:center; gap:2px; padding:0 4px;">
         <button onmousedown="event.preventDefault(); adjustFontSize(-1)" title="작게" style="width:20px;"><i class="xi-minus"></i></button>
@@ -249,6 +238,17 @@
         <button onmousedown="event.preventDefault(); adjustFontSize(1)" title="크게" style="width:20px;"><i class="xi-plus"></i></button>
         <span style="font-size:11px; color:var(--sub-color); margin-left:2px;">px</span>
     </div>
+</div>
+
+<div id="img-format-toolbar" class="img-format-toolbar">
+    <button onmousedown="event.preventDefault(); setImgLayout('img-full')" title="꽉 차게 (1단)"><i class="xi-view-stream"></i></button>
+    <button onmousedown="event.preventDefault(); setImgLayout('img-half')" title="나란히 (2단)"><i class="xi-view-column"></i></button>
+    <button onmousedown="event.preventDefault(); setImgLayout('img-third')" title="옹기종기 (3단)"><i class="xi-apps"></i></button>
+    <div class="divider"></div>
+    <button onmousedown="event.preventDefault(); moveImgOrder('up')" title="위로"><i class="xi-arrow-up"></i></button>
+    <button onmousedown="event.preventDefault(); moveImgOrder('down')" title="아래로"><i class="xi-arrow-down"></i></button>
+    <div class="divider"></div>
+    <button class="btn-delete" onmousedown="event.preventDefault(); deleteSelectedImg()" title="지우기"><i class="xi-trash-o"></i></button>
 </div>
 
 <div class="hasion-wrapper">
@@ -292,42 +292,12 @@
     <img id="hasion-lightbox-img" src="" onclick="event.stopPropagation()">
 </div>
 
-<div id="img-setting-modal" class="img-setting-overlay" onclick="if(event.target === this) closeImgSettingModal()">
-    <div class="img-setting-card">
-        
-        <div class="setting-row">
-            <button class="setting-btn" onclick="setImgLayout('img-full')" title="가득 채우기">
-                <i class="xi-view-stream"></i> 꽉 차게
-            </button>
-            <button class="setting-btn" onclick="setImgLayout('img-half')" title="나란히 두기">
-                <i class="xi-view-column"></i> 나란히
-            </button>
-            <button class="setting-btn" onclick="setImgLayout('img-third')" title="옹기종기 모으기">
-                <i class="xi-apps"></i> 옹기종기
-            </button>
-        </div>
-
-        <div class="setting-row">
-            <button class="setting-btn" onclick="moveImgOrder('up')">
-                <i class="xi-arrow-up"></i> 위로
-            </button>
-            <button class="setting-btn" onclick="moveImgOrder('down')">
-                <i class="xi-arrow-down"></i> 아래로
-            </button>
-            <button class="setting-btn btn-delete" onclick="deleteSelectedImg()">
-                <i class="xi-trash-o"></i> 지우기
-            </button>
-        </div>
-
-    </div>
-</div>
-
 <script>
     var HASION_URL = 'https://dvalxqujceuhfshatilq.supabase.co';
     var HASION_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YWx4cXVqY2V1aGZzaGF0aWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzg3MTksImV4cCI6MjA5NzIxNDcxOX0.6ZabNquhVkOnboWyQPSybP6S5S5iGjjYcpspcLM0vr0';
     var hasionSupabase = window.supabase.createClient(HASION_URL, HASION_KEY);
 
-    /* --- [에디터 & 툴바 로직] --- */
+    /* --- [텍스트 에디터 로직] --- */
     var savedSelectionRange = null;
     window.saveSelection = function() { var selection = window.getSelection(); if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0); };
     window.applyCustomColor = function(command, color) { if (savedSelectionRange) { var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } document.execCommand(command, false, color); checkSelection(); };
@@ -337,19 +307,19 @@
     function checkSelection() {
         setTimeout(() => {
             var selection = window.getSelection();
-            var toolbar = document.getElementById('format-toolbar');
+            var toolbar = $('#format-toolbar');
             if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
                 var node = selection.anchorNode; var isInsideEditor = false;
                 while (node) { if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') { isInsideEditor = true; break; } node = node.parentNode; }
                 if (isInsideEditor) {
                     var range = selection.getRangeAt(0); var rect = range.getBoundingClientRect();
-                    toolbar.style.display = 'flex';
-                    var top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
-                    var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
+                    toolbar.css('display', 'flex');
+                    var top = rect.top + window.scrollY - toolbar.outerHeight() - 8;
+                    var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.outerWidth() / 2);
                     if (top < window.scrollY) top = rect.bottom + window.scrollY + 8; if (left < 10) left = 10;
-                    toolbar.style.top = top + 'px'; toolbar.style.left = left + 'px';
-                } else { toolbar.style.display = 'none'; }
-            } else { toolbar.style.display = 'none'; }
+                    toolbar.css({ top: top + 'px', left: left + 'px' });
+                } else { toolbar.hide(); }
+            } else { toolbar.hide(); }
         }, 100);
     }
     document.addEventListener('selectionchange', checkSelection); document.addEventListener('mouseup', checkSelection); document.addEventListener('touchend', checkSelection);
@@ -361,7 +331,7 @@
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
-    /* 🚨 [먹통 방어 완벽 패치] new File() 대신 안전한 Blob 직접 리턴으로 아이폰 튕김 차단 */
+    /* 🚨 [안전한 이미지 압축] */
     window.compressImage = async function(file, qualityType) {
         if (qualityType === 'original' || file.type === 'image/gif') {
             return { fileOrBlob: file, ext: file.name.split('.').pop() };
@@ -383,10 +353,7 @@
                     var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
                     var ext = (outType === 'image/webp') ? 'webp' : 'jpg';
                     
-                    canvas.toBlob((blob) => { 
-                        // new File() 에러를 피하기 위해 Blob 객체를 그대로 스토리지로 넘깁니다.
-                        resolve({ fileOrBlob: blob, ext: ext }); 
-                    }, outType, quality);
+                    canvas.toBlob((blob) => { resolve({ fileOrBlob: blob, ext: ext }); }, outType, quality);
                 };
                 img.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
             };
@@ -410,23 +377,44 @@
             var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
+                allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span>`;
             }
         }
-        if(allImgHtml !== '') { $('#hasion-content').focus(); document.execCommand('insertHTML', false, allImgHtml); }
+        if(allImgHtml !== '') { $('#hasion-content').focus(); document.execCommand('insertHTML', false, allImgHtml + ' '); }
         $('#submit-btn').prop('disabled', false).css('opacity', '0.7'); $('.hasion-img-add-btn').css('opacity', '1'); $(this).val('');
     });
 
     /* ==========================================================================
-       [팝업 조율 엔진 및 라이트박스 로직]
+       [🚨 이미지 조율 미니 툴바 로직 (완벽 개선)]
        ========================================================================== */
     var activeImgWrap = null;
 
+    // 사진 클릭 시 툴바 띄우기 (위치 자동 추적)
     $(document).on('click', '.hasion-editor .editor-img-wrap', function(e) {
         if ($(this).closest('.read-mode').length > 0) return; 
         e.preventDefault();
         activeImgWrap = $(this);
-        $('#img-setting-modal').addClass('active');
+        
+        var toolbar = $('#img-format-toolbar');
+        toolbar.css('display', 'flex');
+        
+        var rect = this.getBoundingClientRect();
+        var top = rect.top + window.scrollY - toolbar.outerHeight() - 10;
+        var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.outerWidth() / 2);
+        
+        // 팝업이 화면 밖으로 나가지 않게 조율
+        if (top < window.scrollY + 10) top = rect.bottom + window.scrollY + 10; 
+        if (left < 10) left = 10;
+        
+        toolbar.css({ top: top + 'px', left: left + 'px' });
+    });
+
+    // 바탕 누르면 이미지 툴바 숨기기
+    $(document).on('mousedown', function(e) {
+        if (!$(e.target).closest('.editor-img-wrap, #img-format-toolbar').length) {
+            $('#img-format-toolbar').hide();
+            activeImgWrap = null;
+        }
     });
 
     $(document).on('click', '.read-mode .editor-img-wrap img', function(e) {
@@ -435,38 +423,40 @@
         $('#hasion-lightbox').css('display', 'flex').hide().fadeIn(150);
     });
 
-    window.closeHasionLightbox = function() {
-        $('#hasion-lightbox').fadeOut(150);
-    };
+    window.closeHasionLightbox = function() { $('#hasion-lightbox').fadeOut(150); };
 
-    window.closeImgSettingModal = function() {
-        $('#img-setting-modal').removeClass('active');
-        activeImgWrap = null;
-    };
-
+    // 레이아웃 변경 (1단, 2단, 3단)
     window.setImgLayout = function(layoutClass) {
         if(!activeImgWrap) return;
         activeImgWrap.removeClass('img-full img-half img-third').addClass(layoutClass);
-        closeImgSettingModal();
+        // 레이아웃 변경 후 툴바 위치 재조정
+        setTimeout(() => activeImgWrap.click(), 50); 
     };
 
+    // 🚨 텍스트와 사진 블록을 정확히 넘나드는 이동 엔진
     window.moveImgOrder = function(dir) {
         if(!activeImgWrap) return;
         var node = activeImgWrap[0];
+        
         if (dir === 'up') {
-            if (node.previousSibling) { node.parentNode.insertBefore(node, node.previousSibling); }
+            var prevNode = node.previousSibling;
+            if (prevNode) node.parentNode.insertBefore(node, prevNode);
         } else if (dir === 'down') {
-            if (node.nextSibling) { node.parentNode.insertBefore(node, node.nextSibling.nextSibling); }
+            var nextNode = node.nextSibling;
+            if (nextNode) node.parentNode.insertBefore(node, nextNode.nextSibling);
         }
+        // 이동 후 툴바가 같이 따라가도록 클릭 이벤트를 강제로 한 번 더 실행
+        activeImgWrap.click();
     };
 
     window.deleteSelectedImg = function() {
         if(!activeImgWrap) return;
         activeImgWrap.remove();
-        closeImgSettingModal();
+        $('#img-format-toolbar').hide();
+        activeImgWrap = null;
     };
 
-    /* 🚨 [목록 증발 방어 패치] 데이터 속 Null 충돌을 완벽 차단했습니다. */
+    /* 🚨 DB 안정성 보호막 */
     async function loadHasionPosts() {
         var feedContainer = $('#hasion-feed');
         feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
@@ -498,7 +488,6 @@
                 var displayDate = `${yyyy}.${mm}.${dd}`;
                 var inputDate = `${yyyy}-${mm}-${dd}`; 
 
-                // 🚨 빈 값으로 인한 에러 차단
                 var contentHtml = post.content || "";
                 var tagsText = "";
                 
@@ -510,22 +499,19 @@
 
                 var displayContent = contentHtml.replace(/```([\s\S]*?)```/g, function(match, innerHtml) {
                     var temp = document.createElement('div');
-                    var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n')
-                                                 .replace(/<\/div>/gi, '\n')
-                                                 .replace(/<\/p>/gi, '\n');
+                    var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>/gi, '\n').replace(/<\/p>/gi, '\n');
                     temp.innerHTML = formattedHtml;
                     var rawCode = temp.textContent || temp.innerText || "";
-                    
                     rawCode = rawCode.replace(/\u00A0/g, ' ').replace(/>\s+</g, '><').trim();
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
 
+                // 에디터의 불필요한 빈칸 완전히 걷어내어 피드 목록 그리드도 2px 완벽 밀착!
                 displayContent = displayContent.replace(/(<\/span>)(?:\s|&nbsp;|<br\s*\/?>|<\/?div>|<\/?p>)*(<span class="editor-img-wrap)/gi, '$1$2');
 
                 var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
-                /* 🚨 특수문자나 엔터 때문에 HTML 렌더링이 죽는 현상 차단 */
                 var safeTitle = (post.title || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
                 var safeTags = tagsText.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
                 var jsSafeTags = tagsText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "");
