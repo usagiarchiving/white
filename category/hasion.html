@@ -129,7 +129,7 @@
     .custom-html-box svg { display: block !important; }
 
     /* ==========================================================================
-       [에디터 인라인 이미지 규격 (완벽한 자동 양옆 2px 정렬)]
+       [에디터 인라인 이미지 규격 (완벽한 자동 2px 그리드)]
        ========================================================================== */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
@@ -137,6 +137,7 @@
         box-sizing: border-box; border-radius: 4px; overflow: hidden;
     }
     
+    /* 🚨 2px 여백과 에디터 내의 유령공백을 고려한 완벽한 1/2/3단 계산식 */
     .img-full { width: 100%; display: block; margin-bottom: 2px; }
     .img-half { width: calc(49.2% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
     .img-third { width: calc(32.5% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
@@ -333,11 +334,10 @@
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
-    /* 🚨 [안전한 이미지 압축] */
+    /* 🚨 [안전한 이미지 압축: File 객체 롤백으로 업로드 먹통 완벽 차단] */
     window.compressImage = async function(file, qualityType) {
-        if (qualityType === 'original' || file.type === 'image/gif') {
-            return { fileOrBlob: file, ext: file.name.split('.').pop() };
-        }
+        if (qualityType === 'original' || file.type === 'image/gif') return file;
+
         return new Promise((resolve) => {
             var reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = function(event) {
@@ -352,14 +352,27 @@
                     }
                     var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
                     var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-                    var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
-                    var ext = (outType === 'image/webp') ? 'webp' : 'jpg';
                     
-                    canvas.toBlob((blob) => { resolve({ fileOrBlob: blob, ext: ext }); }, outType, quality);
+                    var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
+                    var ext = (outType === 'image/webp') ? '.webp' : '.jpg';
+                    
+                    canvas.toBlob((blob) => { 
+                        if (!blob) { resolve(file); return; }
+                        try {
+                            var newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, {
+                                type: outType, lastModified: file.lastModified 
+                            });
+                            resolve(newFile);
+                        } catch(e) {
+                            // File 객체를 미지원하는 극도로 예외적인 브라우저를 위한 최후의 안전장치
+                            blob.name = file.name.replace(/\.[^/.]+$/, "") + ext;
+                            resolve(blob);
+                        }
+                    }, outType, quality);
                 };
-                img.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
+                img.onerror = function() { resolve(file); };
             };
-            reader.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
+            reader.onerror = function() { resolve(file); };
         });
     };
 
@@ -374,24 +387,28 @@
         var allImgHtml = '';
 
         for(var file of files) {
-            var compressed = await compressImage(file, qualityOption);
-            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${compressed.ext}`;
-            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
+            var processedFile = await compressImage(file, qualityOption);
+            var fileExt = processedFile.name ? processedFile.name.split('.').pop() : 'jpg';
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, processedFile, {
+                contentType: processedFile.type || 'image/jpeg'
+            });
+            
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span>`;
+                allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
             }
         }
-        if(allImgHtml !== '') { $('#hasion-content').focus(); document.execCommand('insertHTML', false, allImgHtml + ' '); }
+        if(allImgHtml !== '') { $('#hasion-content').focus(); document.execCommand('insertHTML', false, allImgHtml); }
         $('#submit-btn').prop('disabled', false).css('opacity', '0.7'); $('.hasion-img-add-btn').css('opacity', '1'); $(this).val('');
     });
 
     /* ==========================================================================
-       [🚨 이미지 조율 미니 툴바 로직 (완벽 개선: 키보드 원천 차단)]
+       [🚨 이미지 조율 미니 툴바 로직 (키보드 차단 완벽 적용)]
        ========================================================================== */
     var activeImgWrap = null;
 
-    // 사진에 툴바 띄우고 위치 조정하는 함수
     window.showImgToolbar = function(imgWrap) {
         activeImgWrap = imgWrap;
         var toolbar = $('#img-format-toolbar');
@@ -407,23 +424,13 @@
         toolbar.css({ top: top + 'px', left: left + 'px' });
     };
 
-    // 🚨 에디터 안에서 사진 터치 시 키보드가 올라오는 것을 100% 방지
     $(document).on('mousedown touchstart', '.hasion-editor .editor-img-wrap', function(e) {
         if ($(this).closest('.read-mode').length > 0) return; 
-        
-        // 1. 브라우저의 기본 포커스(키보드 팝업)를 원천 차단합니다.
-        e.preventDefault(); 
-        
-        // 2. 만약 글을 쓰다가(키보드가 켜진 상태로) 사진을 눌렀다면, 켜져 있는 키보드도 강제로 스르륵 내립니다.
-        if (document.activeElement) {
-            document.activeElement.blur(); 
-        }
-        
-        // 3. 미니 툴바 띄우기
+        e.preventDefault(); // 키보드 올라오는 것 원천 차단
+        if (document.activeElement) document.activeElement.blur(); // 켜져 있던 키보드도 강제 숨김
         showImgToolbar($(this));
     });
 
-    // 바탕 누르면 이미지 툴바 숨기기
     $(document).on('mousedown touchstart', function(e) {
         if (!$(e.target).closest('.editor-img-wrap, #img-format-toolbar').length) {
             $('#img-format-toolbar').hide();
@@ -439,15 +446,12 @@
 
     window.closeHasionLightbox = function() { $('#hasion-lightbox').fadeOut(150); };
 
-    // 레이아웃 변경 (1단, 2단, 3단)
     window.setImgLayout = function(layoutClass) {
         if(!activeImgWrap) return;
         activeImgWrap.removeClass('img-full img-half img-third').addClass(layoutClass);
-        // 레이아웃 변경 후 툴바 위치 재조정
         setTimeout(() => showImgToolbar(activeImgWrap), 50); 
     };
 
-    // 사진 블록 위/아래 이동
     window.moveImgOrder = function(dir) {
         if(!activeImgWrap) return;
         var node = activeImgWrap[0];
@@ -459,7 +463,6 @@
             var nextNode = node.nextSibling;
             if (nextNode) node.parentNode.insertBefore(node, nextNode.nextSibling);
         }
-        // 이동 후 툴바가 같이 따라가도록 갱신
         showImgToolbar(activeImgWrap);
     };
 
@@ -470,7 +473,7 @@
         activeImgWrap = null;
     };
 
-    /* 🚨 DB 안정성 보호막 */
+    /* 🚨 DB 데이터 무사 귀환 */
     async function loadHasionPosts() {
         var feedContainer = $('#hasion-feed');
         feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
@@ -620,8 +623,13 @@
 
         for(var file of files) {
             var compressed = await compressImage(file, qualityOption);
-            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${compressed.ext}`;
-            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
+            var fileExt = compressed.name ? compressed.name.split('.').pop() : 'jpg';
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob, {
+                contentType: compressed.type || 'image/jpeg'
+            });
+            
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
