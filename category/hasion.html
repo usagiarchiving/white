@@ -31,14 +31,18 @@
     #search-icon:hover { opacity: 0.7; }
 
     #tags-panel {
-        display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; 
-        padding: 15px; background: #ffffff; border-radius: 6px; 
+        display: none; flex-wrap: wrap; margin-bottom: 25px; 
+        padding: 11px; background: #ffffff; border-radius: 6px; 
         border: 1px solid var(--divider-bg);
     }
+    
+    /* 🚨 태그 라운드가 서로 딱 붙지 않게 상하좌우 안전 여백 추가 */
     .tag-pill {
+        display: inline-block;
         font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color);
         cursor: pointer; padding: 4px 10px; border-radius: 12px; 
         background: #fff; border: 1px solid var(--divider-bg); transition: all 0.2s;
+        margin: 4px; 
     }
     .tag-pill:hover { color: var(--point-color); border-color: var(--point-color); }
 
@@ -94,40 +98,54 @@
     /* ==========================================================================
        [피드 영역 & HTML 라이브 렌더링 박스 방어막]
        ========================================================================== */
-    .feed-item { width: 100%; max-width: 100%; box-sizing: border-box; }
+    .feed-item {
+        width: 100%; max-width: 100%; box-sizing: border-box;
+    }
+    
     .feed-text {
         width: 100%; max-width: 100%; box-sizing: border-box;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; 
         word-break: break-all; word-wrap: break-word; font-size: 13px; white-space: pre-wrap; 
     }
-    .feed-text div, .feed-text p { font-size: 13px; line-height: 1.8; margin: 0; padding: 0; }
-    .feed-text img, .custom-html-box img { max-width: 100% !important; height: auto !important; box-sizing: border-box; }
+
+    .feed-text div, .feed-text p {
+        font-size: 13px;
+        line-height: 1.8;
+        margin: 0; padding: 0;
+    }
+
+    .feed-text img, .custom-html-box img {
+        max-width: 100% !important; height: auto !important; box-sizing: border-box;
+    }
 
     .custom-html-box {
         width: 100%; box-sizing: border-box; margin: 10px 0;
-        white-space: normal !important; line-height: normal !important; 
-        letter-spacing: normal !important; word-break: normal !important;
-        word-wrap: normal !important; overflow: visible !important; 
+        white-space: normal !important; 
+        line-height: normal !important; 
+        letter-spacing: normal !important;
+        word-break: normal !important;
+        word-wrap: normal !important;
+        overflow: visible !important; 
     }
     .custom-html-box * { box-sizing: border-box; }
     .custom-html-box svg { display: block !important; }
 
     /* ==========================================================================
-       [🚨 에디터 인라인 이미지 규격 (완벽한 자동 양옆 정렬)]
+       [🚨 에디터 인라인 이미지 규격 (완벽한 자동 양옆 6px 정렬)]
        ========================================================================== */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
         margin: 0 0 6px 0; cursor: pointer; transition: width 0.25s ease;
-        box-sizing: border-box;
+        box-sizing: border-box; border-radius: 4px; overflow: hidden;
     }
     
-    /* 정확한 퍼센테이지로 브라우저 렌더링 여백을 완벽하게 무시합니다 */
+    /* 깔끔하게 6px 여백을 유지하면서 1단, 2단, 3단이 퍼즐처럼 떨어지도록 수학 계산 */
     .img-full { width: 100%; display: block; }
-    .img-half { width: 48.5%; display: inline-block; margin-right: 1.5%; }
-    .img-third { width: 32%; display: inline-block; margin-right: 1.33%; }
+    .img-half { width: calc(50% - 3px); display: inline-block; margin-right: 6px; }
+    .img-third { width: calc(33.333% - 4px); display: inline-block; margin-right: 6px; }
     
     .editor-img-wrap img {
-        width: 100%; height: auto; display: block; border-radius: 4px;
+        width: 100%; height: auto; display: block; 
         border: 1px solid var(--divider-bg); pointer-events: none;
     }
     
@@ -151,14 +169,12 @@
     @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     /* ==========================================================================
-       [🚨 수정된 미니멀 & 감성 디자인의 사진 조율 팝업]
+       [사진 조율 팝업 UI]
        ========================================================================== */
     .img-setting-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: transparent; /* 배경을 완전히 투명하게 해서 이미지가 잘 보이게 함 */
-        z-index: 99999; display: none; align-items: flex-end; justify-content: center; opacity: 0;
-        padding-bottom: 40px; /* 화면 중앙보다 살짝 아래에 떠오르게 */
-        transition: opacity 0.2s ease;
+        background: transparent; z-index: 99999; display: none; align-items: flex-end; justify-content: center; opacity: 0;
+        padding-bottom: 40px; transition: opacity 0.2s ease;
     }
     .img-setting-card {
         background: rgba(255, 255, 255, 0.85); 
@@ -186,7 +202,7 @@
     .setting-btn.btn-delete i { color: #ff3b30; }
     .setting-btn.btn-delete:hover { background: rgba(255,59,48,0.1); color: #ff3b30; }
 
-    /* 드래그 툴바 등 나머지 기존 설정... */
+    /* 드래그 툴바 */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
         border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
@@ -272,12 +288,10 @@
     <div class="feed-container" id="hasion-feed"></div>
 </div>
 
-<!-- 원본 보기 라이트박스 -->
 <div id="hasion-lightbox" class="hasion-lightbox" onclick="closeHasionLightbox()">
     <img id="hasion-lightbox-img" src="" onclick="event.stopPropagation()">
 </div>
 
-<!-- 🚨 사진 조율 미니멀 팝업 툴바 -->
 <div id="img-setting-modal" class="img-setting-overlay" onclick="if(event.target === this) closeImgSettingModal()">
     <div class="img-setting-card">
         
@@ -313,6 +327,7 @@
     var HASION_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YWx4cXVqY2V1aGZzaGF0aWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzg3MTksImV4cCI6MjA5NzIxNDcxOX0.6ZabNquhVkOnboWyQPSybP6S5S5iGjjYcpspcLM0vr0';
     var hasionSupabase = window.supabase.createClient(HASION_URL, HASION_KEY);
 
+    /* --- [에디터 & 툴바 로직] --- */
     var savedSelectionRange = null;
     window.saveSelection = function() { var selection = window.getSelection(); if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0); };
     window.applyCustomColor = function(command, color) { if (savedSelectionRange) { var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } document.execCommand(command, false, color); checkSelection(); };
@@ -346,8 +361,11 @@
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
+    /* 🚨 [먹통 방어 완벽 패치] new File() 대신 안전한 Blob 직접 리턴으로 아이폰 튕김 차단 */
     window.compressImage = async function(file, qualityType) {
-        if (qualityType === 'original' || file.type === 'image/gif') return file;
+        if (qualityType === 'original' || file.type === 'image/gif') {
+            return { fileOrBlob: file, ext: file.name.split('.').pop() };
+        }
         return new Promise((resolve) => {
             var reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = function(event) {
@@ -363,10 +381,16 @@
                     var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
                     var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                     var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
-                    var ext = (outType === 'image/webp') ? '.webp' : '.jpg';
-                    canvas.toBlob((blob) => { resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, { type: outType, lastModified: file.lastModified })); }, outType, quality);
+                    var ext = (outType === 'image/webp') ? 'webp' : 'jpg';
+                    
+                    canvas.toBlob((blob) => { 
+                        // new File() 에러를 피하기 위해 Blob 객체를 그대로 스토리지로 넘깁니다.
+                        resolve({ fileOrBlob: blob, ext: ext }); 
+                    }, outType, quality);
                 };
+                img.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
             };
+            reader.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
         });
     };
 
@@ -381,10 +405,9 @@
         var allImgHtml = '';
 
         for(var file of files) {
-            var processedFile = await compressImage(file, qualityOption);
-            var fileExt = processedFile.name.split('.').pop();
-            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-            var { error } = await hasionSupabase.storage.from('images').upload(fileName, processedFile);
+            var compressed = await compressImage(file, qualityOption);
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${compressed.ext}`;
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
@@ -395,7 +418,7 @@
     });
 
     /* ==========================================================================
-       [🚨 팝업 조율 엔진 및 라이트박스 로직]
+       [팝업 조율 엔진 및 라이트박스 로직]
        ========================================================================== */
     var activeImgWrap = null;
 
@@ -427,20 +450,13 @@
         closeImgSettingModal();
     };
 
-    /* 🚨 [수정된 위/아래 이동 엔진] 빈 띄어쓰기를 정확하게 무시하고 블록을 건너뜁니다 */
     window.moveImgOrder = function(dir) {
         if(!activeImgWrap) return;
-        
+        var node = activeImgWrap[0];
         if (dir === 'up') {
-            var prevElem = activeImgWrap.prev();
-            if (prevElem.length > 0) {
-                activeImgWrap.insertBefore(prevElem);
-            }
+            if (node.previousSibling) { node.parentNode.insertBefore(node, node.previousSibling); }
         } else if (dir === 'down') {
-            var nextElem = activeImgWrap.next();
-            if (nextElem.length > 0) {
-                activeImgWrap.insertAfter(nextElem);
-            }
+            if (node.nextSibling) { node.parentNode.insertBefore(node, node.nextSibling.nextSibling); }
         }
     };
 
@@ -450,6 +466,7 @@
         closeImgSettingModal();
     };
 
+    /* 🚨 [목록 증발 방어 패치] 데이터 속 Null 충돌을 완벽 차단했습니다. */
     async function loadHasionPosts() {
         var feedContainer = $('#hasion-feed');
         feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
@@ -459,7 +476,7 @@
             if (error) throw error;
             
             feedContainer.empty();
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">작성된 기록이 없습니다.</p>');
                 return;
             }
@@ -481,17 +498,17 @@
                 var displayDate = `${yyyy}.${mm}.${dd}`;
                 var inputDate = `${yyyy}-${mm}-${dd}`; 
 
-                var contentHtml = post.content;
+                // 🚨 빈 값으로 인한 에러 차단
+                var contentHtml = post.content || "";
                 var tagsText = "";
                 
-                if (post.content && post.content.includes("|||")) {
-                    var parts = post.content.split("|||");
+                if (contentHtml.includes("|||")) {
+                    var parts = contentHtml.split("|||");
                     contentHtml = parts[0];
                     tagsText = parts[1] || "";
                 }
 
-                var displayContent = contentHtml.replace(/```([\s\S]*?)
-```/g, function(match, innerHtml) {
+                var displayContent = contentHtml.replace(/```([\s\S]*?)```/g, function(match, innerHtml) {
                     var temp = document.createElement('div');
                     var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n')
                                                  .replace(/<\/div>/gi, '\n')
@@ -508,11 +525,13 @@
                 var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
-                var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                var safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                /* 🚨 특수문자나 엔터 때문에 HTML 렌더링이 죽는 현상 차단 */
+                var safeTitle = (post.title || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                var safeTags = tagsText.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                var jsSafeTags = tagsText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "");
                 
                 var plainSearchText = `${post.title || ''} ${tagsText} ${displayDate}`.replace(/"/g, "");
-                var tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${safeTags}')">${tagsText}</div>` : "";
+                var tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${jsSafeTags}')">${tagsText}</div>` : "";
 
                 var postHtml = `
                     <div class="feed-item fade-in-element" id="post-${post.id}" data-search="${plainSearchText}">
@@ -533,7 +552,7 @@
                             </div>
                             
                             <div class="edit-mode" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
-                                <input type="text" id="edit-title-${post.id}" value="${post.title || ''}" placeholder="title" style="width:100%; margin-bottom:5px; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; font-weight:600; padding:6px 0; outline:none; text-align:center;">
+                                <input type="text" id="edit-title-${post.id}" value="${safeTitle}" placeholder="title" style="width:100%; margin-bottom:5px; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; font-weight:600; padding:6px 0; outline:none; text-align:center;">
                                 
                                 <div id="edit-content-${post.id}" class="hasion-editor" contenteditable="true" spellcheck="false" style="min-height: 150px; border: 1px solid var(--point-color); border-radius:4px; padding: 15px;">${contentHtml}</div>
                                 
@@ -562,18 +581,24 @@
             });
 
             if (allTags.size > 0) {
-                var tagsHtml = Array.from(allTags).map(tag => `<span class="tag-pill" onclick="triggerTagSearch('${tag}')">${tag}</span>`).join('');
+                var tagsHtml = Array.from(allTags).map(tag => {
+                    var safeT = tag.replace(/'/g, "\\'");
+                    return `<span class="tag-pill" onclick="triggerTagSearch('${safeT}')">${tag}</span>`;
+                }).join('');
                 $('#tags-panel').html(tagsHtml);
             } else {
                 $('#tags-panel').html('<span style="font-size:11px; color:var(--sub-color);">태그가 없습니다.</span>');
             }
 
             setTimeout(() => {
-                $('.custom-html-box script').each(function() { try { eval($(this).text()); } catch(e) {} });
+                $('.custom-html-box script').each(function() {
+                    try { eval($(this).text()); } catch(e) {}
+                });
             }, 100);
 
         } catch (error) {
-            feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">Failed to load.</p>');
+            console.error(error);
+            feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">데이터를 불러오는 중 오류가 발생했습니다.</p>');
         }
     }
 
@@ -595,10 +620,9 @@
         var allImgHtml = '';
 
         for(var file of files) {
-            var processedFile = await compressImage(file, qualityOption);
-            var fileExt = processedFile.name.split('.').pop();
-            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-            var { error } = await hasionSupabase.storage.from('images').upload(fileName, processedFile);
+            var compressed = await compressImage(file, qualityOption);
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${compressed.ext}`;
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
@@ -713,10 +737,11 @@
         $(this).toggleClass('active');
     });
 
+    /* 🚨 태그 클릭 시 키보드가 올라오지 않게 .focus() 제거 완료 */
     window.triggerTagSearch = function(tagText) {
         if(!tagText) return;
         var pureTag = tagText.match(/#[^\s#]+/)[0] || tagText;
-        $('#hasion-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag).focus();
+        $('#hasion-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag);
         $('#search-icon').css('opacity', '0.7');
         $('#hasion-search').trigger('input'); 
     };
