@@ -1,0 +1,90 @@
+/* 파일명: category/record/record.css */
+
+/* ==========================================================================
+   1. 카테고리 전용 컬러 팔레트 (언제든 여기서 색상 코드만 바꾸시면 됩니다!)
+   ========================================================================== */
+:root {
+    --rec-movie: #FDF5E6;   /* 영화: 아이보리색 (너무 하야면 안 보여서 살짝 따뜻한 톤) */
+    --rec-drama: #FFA07A;   /* 드라마: 주황색 (파스텔톤) */
+    --rec-book: #77DD77;    /* 책: 초록색 (눈이 편안한 파스텔 그린) */
+    --rec-char: #FFB7B2;    /* 캐릭터: 핑크색 */
+    --rec-game: #536DFE;    /* 게임: 남색 */
+    --rec-song: #A0E8AF;    /* 노래: 민트색 */
+    --rec-toon: #FDFD96;    /* 웹툰: 노란색 */
+    --rec-show: #CDB4DB;    /* 공연: 보라색 */
+    --rec-video: #8E8E93;   /* 영상: 회색 */
+}
+
+/* ==========================================================================
+   2. 기본 레이아웃 및 가독성 (모바일 최우선, 줄간격/자간 최적화)
+   ========================================================================== */
+.record-wrapper {
+    font-family: 'Noto Serif KR', serif; /* 지식인의 서재 감성 */
+    font-size: 13px;
+    line-height: 1.8;
+    letter-spacing: -0.02em;
+    color: var(--main-color);
+    height: calc(100vh - 60px); /* 하단 네비게이션 공간 제외 */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    padding-bottom: 50px;
+}
+
+/* ==========================================================================
+   3. 탭 메뉴 화면 (부드러운 페이드인 애니메이션)
+   ========================================================================== */
+.record-tab-content {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    padding: 15px 0;
+    animation: fadeIn 0.3s ease-in-out; /* 부드러운 전환 효과 */
+    -ms-overflow-style: none; /* 스크롤바 숨김 */
+    scrollbar-width: none;
+}
+.record-tab-content::-webkit-scrollbar { display: none; }
+.record-tab-content.active {
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   4. 하단 네비게이션 바 (투두 시스템과 동일한 감성)
+   ========================================================================== */
+.record-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    background: var(--dropdown-bg);
+    opacity: 0.95;
+    border-top: 1px solid var(--divider-bg);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.nav-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--sub-color);
+    cursor: pointer;
+    padding: 10px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+.nav-btn.active {
+    color: var(--point-color);
+    transform: translateY(-2px);
+}
