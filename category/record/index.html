@@ -1,1 +1,62 @@
+<!-- 파일명: category/record/index.html -->
+<link rel="stylesheet" href="category/record/record.css">
 
+<div class="record-wrapper">
+
+    <!-- 상단: 검색 및 추가(글쓰기) 버튼 영역 -->
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; padding: 10px 5px; border-bottom: 1px solid var(--divider-bg);">
+        <div style="position: relative; display: flex; align-items: center;">
+            <input type="text" id="record-search" autocomplete="off" placeholder="Search" 
+                   style="background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0; transition: all 0.3s ease;">
+            <i class="xi-search" id="search-icon" style="position: absolute; right: 0; color: var(--sub-color); cursor: pointer; font-size: 15px; transition: 0.3s; opacity: 0.5;"></i>
+        </div>
+        
+        <!-- 요청하신 드롭다운 방식의 카테고리 필터 -->
+        <select id="record-category-filter" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 12px; cursor: pointer; font-weight: 600;">
+            <option value="all">전체 기록</option>
+            <option value="movie">영화</option>
+            <option value="drama">드라마</option>
+            <option value="book">책</option>
+            <option value="character">캐릭터</option>
+            <option value="game">게임</option>
+            <option value="song">노래</option>
+            <option value="webtoon">웹툰/웹소설</option>
+            <option value="show">공연/전시</option>
+            <option value="video">영상</option>
+        </select>
+        
+        <button id="btn-add-record" title="새 기록" style="background: none; border: none; color: var(--point-color); cursor: pointer; font-size: 16px; padding: 0; transition: transform 0.2s;"><i class="xi-pen"></i></button>
+    </div>
+
+    <!-- 탭 1: 리스트 뷰 (Repov 스타일의 깔끔한 목록) -->
+    <div id="record-tab-list" class="record-tab-content active">
+        <div id="record-list-container" style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- JS로 데이터가 여기에 꽂힙니다 -->
+            <p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 30px; opacity: 0.6;">기록을 불러오는 중입니다...</p>
+        </div>
+    </div>
+
+    <!-- 탭 2: 캘린더 뷰 (포스터가 날짜 안에 쏙 들어가는 달력) -->
+    <div id="record-tab-cal" class="record-tab-content">
+        <div id="record-cal-container">
+            <!-- JS로 달력과 대표 포스터가 여기에 렌더링됩니다 -->
+        </div>
+    </div>
+
+    <!-- 탭 3: 통계 뷰 (카테고리별 컬러가 채워지는 미니 달력) -->
+    <div id="record-tab-stats" class="record-tab-content">
+        <div id="record-stats-container">
+            <!-- JS로 카테고리별 통계가 여기에 렌더링됩니다 -->
+        </div>
+    </div>
+
+    <!-- 하단 네비게이션 바 -->
+    <div class="record-bottom-nav">
+        <button class="nav-btn active" onclick="switchRecordTab('list', this)" title="목록 보기"><i class="xi-view-list"></i></button>
+        <button class="nav-btn" onclick="switchRecordTab('cal', this)" title="캘린더 보기"><i class="xi-calendar"></i></button>
+        <button class="nav-btn" onclick="switchRecordTab('stats', this)" title="통계 보기"><i class="xi-chart-bar"></i></button>
+    </div>
+
+</div>
+
+<script src="category/record/record.js"></script>
