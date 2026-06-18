@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 Javascript 엔진 (디폴트 날짜 연동 및 모바일 검색창 픽스)
+   토끼굴 Todo 전용 Javascript 엔진 (액션 바 배치 및 모바일 검색 최적화)
    ========================================================================== */
 
 (function() {
@@ -12,6 +12,7 @@
     var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9maGFkdGxyc2NjaXBudmRvaHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NTMzODksImV4cCI6MjA5NzMyOTM4OX0.bNdMzGKMCimJtRdtluzaecIM0ZYvBx72-XQdD3WFCv0';
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // 핑크, 민트가 포함된 10색 마스터 팔레트
     const colors = ['gray', 'red', 'orange', 'yellow', 'green', 'mint', 'blue', 'navy', 'purple', 'pink'];
     
     let todosData = []; 
@@ -23,6 +24,7 @@
     let statsSelectedDateStr = getFormatDate(new Date()); 
     let currentSubtasks = [];
 
+    // 서버 데이터 가져오기
     async function fetchTodos() {
         const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
         if (error) {
@@ -54,11 +56,7 @@
         refreshAllViews();
     };
 
-    /* 🚨 모바일 충돌 방어형 하트 팔레트 엔진 */
-    window.togglePalette = function(type, e) {
-        const ev = e || window.event;
-        if(ev) ev.stopPropagation(); 
-        
+    window.togglePalette = function(type) {
         const palette = $(`#${type}-color-palette`);
         const currentVal = $(`#${type}-color-val`).val();
         if (palette.is(':visible')) { palette.hide(); return; }
@@ -70,7 +68,7 @@
             const iconClass = color === 'gray' ? 'xi-heart-o' : 'xi-heart';
             palette.append(`
                 <button style="color: var(--cat-${color}); opacity: ${isSelected ? '1' : '0.5'};" 
-                        onclick="selectColor('${color}', '${type}', event)">
+                        onclick="selectColor('${color}', '${type}')">
                     <i class="${iconClass}"></i>
                 </button>
             `);
@@ -78,10 +76,7 @@
         palette.css('display', 'flex');
     };
 
-    window.selectColor = function(color, type, e) {
-        const ev = e || window.event;
-        if(ev) ev.stopPropagation();
-        
+    window.selectColor = function(color, type) {
         $(`#${type}-color-val`).val(color);
         const iconClass = color === 'gray' ? 'xi-heart-o' : 'xi-heart';
         $(`#${type}-color-btn`).html(`<i class="${iconClass}"></i>`).css('color', `var(--cat-${color})`);
@@ -348,7 +343,7 @@
         renderDateList('cal-list');
     }
 
-    // 🚨 스르륵 검색창 - active 클래스로 토글하여 모바일 텍스트 실종 버그 해결
+    // 🚨 스르륵 검색창 active 토글 연동 (모바일 텍스트 픽스)
     $(document).on('click', '.todo-search-icon', function() {
         const input = $(this).siblings('.todo-search-input');
         input.addClass('active').focus();
@@ -564,7 +559,7 @@
         }, 300); 
     };
 
-    // 🚨 디폴트 날짜(현재 보고 있는 달력/대시보드 날짜) 적용 로직
+    // 현재 선택된 화면 날짜 연동 활성화
     window.openDetailedModal = function(id = null, useSelectedDate = false) {
         currentSubtasks = []; 
         
@@ -587,7 +582,6 @@
             $('#dm-id').val('');
             $('#dm-input').val('');
             
-            // 사용자가 선택한 날짜가 있으면 그 날짜를, 아니면 오늘 날짜를 세팅
             const defaultDateStr = useSelectedDate ? getFormatDate(selectedDate) : getFormatDate(new Date());
             $('#dm-date').val(defaultDateStr);
             
@@ -737,7 +731,7 @@
     }
 
     $(document).ready(function() {
-        // 모바일 사파리 충돌을 완전히 막는 엔터키 리스너
+        // 모바일 사파리 충돌 및 키보드 오작동 차단 통합 바인딩
         $('#qa-input').on('keypress', function(e) {
             if(e.which === 13) { e.preventDefault(); quickAddTodo(); }
         });
