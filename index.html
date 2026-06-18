@@ -53,20 +53,21 @@
     </div>
 
     <script>
+        // 🚨 기존 구조는 완벽히 유지하고, 각 메뉴가 어떤 꼬리표(#)를 가질지 'hash' 속성만 핀셋 추가했습니다.
         const CATEGORIES = [
-            { name: '토끼굴',     path: 'category/home.html',     active: true },
-            { name: '읽지 않은 문장',   path: 'category/notice.html',   active: false },
-            { name: '손 끝에 남는 것', path: 'category/oneline.html',  active: true },
-            { name: '이름을 부르는 법',    path: 'category/hasion.html',    active: true },
-            { name: '빛이 꺾이는 각도',  path: 'category/archive.html',  active: true },
-            { name: '감각의 잔여물',     path: 'category/memo.html',     active: true },
-            { name: '영원이라 쓰고, 오늘이라 읽는다.',    path: 'category/daily.html',    active: true }, // 새로 노출 추가!
-            { name: 'Log',      path: 'category/log.html',      active: false }, // 새로 노출 추가!
-            { name: 'List',     path: 'category/list.html',     active: false },
-            { name: 'Todo',     path: 'category/todo/',     active: true },
-            { name: 'Playlist', path: 'category/playlist.html', active: false },
-            { name: '흐린 날의 고백',   path: 'category/record.html',   active: false },
-            { name: 'Check',    path: 'category/check.html',    active: false }
+            { hash: 'home',     name: '토끼굴',     path: 'category/home.html',     active: true },
+            { hash: 'notice',   name: '읽지 않은 문장',   path: 'category/notice.html',   active: false },
+            { hash: 'oneline',  name: '손 끝에 남는 것', path: 'category/oneline.html',  active: true },
+            { hash: 'hasion',   name: '이름을 부르는 법',    path: 'category/hasion.html',    active: true },
+            { hash: 'archive',  name: '빛이 꺾이는 각도',  path: 'category/archive.html',  active: true },
+            { hash: 'memo',     name: '감각의 잔여물',     path: 'category/memo.html',     active: true },
+            { hash: 'daily',    name: '영원이라 쓰고, 오늘이라 읽는다.',    path: 'category/daily.html',    active: true },
+            { hash: 'log',      name: 'Log',      path: 'category/log.html',      active: false },
+            { hash: 'list',     name: 'List',     path: 'category/list.html',     active: false },
+            { hash: 'todo',     name: 'Todo',     path: 'category/todo/',     active: true },
+            { hash: 'playlist', name: 'Playlist', path: 'category/playlist.html', active: false },
+            { hash: 'record',   name: '흐린 날의 고백',   path: 'category/record.html',   active: true },
+            { hash: 'check',    name: 'Check',    path: 'category/check.html',    active: false }
         ];
     </script>
 
