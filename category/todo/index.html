@@ -168,7 +168,10 @@
     <div class="stats-detail-header">
         <i class="xi-angle-left btn-icon" style="font-size: 16px;" onclick="closeStatsDetail()"></i>
         <div style="flex:1; text-align:center;" id="sd-header-title"><i class="xi-heart"></i></div>
-        <div style="width: 16px;"></div> 
+        <div class="search-inner">
+            <input type="text" id="sd-search" class="todo-search-input" autocomplete="off">
+            <i class="xi-search todo-search-icon"></i>
+        </div>
     </div>
     <div class="stats-detail-content">
         <div class="stats-header" style="justify-content: center; gap: 20px;">
@@ -183,7 +186,10 @@
             <div class="sd-summary-box"><div class="sd-summary-val" id="sd-val-days"><i class="xi-check-circle" style="color:var(--cat-green);"></i> <span>0일</span></div><div class="sd-summary-label">실천</div></div>
             <div class="sd-summary-box"><div class="sd-summary-val" id="sd-val-total"><i class="xi-fire" style="color:var(--cat-red);"></i> <span>0</span></div><div class="sd-summary-label">누적</div></div>
         </div>
-        <div class="cal-grid" id="sd-cal-grid" style="margin-bottom: 25px;"></div>
+        <div class="cal-grid" id="sd-cal-grid" style="margin-bottom: 15px;"></div>
+        
+        <div class="inbox-area" style="width: 100%; box-sizing: border-box; margin-bottom: 25px; min-height: 50px;" id="sd-list"></div>
+        
         <div class="sd-chart-container">
             <div class="sd-chart-title">최근 추이 (주차별 실천 완료수)</div>
             <div class="sd-chart" id="sd-chart"></div>
