@@ -1,9 +1,11 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 스타일 시트 (모바일 레이아웃 고정 및 최적화)
+   토끼굴 Todo 전용 스타일 시트
    ========================================================================== */
 :root {
+    /* 🚨 신규: 민트, 핑크 컬러 추가 (총 10컬러) */
     --cat-gray: #8e8e93; --cat-red: #ff3b30; --cat-orange: #ff9500; --cat-yellow: #ffcc00;
-    --cat-green: #34c759; --cat-blue: #007aff; --cat-navy: #5856d6; --cat-purple: #af52de;
+    --cat-green: #34c759; --cat-mint: #0E865E; --cat-blue: #007aff; --cat-navy: #5856d6; 
+    --cat-purple: #af52de; --cat-pink: #D04978;
 }
 
 .todo-wrapper { font-family: 'Pretendard', sans-serif; font-size: 9px; line-height: 1.6; letter-spacing: -0.015em; color: var(--main-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 50px; width: 100%; }
@@ -22,32 +24,22 @@
 .nav-btn { background: none; border: none; font-size: 16px !important; color: var(--sub-color); cursor: pointer; padding: 10px; transition: 0.2s; }
 .nav-btn.active { color: var(--main-color); }
 
-/* 🚨 퀵 애드 모바일 쏠림 방어 (min-width: 0 & flex-shrink: 0 조합) */
-.quick-add-bar { 
-    position: relative; /* 툴바 기준점 확립 */
-    display: flex; align-items: center; gap: 6px; 
-    background: var(--dropdown-bg); border: 1px solid var(--divider-bg); 
-    border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; 
-    flex-shrink: 0; width: 100%; box-sizing: border-box; 
-}
-.quick-add-input { 
-    flex: 1; min-width: 0; /* 글자가 길어도 버튼을 밖으로 밀어내지 않음 */
-    border: none; background: transparent; color: var(--main-color); 
-    font-size: 11px !important; font-weight: 500; 
-}
-.quick-add-select, .btn-icon { 
-    flex-shrink: 0; /* 화면이 아무리 좁아도 버튼 크기 유지 */
-}
+.quick-add-bar { display: flex; align-items: center; gap: 8px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; flex-shrink: 0; width: 100%; box-sizing: border-box; }
+.quick-add-input { flex: 1; border: none; background: transparent; color: var(--main-color); font-size: 11px !important; font-weight: 500; }
 .quick-add-select { border: none; background: transparent; color: var(--sub-color); cursor: pointer; appearance: none; -webkit-appearance: none; font-weight: 600; }
 .btn-icon { background: none; border: none; color: var(--sub-color); cursor: pointer; font-size: 11px !important; transition: 0.2s; padding: 4px; display: flex; align-items: center; justify-content: center; }
 .btn-icon:hover { color: var(--main-color); }
 
 .matrix-grid { display: grid; grid-template-columns: 16px 1fr 1fr; grid-template-rows: 14px 1fr 1fr; gap: 8px; flex: 1; min-height: 0; width: 100%; }
 .m-header-empty { grid-area: 1 / 1 / 2 / 2; }
-.m-header-top { font-size: 9.5px !important; font-weight: 600; color: #666; display: flex; align-items: flex-end; justify-content: center; }
-.m-header-left { font-size: 9.5px !important; font-weight: 600; color: #666; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; }
+.m-header-top { font-size: 9.5px !important; font-weight: 600; color: #666; text-align: center; display: flex; align-items: flex-end; justify-content: center; }
+.m-header-left { font-size: 9.5px !important; font-weight: 600; color: #666; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; text-align: center; display: flex; align-items: center; justify-content: center; }
 .quadrant-box { background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; }
 .inbox-area { margin-top: 15px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px; min-height: 80px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; align-items: flex-start; width: 100%; box-sizing: border-box; }
+
+/* 🚨 신규: 다가오는 할 일 타임라인 스타일 */
+.timeline-date-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; border-left: 2px solid var(--divider-bg); padding-left: 10px; margin-left: 4px; width: 100%; }
+.timeline-date-label { font-size: 9px !important; color: var(--sub-color); font-weight: 600; margin-bottom: 2px; }
 
 .custom-checkbox { width: 10.5px; height: 10.5px; border-radius: 3px; margin-top: 2px; cursor: pointer; transition: background-color 0.3s ease, border-color 0.3s ease; flex-shrink: 0; }
 
@@ -55,6 +47,10 @@
 .todo-item-top { display: flex; align-items: flex-start; gap: 6px; cursor: pointer; width: 100%; }
 .todo-text { flex: 1; word-break: break-all; font-size: 10px !important; line-height: 1.5; transition: opacity 0.3s, text-decoration 0.3s; }
 .todo-meta { display: flex; flex-direction: column; align-items: flex-end; font-size: 8px !important; color: var(--sub-color); opacity: 0.7; }
+
+/* 🚨 어제 못한 일(overdue) 날짜 텍스트 강조 (빨간색 & 볼드) */
+.todo-meta.overdue { color: var(--cat-red); font-weight: bold; opacity: 1; }
+
 .todo-item.completed .todo-text, .todo-item.completed .todo-meta { opacity: 0.4; text-decoration: line-through; }
 .todo-item.completed .custom-checkbox { opacity: 0.9; }
 
