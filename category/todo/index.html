@@ -4,7 +4,7 @@
 
     <div id="todo-tab-matrix" class="todo-tab-content active">
         <div class="quick-add-bar">
-            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('qa')">
+            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="event.stopPropagation(); togglePalette('qa')">
                 <i class="xi-heart-o"></i>
             </button>
             <input type="hidden" id="qa-color-val" value="gray">
@@ -51,9 +51,10 @@
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="search-inner">
-                    <input type="text" id="weekly-search" class="todo-search-input" autocomplete="off">
+                    <input type="text" id="weekly-search" class="todo-search-input" autocomplete="off" placeholder="검색">
                     <i class="xi-search todo-search-icon"></i>
                 </div>
+                <i class="xi-plus btn-icon" style="font-size: 14px !important; color: var(--main-color);" onclick="openDetailedModal(null, true)"></i>
                 <i class="xi-angle-right btn-icon" onclick="changeWeek(1)"></i>
             </div>
         </div>
@@ -70,9 +71,10 @@
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="search-inner">
-                    <input type="text" id="cal-search" class="todo-search-input" autocomplete="off">
+                    <input type="text" id="cal-search" class="todo-search-input" autocomplete="off" placeholder="검색">
                     <i class="xi-search todo-search-icon"></i>
                 </div>
+                <i class="xi-plus btn-icon" style="font-size: 14px !important; color: var(--main-color);" onclick="openDetailedModal(null, true)"></i>
                 <i class="xi-angle-right btn-icon" onclick="changeMonth(1)"></i>
             </div>
         </div>
@@ -102,12 +104,12 @@
 </div>
 
 <div id="detail-modal-overlay" class="todo-modal-overlay" onclick="closeDetailedModal()">
-    <div class="detail-modal-card">
+    <div class="detail-modal-card" onclick="event.stopPropagation()">
         <input type="hidden" id="dm-id">
         
         <div class="modal-input-row" style="padding-bottom: 10px; border-bottom: 1px solid var(--divider-bg); justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('dm')">
+                <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="event.stopPropagation(); togglePalette('dm')">
                     <i class="xi-heart-o"></i>
                 </button>
                 <input type="hidden" id="dm-color-val" value="gray">
@@ -170,7 +172,7 @@
         <i class="xi-angle-left btn-icon" style="font-size: 16px;" onclick="closeStatsDetail()"></i>
         <div style="flex:1; text-align:center;" id="sd-header-title"><i class="xi-heart"></i></div>
         <div class="search-inner">
-            <input type="text" id="sd-search" class="todo-search-input" autocomplete="off">
+            <input type="text" id="sd-search" class="todo-search-input" autocomplete="off" placeholder="검색">
             <i class="xi-search todo-search-icon"></i>
         </div>
     </div>
