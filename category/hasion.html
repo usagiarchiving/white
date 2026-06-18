@@ -113,7 +113,7 @@
     .custom-html-box svg { display: block !important; }
 
     /* ==========================================================================
-       [에디터 인라인 이미지 규격] (구시대적 x버튼 숨김)
+       [에디터 인라인 이미지 규격]
        ========================================================================== */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
@@ -127,13 +127,32 @@
         width: 100%; height: auto; display: block; border-radius: 4px;
         border: 1px solid var(--divider-bg); pointer-events: none;
     }
-    .read-mode .editor-img-wrap img { pointer-events: auto; -webkit-touch-callout: default; }
     
-    /* 기존의 작고 불편했던 삭제 버튼은 CSS로 완전히 가려버립니다! (팝업에서 통합 관리) */
+    /* 🚨 팝업(라이트박스) 띄우기를 위해 읽기 모드 이미지 클릭 허용 */
+    .read-mode .editor-img-wrap img { 
+        pointer-events: auto; 
+        cursor: pointer;
+        -webkit-touch-callout: default; 
+    }
+    
     .img-del-btn { display: none !important; }
 
     /* ==========================================================================
-       [🚨 새롭게 추가된 우아한 사진 조율(설정) 팝업 UI]
+       [🚨 원본 보기 라이트박스 (신규 추가)]
+       ========================================================================== */
+    .hasion-lightbox {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out;
+    }
+    .hasion-lightbox img {
+        max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 4px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: hasionZoom 0.25s ease-out;
+    }
+    @keyframes hasionZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* ==========================================================================
+       [사진 조율 팝업 UI]
        ========================================================================== */
     .img-setting-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -248,6 +267,7 @@
     <div class="hasion-submit-container">
         <input type="text" id="hasion-tags" class="hasion-tags-input" autocomplete="off" placeholder="tags">
         <div class="hasion-actions-right">
+            <!-- 용량 최적화 셀렉터 -->
             <select id="img-quality" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer; margin-right: 8px;">
                 <option value="original">원본</option>
                 <option value="high" selected>고화질</option>
@@ -263,6 +283,12 @@
     <div class="feed-container" id="hasion-feed"></div>
 </div>
 
+<!-- 🚨 원본 보기 라이트박스 -->
+<div id="hasion-lightbox" class="hasion-lightbox" onclick="closeHasionLightbox()">
+    <img id="hasion-lightbox-img" src="" onclick="event.stopPropagation()">
+</div>
+
+<!-- 🚨 사진 조율 팝업 모달 HTML -->
 <div id="img-setting-modal" class="img-setting-overlay" onclick="if(event.target === this) closeImgSettingModal()">
     <div class="img-setting-card">
         <div class="img-setting-header">
@@ -342,6 +368,7 @@
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
+    // [압축 로직 복구 완료]
     window.compressImage = async function(file, qualityType) {
         if (qualityType === 'original' || file.type === 'image/gif') return file;
         return new Promise((resolve) => {
@@ -349,9 +376,8 @@
             reader.onload = function(event) {
                 var img = new Image(); img.src = event.target.result;
                 img.onload = function() {
-                    var maxWidth, quality;
-                    if (qualityType === 'high') { maxWidth = 1920; quality = 0.8; } 
-                    else { maxWidth = 1080; quality = 0.6; }
+                    var maxWidth = qualityType === 'high' ? 1920 : 1080;
+                    var quality = qualityType === 'high' ? 0.8 : 0.6;
                     var width = img.width; var height = img.height;
                     if (width > maxWidth || height > maxWidth) {
                         if (width > height) { height = Math.round((height * maxWidth) / width); width = maxWidth; } 
@@ -359,8 +385,8 @@
                     }
                     var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
                     var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-                    var outType = 'image/jpeg'; var ext = '.jpg';
-                    if (file.type === 'image/png' || file.type === 'image/webp') { outType = 'image/webp'; ext = '.webp'; }
+                    var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
+                    var ext = (outType === 'image/webp') ? '.webp' : '.jpg';
                     canvas.toBlob((blob) => { resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, { type: outType, lastModified: file.lastModified })); }, outType, quality);
                 };
             };
@@ -374,7 +400,7 @@
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
         
         $('#submit-btn').prop('disabled', true).css('opacity', '0.3'); $('.hasion-img-add-btn').css('opacity', '0.3');
-        var qualityOption = $('#img-quality').val();
+        var qualityOption = $('#img-quality').val() || 'high';
         var allImgHtml = '';
 
         for(var file of files) {
@@ -384,7 +410,6 @@
             var { error } = await hasionSupabase.storage.from('images').upload(fileName, processedFile);
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                /* 🚨 드래그 앤 드롭 및 인라인 삭제 버튼 제거, 깔끔한 스팬 구조 유지 */
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
             }
         }
@@ -393,57 +418,58 @@
     });
 
     /* ==========================================================================
-       [🚨 추가된 JS 로직] 팝업 관리 및 화살표 이동 엔진
+       [팝업 관리 및 화살표 이동 엔진]
        ========================================================================== */
     var activeImgWrap = null;
 
-    // 에디터 안에서 사진 클릭 시 팝업 열기
-    $(document).on('click', '.editor-img-wrap', function(e) {
-        if ($(this).closest('.read-mode').length > 0) return; // 읽기 모드에선 작동안함
+    // 🚨 에디터(작성/수정 모드) 안에서만 사진 클릭 시 설정 팝업 열기
+    $(document).on('click', '.hasion-editor .editor-img-wrap', function(e) {
+        if ($(this).closest('.read-mode').length > 0) return; 
         e.preventDefault();
         activeImgWrap = $(this);
         $('#img-setting-modal').addClass('active');
     });
 
-    // 팝업 닫기
+    // 🚨 피드(읽기 모드)에서 사진 클릭 시 원본 보기 라이트박스 열기
+    $(document).on('click', '.read-mode .editor-img-wrap img', function(e) {
+        e.stopPropagation();
+        $('#hasion-lightbox-img').attr('src', $(this).attr('src'));
+        $('#hasion-lightbox').css('display', 'flex').hide().fadeIn(150);
+    });
+
+    window.closeHasionLightbox = function() {
+        $('#hasion-lightbox').fadeOut(150);
+    };
+
     window.closeImgSettingModal = function() {
         $('#img-setting-modal').removeClass('active');
         activeImgWrap = null;
     };
 
-    // 사진 1단, 2단, 3단 변경
     window.setImgLayout = function(layoutClass) {
         if(!activeImgWrap) return;
         activeImgWrap.removeClass('img-full img-half img-third').addClass(layoutClass);
         closeImgSettingModal();
     };
 
-    // 사진 위/아래 이동 로직
     window.moveImgOrder = function(dir) {
         if(!activeImgWrap) return;
         var node = activeImgWrap[0];
         
         if (dir === 'up') {
-            if (node.previousSibling) {
-                // 이전 요소(엔터, 텍스트, 다른 사진) 앞으로 이동
-                node.parentNode.insertBefore(node, node.previousSibling);
-            }
+            if (node.previousSibling) { node.parentNode.insertBefore(node, node.previousSibling); }
         } else if (dir === 'down') {
-            if (node.nextSibling) {
-                // 다음 요소 뒤로 이동
-                node.parentNode.insertBefore(node, node.nextSibling.nextSibling);
-            }
+            if (node.nextSibling) { node.parentNode.insertBefore(node, node.nextSibling.nextSibling); }
         }
     };
 
-    // 사진 삭제 로직
     window.deleteSelectedImg = function() {
         if(!activeImgWrap) return;
         activeImgWrap.remove();
         closeImgSettingModal();
     };
 
-
+    // 🚨 [DB 오류 해결 완료] 구문 오류 없이 정상적으로 데이터 로드
     async function loadHasionPosts() {
         var feedContainer = $('#hasion-feed');
         feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
@@ -452,23 +478,33 @@
             var { data, error } = await hasionSupabase.from('posts').select('*').eq('category', 'hasion');
             if (error) throw error;
             feedContainer.empty();
-            if (data.length === 0) { feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; font-family:\\'Noto Serif KR\\', serif;">작성된 기록이 없습니다.</p>'); return; }
+            if (data.length === 0) { 
+                feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">작성된 기록이 없습니다.</p>'); 
+                return; 
+            }
+            
             data.sort((a, b) => { var dateA = a.created_at.split('T')[0]; var dateB = b.created_at.split('T')[0]; if (dateA === dateB) return b.id - a.id; return new Date(dateB) - new Date(dateA); });
             var allTags = new Set();
+            
             data.forEach(post => {
                 var dateObj = new Date(post.created_at); var yyyy = dateObj.getFullYear(); var mm = String(dateObj.getMonth() + 1).padStart(2, '0'); var dd = String(dateObj.getDate()).padStart(2, '0');
                 var displayDate = `${yyyy}.${mm}.${dd}`; var inputDate = `${yyyy}-${mm}-${dd}`; 
                 var contentHtml = post.content; var tagsText = "";
                 if (post.content && post.content.includes("|||")) { var parts = post.content.split("|||"); contentHtml = parts[0]; tagsText = parts[1] || ""; }
-                var displayContent = contentHtml.replace(/```([\\s\\S]*?)```/g, function(match, innerHtml) {
+                
+                var displayContent = contentHtml.replace(/```([\s\S]*?)
+```/g, function(match, innerHtml) {
                     var temp = document.createElement('div');
-                    var formattedHtml = innerHtml.replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/div>/gi, '\\n').replace(/<\\/p>/gi, '\\n');
+                    var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>/gi, '\n').replace(/<\/p>/gi, '\n');
                     temp.innerHTML = formattedHtml; var rawCode = temp.textContent || temp.innerText || "";
-                    rawCode = rawCode.replace(/\\u00A0/g, ' ').replace(/>\\s+</g, '><').trim();
+                    rawCode = rawCode.replace(/\u00A0/g, ' ').replace(/>\s+</g, '><').trim();
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
-                displayContent = displayContent.replace(/(<\\/span>)(?:\\s|&nbsp;|<br\\s*\\/?>|<\\/?div>|<\\/?p>)*(<span class="editor-img-wrap)/gi, '$1$2');
-                var matches = tagsText.match(/#[^\\s#]+/g); if(matches) matches.forEach(m => allTags.add(m));
+                
+                displayContent = displayContent.replace(/(<\/span>)(?:\s|&nbsp;|<br\s*\/?>|<\/?div>|<\/?p>)*(<span class="editor-img-wrap)/gi, '$1$2');
+                
+                var matches = tagsText.match(/#[^\s#]+/g); if(matches) matches.forEach(m => allTags.add(m));
+                
                 var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 var safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
                 var plainSearchText = `${post.title || ''} ${tagsText} ${displayDate}`.replace(/"/g, "");
@@ -516,7 +552,10 @@
             if (allTags.size > 0) { var tagsHtml = Array.from(allTags).map(tag => `<span class="tag-pill" onclick="triggerTagSearch('${tag}')">${tag}</span>`).join(''); $('#tags-panel').html(tagsHtml); } 
             else { $('#tags-panel').html('<span style="font-size:11px; color:var(--sub-color);">태그가 없습니다.</span>'); }
             setTimeout(() => { $('.custom-html-box script').each(function() { try { eval($(this).text()); } catch(e) {} }); }, 100);
-        } catch (error) { feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">Failed to load.</p>'); }
+        } catch (error) { 
+            console.error(error); 
+            feedContainer.html('<p style="text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">Failed to load.</p>'); 
+        }
     }
 
     window.toggleHasionAccordion = function(id) { var header = $(`#accordion-header-${id}`); var body = $(`#accordion-body-${id}`); header.toggleClass('open'); body.slideToggle(400); };
@@ -524,7 +563,7 @@
     window.uploadEditImages = async function(id, inputEl) {
         var files = Array.from(inputEl.files); if(!files.length) return;
         var btnWrap = $(`#edit-actions-${id}`); btnWrap.css('opacity', '0.3').css('pointer-events', 'none');
-        var qualityOption = $(`#edit-img-quality-${id}`).val();
+        var qualityOption = $(`#edit-img-quality-${id}`).val() || 'high';
         var allImgHtml = '';
         for(var file of files) {
             var processedFile = await compressImage(file, qualityOption);
