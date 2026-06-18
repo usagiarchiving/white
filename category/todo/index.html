@@ -4,7 +4,7 @@
 
     <div id="todo-tab-matrix" class="todo-tab-content active">
         <div class="quick-add-bar">
-            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="event.stopPropagation(); togglePalette('qa')">
+            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('qa')">
                 <i class="xi-heart-o"></i>
             </button>
             <input type="hidden" id="qa-color-val" value="gray">
@@ -49,16 +49,18 @@
                 <span id="weekly-month-display" class="todo-ym-display" onclick="showTodoYMPicker('weekly')"></span>
                 <input type="month" id="weekly-ym-picker" class="todo-ym-picker" style="display: none;" onchange="handleTodoYMChange('weekly')" onblur="handleTodoYMChange('weekly')">
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="search-inner">
-                    <input type="text" id="weekly-search" class="todo-search-input" autocomplete="off" placeholder="검색">
-                    <i class="xi-search todo-search-icon"></i>
-                </div>
-                <i class="xi-plus btn-icon" style="font-size: 14px !important; color: var(--main-color);" onclick="openDetailedModal(null, true)"></i>
-                <i class="xi-angle-right btn-icon" onclick="changeWeek(1)"></i>
-            </div>
+            <i class="xi-angle-right btn-icon" onclick="changeWeek(1)"></i>
         </div>
         <div class="weekly-strip" id="weekly-strip"></div>
+        
+        <div class="todo-action-bar">
+            <div class="search-inner">
+                <input type="text" id="weekly-search" class="todo-search-input" autocomplete="off" placeholder="검색">
+                <i class="xi-search todo-search-icon"></i>
+            </div>
+            <i class="xi-pen-o btn-icon todo-action-btn" onclick="openDetailedModal(null, true)"></i>
+        </div>
+        
         <div class="inbox-area" style="flex: 1;" id="weekly-list"></div>
     </div>
 
@@ -69,17 +71,19 @@
                 <span id="cal-month-display" class="todo-ym-display" onclick="showTodoYMPicker('cal')"></span>
                 <input type="month" id="cal-ym-picker" class="todo-ym-picker" style="display: none;" onchange="handleTodoYMChange('cal')" onblur="handleTodoYMChange('cal')">
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="search-inner">
-                    <input type="text" id="cal-search" class="todo-search-input" autocomplete="off" placeholder="검색">
-                    <i class="xi-search todo-search-icon"></i>
-                </div>
-                <i class="xi-plus btn-icon" style="font-size: 14px !important; color: var(--main-color);" onclick="openDetailedModal(null, true)"></i>
-                <i class="xi-angle-right btn-icon" onclick="changeMonth(1)"></i>
-            </div>
+            <i class="xi-angle-right btn-icon" onclick="changeMonth(1)"></i>
         </div>
         <div class="cal-grid" id="cal-grid"></div>
-        <div class="inbox-area" style="flex: 1; margin-top: 20px;" id="cal-list"></div>
+        
+        <div class="todo-action-bar" style="margin-top: 10px;">
+            <div class="search-inner">
+                <input type="text" id="cal-search" class="todo-search-input" autocomplete="off" placeholder="검색">
+                <i class="xi-search todo-search-icon"></i>
+            </div>
+            <i class="xi-pen-o btn-icon todo-action-btn" onclick="openDetailedModal(null, true)"></i>
+        </div>
+        
+        <div class="inbox-area" style="flex: 1;" id="cal-list"></div>
     </div>
 
     <div id="todo-tab-stats" class="todo-tab-content">
@@ -104,12 +108,12 @@
 </div>
 
 <div id="detail-modal-overlay" class="todo-modal-overlay" onclick="closeDetailedModal()">
-    <div class="detail-modal-card" onclick="event.stopPropagation()">
+    <div class="detail-modal-card">
         <input type="hidden" id="dm-id">
         
         <div class="modal-input-row" style="padding-bottom: 10px; border-bottom: 1px solid var(--divider-bg); justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="event.stopPropagation(); togglePalette('dm')">
+                <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('dm')">
                     <i class="xi-heart-o"></i>
                 </button>
                 <input type="hidden" id="dm-color-val" value="gray">
