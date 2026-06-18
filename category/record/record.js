@@ -6,17 +6,14 @@
 var RECORD_URL = 'https://yjjxlklzgcfwwcunmrht.supabase.co';
 var RECORD_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlqanhsa2x6Z2Nmd3djdW5tcmh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU2NjgsImV4cCI6MjA5NzM4MTY2OH0.NYZ6zJZS0zHPqBde9plZD1IK7GZyk07F9jEF7wI55Y8';
 
-// Supabase 안전 로드
 if (typeof window.supabase !== 'undefined') {
     window.recordSupabase = window.supabase.createClient(RECORD_URL, RECORD_KEY);
-} else {
-    console.error("🚨 Supabase 라이브러리를 불러오지 못했습니다.");
 }
 
 const TMDB_API_KEY = 'd6224997a8f1d896b0244b268bcefd54'; 
 const KAKAO_REST_KEY = '261889b87c5bf523ddd8846c0c45ec2e';
 
-window.recordSelectedFile = null; // 수동 업로드 이미지 보관용
+window.recordSelectedFile = null;
 
 // ==========================================================================
 // 2. 탭 메뉴 스위칭 로직
@@ -30,7 +27,7 @@ window.switchRecordTab = function(tabName, btn) {
 };
 
 // ==========================================================================
-// 3. 글쓰기 팝업(모달) 제어 로직 (🚨 위임 방식으로 버그 완벽 해결)
+// 3. 글쓰기 팝업(모달) 제어 로직 (🚨 전역 함수 처리 완료)
 // ==========================================================================
 window.setRecordDefaultDate = function() {
     var today = new Date();
@@ -40,9 +37,7 @@ window.setRecordDefaultDate = function() {
     $('#modal-date-picker').val(`${yyyy}-${mm}-${dd}`);
 }
 
-// 🚨 화면이 언제 그려지든 무조건 감지하는 위임 방식 적용
-$(document).off('click', '#btn-add-record').on('click', '#btn-add-record', function(e) {
-    e.preventDefault();
+window.openRecordModal = function() {
     $('#modal-title').val('');
     $('#modal-release-year').val('');
     $('#modal-creator').val('');
@@ -57,16 +52,16 @@ $(document).off('click', '#btn-add-record').on('click', '#btn-add-record', funct
     window.setRecordDefaultDate();
 
     $('#record-lightbox').css('display', 'flex');
-});
+};
 
 window.closeRecordModal = function() {
     $('#record-lightbox').css('display', 'none');
 };
 
 // ==========================================================================
-// 4. 수동 이미지 업로드 미리보기 로직
+// 4. 수동 이미지 업로드 미리보기 로직 (🚨 전역 함수 처리 완료)
 // ==========================================================================
-$(document).off('change', '#record-file-input').on('change', '#record-file-input', function(e) {
+window.handleRecordImageUpload = function(e) {
     var file = e.target.files[0];
     if (!file) return;
     
@@ -77,7 +72,7 @@ $(document).off('change', '#record-file-input').on('change', '#record-file-input
         $('#record-preview-wrap').show();
     }
     reader.readAsDataURL(file);
-});
+};
 
 window.removeRecordPreview = function() {
     window.recordSelectedFile = null;
@@ -88,10 +83,9 @@ window.removeRecordPreview = function() {
 };
 
 // ==========================================================================
-// 5. Open API 연동 로직 (TMDB & Kakao 자동 검색)
+// 5. Open API 연동 로직 (🚨 전역 함수 처리 완료)
 // ==========================================================================
-$(document).off('click', '#btn-api-search').on('click', '#btn-api-search', function(e) {
-    e.preventDefault();
+window.openApiSearchModal = function() {
     var category = $('#modal-category').val();
     
     if (!['movie', 'drama', 'book'].includes(category)) {
@@ -102,15 +96,18 @@ $(document).off('click', '#btn-api-search').on('click', '#btn-api-search', funct
     $('#api-search-input').val($('#modal-title').val()); 
     $('#api-search-results').html('<p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 20px;">엔터키를 눌러 검색하세요.</p>');
     $('#api-search-modal').css('display', 'flex');
-    setTimeout(() => $('#api-search-input').focus(), 100);
-});
+    
+    setTimeout(function() {
+        document.getElementById('api-search-input').focus();
+    }, 100);
+};
 
-$(document).off('keypress', '#api-search-input').on('keypress', '#api-search-input', function(e) {
+window.handleApiSearchEnter = function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         window.executeApiSearch();
     }
-});
+};
 
 window.executeApiSearch = async function() {
     var query = $('#api-search-input').val().trim();
@@ -191,10 +188,10 @@ window.executeApiSearch = async function() {
     } catch (error) {
         resultsContainer.innerHTML = '<p style="text-align: center; color: #ff3b30; font-size: 11px; margin-top: 20px;">검색 중 오류가 발생했습니다.</p>';
     }
-}
+};
 
 // ==========================================================================
-// 6. DB 저장 로직 (테스트 완료 후 연결)
+// 6. DB 저장 로직
 // ==========================================================================
 window.saveRecordPost = async function() {
     alert("API 검색 기능과 팝업 작동이 모두 정상화되었습니다! 확인해주시면 DB 저장 로직을 추가하겠습니다.");
