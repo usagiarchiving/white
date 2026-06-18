@@ -129,7 +129,7 @@
     .custom-html-box svg { display: block !important; }
 
     /* ==========================================================================
-       [🚨 에디터 인라인 이미지 규격 (완벽한 자동 2px 그리드)]
+       [에디터 인라인 이미지 규격 (완벽한 자동 양옆 2px 정렬)]
        ========================================================================== */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
@@ -137,7 +137,6 @@
         box-sizing: border-box; border-radius: 4px; overflow: hidden;
     }
     
-    /* 🚨 2px 여백과 에디터 내의 유령공백을 고려한 완벽한 1/2/3단 계산식 */
     .img-full { width: 100%; display: block; margin-bottom: 2px; }
     .img-half { width: calc(49.2% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
     .img-third { width: calc(32.5% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
@@ -146,14 +145,17 @@
         width: 100%; height: auto; display: block; 
         border: 1px solid var(--divider-bg); pointer-events: none;
     }
-    
-    .read-mode .editor-img-wrap img { 
-        pointer-events: auto; cursor: pointer; -webkit-touch-callout: default; 
+
+    .read-mode .editor-img-wrap img {
+        pointer-events: auto;
+        cursor: pointer;
+        -webkit-touch-callout: default;
     }
+
     .img-del-btn { display: none !important; }
 
     /* ==========================================================================
-       [🚨 원본 보기 라이트박스 팝업 (개방감 블러 적용)]
+       [원본 보기 라이트박스 팝업 (개방감 블러 적용)]
        ========================================================================== */
     .hasion-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -188,7 +190,7 @@
     #fontSizeInput::-webkit-outer-spin-button, #fontSizeInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
     /* ==========================================================================
-       [🚨 신규: 작고 미니멀한 1줄짜리 사진 조율 툴바]
+       [작고 미니멀한 1줄짜리 사진 조율 툴바]
        ========================================================================== */
     .img-format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
@@ -385,32 +387,44 @@
     });
 
     /* ==========================================================================
-       [🚨 이미지 조율 미니 툴바 로직 (완벽 개선)]
+       [🚨 이미지 조율 미니 툴바 로직 (완벽 개선: 키보드 원천 차단)]
        ========================================================================== */
     var activeImgWrap = null;
 
-    // 사진 클릭 시 툴바 띄우기 (위치 자동 추적)
-    $(document).on('click', '.hasion-editor .editor-img-wrap', function(e) {
-        if ($(this).closest('.read-mode').length > 0) return; 
-        e.preventDefault();
-        activeImgWrap = $(this);
-        
+    // 사진에 툴바 띄우고 위치 조정하는 함수
+    window.showImgToolbar = function(imgWrap) {
+        activeImgWrap = imgWrap;
         var toolbar = $('#img-format-toolbar');
         toolbar.css('display', 'flex');
         
-        var rect = this.getBoundingClientRect();
+        var rect = imgWrap[0].getBoundingClientRect();
         var top = rect.top + window.scrollY - toolbar.outerHeight() - 10;
         var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.outerWidth() / 2);
         
-        // 팝업이 화면 밖으로 나가지 않게 조율
         if (top < window.scrollY + 10) top = rect.bottom + window.scrollY + 10; 
         if (left < 10) left = 10;
         
         toolbar.css({ top: top + 'px', left: left + 'px' });
+    };
+
+    // 🚨 에디터 안에서 사진 터치 시 키보드가 올라오는 것을 100% 방지
+    $(document).on('mousedown touchstart', '.hasion-editor .editor-img-wrap', function(e) {
+        if ($(this).closest('.read-mode').length > 0) return; 
+        
+        // 1. 브라우저의 기본 포커스(키보드 팝업)를 원천 차단합니다.
+        e.preventDefault(); 
+        
+        // 2. 만약 글을 쓰다가(키보드가 켜진 상태로) 사진을 눌렀다면, 켜져 있는 키보드도 강제로 스르륵 내립니다.
+        if (document.activeElement) {
+            document.activeElement.blur(); 
+        }
+        
+        // 3. 미니 툴바 띄우기
+        showImgToolbar($(this));
     });
 
     // 바탕 누르면 이미지 툴바 숨기기
-    $(document).on('mousedown', function(e) {
+    $(document).on('mousedown touchstart', function(e) {
         if (!$(e.target).closest('.editor-img-wrap, #img-format-toolbar').length) {
             $('#img-format-toolbar').hide();
             activeImgWrap = null;
@@ -430,10 +444,10 @@
         if(!activeImgWrap) return;
         activeImgWrap.removeClass('img-full img-half img-third').addClass(layoutClass);
         // 레이아웃 변경 후 툴바 위치 재조정
-        setTimeout(() => activeImgWrap.click(), 50); 
+        setTimeout(() => showImgToolbar(activeImgWrap), 50); 
     };
 
-    // 🚨 텍스트와 사진 블록을 정확히 넘나드는 이동 엔진
+    // 사진 블록 위/아래 이동
     window.moveImgOrder = function(dir) {
         if(!activeImgWrap) return;
         var node = activeImgWrap[0];
@@ -445,8 +459,8 @@
             var nextNode = node.nextSibling;
             if (nextNode) node.parentNode.insertBefore(node, nextNode.nextSibling);
         }
-        // 이동 후 툴바가 같이 따라가도록 클릭 이벤트를 강제로 한 번 더 실행
-        activeImgWrap.click();
+        // 이동 후 툴바가 같이 따라가도록 갱신
+        showImgToolbar(activeImgWrap);
     };
 
     window.deleteSelectedImg = function() {
@@ -506,7 +520,6 @@
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
 
-                // 에디터의 불필요한 빈칸 완전히 걷어내어 피드 목록 그리드도 2px 완벽 밀착!
                 displayContent = displayContent.replace(/(<\/span>)(?:\s|&nbsp;|<br\s*\/?>|<\/?div>|<\/?p>)*(<span class="editor-img-wrap)/gi, '$1$2');
 
                 var matches = tagsText.match(/#[^\s#]+/g);
@@ -723,7 +736,6 @@
         $(this).toggleClass('active');
     });
 
-    /* 🚨 태그 클릭 시 키보드가 올라오지 않게 .focus() 제거 완료 */
     window.triggerTagSearch = function(tagText) {
         if(!tagText) return;
         var pureTag = tagText.match(/#[^\s#]+/)[0] || tagText;
