@@ -23,10 +23,17 @@
 .nav-btn { background: none; border: none; font-size: 16px !important; color: var(--sub-color); cursor: pointer; padding: 10px; transition: 0.2s; }
 .nav-btn.active { color: var(--main-color); }
 
+/* 🚨 컬러 배지 (하트 대체품) */
+.color-badge {
+    width: 12px; height: 12px; border-radius: 50%;
+    display: inline-block; transition: transform 0.2s, opacity 0.2s;
+    flex-shrink: 0;
+}
+
 .quick-add-bar { display: flex; align-items: center; gap: 8px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; flex-shrink: 0; width: 100%; box-sizing: border-box; }
 .quick-add-input { flex: 1; border: none; background: transparent; color: var(--main-color); font-size: 10px !important; font-weight: 500; }
 .quick-add-select { border: none; background: transparent; color: var(--sub-color); cursor: pointer; appearance: none; -webkit-appearance: none; font-weight: 600; }
-.btn-icon { background: none; border: none; color: var(--sub-color); cursor: pointer; font-size: 11px !important; transition: 0.2s; padding: 4px; }
+.btn-icon { background: none; border: none; color: var(--sub-color); cursor: pointer; font-size: 11px !important; transition: 0.2s; padding: 4px; display: flex; align-items: center; justify-content: center;}
 .btn-icon:hover { color: var(--main-color); }
 
 .matrix-grid { display: grid; grid-template-columns: 16px 1fr 1fr; grid-template-rows: 14px 1fr 1fr; gap: 8px; flex: 1; min-height: 0; width: 100%; }
@@ -36,25 +43,13 @@
 .quadrant-box { background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; }
 .inbox-area { margin-top: 15px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px; min-height: 80px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; align-items: flex-start; width: 100%; box-sizing: border-box; }
 
-/* 🚨 수제작 커스텀 체크박스 엔진 */
-.custom-checkbox {
-    width: 10px; height: 10px; border-radius: 3px; margin-top: 1px; cursor: pointer;
-    transition: background-color 0.3s ease, border-color 0.3s ease; flex-shrink: 0;
-}
+.custom-checkbox { width: 10px; height: 10px; border-radius: 3px; margin-top: 1px; cursor: pointer; transition: background-color 0.3s ease, border-color 0.3s ease; flex-shrink: 0; }
 
-/* 🚨 투두 아이템 디자인 & 애니메이션 */
-.todo-item { 
-    display: flex; flex-direction: column; width: 100%; text-align: left; margin-bottom: 4px; 
-    transition: opacity 0.3s ease, transform 0.3s ease; /* 부드러운 애니메이션 장착 */
-}
+.todo-item { display: flex; flex-direction: column; width: 100%; text-align: left; margin-bottom: 4px; transition: opacity 0.3s ease, transform 0.3s ease; }
 .todo-item-top { display: flex; align-items: flex-start; gap: 6px; cursor: pointer; width: 100%; }
-
 .todo-text { flex: 1; word-break: break-all; font-size: 9px !important; line-height: 1.5; transition: opacity 0.3s, text-decoration 0.3s; }
 .todo-meta { display: flex; flex-direction: column; align-items: flex-end; font-size: 8px !important; color: var(--sub-color); opacity: 0.7; }
-
-/* 완료되었을 때의 스타일 */
-.todo-item.completed .todo-text,
-.todo-item.completed .todo-meta { opacity: 0.4; text-decoration: line-through; }
+.todo-item.completed .todo-text, .todo-item.completed .todo-meta { opacity: 0.4; text-decoration: line-through; }
 .todo-item.completed .custom-checkbox { opacity: 0.9; }
 
 .todo-subtasks-progress { width: calc(100% - 16px); margin-left: 16px; margin-top: 3px; display: flex; align-items: center; gap: 6px; opacity: 0.8; }
@@ -96,20 +91,18 @@
 .sd-bar-label { font-size: 8px !important; color: var(--sub-color); margin-top: 6px; }
 .sd-bar-val { position: absolute; top: -14px; width: 100%; text-align: center; font-size: 8px !important; font-weight: bold; color: var(--main-color); }
 
-/* 팝업/모달 디자인 (텍스트 강제 9px 좌측 정렬) */
+/* 팝업/모달 디자인 */
 .todo-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.25); z-index: 20000; align-items: center; justify-content: center; padding: 20px; }
 .color-palette { display: none; position: absolute; top: calc(100% + 8px); left: 0; background: var(--back-color); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 8px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 2000; flex-wrap: nowrap; width: max-content; gap: 10px; align-items: center; overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
 .color-palette::-webkit-scrollbar { display: none; }
-.color-palette button { background: none; border: none; font-size: 14px !important; cursor: pointer; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
+.color-palette button { background: none; border: none; font-size: 14px !important; cursor: pointer; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; padding: 4px; }
 .color-palette button:hover { transform: scale(1.15); }
 .detail-modal-card { background: var(--back-color); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 20px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); position: relative; }
 
-/* 🚨 팝업 내부 정렬 및 폰트 통일 */
 .modal-input-row { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; position: relative; width: 100%; }
 .modal-label { color: var(--sub-color); font-size: 9px !important; width: 30px; display: inline-block; }
 .modal-input { flex: 1; border: none; background: transparent; color: var(--main-color); font-size: 9px !important; text-align: left !important; }
 
-/* 날짜 선택기(Input Date) 좌측 정렬 완벽 고정 */
 .date-left { text-align: left !important; justify-content: flex-start; -webkit-appearance: none; }
 .date-left::-webkit-date-and-time-value { text-align: left !important; }
 
