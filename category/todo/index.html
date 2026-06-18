@@ -1,18 +1,16 @@
-<!-- CSS 로드 -->
 <link rel="stylesheet" href="category/todo/todo.css">
 
 <div class="todo-wrapper">
 
-    <!-- TAB 1: MATRIX HOME -->
     <div id="todo-tab-matrix" class="todo-tab-content active">
         <div class="quick-add-bar">
-            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="event.stopPropagation(); togglePalette('qa')">
+            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('qa')">
                 <i class="xi-heart-o"></i>
             </button>
             <input type="hidden" id="qa-color-val" value="gray">
             <div id="qa-color-palette" class="color-palette"></div>
             
-            <input type="text" id="qa-input" class="quick-add-input" placeholder="" autocomplete="off" onkeypress="if(event.keyCode===13) { event.preventDefault(); quickAddTodo(); }">
+            <input type="text" id="qa-input" class="quick-add-input" placeholder="" autocomplete="off">
             
             <select id="qa-quad" class="quick-add-select">
                 <option value="0">미지정</option>
@@ -41,12 +39,9 @@
         </div>
 
         <div class="inbox-area" id="quad-0"></div>
-        
-        <!-- 🚨 신규: 다가오는 미래 할 일 타임라인 구역 -->
         <div class="inbox-area" id="upcoming-timeline" style="display: none; margin-top: 15px; margin-bottom: 10px;"></div>
     </div>
 
-    <!-- TAB 2: WEEKLY DASHBOARD -->
     <div id="todo-tab-weekly" class="todo-tab-content">
         <div class="weekly-header">
             <i class="xi-angle-left btn-icon" onclick="changeWeek(-1)"></i>
@@ -66,7 +61,6 @@
         <div class="inbox-area" style="flex: 1;" id="weekly-list"></div>
     </div>
 
-    <!-- TAB 3: CALENDAR -->
     <div id="todo-tab-calendar" class="todo-tab-content">
         <div class="cal-header">
             <i class="xi-angle-left btn-icon" onclick="changeMonth(-1)"></i>
@@ -86,7 +80,6 @@
         <div class="inbox-area" style="flex: 1; margin-top: 20px;" id="cal-list"></div>
     </div>
 
-    <!-- TAB 4: STATISTICS MAIN -->
     <div id="todo-tab-stats" class="todo-tab-content">
         <div class="stats-header">
             <i class="xi-angle-left btn-icon" onclick="changeStatsMonth(-1)"></i>
@@ -99,7 +92,6 @@
         <div class="stats-grid" id="stats-grid"></div>
     </div>
 
-    <!-- BOTTOM NAVIGATION -->
     <div class="todo-bottom-nav">
         <button class="nav-btn active" onclick="switchTab('matrix', this)"><i class="xi-border-all"></i></button>
         <button class="nav-btn" onclick="switchTab('weekly', this)"><i class="xi-view-day"></i></button>
@@ -109,14 +101,13 @@
 
 </div>
 
-<!-- 자세히 추가/수정 모달 -->
 <div id="detail-modal-overlay" class="todo-modal-overlay" onclick="closeDetailedModal()">
-    <div class="detail-modal-card" onclick="event.stopPropagation()">
+    <div class="detail-modal-card">
         <input type="hidden" id="dm-id">
         
         <div class="modal-input-row" style="padding-bottom: 10px; border-bottom: 1px solid var(--divider-bg); justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="event.stopPropagation(); togglePalette('dm')">
+                <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('dm')">
                     <i class="xi-heart-o"></i>
                 </button>
                 <input type="hidden" id="dm-color-val" value="gray">
@@ -133,7 +124,7 @@
             <div id="dm-subtasks-list" style="width: 100%; display: flex; flex-direction: column; gap: 4px;"></div>
             <div style="display: flex; width: 100%; gap: 6px; align-items: center;">
                 <i class="xi-plus-square-o" style="color: var(--sub-color); font-size: 10px;"></i>
-                <input type="text" id="dm-new-subtask" class="modal-input" placeholder="하위 할 일" autocomplete="off" onkeypress="if(event.keyCode===13) { event.preventDefault(); addSubtaskFromUI(); }">
+                <input type="text" id="dm-new-subtask" class="modal-input" placeholder="하위 할 일" autocomplete="off">
                 <button class="btn-icon" onclick="addSubtaskFromUI()"><i class="xi-arrow-right"></i></button>
             </div>
         </div>
@@ -174,7 +165,6 @@
     </div>
 </div>
 
-<!-- 통계 상세 모달 (카테고리 캘린더 화면) -->
 <div id="stats-detail-overlay" class="todo-modal-overlay stats-detail-overlay">
     <div class="stats-detail-header">
         <i class="xi-angle-left btn-icon" style="font-size: 16px;" onclick="closeStatsDetail()"></i>
