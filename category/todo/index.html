@@ -2,10 +2,11 @@
 
 <div class="todo-wrapper">
 
+    <!-- TAB 1: MATRIX HOME -->
     <div id="todo-tab-matrix" class="todo-tab-content active">
         <div class="quick-add-bar">
-            <button class="btn-icon" id="qa-color-btn" onclick="togglePalette('qa', event)">
-                <div class="color-badge" style="background-color: var(--cat-gray);"></div>
+            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('qa')">
+                <i class="xi-heart-o"></i>
             </button>
             <input type="hidden" id="qa-color-val" value="gray">
             <div id="qa-color-palette" class="color-palette"></div>
@@ -41,6 +42,7 @@
         <div class="inbox-area" id="quad-0"></div>
     </div>
 
+    <!-- TAB 2: WEEKLY DASHBOARD -->
     <div id="todo-tab-weekly" class="todo-tab-content">
         <div class="weekly-header">
             <i class="xi-angle-left btn-icon" onclick="changeWeek(-1)"></i>
@@ -54,6 +56,7 @@
         <div class="inbox-area" style="flex: 1;" id="weekly-list"></div>
     </div>
 
+    <!-- TAB 3: CALENDAR -->
     <div id="todo-tab-calendar" class="todo-tab-content">
         <div class="cal-header">
             <i class="xi-angle-left btn-icon" onclick="changeMonth(-1)"></i>
@@ -67,6 +70,7 @@
         <div class="inbox-area" style="flex: 1; margin-top: 20px;" id="cal-list"></div>
     </div>
 
+    <!-- TAB 4: STATISTICS -->
     <div id="todo-tab-stats" class="todo-tab-content">
         <div class="stats-header">
             <i class="xi-angle-left btn-icon" onclick="changeStatsMonth(-1)"></i>
@@ -79,6 +83,7 @@
         <div class="stats-grid" id="stats-grid"></div>
     </div>
 
+    <!-- BOTTOM NAVIGATION -->
     <div class="todo-bottom-nav">
         <button class="nav-btn active" onclick="switchTab('matrix', this)"><i class="xi-border-all"></i></button>
         <button class="nav-btn" onclick="switchTab('weekly', this)"><i class="xi-view-day"></i></button>
@@ -88,19 +93,21 @@
 
 </div>
 
+<!-- 자세히 추가/수정 모달 (정렬 및 위/아래 이동 화살표 적용) -->
 <div id="detail-modal-overlay" class="todo-modal-overlay" onclick="closeDetailedModal()">
     <div class="detail-modal-card" onclick="event.stopPropagation()">
         <input type="hidden" id="dm-id">
         
         <div class="modal-input-row" style="padding-bottom: 10px; border-bottom: 1px solid var(--divider-bg); justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                <button class="btn-icon" id="dm-color-btn" onclick="togglePalette('dm', event)">
-                    <div class="color-badge" style="background-color: var(--cat-gray);"></div>
+                <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('dm')">
+                    <i class="xi-heart-o"></i>
                 </button>
                 <input type="hidden" id="dm-color-val" value="gray">
                 <div id="dm-color-palette" class="color-palette" style="top: 100%; left: 0;"></div>
                 <input type="text" id="dm-input" class="modal-input" placeholder="할 일 입력" autocomplete="off" style="font-weight: 600;">
             </div>
+            <!-- 위치 이동 화살표 -->
             <div style="display: flex; gap: 4px;">
                 <button class="btn-icon" onclick="moveOrder('up')" title="위로"><i class="xi-arrow-up"></i></button>
                 <button class="btn-icon" onclick="moveOrder('down')" title="아래로"><i class="xi-arrow-down"></i></button>
@@ -152,10 +159,12 @@
     </div>
 </div>
 
+<!-- 통계 상세 모달 -->
 <div id="stats-detail-overlay" class="todo-modal-overlay stats-detail-overlay">
     <div class="stats-detail-header">
         <i class="xi-angle-left btn-icon" style="font-size: 16px;" onclick="closeStatsDetail()"></i>
-        <div style="flex:1; text-align:center;" id="sd-header-title"></div> <div style="width: 16px;"></div> 
+        <div style="flex:1; text-align:center;" id="sd-header-title"><i class="xi-heart"></i></div>
+        <div style="width: 16px;"></div> 
     </div>
     <div class="stats-detail-content">
         <div class="stats-header" style="justify-content: center; gap: 20px;">
@@ -178,5 +187,4 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="category/todo/todo.js"></script>
