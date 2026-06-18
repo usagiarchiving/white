@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 스타일 시트
+   토끼굴 Todo 전용 스타일 시트 (모바일 레이아웃 고정 및 최적화)
    ========================================================================== */
 :root {
     --cat-gray: #8e8e93; --cat-red: #ff3b30; --cat-orange: #ff9500; --cat-yellow: #ffcc00;
@@ -22,10 +22,24 @@
 .nav-btn { background: none; border: none; font-size: 16px !important; color: var(--sub-color); cursor: pointer; padding: 10px; transition: 0.2s; }
 .nav-btn.active { color: var(--main-color); }
 
-.quick-add-bar { display: flex; align-items: center; gap: 8px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; flex-shrink: 0; width: 100%; box-sizing: border-box; }
-.quick-add-input { flex: 1; border: none; background: transparent; color: var(--main-color); font-size: 11px !important; font-weight: 500; }
+/* 🚨 퀵 애드 모바일 쏠림 방어 (min-width: 0 & flex-shrink: 0 조합) */
+.quick-add-bar { 
+    position: relative; /* 툴바 기준점 확립 */
+    display: flex; align-items: center; gap: 6px; 
+    background: var(--dropdown-bg); border: 1px solid var(--divider-bg); 
+    border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; 
+    flex-shrink: 0; width: 100%; box-sizing: border-box; 
+}
+.quick-add-input { 
+    flex: 1; min-width: 0; /* 글자가 길어도 버튼을 밖으로 밀어내지 않음 */
+    border: none; background: transparent; color: var(--main-color); 
+    font-size: 11px !important; font-weight: 500; 
+}
+.quick-add-select, .btn-icon { 
+    flex-shrink: 0; /* 화면이 아무리 좁아도 버튼 크기 유지 */
+}
 .quick-add-select { border: none; background: transparent; color: var(--sub-color); cursor: pointer; appearance: none; -webkit-appearance: none; font-weight: 600; }
-.btn-icon { background: none; border: none; color: var(--sub-color); cursor: pointer; font-size: 11px !important; transition: 0.2s; padding: 4px; }
+.btn-icon { background: none; border: none; color: var(--sub-color); cursor: pointer; font-size: 11px !important; transition: 0.2s; padding: 4px; display: flex; align-items: center; justify-content: center; }
 .btn-icon:hover { color: var(--main-color); }
 
 .matrix-grid { display: grid; grid-template-columns: 16px 1fr 1fr; grid-template-rows: 14px 1fr 1fr; gap: 8px; flex: 1; min-height: 0; width: 100%; }
@@ -44,17 +58,11 @@
 .todo-item.completed .todo-text, .todo-item.completed .todo-meta { opacity: 0.4; text-decoration: line-through; }
 .todo-item.completed .custom-checkbox { opacity: 0.9; }
 
-/* 🚨 하위 할 일 펼침 UI 전용 스타일 */
-.expanded-subtasks {
-    display: flex; flex-direction: column; gap: 4px; margin-top: 6px; margin-left: 18px; width: calc(100% - 18px);
-}
-.exp-subtask-item {
-    display: flex; align-items: flex-start; gap: 6px; font-size: 9px !important; color: var(--sub-color); cursor: pointer; transition: opacity 0.2s;
-}
+.expanded-subtasks { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; margin-left: 18px; width: calc(100% - 18px); }
+.exp-subtask-item { display: flex; align-items: flex-start; gap: 6px; font-size: 9px !important; color: var(--sub-color); cursor: pointer; transition: opacity 0.2s; }
 .exp-subtask-item.completed { opacity: 0.5; text-decoration: line-through; }
 .exp-subtask-item i { font-size: 10px !important; margin-top: 1.5px; }
 
-/* (매트릭스 등에만 쓰이는) 미니 진행률 바 */
 .todo-subtasks-progress { width: calc(100% - 16px); margin-left: 16px; margin-top: 3px; display: flex; align-items: center; gap: 6px; opacity: 0.8; }
 .progress-bar-bg { flex: 1; height: 3px; background: rgba(0,0,0,0.05); border-radius: 2px; overflow: hidden; display: flex; }
 .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
@@ -66,7 +74,6 @@
 .day-name { font-size: 8px !important; color: var(--sub-color); }
 .day-date { font-size: 10px !important; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.2s; border: none; position: relative; z-index: 1;}
 
-/* 🚨 캘린더 '오늘' 동그라미 크기 18px로 정밀 축소 (가상 요소 이용) */
 .day-col.is-today .day-date { color: #D04978; font-weight: bold; background: transparent; }
 .day-col.is-today .day-date::before { content: ''; position: absolute; width: 18px; height: 18px; background: #FDEDF4; border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 .day-col.is-selected:not(.is-today) .day-date { background: transparent; }
@@ -74,19 +81,15 @@
 
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; width: 100%; }
 .cal-day-name { font-size: 8px !important; color: var(--sub-color); margin-bottom: 4px; opacity: 0.5; }
-
-/* 🚨 통계 상세뷰 캘린더 동그라미 축소 완벽 적용 */
 .cal-day-cell { aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center; font-size: 9px !important; cursor: pointer; border-radius: 50%; border: none; position: relative; z-index: 1; background: transparent !important; color: var(--main-color); }
 .cal-day-cell:hover::before { content: ''; position: absolute; width: 18px; height: 18px; background: rgba(0,0,0,0.03); border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 .cal-day-cell.is-today { color: #D04978; font-weight: bold; }
 .cal-day-cell.is-today::before { content: ''; position: absolute; width: 18px; height: 18px; background: #FDEDF4; border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 .cal-day-cell.is-selected:not(.is-today)::before { content: ''; position: absolute; width: 18px; height: 18px; background: rgba(0,0,0,0.05); border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
-/* 색상이 칠해진 통계 셀에 대한 오버라이드 */
 .cal-day-cell.stats-colored { color: #fff; font-weight: bold; }
 .cal-day-cell.stats-colored::before { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); background: inherit; opacity: inherit; }
 
-/* 스르륵 검색창 */
 .search-inner { position: relative; display: flex; align-items: center; }
 .todo-search-input { background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--main-color); font-family: inherit; font-size: 10px !important; outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0; text-align: right; transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s, border-color 0.4s; }
 .todo-search-icon { position: absolute; right: 0; color: var(--sub-color); opacity: 0.35; cursor: pointer; font-size: 13px !important; transition: opacity 0.3s; z-index: 10; }
