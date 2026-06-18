@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 Javascript 엔진 (타임라인, +N 동적 컬러, 하위항목 연동)
+   토끼굴 Todo 전용 Javascript 엔진 (모바일 충돌 방어 및 완벽 최적화)
    ========================================================================== */
 
 (function() {
@@ -12,13 +12,11 @@
     var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9maGFkdGxyc2NjaXBudmRvaHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NTMzODksImV4cCI6MjA5NzMyOTM4OX0.bNdMzGKMCimJtRdtluzaecIM0ZYvBx72-XQdD3WFCv0';
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 🚨 핑크와 민트를 추가한 10색 팔레트
     const colors = ['gray', 'red', 'orange', 'yellow', 'green', 'mint', 'blue', 'navy', 'purple', 'pink'];
     
     let todosData = []; 
     let currentDate = new Date();
     let selectedDate = new Date();
-    
     let statsDate = new Date();
     let currentStatsCategory = null;
     let statsSelectedDateStr = getFormatDate(new Date()); 
@@ -55,11 +53,13 @@
         refreshAllViews();
     };
 
-    window.togglePalette = function(type, event) {
-        if(event) event.stopPropagation(); 
+    /* 🚨 모바일 충돌 없는 완벽한 팔레트 토글 엔진 */
+    window.togglePalette = function(type) {
         const palette = $(`#${type}-color-palette`);
         const currentVal = $(`#${type}-color-val`).val();
+        
         if (palette.is(':visible')) { palette.hide(); return; }
+        
         $('.color-palette').hide();
         palette.empty();
         colors.forEach(color => {
@@ -67,7 +67,7 @@
             const iconClass = color === 'gray' ? 'xi-heart-o' : 'xi-heart';
             palette.append(`
                 <button style="color: var(--cat-${color}); opacity: ${isSelected ? '1' : '0.5'};" 
-                        onclick="selectColor('${color}', '${type}', event)">
+                        onclick="selectColor('${color}', '${type}')">
                     <i class="${iconClass}"></i>
                 </button>
             `);
@@ -75,8 +75,7 @@
         palette.css('display', 'flex');
     };
 
-    window.selectColor = function(color, type, event) {
-        if(event) event.stopPropagation();
+    window.selectColor = function(color, type) {
         $(`#${type}-color-val`).val(color);
         const iconClass = color === 'gray' ? 'xi-heart-o' : 'xi-heart';
         $(`#${type}-color-btn`).html(`<i class="${iconClass}"></i>`).css('color', `var(--cat-${color})`);
@@ -84,6 +83,7 @@
         $(`#${type}-color-palette`).hide();
     };
 
+    // 화면 밖 클릭 시 팔레트 닫기 로직 (인라인 stopPropagation 대체)
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#qa-color-btn, #qa-color-palette, #dm-color-btn, #dm-color-palette').length) {
             $('.color-palette').hide();
@@ -105,12 +105,10 @@
         return `${y}-${m}-${d}`;
     }
 
-    // 🚨 투두 HTML 렌더링 (어제 못한 일 Overdue 클래스 부착)
     function createTodoHTML(todo, isExpanded = false) {
         const compClass = todo.is_completed ? 'completed' : '';
         const colorHex = `var(--cat-${todo.category})`;
         
-        // 기한 지난 일 체크 (오늘보다 이전인데 미완료인 경우)
         const todayStr = getFormatDate(new Date());
         const isOverdue = !todo.is_completed && todo.target_date && todo.target_date < todayStr;
         const metaClass = isOverdue ? 'todo-meta overdue' : 'todo-meta';
@@ -165,7 +163,7 @@
     }
 
     window.toggleSubtaskInline = async function(todoId, subIdx, event) {
-        event.stopPropagation();
+        if(event) event.stopPropagation();
         const todo = todosData.find(t => t.id == todoId);
         if (!todo || !todo.subtasks || !todo.subtasks[subIdx]) return;
 
@@ -195,21 +193,17 @@
         });
     }
 
-    // 🚨 미래 일정 타임라인 렌더링 엔진
     function renderUpcomingTimeline() {
         const container = $('#upcoming-timeline');
         container.empty();
         const todayStr = getFormatDate(new Date());
 
-        // 오늘 이후이면서 완료되지 않은 할 일 추출
         let futureTodos = todosData.filter(t => !t.is_completed && t.target_date && t.target_date > todayStr);
-
         if (futureTodos.length === 0) {
             container.hide();
             return;
         }
 
-        // 날짜순 -> 카테고리순 -> 정렬순으로 정렬
         futureTodos.sort((a, b) => {
             if (a.target_date !== b.target_date) return a.target_date.localeCompare(b.target_date);
             if (a.category !== b.category) return colors.indexOf(a.category) - colors.indexOf(b.category);
@@ -229,7 +223,7 @@
                 groupContainer.append(`<div class="timeline-date-label">${currentDateGroup.substring(5).replace('-', '.')}</div>`);
                 container.append(groupContainer);
             }
-            groupContainer.append(createTodoHTML(todo, false)); // 매트릭스 하단이므로 하위항목은 접어서
+            groupContainer.append(createTodoHTML(todo, false));
         });
     }
 
@@ -245,7 +239,6 @@
             $(`#quad-${todo.matrix_quadrant}`).append(createTodoHTML(todo, false)); 
         });
 
-        // 타임라인 그리기 호출
         renderUpcomingTimeline();
     }
 
@@ -303,7 +296,6 @@
 
     window.changeMonth = function(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); };
 
-    // 🚨 캘린더 +N개 달성수 & 동적 컬러 엔진
     function renderCalendar() {
         const y = currentDate.getFullYear();
         const m = currentDate.getMonth() + 1;
@@ -328,10 +320,9 @@
             const completedTodos = dayTodos.filter(t => t.is_completed);
             
             let badgeHtml = '';
-            let hasUncompleted = dayTodos.some(t => !t.is_completed); // 안 한 일이 있으면 점(dot) 표시
+            let hasUncompleted = dayTodos.some(t => !t.is_completed);
             
             if (completedTodos.length > 0) {
-                // 그날의 지배적인 카테고리 색상 찾기
                 let colorCounts = {};
                 let maxCount = 0;
                 let dominantColor = 'gray';
@@ -543,7 +534,7 @@
     };
 
     window.toggleComplete = async function(id, el, event) {
-        event.stopPropagation();
+        if(event) event.stopPropagation();
         const todo = todosData.find(t => t.id == id);
         if(!todo) return;
         
@@ -734,6 +725,18 @@
         }
     }
 
-    setTimeout(() => { fetchTodos(); }, 100);
+    $(document).ready(function() {
+        // 🚨 엔터키 등 모바일 충돌 방어 리스너
+        $('#qa-input').on('keypress', function(e) {
+            if(e.which === 13) { e.preventDefault(); quickAddTodo(); }
+        });
+        $('#dm-new-subtask').on('keypress', function(e) {
+            if(e.which === 13) { e.preventDefault(); addSubtaskFromUI(); }
+        });
+        $('.detail-modal-card').on('click', function(e) {
+            e.stopPropagation();
+        });
+        fetchTodos(); 
+    });
 
 })();
