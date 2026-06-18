@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 Javascript 엔진
+   토끼굴 Todo 전용 Javascript 엔진 (Supabase 연동 & 하위 할일 프로그레스 바)
    ========================================================================== */
 
 (function() {
@@ -14,16 +14,24 @@
     let selectedDate = new Date();
     let statsDate = new Date();
     let currentStatsCategory = null;
+    
+    // 모달에서 편집 중인 하위 할 일 목록을 임시 보관하는 배열
+    let currentSubtasks = [];
 
+    // 서버 데이터 가져오기
     async function fetchTodos() {
         const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
         if (!error && data) {
             todosData = data;
             refreshAllViews();
+        } else {
+            console.error("데이터 로드 실패:", error);
         }
     }
 
-    /* 캘린더 날짜 Picker 로직 */
+    /* ==========================================================================
+       [캘린더 년월 Picker (자간 최적화 버전)]
+       ========================================================================== */
     window.showTodoYMPicker = function(type) {
         $(`#${type}-month-display`).hide();
         $(`#${type}-ym-picker`).show().focus();
@@ -47,13 +55,20 @@
         refreshAllViews();
     };
 
+    /* ==========================================================================
+       [1열 하트 팔레트 토글]
+       ========================================================================== */
     window.togglePalette = function(type) {
         const palette = $(`#${type}-color-palette`);
         const currentVal = $(`#${type}-color-val`).val();
         
-        if (palette.is(':visible')) { palette.hide(); return; }
+        if (palette.is(':visible')) {
+            palette.hide();
+            return;
+        }
         
         $('.color-palette').hide();
+        
         palette.empty();
         colors.forEach(color => {
             const isSelected = color === currentVal;
@@ -65,6 +80,7 @@
                 </button>
             `);
         });
+        
         palette.css('display', 'flex');
     };
 
@@ -72,15 +88,23 @@
         $(`#${type}-color-val`).val(color);
         const iconClass = color === 'gray' ? 'xi-heart-o' : 'xi-heart';
         $(`#${type}-color-btn`).html(`<i class="${iconClass}"></i>`).css('color', `var(--cat-${color})`);
+        
+        // 하위 할 일의 테마 색상도 즉시 연동 반영
+        if (type === 'dm') renderSubtasksUI();
+        
         $(`#${type}-color-palette`).hide();
     };
 
+    // 외부 클릭 시 팔레트 닫기
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#qa-color-btn, #qa-color-palette, #dm-color-btn, #dm-color-palette').length) {
             $('.color-palette').hide();
         }
     });
 
+    /* ==========================================================================
+       [기존 뷰 렌더링 함수들]
+       ========================================================================== */
     window.switchTab = function(tabName, btn) {
         $('.todo-tab-content').removeClass('active');
         $(`#todo-tab-${tabName}`).addClass('active');
@@ -96,16 +120,43 @@
         return `${y}-${m}-${d}`;
     }
 
+    // 메인 투두 렌더링 (체크박스 + 하트 아이콘 + 프로그레스 바 포함)
     function createTodoHTML(todo) {
         const heartClass = todo.category === 'gray' ? 'xi-heart-o' : 'xi-heart';
         const compClass = todo.is_completed ? 'completed' : '';
         const colorHex = `var(--cat-${todo.category})`;
         const targetStr = todo.target_date ? `<span style="font-size: 8px;">${todo.target_date.substring(5).replace('-','.')}</span>` : '';
+        
+        // 팝업 직통 연결에 맞춰 앞쪽에 직접 완료 가능한 체크박스 노출
+        const checkIconClass = todo.is_completed ? 'xi-check-square' : 'xi-square-o';
+        const toggleCheckBtn = `<i class="${checkIconClass}" style="color: var(--sub-color); font-size: 11px; margin-top: 1px; cursor: pointer; opacity: 0.8;" onclick="event.stopPropagation(); toggleComplete(${todo.id})"></i>`;
+
+        // 하위 할 일 진행률 프로그레스 바 계산
+        let progressHtml = '';
+        if (todo.subtasks && Array.isArray(todo.subtasks) && todo.subtasks.length > 0) {
+            const total = todo.subtasks.length;
+            const completed = todo.subtasks.filter(st => st.is_completed).length;
+            const percent = (completed / total) * 100;
+            
+            progressHtml = `
+                <div class="todo-subtasks-progress">
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: ${percent}%; background: ${colorHex};"></div>
+                    </div>
+                    <span class="progress-text">${completed}/${total}</span>
+                </div>
+            `;
+        }
+
         return `
-            <div class="todo-item ${compClass}" onclick="openActionSheet(${todo.id})">
-                <i class="${heartClass} todo-cat-icon" style="color: ${colorHex};"></i>
-                <div class="todo-text">${todo.content}</div>
-                <div class="todo-meta">${targetStr}</div>
+            <div class="todo-item ${compClass}" onclick="openDetailedModal(${todo.id})">
+                <div class="todo-item-top">
+                    ${toggleCheckBtn}
+                    <i class="${heartClass} todo-cat-icon" style="color: ${colorHex}; margin-left: 2px;"></i>
+                    <div class="todo-text">${todo.content}</div>
+                    <div class="todo-meta">${targetStr}</div>
+                </div>
+                ${progressHtml}
             </div>
         `;
     }
@@ -113,6 +164,7 @@
     function renderMatrix() {
         $('#quad-1, #quad-2, #quad-3, #quad-4, #quad-0').empty();
         const todayStr = getFormatDate(new Date());
+
         todosData.forEach(todo => {
             if (!todo.target_date || todo.target_date <= todayStr) {
                 $(`#quad-${todo.matrix_quadrant}`).append(createTodoHTML(todo));
@@ -145,8 +197,10 @@
         for (let i = 0; i < 7; i++) {
             const d = new Date(startOfWeek);
             d.setDate(d.getDate() + i);
+            
             const isToday = getFormatDate(d) === getFormatDate(todayDate);
             const isSelected = getFormatDate(d) === getFormatDate(selectedDate);
+            
             const colClass = `day-col ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`;
             
             strip.append(`
@@ -168,6 +222,7 @@
         const list = $(`#${containerId}`);
         list.empty();
         const targetStr = getFormatDate(selectedDate);
+        
         const filtered = todosData.filter(t => t.target_date === targetStr);
         if (filtered.length === 0) {
             list.append('<div style="width: 100%; text-align:center; color:var(--sub-color); padding: 20px 0; font-size: 8px;">할 일이 없습니다.</div>');
@@ -195,6 +250,7 @@
 
         const firstDay = new Date(y, m - 1, 1).getDay();
         const daysInMonth = new Date(y, m, 0).getDate();
+        
         for (let i = 0; i < firstDay; i++) grid.append('<div></div>');
 
         const todayStr = getFormatDate(new Date());
@@ -205,12 +261,17 @@
             const isToday = dStr === todayStr;
             const isSelected = dStr === selectedStr;
             const hasTodo = todosData.some(t => t.target_date === dStr);
+            
             const classes = `cal-day-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${hasTodo ? 'has-todo' : ''}`;
+            
             grid.append(`<div class="${classes}" onclick="selectDate('${dStr}')">${i}</div>`);
         }
         renderDateList('cal-list');
     }
 
+    /* ==========================================================================
+       [통계 렌더링 로직]
+       ========================================================================== */
     function renderStatsMain() {
         const y = statsDate.getFullYear();
         const m = statsDate.getMonth() + 1;
@@ -219,18 +280,24 @@
 
         const grid = $('#stats-grid');
         grid.empty();
+
         const firstDay = new Date(y, m - 1, 1).getDay();
         const daysInMonth = new Date(y, m, 0).getDate();
         const monthPrefix = `${y}-${String(m).padStart(2, '0')}`;
 
         colors.forEach(color => {
             const catTodos = todosData.filter(t => t.category === color && t.target_date && t.target_date.startsWith(monthPrefix));
-            let html = `<div class="stats-card" onclick="openStatsDetail('${color}')">`;
-            html += `<div class="stats-card-title"><i class="xi-heart" style="color: var(--cat-${color}); font-size: 16px;"></i></div><div class="mini-cal">`;
             
-            for (let i = 0; i < firstDay; i++) { html += `<div class="mini-day" style="background: transparent;"></div>`; }
+            let html = `<div class="stats-card" onclick="openStatsDetail('${color}')">`;
+            html += `<div class="stats-card-title"><i class="xi-heart" style="color: var(--cat-${color}); font-size: 16px;"></i></div>`;
+            html += `<div class="mini-cal">`;
+            
+            for (let i = 0; i < firstDay; i++) {
+                html += `<div class="mini-day" style="background: transparent;"></div>`;
+            }
 
             let completedCount = 0;
+
             for (let i = 1; i <= daysInMonth; i++) {
                 const dStr = `${monthPrefix}-${String(i).padStart(2, '0')}`;
                 const dayTodos = catTodos.filter(t => t.target_date === dStr);
@@ -243,9 +310,14 @@
                     bgStyle = `background: var(--cat-${color}); opacity: ${ratio};`;
                     completedCount += completed;
                 }
+
                 html += `<div class="mini-day" style="${bgStyle}"></div>`;
             }
-            html += `</div><div class="stats-card-total"><i class="xi-check-circle"></i> ${completedCount}</div></div>`; 
+
+            html += `</div>`; 
+            html += `<div class="stats-card-total"><i class="xi-check-circle"></i> ${completedCount}</div>`;
+            html += `</div>`; 
+
             grid.append(html);
         });
     }
@@ -267,7 +339,9 @@
     };
 
     window.closeStatsDetail = function() {
-        $('#stats-detail-overlay').fadeOut(150, function() { currentStatsCategory = null; });
+        $('#stats-detail-overlay').fadeOut(150, function() {
+            currentStatsCategory = null;
+        });
     };
 
     function renderStatsDetail(color) {
@@ -291,6 +365,7 @@
 
         const firstDay = new Date(y, m - 1, 1).getDay();
         const daysInMonth = new Date(y, m, 0).getDate();
+
         for (let i = 0; i < firstDay; i++) grid.append('<div></div>');
 
         let weeklyCounts = [0, 0, 0, 0, 0]; 
@@ -298,6 +373,7 @@
         for (let i = 1; i <= daysInMonth; i++) {
             const dStr = `${monthPrefix}-${String(i).padStart(2, '0')}`;
             const dayTodos = completedTodos.filter(t => t.target_date === dStr);
+            
             const weekIdx = Math.floor((i - 1 + firstDay) / 7);
             if (weekIdx < 5) weeklyCounts[weekIdx] += dayTodos.length;
 
@@ -311,6 +387,7 @@
                     extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7px; color:var(--cat-${color});">+${dayTodos.length - 1}</div>`;
                 }
             }
+
             grid.append(`<div class="${classes}" style="${inlineStyle}">${i}${extraHtml}</div>`);
         }
 
@@ -322,15 +399,20 @@
             const count = weeklyCounts[w];
             const heightPct = (count / maxCount) * 100;
             const barBg = count > 0 ? `var(--cat-${color})` : 'rgba(0,0,0,0.05)';
-            chart.append(`<div class="sd-bar-wrap">
+            
+            let html = `<div class="sd-bar-wrap">
                 <div class="sd-bar" style="height: ${heightPct}%; background: ${barBg};">
                     ${count > 0 ? `<div class="sd-bar-val">${count}</div>` : ''}
                 </div>
                 <div class="sd-bar-label">${w+1}주차</div>
-            </div>`);
+            </div>`;
+            chart.append(html);
         }
     }
 
+    /* ==========================================================================
+       [DB 액션 로직 (추가/수정/삭제/체크)]
+       ========================================================================== */
     window.quickAddTodo = async function() {
         const content = $('#qa-input').val().trim();
         if (!content) return;
@@ -340,17 +422,126 @@
             category: $('#qa-color-val').val(),
             matrix_quadrant: parseInt($('#qa-quad').val()),
             is_completed: false,
-            target_date: getFormatDate(new Date())
+            target_date: getFormatDate(new Date()),
+            subtasks: [] // 초기 하위 할일 빈 배열
         };
+        
         const { data, error } = await supabase.from('todos').insert([newTodo]).select();
         if (!error && data) {
             todosData.push(data[0]);
             $('#qa-input').val('');
+            
+            // 전송 후 팔레트는 다시 회색 빈하트로 리셋
             selectColor('gray', 'qa');
             refreshAllViews();
         }
     };
 
+    // 🚨 바로 1Depth에서 완료 처리
+    window.toggleComplete = async function(id) {
+        const todo = todosData.find(t => t.id == id);
+        if(!todo) return;
+        const newVal = !todo.is_completed;
+        
+        const { error } = await supabase.from('todos').update({ is_completed: newVal }).eq('id', id);
+        if (!error) {
+            todo.is_completed = newVal;
+            refreshAllViews();
+        }
+    };
+
+    // 🚨 다이렉트 팝업 시스템 (하위 할 일 포함)
+    window.openDetailedModal = function(id = null) {
+        currentSubtasks = []; // 초기화
+        
+        if (id) {
+            // Edit Mode
+            const todo = todosData.find(t => t.id == id);
+            if (todo) {
+                $('#dm-id').val(todo.id);
+                $('#dm-input').val(todo.content);
+                $('#dm-quad').val(todo.matrix_quadrant);
+                $('#dm-date').val(todo.target_date || '');
+                $('#dm-repeat').val(todo.repeat_type || 'none');
+                selectColor(todo.category, 'dm'); 
+                
+                if (todo.subtasks && Array.isArray(todo.subtasks)) {
+                    currentSubtasks = JSON.parse(JSON.stringify(todo.subtasks)); // 깊은 복사
+                }
+                $('#dm-delete-btn').show(); // 수정 시에만 삭제 버튼 노출
+            }
+        } else {
+            // Add New Mode
+            $('#dm-id').val('');
+            $('#dm-input').val('');
+            $('#dm-date').val(getFormatDate(new Date()));
+            $('#dm-quad').val($('#qa-quad').val() || 0);
+            $('#dm-repeat').val('none');
+            selectColor($('#qa-color-val').val() || 'gray', 'dm'); 
+            
+            $('#dm-delete-btn').hide();
+        }
+        
+        $('#dm-new-subtask').val('');
+        renderSubtasksUI();
+        $('#detail-modal-overlay').css('display', 'flex').hide().fadeIn(150);
+    };
+    
+    window.closeDetailedModal = function() { 
+        $('#detail-modal-overlay').fadeOut(150); 
+        currentSubtasks = [];
+    };
+
+    /* ==========================================================================
+       [하위 할 일 (Subtasks) 관리 엔진]
+       ========================================================================== */
+    window.addSubtaskFromUI = function() {
+        const text = $('#dm-new-subtask').val().trim();
+        if (!text) return;
+        
+        currentSubtasks.push({ content: text, is_completed: false });
+        $('#dm-new-subtask').val('');
+        renderSubtasksUI();
+    };
+
+    window.toggleSubtask = function(index) {
+        if (currentSubtasks[index]) {
+            currentSubtasks[index].is_completed = !currentSubtasks[index].is_completed;
+            renderSubtasksUI();
+        }
+    };
+
+    window.deleteSubtask = function(index) {
+        currentSubtasks.splice(index, 1);
+        renderSubtasksUI();
+    };
+
+    window.updateSubtaskText = function(index, val) {
+        if (currentSubtasks[index]) {
+            currentSubtasks[index].content = val.trim();
+        }
+    };
+
+    function renderSubtasksUI() {
+        const list = $('#dm-subtasks-list');
+        list.empty();
+        const currentColor = $('#dm-color-val').val();
+        
+        currentSubtasks.forEach((st, idx) => {
+            const iconClass = st.is_completed ? 'xi-check-square' : 'xi-square-o';
+            const textClass = st.is_completed ? 'completed' : '';
+            
+            list.append(`
+                <div class="modal-subtask-item">
+                    <i class="${iconClass}" style="color: var(--cat-${currentColor}); font-size: 11px; cursor: pointer;" onclick="toggleSubtask(${idx})"></i>
+                    <input type="text" class="modal-subtask-text ${textClass}" value="${st.content}" onchange="updateSubtaskText(${idx}, this.value)">
+                    <i class="xi-close" style="color: var(--sub-color); font-size: 10px; cursor: pointer; opacity: 0.5;" onclick="deleteSubtask(${idx})"></i>
+                </div>
+            `);
+        });
+    }
+
+    // 🚨 모달 정보 DB 저장
     window.saveDetailedTodo = async function() {
         const id = $('#dm-id').val();
         const content = $('#dm-input').val().trim();
@@ -361,7 +552,8 @@
             category: $('#dm-color-val').val(),
             matrix_quadrant: parseInt($('#dm-quad').val()),
             target_date: $('#dm-date').val() || null,
-            repeat_type: $('#dm-repeat').val()
+            repeat_type: $('#dm-repeat').val(),
+            subtasks: currentSubtasks // JSONB 저장
         };
 
         if (id) {
@@ -375,78 +567,26 @@
             const { data, error } = await supabase.from('todos').insert([todoData]).select();
             if(!error && data) todosData.push(data[0]);
         }
+
         closeDetailedModal();
         refreshAllViews();
     };
 
-    window.openActionSheet = function(id) {
-        $('#action-target-id').val(id);
-        $('#action-sheet-overlay').css('display', 'flex').hide().fadeIn(150);
-        $('#action-sheet').css('animation', 'none')[0].offsetHeight; 
-        $('#action-sheet').css('animation', 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards');
-    };
-    window.closeActionSheet = function() { $('#action-sheet-overlay').fadeOut(150); };
-
-    window.toggleComplete = async function() {
-        const id = $('#action-target-id').val();
-        const todo = todosData.find(t => t.id == id);
-        const newVal = !todo.is_completed;
-        const { error } = await supabase.from('todos').update({ is_completed: newVal }).eq('id', id);
-        if (!error) {
-            todo.is_completed = newVal;
-            refreshAllViews();
-        }
-        closeActionSheet();
-    };
-
-    window.moveToDate = async function(dayType) {
-        const id = $('#action-target-id').val();
-        let d = new Date();
-        if (dayType === 'tomorrow') d.setDate(d.getDate() + 1);
-        const newDateStr = getFormatDate(d);
-
-        const { error } = await supabase.from('todos').update({ target_date: newDateStr }).eq('id', id);
-        if (!error) {
-            const index = todosData.findIndex(t => t.id == id);
-            if(index > -1) todosData[index].target_date = newDateStr;
-            refreshAllViews();
-        }
-        closeActionSheet();
-    };
-
-    window.deleteTodo = async function() {
-        const id = $('#action-target-id').val();
+    // 🚨 모달 내 삭제
+    window.deleteTodoFromModal = async function() {
+        const id = $('#dm-id').val();
+        if (!id) return;
+        if (!confirm("정말 이 할 일을 삭제하시겠습니까?")) return;
+        
         const { error } = await supabase.from('todos').delete().eq('id', id);
         if (!error) {
             todosData = todosData.filter(t => t.id != id);
+            closeDetailedModal();
             refreshAllViews();
-        }
-        closeActionSheet();
-    };
-
-    window.openDetailedModal = function(isEdit = false) {
-        if (isEdit) {
-            closeActionSheet();
-            const id = $('#action-target-id').val();
-            const todo = todosData.find(t => t.id == id);
-            if (todo) {
-                $('#dm-id').val(todo.id);
-                $('#dm-input').val(todo.content);
-                $('#dm-quad').val(todo.matrix_quadrant);
-                $('#dm-date').val(todo.target_date);
-                selectColor(todo.category, 'dm'); 
-            }
         } else {
-            $('#dm-id').val('');
-            $('#dm-input').val('');
-            $('#dm-date').val(getFormatDate(new Date()));
-            $('#dm-quad').val($('#qa-quad').val());
-            selectColor($('#qa-color-val').val(), 'dm'); 
+            alert('삭제에 실패했습니다.');
         }
-        $('#detail-modal-overlay').css('display', 'flex').hide().fadeIn(150);
     };
-    
-    window.closeDetailedModal = function() { $('#detail-modal-overlay').fadeOut(150); };
 
     function refreshAllViews() {
         renderMatrix();
@@ -458,6 +598,7 @@
         }
     }
 
+    // 초기화 실행
     $(document).ready(function() {
         fetchTodos(); 
     });
