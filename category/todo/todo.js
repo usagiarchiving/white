@@ -1,10 +1,10 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 Javascript 엔진
+   토끼굴 Todo 전용 Javascript 엔진 (통계 디테일, 하위항목 자동 완료 연동)
    ========================================================================== */
 
 (function() {
     if (typeof window.supabase === 'undefined') {
-        alert("🚨 Supabase 라이브러리를 불러오지 못했습니다.");
+        alert("🚨 Supabase 라이브러리를 불러오지 못했습니다. index.html 하단의 script 태그를 확인해주세요.");
         return;
     }
 
@@ -17,14 +17,20 @@
     let todosData = []; 
     let currentDate = new Date();
     let selectedDate = new Date();
+    
+    // 통계 전용 상태값
     let statsDate = new Date();
     let currentStatsCategory = null;
+    let statsSelectedDateStr = getFormatDate(new Date()); 
+    
     let currentSubtasks = [];
 
+    // 서버 데이터 가져오기
     async function fetchTodos() {
         const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
         if (error) {
             console.error("데이터 로드 실패:", error);
+            alert("🚨 DB 데이터 불러오기 실패: " + error.message);
         } else if (data) {
             todosData = data;
             refreshAllViews();
@@ -51,7 +57,6 @@
         refreshAllViews();
     };
 
-    /* 하트 툴바(팔레트) 엔진 */
     window.togglePalette = function(type) {
         const palette = $(`#${type}-color-palette`);
         const currentVal = $(`#${type}-color-val`).val();
@@ -100,7 +105,8 @@
         return `${y}-${m}-${d}`;
     }
 
-    function createTodoHTML(todo) {
+    // 🚨 대시보드에서는 하위항목이 쫙 펼쳐지도록 (isExpanded 플래그 적용)
+    function createTodoHTML(todo, isExpanded = false) {
         const compClass = todo.is_completed ? 'completed' : '';
         const colorHex = `var(--cat-${todo.category})`;
         const targetStr = todo.target_date ? `<span style="font-size: 8px;">${todo.target_date.substring(5).replace('-','.')}</span>` : '';
@@ -108,17 +114,38 @@
         const boxBg = todo.is_completed ? colorHex : 'transparent';
         const toggleCheckBtn = `<div class="custom-checkbox" style="border: 1.2px solid ${colorHex}; background-color: ${boxBg};" onclick="toggleComplete(${todo.id}, this, event)"></div>`;
 
-        let progressHtml = '';
+        let extraHtml = '';
         if (todo.subtasks && Array.isArray(todo.subtasks) && todo.subtasks.length > 0) {
             const total = todo.subtasks.length;
             const completed = todo.subtasks.filter(st => st.is_completed).length;
             const percent = (completed / total) * 100;
-            progressHtml = `
+            
+            const progressHtml = `
                 <div class="todo-subtasks-progress">
                     <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${percent}%; background: ${colorHex};"></div></div>
                     <span class="progress-text">${completed}/${total}</span>
                 </div>
             `;
+
+            if (isExpanded) {
+                // 펼쳐진 하위 리스트 렌더링
+                let subHtml = `<div class="expanded-subtasks">`;
+                todo.subtasks.forEach((st, idx) => {
+                    const stBoxBg = st.is_completed ? colorHex : 'transparent';
+                    const stCheckBox = `<div class="custom-checkbox" style="border: 1.2px solid ${colorHex}; background-color: ${stBoxBg}; width: 8px; height: 8px; margin-top: 1px;" onclick="toggleSubtaskInline(${todo.id}, ${idx}, event)"></div>`;
+                    const stCompClass = st.is_completed ? 'completed' : '';
+                    subHtml += `
+                        <div class="exp-subtask-item ${stCompClass}">
+                            ${stCheckBox}
+                            <span style="flex:1;" onclick="toggleSubtaskInline(${todo.id}, ${idx}, event)">${st.content}</span>
+                        </div>
+                    `;
+                });
+                subHtml += `</div>`;
+                extraHtml = progressHtml + subHtml; // 바와 리스트 모두 출력
+            } else {
+                extraHtml = progressHtml; // 매트릭스는 바만 출력
+            }
         }
 
         return `
@@ -128,10 +155,38 @@
                     <div class="todo-text">${todo.content}</div>
                     <div class="todo-meta">${targetStr}</div>
                 </div>
-                ${progressHtml}
+                ${extraHtml}
             </div>
         `;
     }
+
+    // 🚨 외부 뷰에서 직접 하위 항목 체크하기 & "모두 완료 시 부모 자동 완료" 엔진
+    window.toggleSubtaskInline = async function(todoId, subIdx, event) {
+        event.stopPropagation();
+        const todo = todosData.find(t => t.id == todoId);
+        if (!todo || !todo.subtasks || !todo.subtasks[subIdx]) return;
+
+        // 상태 반전
+        todo.subtasks[subIdx].is_completed = !todo.subtasks[subIdx].is_completed;
+
+        // 전체 완료 여부 체크
+        const allCompleted = todo.subtasks.every(st => st.is_completed);
+        if (allCompleted && todo.subtasks.length > 0) {
+            todo.is_completed = true; // 🚨 자동 완료 처리!
+        } else if (!allCompleted && todo.is_completed) {
+            todo.is_completed = false; // 하나라도 풀리면 부모도 미완료로 풀림
+        }
+
+        // 빠른 UI 피드백을 위해 먼저 렌더링
+        refreshAllViews();
+
+        // 백그라운드에서 DB 업데이트
+        const { error } = await supabase.from('todos')
+            .update({ subtasks: todo.subtasks, is_completed: todo.is_completed })
+            .eq('id', todoId);
+
+        if (error) { alert("🚨 하위 할 일 업데이트 실패: " + error.message); }
+    };
 
     function getSortedTodos(todosArray, useQuadrantSort = false) {
         return todosArray.sort((a, b) => {
@@ -154,7 +209,8 @@
         matrixTodos = getSortedTodos(matrixTodos, false); 
 
         matrixTodos.forEach(todo => {
-            $(`#quad-${todo.matrix_quadrant}`).append(createTodoHTML(todo));
+            if (todo.is_completed) return;
+            $(`#quad-${todo.matrix_quadrant}`).append(createTodoHTML(todo, false)); // 매트릭스는 접어서
         });
     }
 
@@ -173,6 +229,7 @@
         const day = startOfWeek.getDay();
         const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); 
         startOfWeek.setDate(diff);
+
         const daysKor = ['월', '화', '수', '목', '금', '토', '일'];
 
         for (let i = 0; i < 7; i++) {
@@ -201,12 +258,11 @@
         
         filtered = getSortedTodos(filtered, true);
 
-        // 🚨 [수정 4] 검색어가 입력되어 있다면 필터링 유지
         const searchInputId = containerId === 'weekly-list' ? 'weekly-search' : 'cal-search';
         const keyword = $(`#${searchInputId}`).val()?.toLowerCase() || '';
 
         filtered.forEach(todo => {
-            const itemHtml = $(createTodoHTML(todo));
+            const itemHtml = $(createTodoHTML(todo, true)); // 대시보드/달력은 하위항목 펼침
             if (keyword && !todo.content.toLowerCase().includes(keyword)) {
                 itemHtml.hide();
             }
@@ -242,7 +298,7 @@
         renderDateList('cal-list');
     }
 
-    // 🚨 [수정 4] 검색 기능 스크립트 연동
+    // 🚨 통합 검색 애니메이션 (통계 검색창도 적용)
     $(document).on('click', '.todo-search-icon', function() {
         const input = $(this).siblings('.todo-search-input');
         input.css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
@@ -258,7 +314,10 @@
 
     $(document).on('input', '.todo-search-input', function() {
         const keyword = $(this).val().toLowerCase();
-        const containerId = $(this).attr('id') === 'weekly-search' ? '#weekly-list' : '#cal-list';
+        const id = $(this).attr('id');
+        let containerId = '#weekly-list';
+        if (id === 'cal-search') containerId = '#cal-list';
+        else if (id === 'sd-search') containerId = '#sd-list';
         
         $(`${containerId} .todo-item`).each(function() {
             const text = $(this).find('.todo-text').text().toLowerCase();
@@ -267,7 +326,6 @@
         });
     });
 
-    // 🚨 [수정 1] 통계 메뉴 숫자가 제대로 보이도록 엔진 개선
     function renderStatsMain() {
         const y = statsDate.getFullYear();
         const m = statsDate.getMonth() + 1;
@@ -295,13 +353,12 @@
                 const completed = dayTodos.filter(t => t.is_completed).length;
 
                 let bgStyle = ``;
-                let dayHtml = ``; // 칸 안에 표시될 숫자
-                
+                let dayHtml = ``; 
                 if (total > 0 && completed > 0) {
                     const ratio = Math.max(0.3, completed / total);
                     bgStyle = `background: var(--cat-${color}); opacity: ${ratio};`;
                     completedCount += completed;
-                    dayHtml = completed; // 완료된 숫자를 중앙에 배치
+                    dayHtml = completed; 
                 }
                 html += `<div class="mini-day" style="${bgStyle}">${dayHtml}</div>`;
             }
@@ -318,12 +375,21 @@
 
     window.openStatsDetail = function(color) {
         currentStatsCategory = color;
+        statsSelectedDateStr = getFormatDate(new Date()); // 모달 열때 항상 오늘로 초기화
         $('#sd-header-title').html(`<i class="xi-heart" style="color: var(--cat-${color}); font-size: 16px;"></i>`);
         renderStatsDetail(color);
         $('#stats-detail-overlay').css('display', 'flex').hide().fadeIn(150);
     };
 
-    window.closeStatsDetail = function() { $('#stats-detail-overlay').fadeOut(150, function() { currentStatsCategory = null; }); };
+    window.closeStatsDetail = function() { 
+        $('#stats-detail-overlay').fadeOut(150, function() { currentStatsCategory = null; }); 
+    };
+
+    // 🚨 통계 상세 달력 날짜 클릭 시 하단 리스트 교체
+    window.selectStatsDate = function(dStr) {
+        statsSelectedDateStr = dStr;
+        if (currentStatsCategory) renderStatsDetail(currentStatsCategory);
+    };
 
     function renderStatsDetail(color) {
         const y = statsDate.getFullYear();
@@ -355,13 +421,18 @@
             const weekIdx = Math.floor((i - 1 + firstDay) / 7);
             if (weekIdx < 5) weeklyCounts[weekIdx] += dayTodos.length;
 
+            let classes = "cal-day-cell";
+            if (dStr === statsSelectedDateStr) classes += " is-selected";
+
             let inlineStyle = "";
             let extraHtml = "";
+
+            // 🚨 달성한 할일 개수를 캘린더 날짜칸 아래에 명확하게 표기 (+X 에러 수정)
             if (dayTodos.length > 0) {
                 inlineStyle = `background: var(--cat-${color}); color: #fff; font-weight: bold;`;
-                if (dayTodos.length > 1) extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7px; color:var(--cat-${color});">+${dayTodos.length - 1}</div>`;
+                extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7.5px; color:var(--cat-${color}); font-weight:normal;">${dayTodos.length}개</div>`;
             }
-            grid.append(`<div class="cal-day-cell" style="${inlineStyle}">${i}${extraHtml}</div>`);
+            grid.append(`<div class="${classes}" style="${inlineStyle}" onclick="selectStatsDate('${dStr}')">${i}${extraHtml}</div>`);
         }
 
         const chart = $('#sd-chart');
@@ -373,6 +444,23 @@
             const heightPct = (count / maxCount) * 100;
             const barBg = count > 0 ? `var(--cat-${color})` : 'rgba(0,0,0,0.05)';
             chart.append(`<div class="sd-bar-wrap"><div class="sd-bar" style="height: ${heightPct}%; background: ${barBg};">${count > 0 ? `<div class="sd-bar-val">${count}</div>` : ''}</div><div class="sd-bar-label">${w+1}주차</div></div>`);
+        }
+
+        // 🚨 하단 해당 날짜 리스트 렌더링
+        const sdList = $('#sd-list');
+        sdList.empty();
+        let targetTodos = catTodos.filter(t => t.target_date === statsSelectedDateStr && t.is_completed);
+        
+        if (targetTodos.length === 0) {
+            sdList.append('<div style="width: 100%; text-align:center; color:var(--sub-color); padding: 10px 0; font-size: 8px;">해당 카테고리의 완료 내역이 없습니다.</div>');
+        } else {
+            targetTodos = getSortedTodos(targetTodos, false);
+            const keyword = $('#sd-search').val()?.toLowerCase() || '';
+            targetTodos.forEach(todo => {
+                const itemHtml = $(createTodoHTML(todo, true)); // 통계 리스트도 하위항목 펼침
+                if (keyword && !todo.content.toLowerCase().includes(keyword)) itemHtml.hide();
+                sdList.append(itemHtml);
+            });
         }
     }
 
@@ -487,6 +575,7 @@
         await supabase.from('todos').update({ sort_order: item2.sort_order }).eq('id', item2.id);
     }
 
+    /* 하위 할 일 추가 및 UI 렌더링 */
     window.addSubtaskFromUI = function() {
         const text = $('#dm-new-subtask').val().trim();
         if (!text) return;
@@ -537,6 +626,12 @@
         const content = $('#dm-input').val().trim();
         if (!content) return;
 
+        // 저장 시에도 하위 할일 전체 완료 여부를 한 번 더 검사해서 부모를 자동 체크
+        let isParentCompleted = false;
+        if (currentSubtasks.length > 0 && currentSubtasks.every(st => st.is_completed)) {
+            isParentCompleted = true;
+        }
+
         const todoData = {
             content: content,
             category: $('#dm-color-val').val(),
@@ -547,6 +642,10 @@
         };
 
         if (id) {
+            // 수정 모드일 때만 자동 완료 로직 덮어쓰기 적용
+            const existingTodo = todosData.find(t => t.id == id);
+            todoData.is_completed = (currentSubtasks.length > 0) ? isParentCompleted : existingTodo.is_completed;
+
             const { data, error } = await supabase.from('todos').update(todoData).eq('id', id).select();
             if(error) { alert("🚨 수정 저장 실패: " + error.message); return; }
             if(data) {
@@ -554,12 +653,13 @@
                 if(index > -1) todosData[index] = data[0];
             }
         } else {
-            todoData.is_completed = false;
+            todoData.is_completed = isParentCompleted;
             todoData.sort_order = Date.now();
             const { data, error } = await supabase.from('todos').insert([todoData]).select();
             if(error) { alert("🚨 새로 저장 실패: " + error.message); return; }
             if(data) todosData.push(data[0]);
         }
+
         closeDetailedModal();
         refreshAllViews();
     };
