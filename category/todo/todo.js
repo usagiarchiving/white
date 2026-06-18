@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 Javascript 엔진 (Supabase 연동 & 에러 추적기 장착)
+   토끼굴 Todo 전용 Javascript 엔진 (Supabase 연동 & 커스텀 체크박스 장착)
    ========================================================================== */
 
 (function() {
@@ -21,7 +21,6 @@
     let currentStatsCategory = null;
     let currentSubtasks = [];
 
-    // 서버 데이터 가져오기
     async function fetchTodos() {
         const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
         
@@ -34,7 +33,6 @@
         }
     }
 
-    /* 캘린더 년월 Picker */
     window.showTodoYMPicker = function(type) {
         $(`#${type}-month-display`).hide();
         $(`#${type}-ym-picker`).show().focus();
@@ -55,7 +53,6 @@
         refreshAllViews();
     };
 
-    /* 1열 하트 팔레트 토글 */
     window.togglePalette = function(type) {
         const palette = $(`#${type}-color-palette`);
         const currentVal = $(`#${type}-color-val`).val();
@@ -107,15 +104,15 @@
         return `${y}-${m}-${d}`;
     }
 
-    // 🚨 [수정 3] 커스텀 체크박스 (빈 네모 / 꽉찬 체크 네모) 적용
+    // 🚨 커스텀 체크박스 엔진 적용 (테두리는 색상 유지, 완료 시 색상으로 채움)
     function createTodoHTML(todo) {
         const heartClass = todo.category === 'gray' ? 'xi-heart-o' : 'xi-heart';
         const compClass = todo.is_completed ? 'completed' : '';
         const colorHex = `var(--cat-${todo.category})`;
         const targetStr = todo.target_date ? `<span style="font-size: 8px;">${todo.target_date.substring(5).replace('-','.')}</span>` : '';
         
-        const checkIconClass = todo.is_completed ? 'xi-check-square' : 'xi-square-o';
-        const toggleCheckBtn = `<i class="${checkIconClass} todo-checkbox" style="color: ${colorHex}; cursor: pointer;" onclick="event.stopPropagation(); toggleComplete(${todo.id})"></i>`;
+        const boxBg = todo.is_completed ? colorHex : 'transparent';
+        const toggleCheckBtn = `<div class="custom-checkbox" style="border: 1.2px solid ${colorHex}; background-color: ${boxBg};" onclick="event.stopPropagation(); toggleComplete(${todo.id})"></div>`;
 
         let progressHtml = '';
         if (todo.subtasks && Array.isArray(todo.subtasks) && todo.subtasks.length > 0) {
@@ -146,13 +143,12 @@
         `;
     }
 
-    // 🚨 [수정 4] 매트릭스와 미지정 칸에서는 '완료된 항목' 렌더링 스킵
+    // 매트릭스 렌더링: 완료된 것은 숨김 처리
     function renderMatrix() {
         $('#quad-1, #quad-2, #quad-3, #quad-4, #quad-0').empty();
         const todayStr = getFormatDate(new Date());
 
         todosData.forEach(todo => {
-            // 완료된 투두는 1번 탭(매트릭스)에서 숨김 처리
             if (todo.is_completed) return;
 
             if (!todo.target_date || todo.target_date <= todayStr) {
@@ -210,7 +206,6 @@
         list.empty();
         const targetStr = getFormatDate(selectedDate);
         
-        // 캘린더나 대시보드에서는 완료된 것도 모두 보여줌
         const filtered = todosData.filter(t => t.target_date === targetStr);
         if (filtered.length === 0) {
             list.append('<div style="width: 100%; text-align:center; color:var(--sub-color); padding: 20px 0; font-size: 8px;">할 일이 없습니다.</div>');
@@ -382,9 +377,6 @@
         }
     }
 
-    /* ==========================================================================
-       [DB 액션 로직]
-       ========================================================================== */
     window.quickAddTodo = async function() {
         const content = $('#qa-input').val().trim();
         if (!content) return;
@@ -468,7 +460,7 @@
         currentSubtasks = [];
     };
 
-    /* 하위 할 일 관리 */
+    /* 하위 할 일 관리 (체크박스 디자인 연동) */
     window.addSubtaskFromUI = function() {
         const text = $('#dm-new-subtask').val().trim();
         if (!text) return;
@@ -497,14 +489,16 @@
         const list = $('#dm-subtasks-list');
         list.empty();
         const currentColor = $('#dm-color-val').val();
+        const colorHex = `var(--cat-${currentColor})`;
         
         currentSubtasks.forEach((st, idx) => {
-            const iconClass = st.is_completed ? 'xi-check-square' : 'xi-square-o';
+            const boxBg = st.is_completed ? colorHex : 'transparent';
+            const checkBox = `<div class="custom-checkbox" style="border: 1.2px solid ${colorHex}; background-color: ${boxBg};" onclick="toggleSubtask(${idx})"></div>`;
             const textClass = st.is_completed ? 'completed' : '';
             
             list.append(`
                 <div class="modal-subtask-item">
-                    <i class="${iconClass}" style="color: var(--cat-${currentColor}); font-size: 11px; cursor: pointer;" onclick="toggleSubtask(${idx})"></i>
+                    ${checkBox}
                     <input type="text" class="modal-subtask-text ${textClass}" value="${st.content}" onchange="updateSubtaskText(${idx}, this.value)">
                     <i class="xi-close" style="color: var(--sub-color); font-size: 10px; cursor: pointer; opacity: 0.5;" onclick="deleteSubtask(${idx})"></i>
                 </div>
@@ -577,7 +571,6 @@
         }
     }
 
-    // 초기화 실행
     setTimeout(() => {
         fetchTodos(); 
     }, 100);
