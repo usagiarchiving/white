@@ -1,4 +1,7 @@
 <style>
+    /* ==========================================================================
+       [기본 구조]
+       ========================================================================== */
     .archive-wrapper {
         position: relative;
         padding-top: 10px;
@@ -140,12 +143,14 @@
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
         z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out; padding: 20px;
+        box-sizing: border-box; /* 🚨 모바일 폴라로이드 다운그레이드 해결 1 */
     }
     .archive-lightbox-card {
         background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 4px;
         padding: 25px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto;
         box-shadow: 0 15px 40px rgba(0,0,0,0.1); cursor: default;
         animation: memoZoom 0.25s ease-out; display: flex; flex-direction: column; gap: 15px;
+        box-sizing: border-box; /* 🚨 모바일 폴라로이드 다운그레이드 해결 2 */
     }
     @keyframes memoZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>
@@ -174,14 +179,19 @@
         
         <div class="preview-grid" id="preview-grid"></div>
         
-        <div style="text-align: left; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
             <label style="font-size: 12.5px; color: var(--main-color); cursor: pointer; display: flex; align-items: center; gap: 6px;">
                 <input type="checkbox" id="group-upload-cb" onchange="toggleGroupMode()" style="accent-color: var(--point-color);"> 
                 여러 장
             </label>
-            <div id="group-help" style="display: none; font-size: 11.5px; color: var(--point-color); margin-top: 6px; padding-left: 20px;">
-                * 대표 사진 선택
-            </div>
+            <select id="archive-img-quality" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
+                <option value="original" selected>원본</option>
+                <option value="high">고화질</option>
+                <option value="low">저화질</option>
+            </select>
+        </div>
+        <div id="group-help" style="display: none; text-align: left; font-size: 11.5px; color: var(--point-color); margin-top: -8px; margin-bottom: 15px; padding-left: 20px;">
+            * 대표 사진 선택
         </div>
         
         <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
@@ -252,8 +262,45 @@
     var currentLightboxPostId = null;
     var currentLightboxImageUrl = "";
     
-    // 🚨 1. 팝업 더블클릭 오작동 방지를 위한 타이머 변수
+    // 팝업 더블클릭 오작동 방지를 위한 타이머 변수
     var archiveLightboxOpenTime = 0; 
+
+    // 🚨 파일 업로드 전 알잘딱센 압축 엔진 (hasion.html 기능 이식)
+    window.compressImage = async function(file, qualityType) {
+        if (qualityType === 'original' || file.type === 'image/gif') {
+            return { fileOrBlob: file, ext: file.name.split('.').pop() };
+        }
+        return new Promise((resolve) => {
+            var reader = new FileReader(); reader.readAsDataURL(file);
+            reader.onload = function(event) {
+                var img = new Image(); img.src = event.target.result;
+                img.onload = function() {
+                    var maxWidth = qualityType === 'high' ? 1920 : 1080;
+                    var quality = qualityType === 'high' ? 0.8 : 0.6;
+                    var width = img.width; var height = img.height;
+                    if (width > maxWidth || height > maxWidth) {
+                        if (width > height) { height = Math.round((height * maxWidth) / width); width = maxWidth; } 
+                        else { width = Math.round((width * maxWidth) / height); height = maxWidth; }
+                    }
+                    var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+                    var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                    
+                    var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
+                    var ext = (outType === 'image/webp') ? 'webp' : 'jpg';
+                    
+                    canvas.toBlob((blob) => { 
+                        if (!blob) { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); return; }
+                        try {
+                            var newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, { type: outType, lastModified: file.lastModified });
+                            resolve({ fileOrBlob: newFile, ext: ext });
+                        } catch(e) { resolve({ fileOrBlob: blob, ext: ext }); }
+                    }, outType, quality);
+                };
+                img.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
+            };
+            reader.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
+        });
+    };
 
     // 1. 파일 다중 선택 핸들링
     $('#archive-file-input').on('change', function(e) {
@@ -332,6 +379,7 @@
         var tagsVal = $('#archive-tags').val().trim(); 
         var dateVal = $('#archive-date-picker').val();
         var isGroup = $('#group-upload-cb').is(':checked');
+        var qualityOption = $('#archive-img-quality').val() || 'original'; // 🚨 용량 선택값
         var btn = $('#submit-btn');
 
         try {
@@ -340,12 +388,13 @@
             var uploadedUrls = [];
             var fileDates = [];
             
-            // 모든 파일 스토리지 업로드
+            // 모든 파일 스토리지 업로드 (압축 엔진 통과)
             for (var file of selectedFiles) {
-                var fileExt = file.name.split('.').pop();
+                var compressed = await compressImage(file, qualityOption);
+                var fileExt = compressed.ext || 'jpg';
                 var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-                var { error: uploadError } = await archiveSupabase.storage.from('images').upload(fileName, file);
+                var { error: uploadError } = await archiveSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
                 if (uploadError) throw uploadError;
 
                 var { data: publicUrlData } = archiveSupabase.storage.from('images').getPublicUrl(fileName);
@@ -378,11 +427,11 @@
                 if (dbError) throw dbError;
 
             } else {
-                // [개별 모드] 각각 독립적인 게시물로 저장 (각 원본 사진의 생성 시간 유지)
+                // [개별 모드] 각각 독립적인 게시물로 저장
                 var insertArray = [];
                 for (var i = 0; i < uploadedUrls.length; i++) {
                     var contentString = uploadedUrls[i] + "|||" + captionVal + "|||" + tagsVal;
-                    var finalDate = new Date(fileDates[i]); // 개별 원본 시간 사용
+                    var finalDate = new Date(fileDates[i]); 
                     
                     if (dateVal) { 
                         var parts = dateVal.split('-');
@@ -444,7 +493,6 @@
 
                 var imageUrls = post.content.split("|||")[0] || "";
                 var mainImgUrl = imageUrls.split(":::")[0];
-                var isMulti = imageUrls.includes(":::"); // 세트 이미지 여부
 
                 var captionText = "";
                 var tagsText = "";
@@ -459,20 +507,16 @@
                 var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
-                // 🚨 2. 구문 오류(SyntaxError) 해결: 줄바꿈(\n)과 특수문자를 완벽하게 안전 처리
                 var safeTitle = post.title ? post.title.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
                 var safeCaption = captionText ? captionText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
                 var safeTags = tagsText ? tagsText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
                 
                 var searchText = `${post.title || ''} ${captionText} ${tagsText} ${displayDate}`;
 
-                // 세트 이미지일 경우 우측 상단에 겹친 아이콘 표시
-                var multiIconHtml = isMulti ? `<i class="xi-library" style="position:absolute; top:8px; right:8px; color:rgba(255,255,255,0.9); text-shadow:0 1px 3px rgba(0,0,0,0.3); font-size:14px; z-index:5;"></i>` : "";
-
+                // 🚨 1. 여러장 아이콘 제거 완료
                 var postHtml = `
                     <div class="gallery-wrapper-item" data-search="${searchText}">
                         <div class="gallery-item fade-in-element" onclick="openArchiveLightbox(${post.id}, '${imageUrls}', '${safeTitle}', '${safeCaption}', '${safeTags}', '${displayDate}', '${inputDate}')">
-                            ${multiIconHtml}
                             <img src="${mainImgUrl}" alt="archive image" loading="lazy">
                             <div class="gallery-overlay">
                                 <div style="display: flex; justify-content: flex-end; align-items: flex-start; width: 100%;">
@@ -531,22 +575,39 @@
         });
     });
 
-    // 5. 삭제 및 라이트박스 제어
+    // 🚨 3. 삭제 및 라이트박스 제어 (스토리지 완전 삭제 포함)
     window.deleteArchivePost = async function(id) {
         if (!confirm("Are you sure you want to delete this?")) return;
         try {
+            // DB에서 지우기 전에 이미지 URL부터 확보
+            var { data: postData } = await archiveSupabase.from('posts').select('content').eq('id', id).single();
+            
             var { error } = await archiveSupabase.from('posts').delete().eq('id', id);
             if (error) throw error;
+
+            // 스토리지 완전 삭제 로직
+            if (postData && postData.content) {
+                var imageUrls = postData.content.split("|||")[0] || "";
+                if (imageUrls) {
+                    var urls = imageUrls.split(":::");
+                    var fileNames = urls.map(u => u.split('/').pop()).filter(name => name);
+                    if (fileNames.length > 0) {
+                        await archiveSupabase.storage.from('images').remove(fileNames);
+                    }
+                }
+            }
+
             loadGalleryPosts();
         } catch (error) { alert('Failed to delete.'); }
     };
+    
     window.deleteArchiveFromLightbox = function() {
         deleteArchivePost(currentLightboxPostId);
         closeArchiveLightbox();
     };
 
     window.openArchiveLightbox = function(id, urlsStr, title, caption, tags, displayDate, inputDate) {
-        archiveLightboxOpenTime = Date.now(); // 🚨 열린 시점 기록
+        archiveLightboxOpenTime = Date.now();
         currentLightboxPostId = id;
         currentLightboxImageUrl = urlsStr; // 묶음 URL 원본 저장
         
@@ -572,7 +633,6 @@
     };
     
     window.closeArchiveLightbox = function() {
-        // 🚨 더블클릭 오작동 방어: 열린 지 0.3초 이내의 닫기 명령은 가볍게 무시합니다.
         if (Date.now() - archiveLightboxOpenTime < 300) return; 
         $('#archive-lightbox').fadeOut(150);
     };
