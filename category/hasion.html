@@ -129,7 +129,7 @@
     .custom-html-box svg { display: block !important; }
 
     /* ==========================================================================
-       [에디터 인라인 이미지 규격 (완벽한 자동 2px 그리드)]
+       [에디터 인라인 이미지 규격]
        ========================================================================== */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
@@ -137,7 +137,6 @@
         box-sizing: border-box; border-radius: 4px; overflow: hidden;
     }
     
-    /* 🚨 2px 여백과 에디터 내의 유령공백을 고려한 완벽한 1/2/3단 계산식 */
     .img-full { width: 100%; display: block; margin-bottom: 2px; }
     .img-half { width: calc(49.2% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
     .img-third { width: calc(32.5% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
@@ -156,7 +155,7 @@
     .img-del-btn { display: none !important; }
 
     /* ==========================================================================
-       [원본 보기 라이트박스 팝업 (개방감 블러 적용)]
+       [원본 보기 라이트박스 팝업]
        ========================================================================== */
     .hasion-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -334,10 +333,26 @@
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
-    /* 🚨 [안전한 이미지 압축: File 객체 롤백으로 업로드 먹통 완벽 차단] */
-    window.compressImage = async function(file, qualityType) {
-        if (qualityType === 'original' || file.type === 'image/gif') return file;
+    // [신규 추가] HTML 본문에서 Supabase 스토리지 파일명만 쏙 뽑아내는 헬퍼 함수
+    function extractImageNamesFromHtml(htmlContent) {
+        var names = [];
+        var regex = /<img[^>]+src="([^">]+)"/g;
+        var match;
+        while ((match = regex.exec(htmlContent)) !== null) {
+            var url = match[1];
+            if (url.includes('supabase.co/storage/v1/object/public/images/')) {
+                var fileName = url.split('/').pop();
+                if (fileName) names.push(fileName);
+            }
+        }
+        return names;
+    }
 
+    /* [안전한 이미지 압축] */
+    window.compressImage = async function(file, qualityType) {
+        if (qualityType === 'original' || file.type === 'image/gif') {
+            return { fileOrBlob: file, ext: file.name.split('.').pop() };
+        }
         return new Promise((resolve) => {
             var reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = function(event) {
@@ -352,27 +367,22 @@
                     }
                     var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
                     var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-                    
                     var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
-                    var ext = (outType === 'image/webp') ? '.webp' : '.jpg';
+                    var ext = (outType === 'image/webp') ? 'webp' : 'jpg';
                     
                     canvas.toBlob((blob) => { 
-                        if (!blob) { resolve(file); return; }
+                        if (!blob) { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); return; }
                         try {
-                            var newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, {
-                                type: outType, lastModified: file.lastModified 
-                            });
-                            resolve(newFile);
+                            var newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, { type: outType, lastModified: file.lastModified });
+                            resolve({ fileOrBlob: newFile, ext: ext });
                         } catch(e) {
-                            // File 객체를 미지원하는 극도로 예외적인 브라우저를 위한 최후의 안전장치
-                            blob.name = file.name.replace(/\.[^/.]+$/, "") + ext;
-                            resolve(blob);
+                            resolve({ fileOrBlob: blob, ext: ext });
                         }
                     }, outType, quality);
                 };
-                img.onerror = function() { resolve(file); };
+                img.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
             };
-            reader.onerror = function() { resolve(file); };
+            reader.onerror = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
         });
     };
 
@@ -387,14 +397,9 @@
         var allImgHtml = '';
 
         for(var file of files) {
-            var processedFile = await compressImage(file, qualityOption);
-            var fileExt = processedFile.name ? processedFile.name.split('.').pop() : 'jpg';
-            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-            
-            var { error } = await hasionSupabase.storage.from('images').upload(fileName, processedFile, {
-                contentType: processedFile.type || 'image/jpeg'
-            });
-            
+            var compressed = await compressImage(file, qualityOption);
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${compressed.ext}`;
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
@@ -404,9 +409,7 @@
         $('#submit-btn').prop('disabled', false).css('opacity', '0.7'); $('.hasion-img-add-btn').css('opacity', '1'); $(this).val('');
     });
 
-    /* ==========================================================================
-       [🚨 이미지 조율 미니 툴바 로직 (키보드 차단 완벽 적용)]
-       ========================================================================== */
+    /* --- [이미지 툴바 관리] --- */
     var activeImgWrap = null;
 
     window.showImgToolbar = function(imgWrap) {
@@ -426,8 +429,8 @@
 
     $(document).on('mousedown touchstart', '.hasion-editor .editor-img-wrap', function(e) {
         if ($(this).closest('.read-mode').length > 0) return; 
-        e.preventDefault(); // 키보드 올라오는 것 원천 차단
-        if (document.activeElement) document.activeElement.blur(); // 켜져 있던 키보드도 강제 숨김
+        e.preventDefault(); 
+        if (document.activeElement) document.activeElement.blur(); 
         showImgToolbar($(this));
     });
 
@@ -455,25 +458,29 @@
     window.moveImgOrder = function(dir) {
         if(!activeImgWrap) return;
         var node = activeImgWrap[0];
-        
         if (dir === 'up') {
-            var prevNode = node.previousSibling;
-            if (prevNode) node.parentNode.insertBefore(node, prevNode);
+            if (node.previousSibling) { node.parentNode.insertBefore(node, node.previousSibling); }
         } else if (dir === 'down') {
-            var nextNode = node.nextSibling;
-            if (nextNode) node.parentNode.insertBefore(node, nextNode.nextSibling);
+            if (node.nextSibling) { node.parentNode.insertBefore(node, node.nextSibling.nextSibling); }
         }
         showImgToolbar(activeImgWrap);
     };
 
+    // 🚨 1. 에디터 팝업에서 [지우기]를 눌렀을 때 (스토리지에서 즉시 영구 삭제)
     window.deleteSelectedImg = function() {
         if(!activeImgWrap) return;
+        
+        var imgUrl = activeImgWrap.find('img').attr('src');
+        if (imgUrl && imgUrl.includes('supabase.co/storage/v1/object/public/images/')) {
+            var fileName = imgUrl.split('/').pop();
+            hasionSupabase.storage.from('images').remove([fileName]); 
+        }
+
         activeImgWrap.remove();
         $('#img-format-toolbar').hide();
         activeImgWrap = null;
     };
 
-    /* 🚨 DB 데이터 무사 귀환 */
     async function loadHasionPosts() {
         var feedContainer = $('#hasion-feed');
         feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
@@ -514,7 +521,8 @@
                     tagsText = parts[1] || "";
                 }
 
-                var displayContent = contentHtml.replace(/```([\s\S]*?)```/g, function(match, innerHtml) {
+                var displayContent = contentHtml.replace(/```([\s\S]*?)
+```/g, function(match, innerHtml) {
                     var temp = document.createElement('div');
                     var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>/gi, '\n').replace(/<\/p>/gi, '\n');
                     temp.innerHTML = formattedHtml;
@@ -593,9 +601,7 @@
             }
 
             setTimeout(() => {
-                $('.custom-html-box script').each(function() {
-                    try { eval($(this).text()); } catch(e) {}
-                });
+                $('.custom-html-box script').each(function() { try { eval($(this).text()); } catch(e) {} });
             }, 100);
 
         } catch (error) {
@@ -700,6 +706,7 @@
         postEl.find('.read-mode').fadeIn(200).css('display', 'block');
     };
 
+    // 🚨 2. 게시물 수정 과정에서 삭제된 '고아 이미지' 추적 후 스토리지 영구 삭제
     window.saveHasionEdit = async function(id) {
         var newTitle = $(`#edit-title-${id}`).val().trim();
         var newContent = $(`#edit-content-${id}`).html().trim();
@@ -711,6 +718,8 @@
         var finalContent = newContent + "|||" + newTags;
 
         try {
+            var { data: oldPost } = await hasionSupabase.from('posts').select('content').eq('id', id).single();
+
             var finalDate = new Date();
             if (newDateStr) {
                 var parts = newDateStr.split('-');
@@ -726,15 +735,36 @@
             }).eq('id', id);
             
             if (error) throw error;
+
+            if (oldPost && oldPost.content) {
+                var oldImages = extractImageNamesFromHtml(oldPost.content);
+                var newImages = extractImageNamesFromHtml(finalContent);
+                var deletedImages = oldImages.filter(img => !newImages.includes(img));
+                if (deletedImages.length > 0) {
+                    await hasionSupabase.storage.from('images').remove(deletedImages);
+                }
+            }
+
             loadHasionPosts();
         } catch (error) { alert('수정에 실패했습니다.'); }
     };
 
+    // 🚨 3. 게시물 전체를 삭제할 때, 글 안에 들어있던 모든 이미지도 스토리지에서 파기
     window.deleteHasionPost = async function(id) {
         if (!confirm("이 기록을 삭제하시겠습니까?")) return;
         try {
+            var { data: postData } = await hasionSupabase.from('posts').select('content').eq('id', id).single();
+
             var { error } = await hasionSupabase.from('posts').delete().eq('id', id);
             if (error) throw error;
+
+            if (postData && postData.content) {
+                var fileNames = extractImageNamesFromHtml(postData.content);
+                if (fileNames.length > 0) {
+                    await hasionSupabase.storage.from('images').remove(fileNames);
+                }
+            }
+
             loadHasionPosts();
         } catch (error) { alert('삭제하지 못했습니다.'); }
     };
