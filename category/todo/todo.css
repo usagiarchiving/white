@@ -7,11 +7,8 @@
 }
 
 .todo-wrapper { font-family: 'Pretendard', sans-serif; font-size: 9px; line-height: 1.6; letter-spacing: -0.015em; color: var(--main-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 50px; width: 100%; }
-
-/* 기본 베이스는 9px 고정 */
 .todo-wrapper div, .todo-wrapper span, .todo-wrapper select, .todo-wrapper button, .todo-wrapper input { font-size: 9px; }
 
-/* 탭 전환 */
 .todo-tab-content { display: none; flex: 1; overflow-y: auto; width: 100%; padding: 15px 0; animation: fadeIn 0.2s ease; }
 .todo-tab-content.active { display: flex; flex-direction: column; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -25,7 +22,6 @@
 .nav-btn { background: none; border: none; font-size: 16px !important; color: var(--sub-color); cursor: pointer; padding: 10px; transition: 0.2s; }
 .nav-btn.active { color: var(--main-color); }
 
-/* 🚨 [수정 3] 퀵 애드 입력창을 11px로 시원하게 */
 .quick-add-bar { display: flex; align-items: center; gap: 8px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; flex-shrink: 0; width: 100%; box-sizing: border-box; }
 .quick-add-input { flex: 1; border: none; background: transparent; color: var(--main-color); font-size: 11px !important; font-weight: 500; }
 .quick-add-select { border: none; background: transparent; color: var(--sub-color); cursor: pointer; appearance: none; -webkit-appearance: none; font-weight: 600; }
@@ -39,26 +35,26 @@
 .quadrant-box { background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; }
 .inbox-area { margin-top: 15px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px; min-height: 80px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; align-items: flex-start; width: 100%; box-sizing: border-box; }
 
-.custom-checkbox {
-    width: 10.5px; height: 10.5px; border-radius: 3px; margin-top: 2px; cursor: pointer;
-    transition: background-color 0.3s ease, border-color 0.3s ease; flex-shrink: 0;
-}
+.custom-checkbox { width: 10.5px; height: 10.5px; border-radius: 3px; margin-top: 2px; cursor: pointer; transition: background-color 0.3s ease, border-color 0.3s ease; flex-shrink: 0; }
 
-.todo-item { 
-    display: flex; flex-direction: column; width: 100%; text-align: left; margin-bottom: 4px; 
-    transition: opacity 0.3s ease, transform 0.3s ease; 
-}
+.todo-item { display: flex; flex-direction: column; width: 100%; text-align: left; margin-bottom: 4px; transition: opacity 0.3s ease, transform 0.3s ease; }
 .todo-item-top { display: flex; align-items: flex-start; gap: 6px; cursor: pointer; width: 100%; }
-
-/* 🚨 [수정 3] 할 일 본문 텍스트는 10px로 확대 적용 */
 .todo-text { flex: 1; word-break: break-all; font-size: 10px !important; line-height: 1.5; transition: opacity 0.3s, text-decoration 0.3s; }
 .todo-meta { display: flex; flex-direction: column; align-items: flex-end; font-size: 8px !important; color: var(--sub-color); opacity: 0.7; }
-
-/* 완료 효과 */
-.todo-item.completed .todo-text,
-.todo-item.completed .todo-meta { opacity: 0.4; text-decoration: line-through; }
+.todo-item.completed .todo-text, .todo-item.completed .todo-meta { opacity: 0.4; text-decoration: line-through; }
 .todo-item.completed .custom-checkbox { opacity: 0.9; }
 
+/* 🚨 하위 할 일 펼침 UI 전용 스타일 */
+.expanded-subtasks {
+    display: flex; flex-direction: column; gap: 4px; margin-top: 6px; margin-left: 18px; width: calc(100% - 18px);
+}
+.exp-subtask-item {
+    display: flex; align-items: flex-start; gap: 6px; font-size: 9px !important; color: var(--sub-color); cursor: pointer; transition: opacity 0.2s;
+}
+.exp-subtask-item.completed { opacity: 0.5; text-decoration: line-through; }
+.exp-subtask-item i { font-size: 10px !important; margin-top: 1.5px; }
+
+/* (매트릭스 등에만 쓰이는) 미니 진행률 바 */
 .todo-subtasks-progress { width: calc(100% - 16px); margin-left: 16px; margin-top: 3px; display: flex; align-items: center; gap: 6px; opacity: 0.8; }
 .progress-bar-bg { flex: 1; height: 3px; background: rgba(0,0,0,0.05); border-radius: 2px; overflow: hidden; display: flex; }
 .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
@@ -68,45 +64,40 @@
 .weekly-strip { display: flex; justify-content: space-between; margin-bottom: 15px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px 10px; width: 100%; box-sizing: border-box;}
 .day-col { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
 .day-name { font-size: 8px !important; color: var(--sub-color); }
-.day-date { font-size: 10px !important; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.2s; border: none; }
-.day-col.is-today .day-date { background: #FDEDF4; color: #D04978; font-weight: bold; }
-.day-col.is-selected:not(.is-today) .day-date { background: rgba(0,0,0,0.05); } 
+.day-date { font-size: 10px !important; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.2s; border: none; position: relative; z-index: 1;}
+
+/* 🚨 캘린더 '오늘' 동그라미 크기 18px로 정밀 축소 (가상 요소 이용) */
+.day-col.is-today .day-date { color: #D04978; font-weight: bold; background: transparent; }
+.day-col.is-today .day-date::before { content: ''; position: absolute; width: 18px; height: 18px; background: #FDEDF4; border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.day-col.is-selected:not(.is-today) .day-date { background: transparent; }
+.day-col.is-selected:not(.is-today) .day-date::before { content: ''; position: absolute; width: 18px; height: 18px; background: rgba(0,0,0,0.05); border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; width: 100%; }
 .cal-day-name { font-size: 8px !important; color: var(--sub-color); margin-bottom: 4px; opacity: 0.5; }
-.cal-day-cell { aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center; font-size: 9px !important; cursor: pointer; border-radius: 50%; border: none; position: relative; }
-.cal-day-cell:hover { background: rgba(0,0,0,0.03); }
-.cal-day-cell.is-today { background: #FDEDF4; color: #D04978; font-weight: bold; }
-.cal-day-cell.is-selected:not(.is-today) { background: rgba(0,0,0,0.05); }
-.cal-day-cell.has-todo::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 3px; height: 3px; background: var(--sub-color); border-radius: 50%; opacity: 0.5; }
 
-/* 🚨 [수정 4] 스르륵 검색창 CSS 엔진 */
+/* 🚨 통계 상세뷰 캘린더 동그라미 축소 완벽 적용 */
+.cal-day-cell { aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center; font-size: 9px !important; cursor: pointer; border-radius: 50%; border: none; position: relative; z-index: 1; background: transparent !important; color: var(--main-color); }
+.cal-day-cell:hover::before { content: ''; position: absolute; width: 18px; height: 18px; background: rgba(0,0,0,0.03); border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.cal-day-cell.is-today { color: #D04978; font-weight: bold; }
+.cal-day-cell.is-today::before { content: ''; position: absolute; width: 18px; height: 18px; background: #FDEDF4; border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.cal-day-cell.is-selected:not(.is-today)::before { content: ''; position: absolute; width: 18px; height: 18px; background: rgba(0,0,0,0.05); border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+/* 색상이 칠해진 통계 셀에 대한 오버라이드 */
+.cal-day-cell.stats-colored { color: #fff; font-weight: bold; }
+.cal-day-cell.stats-colored::before { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%); background: inherit; opacity: inherit; }
+
+/* 스르륵 검색창 */
 .search-inner { position: relative; display: flex; align-items: center; }
-.todo-search-input {
-    background: transparent; border: none; border-bottom: 1px solid transparent;
-    color: var(--main-color); font-family: inherit; font-size: 10px !important;
-    outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0; text-align: right;
-    transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s, border-color 0.4s;
-}
-.todo-search-icon {
-    position: absolute; right: 0; color: var(--sub-color); opacity: 0.35;
-    cursor: pointer; font-size: 13px !important; transition: opacity 0.3s; z-index: 10;
-}
+.todo-search-input { background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--main-color); font-family: inherit; font-size: 10px !important; outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0; text-align: right; transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s, border-color 0.4s; }
+.todo-search-icon { position: absolute; right: 0; color: var(--sub-color); opacity: 0.35; cursor: pointer; font-size: 13px !important; transition: opacity 0.3s; z-index: 10; }
 .todo-search-icon:hover { opacity: 0.7; }
 
-/* 통계 화면 및 미니 데이 숫자 표기 */
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; }
 @media (min-width: 600px) { .stats-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
 .stats-card { background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 15px 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.015); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .stats-card-title { font-size: 14px !important; }
 .mini-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; width: 100%; }
-
-/* 🚨 [수정 1] 미니 데이(통계 박스) 안에 하얀색 숫자 렌더링을 위한 정렬 */
-.mini-day { 
-    aspect-ratio: 1/1; border-radius: 2px; background: rgba(0,0,0,0.03); 
-    transition: background 0.2s; 
-    display: flex; align-items: center; justify-content: center; 
-    font-size: 7.5px !important; color: #fff; font-weight: bold; 
-}
+.mini-day { aspect-ratio: 1/1; border-radius: 2px; background: rgba(0,0,0,0.03); transition: background 0.2s; display: flex; align-items: center; justify-content: center; font-size: 7.5px !important; color: #fff; font-weight: bold; }
 .stats-card-total { font-size: 10px !important; color: var(--main-color); font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
 .sd-summary-row { display: flex; gap: 10px; margin-bottom: 20px; }
 .sd-summary-box { flex: 1; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 15px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
@@ -120,7 +111,6 @@
 .sd-bar-label { font-size: 8px !important; color: var(--sub-color); margin-top: 6px; }
 .sd-bar-val { position: absolute; top: -14px; width: 100%; text-align: center; font-size: 8px !important; font-weight: bold; color: var(--main-color); }
 
-/* 팝업/모달 디자인 (텍스트 강제 9px 좌측 정렬) */
 .todo-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.25); z-index: 20000; align-items: center; justify-content: center; padding: 20px; }
 .color-palette { display: none; position: absolute; top: calc(100% + 8px); left: 0; background: var(--back-color); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 8px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 2000; flex-wrap: nowrap; width: max-content; gap: 10px; align-items: center; overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
 .color-palette::-webkit-scrollbar { display: none; }
@@ -128,11 +118,8 @@
 .color-palette button:hover { transform: scale(1.15); }
 .detail-modal-card { background: var(--back-color); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 20px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); position: relative; }
 
-/* 🚨 팝업 내부 정렬 및 폰트 통일 */
 .modal-input-row { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; position: relative; width: 100%; }
 .modal-label { color: var(--sub-color); font-size: 9px !important; width: 30px; display: inline-block; }
-
-/* 🚨 [수정 3] 제목 입력칸 14px로 큼직하게 적용 */
 #dm-input { font-size: 14px !important; text-align: left !important; }
 .modal-input { flex: 1; border: none; background: transparent; color: var(--main-color); font-size: 9px !important; text-align: left !important; }
 
@@ -141,7 +128,6 @@
 .modal-footer { display: flex; align-items: center; margin-top: 10px; }
 .modal-btn { background: none; border: none; font-weight: 600; cursor: pointer; padding: 6px; font-size: 9px !important; }
 
-/* 🚨 [수정 3] 하위 할 일 텍스트 10px 확대 적용 */
 .modal-subtask-item { display: flex; align-items: flex-start; gap: 6px; width: 100%; margin-bottom: 2px; }
 .modal-subtask-text { flex: 1; font-size: 10px !important; color: var(--main-color); outline: none; border: none; background: transparent; line-height: 1.5; text-align: left !important; }
 .modal-subtask-text.completed { text-decoration: line-through; opacity: 0.4; }
