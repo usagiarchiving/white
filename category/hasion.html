@@ -94,67 +94,50 @@
     /* ==========================================================================
        [피드 영역 & HTML 라이브 렌더링 박스 방어막]
        ========================================================================== */
-    .feed-item {
-        width: 100%; max-width: 100%; box-sizing: border-box;
-    }
-    
+    .feed-item { width: 100%; max-width: 100%; box-sizing: border-box; }
     .feed-text {
         width: 100%; max-width: 100%; box-sizing: border-box;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; line-height: 1.8; 
         word-break: break-all; word-wrap: break-word; font-size: 13px; white-space: pre-wrap; 
     }
-
-    .feed-text div, .feed-text p {
-        font-size: 13px;
-        line-height: 1.8;
-        margin: 0; padding: 0;
-    }
-
-    .feed-text img, .custom-html-box img {
-        max-width: 100% !important; height: auto !important; box-sizing: border-box;
-    }
+    .feed-text div, .feed-text p { font-size: 13px; line-height: 1.8; margin: 0; padding: 0; }
+    .feed-text img, .custom-html-box img { max-width: 100% !important; height: auto !important; box-sizing: border-box; }
 
     .custom-html-box {
         width: 100%; box-sizing: border-box; margin: 10px 0;
-        white-space: normal !important; 
-        line-height: normal !important; 
-        letter-spacing: normal !important;
-        word-break: normal !important;
-        word-wrap: normal !important;
-        overflow: visible !important; 
+        white-space: normal !important; line-height: normal !important; 
+        letter-spacing: normal !important; word-break: normal !important;
+        word-wrap: normal !important; overflow: visible !important; 
     }
     .custom-html-box * { box-sizing: border-box; }
     .custom-html-box svg { display: block !important; }
 
     /* ==========================================================================
-       [에디터 인라인 이미지 규격 및 읽기 모드 유리막 제거]
+       [🚨 에디터 인라인 이미지 규격 (완벽한 자동 양옆 정렬)]
        ========================================================================== */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
-        margin: 0 0 6px 0; 
-        cursor: pointer; transition: width 0.2s ease;
+        margin: 0 0 6px 0; cursor: pointer; transition: width 0.25s ease;
+        box-sizing: border-box;
     }
-    .img-full { width: 100%; }
-    .img-half { width: 49%; margin-right: 1%; }
-    .img-third { width: 32%; margin-right: 1%; }
+    
+    /* 정확한 퍼센테이지로 브라우저 렌더링 여백을 완벽하게 무시합니다 */
+    .img-full { width: 100%; display: block; }
+    .img-half { width: 48.5%; display: inline-block; margin-right: 1.5%; }
+    .img-third { width: 32%; display: inline-block; margin-right: 1.33%; }
     
     .editor-img-wrap img {
         width: 100%; height: auto; display: block; border-radius: 4px;
         border: 1px solid var(--divider-bg); pointer-events: none;
     }
-
-    /* 읽기 모드에서는 이미지 우클릭 및 팝업 띄우기 완벽 허용 */
-    .read-mode .editor-img-wrap img {
-        pointer-events: auto;
-        cursor: pointer;
-        -webkit-touch-callout: default;
+    
+    .read-mode .editor-img-wrap img { 
+        pointer-events: auto; cursor: pointer; -webkit-touch-callout: default; 
     }
-
-    /* 기존의 작고 불편했던 삭제 버튼은 CSS로 숨기고 팝업에서 통합 관리 */
     .img-del-btn { display: none !important; }
 
     /* ==========================================================================
-       [원본 보기 라이트박스 팝업 (신규 추가)]
+       [원본 보기 라이트박스 팝업]
        ========================================================================== */
     .hasion-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -168,60 +151,47 @@
     @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     /* ==========================================================================
-       [사진 조율 팝업 UI (신규 추가)]
+       [🚨 수정된 미니멀 & 감성 디자인의 사진 조율 팝업]
        ========================================================================== */
     .img-setting-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-        z-index: 99999; display: none; align-items: center; justify-content: center; opacity: 0;
+        background: transparent; /* 배경을 완전히 투명하게 해서 이미지가 잘 보이게 함 */
+        z-index: 99999; display: none; align-items: flex-end; justify-content: center; opacity: 0;
+        padding-bottom: 40px; /* 화면 중앙보다 살짝 아래에 떠오르게 */
         transition: opacity 0.2s ease;
     }
     .img-setting-card {
-        background: rgba(255, 255, 255, 0.95); width: 90%; max-width: 320px; 
-        border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
-        border: 1px solid var(--divider-bg); overflow: hidden; transform: scale(0.95);
-        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        background: rgba(255, 255, 255, 0.85); 
+        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        padding: 12px 15px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+        border: 1px solid rgba(0,0,0,0.05); transform: translateY(15px);
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex; flex-direction: column; gap: 8px; width: max-content;
     }
     .img-setting-overlay.active { opacity: 1; display: flex; }
-    .img-setting-overlay.active .img-setting-card { transform: scale(1); }
+    .img-setting-overlay.active .img-setting-card { transform: translateY(0); }
 
-    .img-setting-header {
-        padding: 16px 20px; border-bottom: 1px solid var(--divider-bg);
-        display: flex; justify-content: space-between; align-items: center;
-        font-family: 'Noto Serif KR', serif; font-size: 13.5px; font-weight: 600; color: var(--main-color);
-    }
-    .img-setting-header i { cursor: pointer; color: var(--sub-color); font-size: 16px; transition: color 0.2s; }
-    .img-setting-header i:hover { color: var(--point-color); }
-
-    .img-setting-body { padding: 20px; }
-    
-    .setting-group-title {
-        font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--sub-color); 
-        margin-bottom: 10px; padding-left: 2px;
-    }
-    .setting-row { display: flex; gap: 8px; margin-bottom: 22px; }
-    .setting-row:last-child { margin-bottom: 0; }
+    .setting-row { display: flex; gap: 6px; justify-content: center; }
     
     .setting-btn {
-        flex: 1; padding: 12px 6px; border: 1px solid var(--divider-bg);
-        background: rgba(0,0,0,0.01); border-radius: 8px; color: var(--main-color);
-        font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;
-        transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 8px;
+        padding: 8px 12px; border: none; background: rgba(0,0,0,0.03); 
+        border-radius: 8px; color: var(--main-color);
+        font-family: 'Noto Serif KR', serif; font-size: 11.5px; cursor: pointer;
+        transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
-    .setting-btn i { font-size: 18px; color: var(--point-color); transition: transform 0.2s; }
-    .setting-btn:hover { border-color: var(--point-color); background: rgba(0,0,0,0.03); }
+    .setting-btn i { font-size: 15px; color: var(--point-color); transition: transform 0.2s; }
+    .setting-btn:hover { background: rgba(0,0,0,0.08); }
     .setting-btn:hover i { transform: scale(1.1); }
     
-    .setting-btn.btn-delete { border-color: rgba(255,59,48,0.2); color: #ff3b30; }
     .setting-btn.btn-delete i { color: #ff3b30; }
-    .setting-btn.btn-delete:hover { background: rgba(255,59,48,0.05); }
+    .setting-btn.btn-delete:hover { background: rgba(255,59,48,0.1); color: #ff3b30; }
 
-    /* 드래그 툴바 */
+    /* 드래그 툴바 등 나머지 기존 설정... */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
         border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
-        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999; align-items: center; gap: 4px; 
+        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
     }
     .format-toolbar button { background: none; border: none; color: var(--main-color); font-size: 14px; cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
     .format-toolbar button:hover { background: rgba(0,0,0,0.05); }
@@ -233,18 +203,9 @@
     .color-btn { font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px; }
     .btn-mint { color: #0E865E !important; background: #E1F9F1 !important; }
     .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
+    #fontSizeInput::-webkit-outer-spin-button, #fontSizeInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-    /* 숫자 입력 화살표 숨김 */
-    #fontSizeInput::-webkit-outer-spin-button,
-    #fontSizeInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-    /* 리스트 디자인 (아코디언) */
-    .hasion-accordion-header {
-        font-size: 13.5px; font-family: 'Noto Serif KR', serif; font-weight: normal; 
-        color: var(--main-color); cursor: pointer; padding: 12px 0 6px 0; 
-        border-bottom: 1px solid var(--divider-bg); transition: color 0.3s ease;
-        display: flex; align-items: center; justify-content: space-between;
-    }
+    .hasion-accordion-header { font-size: 13.5px; font-family: 'Noto Serif KR', serif; font-weight: normal; color: var(--main-color); cursor: pointer; padding: 12px 0 6px 0; border-bottom: 1px solid var(--divider-bg); transition: color 0.3s ease; display: flex; align-items: center; justify-content: space-between; }
     .hasion-accordion-header.open { color: var(--point-color); border-bottom-color: transparent; }
     .hasion-accordion-header:hover { color: var(--point-color); }
     .hasion-accordion-body { display: none; padding: 15px 0 30px 0; border-bottom: 1px solid var(--divider-bg); }
@@ -275,7 +236,6 @@
 </div>
 
 <div class="hasion-wrapper">
-    
     <div class="search-wrapper">
         <i class="xi-tags" id="tags-toggle-btn" title="태그 모음 열기"></i>
         <div class="search-inner">
@@ -283,7 +243,6 @@
             <i class="xi-search" id="search-icon" title="Search"></i>
         </div>
     </div>
-    
     <div id="tags-panel"></div>
 
     <input type="text" id="hasion-title" class="hasion-title-input" autocomplete="off" placeholder="title">
@@ -313,48 +272,39 @@
     <div class="feed-container" id="hasion-feed"></div>
 </div>
 
+<!-- 원본 보기 라이트박스 -->
 <div id="hasion-lightbox" class="hasion-lightbox" onclick="closeHasionLightbox()">
     <img id="hasion-lightbox-img" src="" onclick="event.stopPropagation()">
 </div>
 
+<!-- 🚨 사진 조율 미니멀 팝업 툴바 -->
 <div id="img-setting-modal" class="img-setting-overlay" onclick="if(event.target === this) closeImgSettingModal()">
     <div class="img-setting-card">
-        <div class="img-setting-header">
-            <span>사진 조율</span>
-            <i class="xi-close" onclick="closeImgSettingModal()"></i>
+        
+        <div class="setting-row">
+            <button class="setting-btn" onclick="setImgLayout('img-full')" title="가득 채우기">
+                <i class="xi-view-stream"></i> 꽉 차게
+            </button>
+            <button class="setting-btn" onclick="setImgLayout('img-half')" title="나란히 두기">
+                <i class="xi-view-column"></i> 나란히
+            </button>
+            <button class="setting-btn" onclick="setImgLayout('img-third')" title="옹기종기 모으기">
+                <i class="xi-apps"></i> 옹기종기
+            </button>
         </div>
-        <div class="img-setting-body">
-            
-            <div class="setting-group-title">배치 모양</div>
-            <div class="setting-row">
-                <button class="setting-btn" onclick="setImgLayout('img-full')">
-                    <i class="xi-view-stream"></i>가득 채우기
-                </button>
-                <button class="setting-btn" onclick="setImgLayout('img-half')">
-                    <i class="xi-view-column"></i>나란히 두기
-                </button>
-                <button class="setting-btn" onclick="setImgLayout('img-third')">
-                    <i class="xi-apps"></i>옹기종기 모으기
-                </button>
-            </div>
 
-            <div class="setting-group-title">순서 이동</div>
-            <div class="setting-row">
-                <button class="setting-btn" onclick="moveImgOrder('up')">
-                    <i class="xi-arrow-up"></i>위로 한 칸
-                </button>
-                <button class="setting-btn" onclick="moveImgOrder('down')">
-                    <i class="xi-arrow-down"></i>아래로 한 칸
-                </button>
-            </div>
-
-            <div class="setting-row" style="margin-top: 30px;">
-                <button class="setting-btn btn-delete" onclick="deleteSelectedImg()" style="flex-direction: row; justify-content: center;">
-                    <i class="xi-trash-o"></i> 이 조각 지우기
-                </button>
-            </div>
-
+        <div class="setting-row">
+            <button class="setting-btn" onclick="moveImgOrder('up')">
+                <i class="xi-arrow-up"></i> 위로
+            </button>
+            <button class="setting-btn" onclick="moveImgOrder('down')">
+                <i class="xi-arrow-down"></i> 아래로
+            </button>
+            <button class="setting-btn btn-delete" onclick="deleteSelectedImg()">
+                <i class="xi-trash-o"></i> 지우기
+            </button>
         </div>
+
     </div>
 </div>
 
@@ -363,186 +313,85 @@
     var HASION_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YWx4cXVqY2V1aGZzaGF0aWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzg3MTksImV4cCI6MjA5NzIxNDcxOX0.6ZabNquhVkOnboWyQPSybP6S5S5iGjjYcpspcLM0vr0';
     var hasionSupabase = window.supabase.createClient(HASION_URL, HASION_KEY);
 
-    /* --- [에디터 & 툴바 로직] --- */
     var savedSelectionRange = null;
-    window.saveSelection = function() {
-        var selection = window.getSelection();
-        if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0);
-    };
-
-    window.applyCustomColor = function(command, color) {
-        if (savedSelectionRange) {
-            var selection = window.getSelection();
-            selection.removeAllRanges(); selection.addRange(savedSelectionRange);
-        }
-        document.execCommand(command, false, color); checkSelection();
-    };
-
-    window.applyExactFontSize = function(size) {
-        if (savedSelectionRange) {
-            var selection = window.getSelection();
-            selection.removeAllRanges(); selection.addRange(savedSelectionRange);
-        } else {
-            var editor = document.activeElement;
-            if(!editor || editor.getAttribute('contenteditable') !== 'true') return;
-        }
-        
-        document.execCommand("fontSize", false, "7"); 
-        var fontElements = document.getElementsByTagName("font");
-        for (var i = 0; i < fontElements.length; i++) {
-            if (fontElements[i].size == "7") {
-                fontElements[i].removeAttribute("size");
-                fontElements[i].style.fontSize = size + "px"; 
-            }
-        }
-        checkSelection();
-    };
-
-    window.adjustFontSize = function(delta) {
-        var input = document.getElementById('fontSizeInput');
-        var currentSize = parseInt(input.value) || 13;
-        var newSize = currentSize + delta;
-        if(newSize < 8) newSize = 8;
-        if(newSize > 72) newSize = 72;
-        input.value = newSize;
-        applyExactFontSize(newSize);
-    };
+    window.saveSelection = function() { var selection = window.getSelection(); if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0); };
+    window.applyCustomColor = function(command, color) { if (savedSelectionRange) { var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } document.execCommand(command, false, color); checkSelection(); };
+    window.applyExactFontSize = function(size) { if (savedSelectionRange) { var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } else { var editor = document.activeElement; if(!editor || editor.getAttribute('contenteditable') !== 'true') return; } document.execCommand("fontSize", false, "7"); var fontElements = document.getElementsByTagName("font"); for (var i = 0; i < fontElements.length; i++) { if (fontElements[i].size == "7") { fontElements[i].removeAttribute("size"); fontElements[i].style.fontSize = size + "px"; } } checkSelection(); };
+    window.adjustFontSize = function(delta) { var input = document.getElementById('fontSizeInput'); var currentSize = parseInt(input.value) || 13; var newSize = currentSize + delta; if(newSize < 8) newSize = 8; if(newSize > 72) newSize = 72; input.value = newSize; applyExactFontSize(newSize); };
 
     function checkSelection() {
         setTimeout(() => {
             var selection = window.getSelection();
             var toolbar = document.getElementById('format-toolbar');
             if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-                var node = selection.anchorNode;
-                var isInsideEditor = false;
-                while (node) {
-                    if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') { isInsideEditor = true; break; }
-                    node = node.parentNode;
-                }
+                var node = selection.anchorNode; var isInsideEditor = false;
+                while (node) { if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') { isInsideEditor = true; break; } node = node.parentNode; }
                 if (isInsideEditor) {
-                    var range = selection.getRangeAt(0);
-                    var rect = range.getBoundingClientRect();
+                    var range = selection.getRangeAt(0); var rect = range.getBoundingClientRect();
                     toolbar.style.display = 'flex';
                     var top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
                     var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
-                    if (top < window.scrollY) top = rect.bottom + window.scrollY + 8;
-                    if (left < 10) left = 10;
+                    if (top < window.scrollY) top = rect.bottom + window.scrollY + 8; if (left < 10) left = 10;
                     toolbar.style.top = top + 'px'; toolbar.style.left = left + 'px';
                 } else { toolbar.style.display = 'none'; }
             } else { toolbar.style.display = 'none'; }
         }, 100);
     }
-    document.addEventListener('selectionchange', checkSelection);
-    document.addEventListener('mouseup', checkSelection);
-    document.addEventListener('touchend', checkSelection);
-
+    document.addEventListener('selectionchange', checkSelection); document.addEventListener('mouseup', checkSelection); document.addEventListener('touchend', checkSelection);
     window.formatText = function(command, value = null) { document.execCommand(command, false, value); checkSelection(); };
     window.applyColor = function(textColor, bgColor) { document.execCommand('foreColor', false, textColor); document.execCommand('backColor', false, bgColor); checkSelection(); };
 
     function setDefaultDate() {
-        var today = new Date();
-        var yyyy = today.getFullYear();
-        var mm = String(today.getMonth() + 1).padStart(2, '0');
-        var dd = String(today.getDate()).padStart(2, '0');
+        var today = new Date(); var yyyy = today.getFullYear(); var mm = String(today.getMonth() + 1).padStart(2, '0'); var dd = String(today.getDate()).padStart(2, '0');
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
     }
 
-    /* 🚨 [압축 기능 복구] */
     window.compressImage = async function(file, qualityType) {
         if (qualityType === 'original' || file.type === 'image/gif') return file;
-
         return new Promise((resolve) => {
-            var reader = new FileReader();
-            reader.readAsDataURL(file);
+            var reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = function(event) {
-                var img = new Image();
-                img.src = event.target.result;
+                var img = new Image(); img.src = event.target.result;
                 img.onload = function() {
-                    var maxWidth, quality;
-                    if (qualityType === 'high') {
-                        maxWidth = 1920; 
-                        quality = 0.8;
-                    } else {
-                        maxWidth = 1080;
-                        quality = 0.6;
-                    }
-
-                    var width = img.width;
-                    var height = img.height;
-
+                    var maxWidth = qualityType === 'high' ? 1920 : 1080;
+                    var quality = qualityType === 'high' ? 0.8 : 0.6;
+                    var width = img.width; var height = img.height;
                     if (width > maxWidth || height > maxWidth) {
-                        if (width > height) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        } else {
-                            width = Math.round((width * maxWidth) / height);
-                            height = maxWidth;
-                        }
+                        if (width > height) { height = Math.round((height * maxWidth) / width); width = maxWidth; } 
+                        else { width = Math.round((width * maxWidth) / height); height = maxWidth; }
                     }
-
-                    var canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    var ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    var outType = 'image/jpeg';
-                    var ext = '.jpg';
-                    if (file.type === 'image/png' || file.type === 'image/webp') {
-                        outType = 'image/webp';
-                        ext = '.webp';
-                    }
-
-                    canvas.toBlob((blob) => {
-                        var newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, {
-                            type: outType,
-                            lastModified: file.lastModified 
-                        });
-                        resolve(newFile);
-                    }, outType, quality);
+                    var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+                    var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                    var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
+                    var ext = (outType === 'image/webp') ? '.webp' : '.jpg';
+                    canvas.toBlob((blob) => { resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, { type: outType, lastModified: file.lastModified })); }, outType, quality);
                 };
             };
         });
     };
 
     $('#hasion-file-input').on('change', async function(e) {
-        var files = Array.from(e.target.files);
-        if(!files.length) return;
-        
+        var files = Array.from(e.target.files); if(!files.length) return;
         var firstDate = new Date(files[0].lastModified);
-        var yyyy = firstDate.getFullYear();
-        var mm = String(firstDate.getMonth()+1).padStart(2, '0');
-        var dd = String(firstDate.getDate()).padStart(2, '0');
+        var yyyy = firstDate.getFullYear(); var mm = String(firstDate.getMonth()+1).padStart(2, '0'); var dd = String(firstDate.getDate()).padStart(2, '0');
         $('#hasion-date-picker').val(`${yyyy}-${mm}-${dd}`);
         
-        $('#submit-btn').prop('disabled', true).css('opacity', '0.3');
-        $('.hasion-img-add-btn').css('opacity', '0.3');
-        
+        $('#submit-btn').prop('disabled', true).css('opacity', '0.3'); $('.hasion-img-add-btn').css('opacity', '0.3');
         var qualityOption = $('#img-quality').val() || 'high';
         var allImgHtml = '';
 
         for(var file of files) {
             var processedFile = await compressImage(file, qualityOption);
-            
             var fileExt = processedFile.name.split('.').pop();
             var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
             var { error } = await hasionSupabase.storage.from('images').upload(fileName, processedFile);
-            
             if(!error) {
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
-                /* 🚨 드래그 앤 드롭 및 인라인 삭제 버튼 제거, 팝업 조율을 위한 깔끔한 구조 */
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
             }
         }
-        
-        if(allImgHtml !== '') {
-            $('#hasion-content').focus();
-            document.execCommand('insertHTML', false, allImgHtml);
-        }
-        
-        $('#submit-btn').prop('disabled', false).css('opacity', '0.7');
-        $('.hasion-img-add-btn').css('opacity', '1');
-        $(this).val('');
+        if(allImgHtml !== '') { $('#hasion-content').focus(); document.execCommand('insertHTML', false, allImgHtml); }
+        $('#submit-btn').prop('disabled', false).css('opacity', '0.7'); $('.hasion-img-add-btn').css('opacity', '1'); $(this).val('');
     });
 
     /* ==========================================================================
@@ -550,7 +399,6 @@
        ========================================================================== */
     var activeImgWrap = null;
 
-    // 1. 에디터(작성/수정 모드)에서 사진 클릭 시 조율 팝업 열기
     $(document).on('click', '.hasion-editor .editor-img-wrap', function(e) {
         if ($(this).closest('.read-mode').length > 0) return; 
         e.preventDefault();
@@ -558,7 +406,6 @@
         $('#img-setting-modal').addClass('active');
     });
 
-    // 2. 피드(읽기 모드)에서 사진 클릭 시 원본 보기 라이트박스 열기
     $(document).on('click', '.read-mode .editor-img-wrap img', function(e) {
         e.stopPropagation();
         $('#hasion-lightbox-img').attr('src', $(this).attr('src'));
@@ -580,17 +427,19 @@
         closeImgSettingModal();
     };
 
+    /* 🚨 [수정된 위/아래 이동 엔진] 빈 띄어쓰기를 정확하게 무시하고 블록을 건너뜁니다 */
     window.moveImgOrder = function(dir) {
         if(!activeImgWrap) return;
-        var node = activeImgWrap[0];
         
         if (dir === 'up') {
-            if (node.previousSibling) {
-                node.parentNode.insertBefore(node, node.previousSibling);
+            var prevElem = activeImgWrap.prev();
+            if (prevElem.length > 0) {
+                activeImgWrap.insertBefore(prevElem);
             }
         } else if (dir === 'down') {
-            if (node.nextSibling) {
-                node.parentNode.insertBefore(node, node.nextSibling.nextSibling);
+            var nextElem = activeImgWrap.next();
+            if (nextElem.length > 0) {
+                activeImgWrap.insertAfter(nextElem);
             }
         }
     };
@@ -641,8 +490,8 @@
                     tagsText = parts[1] || "";
                 }
 
-                /* 🚨 에러가 발생했던 구문을 안전하고 가독성 좋게 복구했습니다. */
-                var displayContent = contentHtml.replace(/```([\s\S]*?)```/g, function(match, innerHtml) {
+                var displayContent = contentHtml.replace(/```([\s\S]*?)
+```/g, function(match, innerHtml) {
                     var temp = document.createElement('div');
                     var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n')
                                                  .replace(/<\/div>/gi, '\n')
@@ -650,10 +499,7 @@
                     temp.innerHTML = formattedHtml;
                     var rawCode = temp.textContent || temp.innerText || "";
                     
-                    rawCode = rawCode.replace(/\u00A0/g, ' ')
-                                     .replace(/>\s+</g, '><')
-                                     .trim();
-                    
+                    rawCode = rawCode.replace(/\u00A0/g, ' ').replace(/>\s+</g, '><').trim();
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
 
@@ -697,13 +543,11 @@
                                     <input type="date" id="edit-date-${post.id}" value="${inputDate}" style="width: 110px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
                                     
                                     <div style="display: flex; gap: 12px; align-items: center;" id="edit-actions-${post.id}">
-                                        
                                         <select id="edit-img-quality-${post.id}" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
                                             <option value="original">원본</option>
                                             <option value="high" selected>고화질</option>
                                             <option value="low">저화질</option>
                                         </select>
-
                                         <label for="edit-file-${post.id}" class="hasion-img-add-btn" style="margin:0; font-size:16px;" title="사진 추가"><i class="xi-image-o"></i></label>
                                         <input type="file" id="edit-file-${post.id}" accept="image/*" multiple style="display:none;" onchange="uploadEditImages(${post.id}, this)">
                                         <button onclick="saveHasionEdit(${post.id})" style="background:none; border:none; color:var(--point-color); font-size: 11.5px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">저장</button>
@@ -725,9 +569,7 @@
             }
 
             setTimeout(() => {
-                $('.custom-html-box script').each(function() {
-                    try { eval($(this).text()); } catch(e) {}
-                });
+                $('.custom-html-box script').each(function() { try { eval($(this).text()); } catch(e) {} });
             }, 100);
 
         } catch (error) {
@@ -754,7 +596,6 @@
 
         for(var file of files) {
             var processedFile = await compressImage(file, qualityOption);
-
             var fileExt = processedFile.name.split('.').pop();
             var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
             var { error } = await hasionSupabase.storage.from('images').upload(fileName, processedFile);
