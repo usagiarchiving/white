@@ -1,80 +1,199 @@
-<!-- ==========================================================================
-         [추가] 글쓰기 & 수정 팝업창 (반투명 블러 모달)
-         ========================================================================== -->
-    <div id="record-lightbox" class="record-lightbox" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 20000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;" onclick="if(event.target === this) closeRecordModal()">
+/* 파일명: category/record/record.js */
+
+// ==========================================================================
+// 1. 데이터베이스 및 API 키 세팅
+// ==========================================================================
+var RECORD_URL = 'https://yjjxlklzgcfwwcunmrht.supabase.co';
+var RECORD_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlqanhsa2x6Z2Nmd3djdW5tcmh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU2NjgsImV4cCI6MjA5NzM4MTY2OH0.NYZ6zJZS0zHPqBde9plZD1IK7GZyk07F9jEF7wI55Y8';
+var recordSupabase = window.supabase.createClient(RECORD_URL, RECORD_KEY);
+
+const TMDB_API_KEY = 'd6224997a8f1d896b0244b268bcefd54'; 
+const KAKAO_REST_KEY = '261889b87c5bf523ddd8846c0c45ec2e';
+
+var recordSelectedFile = null; // 수동 업로드 이미지 보관용
+
+// ==========================================================================
+// 2. 탭 메뉴 스위칭 로직
+// ==========================================================================
+window.switchRecordTab = function(tabName, btn) {
+    document.querySelectorAll('.record-tab-content').forEach(function(el) {
+        el.classList.remove('active');
+    });
+    document.getElementById('record-tab-' + tabName).classList.add('active');
+    
+    document.querySelectorAll('.record-bottom-nav .nav-btn').forEach(function(el) {
+        el.classList.remove('active');
+    });
+    btn.classList.add('active');
+};
+
+// ==========================================================================
+// 3. 글쓰기 팝업(모달) 제어 로직
+// ==========================================================================
+function setRecordDefaultDate() {
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById('modal-date-picker').value = `${yyyy}-${mm}-${dd}`;
+}
+
+document.getElementById('btn-add-record').addEventListener('click', function() {
+    document.getElementById('modal-title').value = '';
+    document.getElementById('modal-release-year').value = '';
+    document.getElementById('modal-creator').value = '';
+    document.getElementById('modal-nth').value = '';
+    document.getElementById('modal-oneliner').value = '';
+    document.getElementById('modal-rating').value = '';
+    document.getElementById('modal-content').innerHTML = '';
+    document.getElementById('modal-is-main').checked = false;
+    document.getElementById('record-cover-url').value = '';
+    removeRecordPreview();
+    setRecordDefaultDate();
+
+    document.getElementById('record-lightbox').style.display = 'flex';
+});
+
+window.closeRecordModal = function() {
+    document.getElementById('record-lightbox').style.display = 'none';
+};
+
+// ==========================================================================
+// 4. 수동 이미지 업로드 미리보기 로직
+// ==========================================================================
+document.getElementById('record-file-input').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    
+    recordSelectedFile = file;
+    var reader = new FileReader();
+    reader.onload = function(event) {
+        document.getElementById('record-image-preview').src = event.target.result;
+        document.getElementById('record-preview-wrap').style.display = 'block';
+    }
+    reader.readAsDataURL(file);
+});
+
+window.removeRecordPreview = function() {
+    recordSelectedFile = null;
+    document.getElementById('record-file-input').value = '';
+    document.getElementById('record-cover-url').value = ''; 
+    document.getElementById('record-preview-wrap').style.display = 'none';
+    document.getElementById('record-image-preview').src = '';
+};
+
+// ==========================================================================
+// 5. Open API 연동 로직 (TMDB & Kakao 자동 검색)
+// ==========================================================================
+document.getElementById('btn-api-search').addEventListener('click', function(e) {
+    e.preventDefault();
+    var category = document.getElementById('modal-category').value;
+    
+    if (!['movie', 'drama', 'book'].includes(category)) {
+        alert("현재 자동 불러오기는 '영화, 드라마, 책' 카테고리만 지원합니다. 직접 입력해주세요!");
+        return;
+    }
+    
+    document.getElementById('api-search-input').value = document.getElementById('modal-title').value; 
+    document.getElementById('api-search-results').innerHTML = '<p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 20px;">엔터키를 눌러 검색하세요.</p>';
+    document.getElementById('api-search-modal').style.display = 'flex';
+    document.getElementById('api-search-input').focus();
+});
+
+document.getElementById('api-search-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        executeApiSearch();
+    }
+});
+
+async function executeApiSearch() {
+    var query = document.getElementById('api-search-input').value.trim();
+    if (!query) return;
+    
+    var category = document.getElementById('modal-category').value;
+    var resultsContainer = document.getElementById('api-search-results');
+    resultsContainer.innerHTML = '<p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 20px;">검색 중...</p>';
+    
+    try {
+        var results = [];
         
-        <div class="record-lightbox-card" style="background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 8px; padding: 30px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px; box-sizing: border-box; animation: fadeIn 0.3s ease;">
+        if (category === 'movie' || category === 'drama') {
+            // [TMDB 검색 엔진]
+            var type = category === 'movie' ? 'movie' : 'tv';
+            var res = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${TMDB_API_KEY}&language=ko-KR&query=${encodeURIComponent(query)}`);
+            var data = await res.json();
             
-            <!-- 상단: 닫기 버튼 및 이미지/API 버튼 -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <!-- 수동 이미지 업로드 버튼 -->
-                    <label for="record-file-input" style="cursor: pointer; color: var(--sub-color); font-size: 18px; transition: 0.2s;" onmouseover="this.style.color='var(--point-color)'" onmouseout="this.style.color='var(--sub-color)'" title="수정/수동 이미지 업로드"><i class="xi-image-o"></i></label>
-                    <input type="file" id="record-file-input" accept="image/*" style="display: none;">
-                    
-                    <!-- API 검색 버튼 (다음 단계에서 연결) -->
-                    <button id="btn-api-search" style="background: none; border: 1px solid var(--divider-bg); border-radius: 12px; padding: 4px 10px; font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--main-color); cursor: pointer; transition: 0.2s;"><i class="xi-search"></i> 작품 정보 자동 불러오기</button>
+            results = data.results.slice(0, 10).map(item => ({
+                title: item.title || item.name,
+                year: (item.release_date || item.first_air_date || '').substring(0, 4),
+                poster: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : '',
+                creator: 'TMDB 정보' 
+            }));
+            
+        } else if (category === 'book') {
+            // [카카오 책 검색 엔진]
+            var res = await fetch(`https://dapi.kakao.com/v3/search/book?query=${encodeURIComponent(query)}&size=10`, {
+                headers: { 'Authorization': `KakaoAK ${KAKAO_REST_KEY}` }
+            });
+            var data = await res.json();
+            
+            results = data.documents.map(item => ({
+                title: item.title,
+                year: item.datetime ? item.datetime.substring(0, 4) : '',
+                poster: item.thumbnail,
+                creator: item.authors.join(', ') 
+            }));
+        }
+
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 20px;">검색 결과가 없습니다.</p>';
+            return;
+        }
+
+        resultsContainer.innerHTML = ''; 
+        results.forEach(item => {
+            var div = document.createElement('div');
+            div.style.cssText = 'display: flex; gap: 12px; align-items: center; padding: 8px; border-radius: 6px; cursor: pointer; transition: background 0.2s;';
+            div.onmouseover = function() { this.style.background = 'var(--divider-bg)'; };
+            div.onmouseout = function() { this.style.background = 'transparent'; };
+            
+            var imgHtml = item.poster 
+                ? `<img src="${item.poster}" style="width: 40px; height: 58px; object-fit: cover; border-radius: 4px; border: 1px solid var(--divider-bg);">` 
+                : `<div style="width: 40px; height: 58px; background: var(--divider-bg); border-radius: 4px; display: flex; align-items:center; justify-content:center; font-size: 10px; color:var(--sub-color);">No Img</div>`;
+
+            div.innerHTML = `
+                ${imgHtml}
+                <div style="flex: 1; overflow: hidden;">
+                    <div style="font-size: 13px; font-weight: 600; color: var(--main-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
+                    <div style="font-size: 11px; color: var(--sub-color); margin-top: 2px;">${item.year} | ${item.creator}</div>
                 </div>
-                <i class="xi-close" onclick="closeRecordModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px;"></i>
-            </div>
-
-            <!-- 이미지 썸네일 미리보기 영역 -->
-            <div id="record-preview-wrap" style="position: relative; display: none; margin-bottom: 10px; width: 100%; text-align: center;">
-                <button onclick="removeRecordPreview()" style="position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 12;"><i class="xi-close"></i></button>
-                <img id="record-image-preview" src="" style="max-width: 100%; height: auto; max-height: 250px; object-fit: contain; border-radius: 4px; border: 1px solid var(--divider-bg); display: block; margin: 0 auto;">
-                <input type="hidden" id="record-cover-url" value=""> <!-- API로 불러온 URL이나 스토리지 URL이 담길 숨김 칸 -->
-            </div>
-
-            <!-- 기본 정보 입력 폼 -->
-            <div style="display: flex; gap: 10px;">
-                <select id="modal-category" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none; padding: 5px 0; width: 30%; cursor: pointer;">
-                    <option value="movie" selected>영화</option>
-                    <option value="drama">드라마</option>
-                    <option value="book">책</option>
-                    <option value="character">캐릭터</option>
-                    <option value="game">게임</option>
-                    <option value="song">노래</option>
-                    <option value="webtoon">웹툰/소설</option>
-                    <option value="show">공연/전시</option>
-                    <option value="video">영상</option>
-                </select>
-                <input type="text" id="modal-title" placeholder="작품명 (Title)" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none; padding: 5px 0; width: 70%; font-weight: 600;">
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="modal-release-year" placeholder="출시 연도 (예: 1998)" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 5px 0; width: 33%;">
-                <input type="text" id="modal-creator" placeholder="감독/저자/아티스트" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 5px 0; width: 33%;">
-                <input type="text" id="modal-nth" placeholder="N회차 (예: 1st)" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 5px 0; width: 33%;">
-            </div>
-
-            <input type="text" id="modal-oneliner" placeholder="한 줄 평 (목록에서 보일 문구)" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 12px; font-style: italic; outline: none; padding: 5px 0; width: 100%;">
-
-            <!-- 본문 에디터 -->
-            <div id="modal-content" contenteditable="true" spellcheck="false" placeholder="기록을 남겨주세요..." style="width: 100%; min-height: 120px; background: transparent; border: none; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; line-height: 1.8; outline: none; padding: 10px 0; word-break: break-all;"></div>
-
-            <!-- 하단: 별점, 대표설정, 날짜, 제출 -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--divider-bg); padding-top: 15px;">
+            `;
+            
+            div.onclick = function() {
+                document.getElementById('modal-title').value = item.title;
+                document.getElementById('modal-release-year').value = item.year;
+                if(item.creator !== 'TMDB 정보') document.getElementById('modal-creator').value = item.creator;
                 
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <!-- 별점 입력 (간단한 숫자형) -->
-                    <div style="display: flex; align-items: center; gap: 4px; color: var(--point-color); font-size: 13px;">
-                        <i class="xi-star"></i>
-                        <input type="number" id="modal-rating" placeholder="5.0" step="0.1" min="0" max="5" style="background: transparent; border: none; outline: none; color: var(--main-color); font-family: 'Courier New', monospace; font-size: 12px; width: 30px; font-weight: bold;">
-                    </div>
-                    
-                    <!-- 캘린더 대표 이미지 설정 -->
-                    <label style="font-size: 11px; color: var(--sub-color); cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                        <input type="checkbox" id="modal-is-main" style="accent-color: var(--point-color);"> 대표 지정
-                    </label>
-                </div>
+                if (item.poster) {
+                    document.getElementById('record-cover-url').value = item.poster;
+                    document.getElementById('record-image-preview').src = item.poster;
+                    document.getElementById('record-preview-wrap').style.display = 'block';
+                }
+                
+                document.getElementById('api-search-modal').style.display = 'none'; 
+            };
+            resultsContainer.appendChild(div);
+        });
 
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <input type="date" id="modal-date-picker" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
-                    <button id="btn-save-record" onclick="saveRecordPost()" style="background: none; border: none; color: var(--point-color); font-size: 20px; cursor: pointer; transition: 0.2s; opacity: 0.7;" onmouseover="this.style.opacity='1'; this.style.transform='translateX(3px)'" onmouseout="this.style.opacity='0.7'; this.style.transform='translateX(0)'">
-                        <i class="xi-arrow-right"></i>
-                    </button>
-                </div>
-            </div>
+    } catch (error) {
+        resultsContainer.innerHTML = '<p style="text-align: center; color: #ff3b30; font-size: 11px; margin-top: 20px;">검색 중 오류가 발생했습니다.</p>';
+    }
+}
 
-        </div>
-    </div>
+// ==========================================================================
+// 6. DB 저장 로직 (껍데기 - 테스트 완료 후 연결 예정)
+// ==========================================================================
+window.saveRecordPost = async function() {
+    alert("API 검색 테스트 중입니다! 잘 작동하는지 확인해 주시면, 바로 DB 저장 및 캘린더 렌더링 로직을 연결해 드리겠습니다.");
+};
