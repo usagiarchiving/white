@@ -1,4 +1,3 @@
-<!-- 파일명: category/memo.html -->
 <style>
     /* ==========================================================================
        [디자인] 편지지 테마의 완벽한 메모장 UI & 웹 에디터 엔진
@@ -34,9 +33,11 @@
         border: 1px solid var(--divider-bg);
     }
     .tag-pill {
+        display: inline-block;
         font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color);
         cursor: pointer; padding: 4px 10px; border-radius: 12px; 
         background: #fff; border: 1px solid var(--divider-bg); transition: all 0.2s;
+        margin: 4px; 
     }
     .tag-pill:hover { color: var(--point-color); border-color: var(--point-color); }
 
@@ -78,6 +79,11 @@
         line-height: 32px; outline: none; padding: 0; position: relative; z-index: 2;
         word-break: break-all;
     }
+    .memo-editor div, .memo-editor p {
+        font-size: 13px;
+        line-height: 1.8;
+        margin: 0; padding: 0;
+    }
 
     /* 하단 날짜, From 영역 */
     .memo-footer-input { display: flex; flex-direction: column; align-items: flex-end; margin-top: 12px; gap: 0px; }
@@ -88,13 +94,13 @@
     }
     .memo-date-picker:hover { opacity: 1; }
 
-    /* [수정] 태그 입력칸 (편지지 외부, 좌측 하단) */
+    /* 태그 입력칸 (편지지 외부, 좌측 하단) */
     .memo-tags-input {
         width: 150px; background: transparent; border: none; outline: none;
         color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px;
     }
 
-    /* [수정] 화살표 전송 버튼 및 태그 컨테이너 */
+    /* 화살표 전송 버튼 및 태그 컨테이너 */
     .memo-submit-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 45px; padding: 0 5px; }
     .memo-submit-btn {
         background: none; border: none; color: var(--point-color); cursor: pointer;
@@ -157,6 +163,14 @@
         .memo-read-mode .feed-text { width: 100%; display: block; }
         .memo-read-mode .feed-time { width: 100%; padding-bottom: 4px; }
     }
+    
+    /* 🚨 [수정 1] 피드(목록) 안에서도 첫 줄과 엔터친 폰트 크기가 동일하게 유지되도록 강제 고정 */
+    .feed-text div, .feed-text p {
+        font-size: 13px;
+        line-height: 1.8;
+        margin: 0; padding: 0;
+    }
+    [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.5; pointer-events: none; }
 </style>
 
 <div id="format-toolbar" class="format-toolbar">
@@ -205,7 +219,6 @@
         </div>
     </div>
     
-    <!-- [수정] 태그칸과 화살표 버튼을 같은 줄에 배치 -->
     <div class="memo-submit-container">
         <input type="text" id="memo-tags" class="memo-tags-input" autocomplete="off" placeholder="tags">
         <button class="memo-submit-btn" onclick="addMemoPost()" title="전송">
@@ -352,8 +365,12 @@
                 let matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
+                // 🚨 [방어막 패치] 따옴표, 줄바꿈 등을 안전하게 치환하여 스크립트 충돌 방지
                 let safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                let tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${safeTags}')">${tagsText}</div>` : "";
+                let jsSafeTags = tagsText ? tagsText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
+                
+                // 🚨 [수정 2] 태그 클릭 범위를 '글자 자체'로만 제한 (span 사용)
+                let tagsDisplayHtml = tagsText ? `<div style="margin-top: 15px;"><span style="font-size: 11.5px; color: var(--point-color); cursor: pointer; opacity:0.8; display: inline-block; padding: 2px 0;" onclick="triggerTagSearch('${jsSafeTags}')">${tagsText}</span></div>` : "";
 
                 let displayContent = rawContent;
                 if (!rawContent.includes('<div')) {
@@ -363,7 +380,6 @@
                 
                 const parsedContent = parseMemoMarkdown(displayContent);
                 
-                // [수정] data-search 속성에 HTML 태그가 들어가지 않도록 순수 텍스트로만 조합
                 const plainSearchText = `${post.title || ''} ${tagsText} ${yyyy}년 ${mm}월 ${dd}일`.replace(/"/g, "");
 
                 const postHtml = `
@@ -394,7 +410,6 @@
                                 
                                 <div id="edit-content-${post.id}" contenteditable="true" spellcheck="false" style="width: 100%; min-height: 150px; background: transparent; border: 1px solid var(--point-color); border-radius:2px; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; padding: 15px; outline: none; line-height:1.7; word-break: break-all;">${displayContent}</div>
                                 
-                                <!-- [수정] 수정 모드 태그칸 예시 텍스트 삭제 -->
                                 <input type="text" id="edit-tags-${post.id}" value="${safeTags}" placeholder="tags" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:12px; padding:4px 0; outline:none;">
 
                                 <input type="date" id="edit-date-${post.id}" value="${editDateString}" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
@@ -411,7 +426,10 @@
             });
 
             if (allTags.size > 0) {
-                let tagsHtml = Array.from(allTags).map(tag => `<span class="tag-pill" onclick="triggerTagSearch('${tag}')">${tag}</span>`).join('');
+                let tagsHtml = Array.from(allTags).map(tag => {
+                    let safeT = tag.replace(/'/g, "\\'");
+                    return `<span class="tag-pill" onclick="triggerTagSearch('${safeT}')">${tag}</span>`;
+                }).join('');
                 $('#tags-panel').html(tagsHtml);
             } else {
                 $('#tags-panel').html('<span style="font-size:11px; color:var(--sub-color);">생성된 태그가 없습니다.</span>');
@@ -493,20 +511,20 @@
     }
 
     // 라이트박스
-    function openMemoLightbox(src) {
+    window.openMemoLightbox = function(src) {
         $('#lightbox-img').attr('src', src);
         $('#memo-lightbox').css('display', 'flex').fadeIn(150);
     }
-    function closeMemoLightbox() { $('#memo-lightbox').fadeOut(150); }
+    window.closeMemoLightbox = function() { $('#memo-lightbox').fadeOut(150); }
 
-    function startMemoEdit(id) {
+    window.startMemoEdit = function(id) {
         const postEl = $(`#post-${id}`);
         postEl.find('.read-mode').hide();
         postEl.find('.read-actions').hide(); 
         postEl.find('.edit-mode').fadeIn(200).css('display', 'flex');
         postEl.find('.edit-actions').fadeIn(200).css('display', 'flex');
     }
-    function cancelMemoEdit(id) {
+    window.cancelMemoEdit = function(id) {
         const postEl = $(`#post-${id}`);
         postEl.find('.edit-mode').hide();
         postEl.find('.edit-actions').hide();
@@ -514,7 +532,7 @@
         postEl.find('.read-actions').fadeIn(200).css('display', 'flex'); 
     }
 
-    async function saveMemoEdit(id) {
+    window.saveMemoEdit = async function(id) {
         const newTitle = $(`#edit-title-${id}`).val().trim();
         const newContent = $(`#edit-content-${id}`).html().trim();
         const newTags = $(`#edit-tags-${id}`).val().trim(); 
@@ -544,7 +562,7 @@
         } catch (error) { alert('수정에 실패했습니다.'); }
     }
 
-    async function deleteMemoPost(id) {
+    window.deleteMemoPost = async function(id) {
         if (!confirm("이 기록을 삭제하시겠습니까?")) return;
         try {
             const { error } = await memoSupabase.from('posts').delete().eq('id', id);
@@ -559,10 +577,11 @@
         $(this).toggleClass('active');
     });
 
+    /* 🚨 [수정 3] 태그 클릭 시 키보드가 올라오지 않게 .focus() 제거 완료 */
     window.triggerTagSearch = function(tagText) {
         if(!tagText) return;
         let pureTag = tagText.match(/#[^\s#]+/)[0] || tagText;
-        $('#memo-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag).focus();
+        $('#memo-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag);
         $('#search-icon').css('opacity', '0.7');
         $('#memo-search').trigger('input'); 
     };
