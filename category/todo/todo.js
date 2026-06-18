@@ -570,4 +570,129 @@
         
         const idx = siblings.findIndex(t => t.id == id);
         if (dir === 'up' && idx > 0) await swapOrder(siblings[idx], siblings[idx - 1]);
-        else
+        else if (dir === 'down' && idx < siblings.length - 1) await swapOrder(siblings[idx], siblings[idx + 1]);
+    };
+
+    async function swapOrder(item1, item2) {
+        let o1 = item1.sort_order || item1.id;
+        let o2 = item2.sort_order || item2.id;
+        item1.sort_order = o2; item2.sort_order = o1;
+        refreshAllViews(); 
+        await supabase.from('todos').update({ sort_order: item1.sort_order }).eq('id', item1.id);
+        await supabase.from('todos').update({ sort_order: item2.sort_order }).eq('id', item2.id);
+    }
+
+    /* 하위 할 일 추가 및 UI 렌더링 */
+    window.addSubtaskFromUI = function() {
+        const text = $('#dm-new-subtask').val().trim();
+        if (!text) return;
+        currentSubtasks.push({ content: text, is_completed: false });
+        $('#dm-new-subtask').val('');
+        renderSubtasksUI();
+    };
+
+    window.toggleSubtask = function(index) {
+        if (currentSubtasks[index]) {
+            currentSubtasks[index].is_completed = !currentSubtasks[index].is_completed;
+            renderSubtasksUI();
+        }
+    };
+
+    window.deleteSubtask = function(index) {
+        currentSubtasks.splice(index, 1);
+        renderSubtasksUI();
+    };
+
+    window.updateSubtaskText = function(index, val) {
+        if (currentSubtasks[index]) currentSubtasks[index].content = val.trim();
+    };
+
+    function renderSubtasksUI() {
+        const list = $('#dm-subtasks-list');
+        list.empty();
+        const currentColor = $('#dm-color-val').val();
+        const colorHex = `var(--cat-${currentColor})`;
+        
+        currentSubtasks.forEach((st, idx) => {
+            const boxBg = st.is_completed ? colorHex : 'transparent';
+            const checkBox = `<div class="custom-checkbox" style="border: 1.2px solid ${colorHex}; background-color: ${boxBg}; width: 8px; height: 8px;" onclick="toggleSubtask(${idx})"></div>`;
+            const textClass = st.is_completed ? 'completed' : '';
+            
+            list.append(`
+                <div class="modal-subtask-item">
+                    ${checkBox}
+                    <input type="text" class="modal-subtask-text ${textClass}" value="${st.content}" onchange="updateSubtaskText(${idx}, this.value)">
+                    <i class="xi-close" style="color: var(--sub-color); font-size: 10px; cursor: pointer; opacity: 0.5;" onclick="deleteSubtask(${idx})"></i>
+                </div>
+            `);
+        });
+    }
+
+    window.saveDetailedTodo = async function() {
+        const id = $('#dm-id').val();
+        const content = $('#dm-input').val().trim();
+        if (!content) return;
+
+        // 🚨 저장 시 부모-하위 자동 연동 로직
+        let isParentCompleted = false;
+        if (currentSubtasks.length > 0 && currentSubtasks.every(st => st.is_completed)) {
+            isParentCompleted = true;
+        }
+
+        const todoData = {
+            content: content,
+            category: $('#dm-color-val').val(),
+            matrix_quadrant: parseInt($('#dm-quad').val()),
+            target_date: $('#dm-date').val() || null,
+            repeat_type: $('#dm-repeat').val(),
+            subtasks: currentSubtasks 
+        };
+
+        if (id) {
+            const existingTodo = todosData.find(t => t.id == id);
+            todoData.is_completed = (currentSubtasks.length > 0) ? isParentCompleted : existingTodo.is_completed;
+
+            const { data, error } = await supabase.from('todos').update(todoData).eq('id', id).select();
+            if(error) { alert("🚨 수정 저장 실패: " + error.message); return; }
+            if(data) {
+                const index = todosData.findIndex(t => t.id == id);
+                if(index > -1) todosData[index] = data[0];
+            }
+        } else {
+            todoData.is_completed = isParentCompleted;
+            todoData.sort_order = Date.now();
+            const { data, error } = await supabase.from('todos').insert([todoData]).select();
+            if(error) { alert("🚨 새로 저장 실패: " + error.message); return; }
+            if(data) todosData.push(data[0]);
+        }
+
+        closeDetailedModal();
+        refreshAllViews();
+    };
+
+    window.deleteTodoFromModal = async function() {
+        const id = $('#dm-id').val();
+        if (!id) return;
+        if (!confirm("정말 이 할 일을 삭제하시겠습니까?")) return;
+        
+        const { error } = await supabase.from('todos').delete().eq('id', id);
+        if (error) { alert('🚨 삭제 실패: ' + error.message); return; }
+
+        todosData = todosData.filter(t => t.id != id);
+        closeDetailedModal();
+        refreshAllViews();
+    };
+
+    function refreshAllViews() {
+        renderMatrix();
+        renderWeekly();
+        renderCalendar();
+        renderStatsMain();
+        if ($('#stats-detail-overlay').is(':visible') && currentStatsCategory) {
+            renderStatsDetail(currentStatsCategory);
+        }
+    }
+
+    setTimeout(() => { fetchTodos(); }, 100);
+
+})();
