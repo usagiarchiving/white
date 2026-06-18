@@ -4,7 +4,7 @@
 
 (function() {
     if (typeof window.supabase === 'undefined') {
-        alert("🚨 Supabase 라이브러리를 불러오지 못했습니다. index.html 하단의 script 태그를 확인해주세요.");
+        alert("🚨 Supabase 라이브러리를 불러오지 못했습니다.");
         return;
     }
 
@@ -25,14 +25,12 @@
         const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
         if (error) {
             console.error("데이터 로드 실패:", error);
-            alert("🚨 DB 데이터 불러오기 실패: " + error.message);
         } else if (data) {
             todosData = data;
             refreshAllViews();
         }
     }
 
-    /* 캘린더 년월 Picker */
     window.showTodoYMPicker = function(type) {
         $(`#${type}-month-display`).hide();
         $(`#${type}-ym-picker`).show().focus();
@@ -53,6 +51,7 @@
         refreshAllViews();
     };
 
+    /* 하트 툴바(팔레트) 엔진 */
     window.togglePalette = function(type) {
         const palette = $(`#${type}-color-palette`);
         const currentVal = $(`#${type}-color-val`).val();
@@ -101,7 +100,6 @@
         return `${y}-${m}-${d}`;
     }
 
-    // 🚨 수제 체크박스로 렌더링 (하트 삭제 완료)
     function createTodoHTML(todo) {
         const compClass = todo.is_completed ? 'completed' : '';
         const colorHex = `var(--cat-${todo.category})`;
@@ -135,7 +133,6 @@
         `;
     }
 
-    // 🚨 완벽한 정렬 모듈 (1순위: 미완료, 2순위: 쿼드런트(대시보드 한정), 3순위: sort_order)
     function getSortedTodos(todosArray, useQuadrantSort = false) {
         return todosArray.sort((a, b) => {
             if (a.is_completed !== b.is_completed) return a.is_completed ? 1 : -1;
@@ -154,7 +151,7 @@
         const todayStr = getFormatDate(new Date());
 
         let matrixTodos = todosData.filter(t => !t.target_date || t.target_date <= todayStr);
-        matrixTodos = getSortedTodos(matrixTodos, false); // 매트릭스는 내부 정렬만
+        matrixTodos = getSortedTodos(matrixTodos, false); 
 
         matrixTodos.forEach(todo => {
             $(`#quad-${todo.matrix_quadrant}`).append(createTodoHTML(todo));
@@ -176,7 +173,6 @@
         const day = startOfWeek.getDay();
         const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); 
         startOfWeek.setDate(diff);
-
         const daysKor = ['월', '화', '수', '목', '금', '토', '일'];
 
         for (let i = 0; i < 7; i++) {
@@ -203,9 +199,19 @@
             return;
         }
         
-        // 🚨 쿼드런트 순서로 정렬 적용
         filtered = getSortedTodos(filtered, true);
-        filtered.forEach(todo => list.append(createTodoHTML(todo)));
+
+        // 🚨 [수정 4] 검색어가 입력되어 있다면 필터링 유지
+        const searchInputId = containerId === 'weekly-list' ? 'weekly-search' : 'cal-search';
+        const keyword = $(`#${searchInputId}`).val()?.toLowerCase() || '';
+
+        filtered.forEach(todo => {
+            const itemHtml = $(createTodoHTML(todo));
+            if (keyword && !todo.content.toLowerCase().includes(keyword)) {
+                itemHtml.hide();
+            }
+            list.append(itemHtml);
+        });
     }
 
     window.changeMonth = function(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); };
@@ -218,7 +224,6 @@
 
         const grid = $('#cal-grid');
         grid.empty();
-        
         const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
         daysKor.forEach(d => grid.append(`<div class="cal-day-name">${d}</div>`));
 
@@ -237,6 +242,32 @@
         renderDateList('cal-list');
     }
 
+    // 🚨 [수정 4] 검색 기능 스크립트 연동
+    $(document).on('click', '.todo-search-icon', function() {
+        const input = $(this).siblings('.todo-search-input');
+        input.css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
+        $(this).css('opacity', '0.7');
+    });
+
+    $(document).on('blur', '.todo-search-input', function() {
+        if($(this).val().trim() === '') {
+            $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
+            $(this).siblings('.todo-search-icon').css('opacity', '0.35');
+        }
+    });
+
+    $(document).on('input', '.todo-search-input', function() {
+        const keyword = $(this).val().toLowerCase();
+        const containerId = $(this).attr('id') === 'weekly-search' ? '#weekly-list' : '#cal-list';
+        
+        $(`${containerId} .todo-item`).each(function() {
+            const text = $(this).find('.todo-text').text().toLowerCase();
+            if(text.includes(keyword)) $(this).show();
+            else $(this).hide();
+        });
+    });
+
+    // 🚨 [수정 1] 통계 메뉴 숫자가 제대로 보이도록 엔진 개선
     function renderStatsMain() {
         const y = statsDate.getFullYear();
         const m = statsDate.getMonth() + 1;
@@ -264,12 +295,15 @@
                 const completed = dayTodos.filter(t => t.is_completed).length;
 
                 let bgStyle = ``;
+                let dayHtml = ``; // 칸 안에 표시될 숫자
+                
                 if (total > 0 && completed > 0) {
                     const ratio = Math.max(0.3, completed / total);
                     bgStyle = `background: var(--cat-${color}); opacity: ${ratio};`;
                     completedCount += completed;
+                    dayHtml = completed; // 완료된 숫자를 중앙에 배치
                 }
-                html += `<div class="mini-day" style="${bgStyle}"></div>`;
+                html += `<div class="mini-day" style="${bgStyle}">${dayHtml}</div>`;
             }
             html += `</div><div class="stats-card-total"><i class="xi-check-circle"></i> ${completedCount}</div></div>`; 
             grid.append(html);
@@ -342,6 +376,9 @@
         }
     }
 
+    /* ==========================================================================
+       [DB 액션 로직 (애니메이션 탑재)]
+       ========================================================================== */
     window.quickAddTodo = async function() {
         const content = $('#qa-input').val().trim();
         if (!content) return;
@@ -353,7 +390,7 @@
             is_completed: false,
             target_date: getFormatDate(new Date()),
             subtasks: [],
-            sort_order: Date.now() // 추가 시간으로 기본 정렬값 부여
+            sort_order: Date.now() 
         };
         
         const { data, error } = await supabase.from('todos').insert([newTodo]).select();
@@ -367,7 +404,6 @@
         }
     };
 
-    // 🚨 상태 변경 애니메이션 적용
     window.toggleComplete = async function(id, el, event) {
         event.stopPropagation();
         const todo = todosData.find(t => t.id == id);
@@ -377,7 +413,6 @@
         const item = $(el).closest('.todo-item');
         const colorHex = `var(--cat-${todo.category})`;
 
-        // 시각적 피드백 즉시 적용
         if (newVal) {
             $(el).css('background-color', colorHex);
             item.addClass('completed').css('transform', 'scale(0.98)');
@@ -386,7 +421,6 @@
             item.removeClass('completed').css('transform', 'scale(1)');
         }
 
-        // 0.3초 대기 후 DB 업데이트 및 목록 하단 이동 렌더링
         setTimeout(async () => {
             const { error } = await supabase.from('todos').update({ is_completed: newVal }).eq('id', id);
             if (error) { alert("🚨 상태 변경 실패: " + error.message); return; }
@@ -430,42 +464,29 @@
     
     window.closeDetailedModal = function() { $('#detail-modal-overlay').fadeOut(150); currentSubtasks = []; };
 
-    // 🚨 항목 내 위치 변경 (위/아래) 로직 
     window.moveOrder = async function(dir) {
         const id = $('#dm-id').val();
-        if (!id) return; // 새로 작성 중인 상태에선 순서 변경 불가
-        
+        if (!id) return; 
         const todo = todosData.find(t => t.id == id);
         if (!todo) return;
 
-        // 동일한 뷰 그룹에 속한 형제들 추출
-        let siblings = todosData.filter(t => 
-            t.target_date === todo.target_date && 
-            t.matrix_quadrant === todo.matrix_quadrant
-        );
+        let siblings = todosData.filter(t => t.target_date === todo.target_date && t.matrix_quadrant === todo.matrix_quadrant);
         siblings = getSortedTodos(siblings, false);
         
         const idx = siblings.findIndex(t => t.id == id);
-        if (dir === 'up' && idx > 0) {
-            await swapOrder(siblings[idx], siblings[idx - 1]);
-        } else if (dir === 'down' && idx < siblings.length - 1) {
-            await swapOrder(siblings[idx], siblings[idx + 1]);
-        }
+        if (dir === 'up' && idx > 0) await swapOrder(siblings[idx], siblings[idx - 1]);
+        else if (dir === 'down' && idx < siblings.length - 1) await swapOrder(siblings[idx], siblings[idx + 1]);
     };
 
     async function swapOrder(item1, item2) {
         let o1 = item1.sort_order || item1.id;
         let o2 = item2.sort_order || item2.id;
-        
-        item1.sort_order = o2;
-        item2.sort_order = o1;
-        
-        refreshAllViews(); // 즉시 UI 반영
+        item1.sort_order = o2; item2.sort_order = o1;
+        refreshAllViews(); 
         await supabase.from('todos').update({ sort_order: item1.sort_order }).eq('id', item1.id);
         await supabase.from('todos').update({ sort_order: item2.sort_order }).eq('id', item2.id);
     }
 
-    /* 하위 할 일 관리 */
     window.addSubtaskFromUI = function() {
         const text = $('#dm-new-subtask').val().trim();
         if (!text) return;
