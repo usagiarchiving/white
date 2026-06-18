@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 Javascript 엔진 (통계 디테일, 하위항목 자동 완료 연동)
+   토끼굴 Todo 전용 Javascript 엔진 (타임라인, +N 동적 컬러, 하위항목 연동)
    ========================================================================== */
 
 (function() {
@@ -12,20 +12,18 @@
     var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9maGFkdGxyc2NjaXBudmRvaHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NTMzODksImV4cCI6MjA5NzMyOTM4OX0.bNdMzGKMCimJtRdtluzaecIM0ZYvBx72-XQdD3WFCv0';
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const colors = ['gray', 'red', 'orange', 'yellow', 'green', 'blue', 'navy', 'purple'];
+    // 🚨 핑크와 민트를 추가한 10색 팔레트
+    const colors = ['gray', 'red', 'orange', 'yellow', 'green', 'mint', 'blue', 'navy', 'purple', 'pink'];
     
     let todosData = []; 
     let currentDate = new Date();
     let selectedDate = new Date();
     
-    // 통계 전용 상태값
     let statsDate = new Date();
     let currentStatsCategory = null;
     let statsSelectedDateStr = getFormatDate(new Date()); 
-    
     let currentSubtasks = [];
 
-    // 서버 데이터 가져오기
     async function fetchTodos() {
         const { data, error } = await supabase.from('todos').select('*').order('created_at', { ascending: true });
         if (error) {
@@ -58,7 +56,7 @@
     };
 
     window.togglePalette = function(type, event) {
-        if(event) event.stopPropagation(); // 클릭 충돌 방지
+        if(event) event.stopPropagation(); 
         const palette = $(`#${type}-color-palette`);
         const currentVal = $(`#${type}-color-val`).val();
         if (palette.is(':visible')) { palette.hide(); return; }
@@ -107,12 +105,17 @@
         return `${y}-${m}-${d}`;
     }
 
-    // 🚨 대시보드에서는 하위항목이 쫙 펼쳐지도록 (isExpanded 플래그 적용)
+    // 🚨 투두 HTML 렌더링 (어제 못한 일 Overdue 클래스 부착)
     function createTodoHTML(todo, isExpanded = false) {
         const compClass = todo.is_completed ? 'completed' : '';
         const colorHex = `var(--cat-${todo.category})`;
-        const targetStr = todo.target_date ? `<span style="font-size: 8px;">${todo.target_date.substring(5).replace('-','.')}</span>` : '';
         
+        // 기한 지난 일 체크 (오늘보다 이전인데 미완료인 경우)
+        const todayStr = getFormatDate(new Date());
+        const isOverdue = !todo.is_completed && todo.target_date && todo.target_date < todayStr;
+        const metaClass = isOverdue ? 'todo-meta overdue' : 'todo-meta';
+        
+        const targetStr = todo.target_date ? `<span style="font-size: 8px;">${todo.target_date.substring(5).replace('-','.')}</span>` : '';
         const boxBg = todo.is_completed ? colorHex : 'transparent';
         const toggleCheckBtn = `<div class="custom-checkbox" style="border: 1.2px solid ${colorHex}; background-color: ${boxBg};" onclick="toggleComplete(${todo.id}, this, event)"></div>`;
 
@@ -130,7 +133,6 @@
             `;
 
             if (isExpanded) {
-                // 펼쳐진 하위 리스트 렌더링 (인라인 토글 연동)
                 let subHtml = `<div class="expanded-subtasks">`;
                 todo.subtasks.forEach((st, idx) => {
                     const stBoxBg = st.is_completed ? colorHex : 'transparent';
@@ -144,9 +146,9 @@
                     `;
                 });
                 subHtml += `</div>`;
-                extraHtml = progressHtml + subHtml; // 바와 리스트 모두 출력
+                extraHtml = progressHtml + subHtml;
             } else {
-                extraHtml = progressHtml; // 매트릭스는 진행률 바만 출력
+                extraHtml = progressHtml;
             }
         }
 
@@ -155,38 +157,28 @@
                 <div class="todo-item-top">
                     ${toggleCheckBtn}
                     <div class="todo-text">${todo.content}</div>
-                    <div class="todo-meta">${targetStr}</div>
+                    <div class="${metaClass}">${targetStr}</div>
                 </div>
                 ${extraHtml}
             </div>
         `;
     }
 
-    // 🚨 외부 뷰에서 직접 하위 항목 체크하기 & "모두 완료 시 부모 자동 완료" 엔진
     window.toggleSubtaskInline = async function(todoId, subIdx, event) {
         event.stopPropagation();
         const todo = todosData.find(t => t.id == todoId);
         if (!todo || !todo.subtasks || !todo.subtasks[subIdx]) return;
 
-        // 상태 반전
         todo.subtasks[subIdx].is_completed = !todo.subtasks[subIdx].is_completed;
-
-        // 🚨 전체 완료 여부 체크 -> 부모 완료 자동 연동
         const allCompleted = todo.subtasks.every(st => st.is_completed);
-        if (allCompleted && todo.subtasks.length > 0) {
-            todo.is_completed = true; // 모두 체크 시 자동 완료
-        } else if (!allCompleted && todo.is_completed) {
-            todo.is_completed = false; // 하나라도 풀리면 부모도 미완료로 복귀
-        }
+        
+        if (allCompleted && todo.subtasks.length > 0) todo.is_completed = true; 
+        else if (!allCompleted && todo.is_completed) todo.is_completed = false; 
 
-        // 빠른 UI 피드백을 위해 먼저 렌더링
         refreshAllViews();
-
-        // 백그라운드에서 DB 업데이트
         const { error } = await supabase.from('todos')
             .update({ subtasks: todo.subtasks, is_completed: todo.is_completed })
             .eq('id', todoId);
-
         if (error) { alert("🚨 하위 할 일 업데이트 실패: " + error.message); }
     };
 
@@ -203,6 +195,44 @@
         });
     }
 
+    // 🚨 미래 일정 타임라인 렌더링 엔진
+    function renderUpcomingTimeline() {
+        const container = $('#upcoming-timeline');
+        container.empty();
+        const todayStr = getFormatDate(new Date());
+
+        // 오늘 이후이면서 완료되지 않은 할 일 추출
+        let futureTodos = todosData.filter(t => !t.is_completed && t.target_date && t.target_date > todayStr);
+
+        if (futureTodos.length === 0) {
+            container.hide();
+            return;
+        }
+
+        // 날짜순 -> 카테고리순 -> 정렬순으로 정렬
+        futureTodos.sort((a, b) => {
+            if (a.target_date !== b.target_date) return a.target_date.localeCompare(b.target_date);
+            if (a.category !== b.category) return colors.indexOf(a.category) - colors.indexOf(b.category);
+            return (a.sort_order || 0) - (b.sort_order || 0);
+        });
+
+        container.show();
+        container.append(`<div style="font-size: 10px; font-weight: 600; margin-bottom: 8px; color: var(--main-color); margin-left: 4px;"><i class="xi-calendar-list"></i> 다가오는 일정</div>`);
+
+        let currentDateGroup = "";
+        let groupContainer = null;
+
+        futureTodos.forEach(todo => {
+            if (todo.target_date !== currentDateGroup) {
+                currentDateGroup = todo.target_date;
+                groupContainer = $(`<div class="timeline-date-group"></div>`);
+                groupContainer.append(`<div class="timeline-date-label">${currentDateGroup.substring(5).replace('-', '.')}</div>`);
+                container.append(groupContainer);
+            }
+            groupContainer.append(createTodoHTML(todo, false)); // 매트릭스 하단이므로 하위항목은 접어서
+        });
+    }
+
     function renderMatrix() {
         $('#quad-1, #quad-2, #quad-3, #quad-4, #quad-0').empty();
         const todayStr = getFormatDate(new Date());
@@ -211,9 +241,12 @@
         matrixTodos = getSortedTodos(matrixTodos, false); 
 
         matrixTodos.forEach(todo => {
-            if (todo.is_completed) return; // 매트릭스에선 완료된 항목 숨김
+            if (todo.is_completed) return; 
             $(`#quad-${todo.matrix_quadrant}`).append(createTodoHTML(todo, false)); 
         });
+
+        // 타임라인 그리기 호출
+        renderUpcomingTimeline();
     }
 
     window.changeWeek = function(dir) { currentDate.setDate(currentDate.getDate() + (dir * 7)); renderWeekly(); };
@@ -226,7 +259,6 @@
 
         const strip = $('#weekly-strip');
         strip.empty();
-
         const startOfWeek = new Date(currentDate);
         const day = startOfWeek.getDay();
         const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); 
@@ -259,21 +291,19 @@
         }
         
         filtered = getSortedTodos(filtered, true);
-
         const searchInputId = containerId === 'weekly-list' ? 'weekly-search' : 'cal-search';
         const keyword = $(`#${searchInputId}`).val()?.toLowerCase() || '';
 
         filtered.forEach(todo => {
-            const itemHtml = $(createTodoHTML(todo, true)); // 대시보드/달력은 하위항목 쫙 펼침
-            if (keyword && !todo.content.toLowerCase().includes(keyword)) {
-                itemHtml.hide();
-            }
+            const itemHtml = $(createTodoHTML(todo, true)); 
+            if (keyword && !todo.content.toLowerCase().includes(keyword)) itemHtml.hide();
             list.append(itemHtml);
         });
     }
 
     window.changeMonth = function(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); };
 
+    // 🚨 캘린더 +N개 달성수 & 동적 컬러 엔진
     function renderCalendar() {
         const y = currentDate.getFullYear();
         const m = currentDate.getMonth() + 1;
@@ -293,14 +323,35 @@
             const dStr = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
             const isToday = dStr === getFormatDate(new Date());
             const isSelected = dStr === getFormatDate(selectedDate);
-            const hasTodo = todosData.some(t => t.target_date === dStr);
-            const classes = `cal-day-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${hasTodo ? 'has-todo' : ''}`;
-            grid.append(`<div class="${classes}" onclick="selectDate('${dStr}')">${i}</div>`);
+            
+            const dayTodos = todosData.filter(t => t.target_date === dStr);
+            const completedTodos = dayTodos.filter(t => t.is_completed);
+            
+            let badgeHtml = '';
+            let hasUncompleted = dayTodos.some(t => !t.is_completed); // 안 한 일이 있으면 점(dot) 표시
+            
+            if (completedTodos.length > 0) {
+                // 그날의 지배적인 카테고리 색상 찾기
+                let colorCounts = {};
+                let maxCount = 0;
+                let dominantColor = 'gray';
+
+                completedTodos.forEach(t => {
+                    colorCounts[t.category] = (colorCounts[t.category] || 0) + 1;
+                    if (colorCounts[t.category] > maxCount) {
+                        maxCount = colorCounts[t.category];
+                        dominantColor = t.category;
+                    }
+                });
+                badgeHtml = `<div style="position:absolute; bottom:-12px; font-size:7.5px; color:var(--cat-${dominantColor}); font-weight:bold;">+${completedTodos.length}</div>`;
+            }
+
+            const classes = `cal-day-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${hasUncompleted && completedTodos.length === 0 ? 'has-todo' : ''}`;
+            grid.append(`<div class="${classes}" onclick="selectDate('${dStr}')">${i}${badgeHtml}</div>`);
         }
         renderDateList('cal-list');
     }
 
-    // 🚨 통합 검색 애니메이션 (통계 검색창 연동 포함)
     $(document).on('click', '.todo-search-icon', function() {
         const input = $(this).siblings('.todo-search-input');
         input.css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
@@ -323,7 +374,6 @@
         
         $(`${containerId} .todo-item`).each(function() {
             const text = $(this).find('.todo-text').text().toLowerCase();
-            // 하위 할일 내용도 검색되도록 확장
             let subText = "";
             $(this).find('.exp-subtask-item span').each(function() { subText += " " + $(this).text().toLowerCase(); });
             
@@ -391,13 +441,11 @@
         $('#stats-detail-overlay').fadeOut(150, function() { currentStatsCategory = null; }); 
     };
 
-    // 🚨 통계 상세 달력 날짜 클릭 시 이벤트 (하단 리스트 렌더링용)
     window.selectStatsDate = function(dStr) {
         statsSelectedDateStr = dStr;
         if (currentStatsCategory) renderStatsDetail(currentStatsCategory);
     };
 
-    // 🚨 통계 상세 뷰 렌더링 (하단 리스트뷰 포함)
     function renderStatsDetail(color) {
         const y = statsDate.getFullYear();
         const m = statsDate.getMonth() + 1;
@@ -434,7 +482,6 @@
             let inlineStyle = "";
             let extraHtml = "";
 
-            // 달성한 할일 개수를 캘린더 날짜칸 아래에 명확하게 표기
             if (dayTodos.length > 0) {
                 inlineStyle = `background: var(--cat-${color}); color: #fff; font-weight: bold;`;
                 extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7.5px; color:var(--cat-${color}); font-weight:normal;">${dayTodos.length}개</div>`;
@@ -453,7 +500,6 @@
             chart.append(`<div class="sd-bar-wrap"><div class="sd-bar" style="height: ${heightPct}%; background: ${barBg};">${count > 0 ? `<div class="sd-bar-val">${count}</div>` : ''}</div><div class="sd-bar-label">${w+1}주차</div></div>`);
         }
 
-        // 🚨 하단 해당 날짜 리스트 렌더링 (하위 항목 모두 펼침)
         const sdList = $('#sd-list');
         sdList.empty();
         let targetTodos = catTodos.filter(t => t.target_date === statsSelectedDateStr && t.is_completed);
@@ -471,9 +517,6 @@
         }
     }
 
-    /* ==========================================================================
-       [DB 액션 로직]
-       ========================================================================== */
     window.quickAddTodo = async function() {
         const content = $('#qa-input').val().trim();
         if (!content) return;
@@ -582,7 +625,6 @@
         await supabase.from('todos').update({ sort_order: item2.sort_order }).eq('id', item2.id);
     }
 
-    /* 하위 할 일 추가 및 UI 렌더링 */
     window.addSubtaskFromUI = function() {
         const text = $('#dm-new-subtask').val().trim();
         if (!text) return;
@@ -633,7 +675,6 @@
         const content = $('#dm-input').val().trim();
         if (!content) return;
 
-        // 🚨 저장 시 부모-하위 자동 연동 로직
         let isParentCompleted = false;
         if (currentSubtasks.length > 0 && currentSubtasks.every(st => st.is_completed)) {
             isParentCompleted = true;
