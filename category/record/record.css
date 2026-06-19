@@ -1,7 +1,8 @@
 /* 파일명: category/record/record.css */
 
+
 :root {
-    --rec-movie: #FDF5E6;   /* 영화: 아이보리색 */
+    --rec-movie: #FF8C94;   /* 영화: 빨강 (파스텔톤 체리 레드) */
     --rec-drama: #FFA07A;   /* 드라마: 주황색 */
     --rec-book: #77DD77;    /* 책: 초록색 */
     --rec-char: #FFB7B2;    /* 캐릭터: 핑크색 */
@@ -10,7 +11,9 @@
     --rec-toon: #FDFD96;    /* 웹툰: 노란색 */
     --rec-show: #CDB4DB;    /* 공연: 보라색 */
     --rec-video: #8E8E93;   /* 영상: 회색 */
+    --rec-etc: #FDF5E6;     /* 기타(etc): 아이보리색 */
 }
+
 
 .record-wrapper {
     font-family: 'Noto Serif KR', serif; 
