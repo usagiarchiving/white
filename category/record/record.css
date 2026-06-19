@@ -1,12 +1,9 @@
 /* 파일명: category/record/record.css */
 
-/* ==========================================================================
-   1. 카테고리 전용 컬러 팔레트 (언제든 여기서 색상 코드만 바꾸시면 됩니다!)
-   ========================================================================== */
 :root {
-    --rec-movie: #FDF5E6;   /* 영화: 아이보리색 (너무 하야면 안 보여서 살짝 따뜻한 톤) */
-    --rec-drama: #FFA07A;   /* 드라마: 주황색 (파스텔톤) */
-    --rec-book: #77DD77;    /* 책: 초록색 (눈이 편안한 파스텔 그린) */
+    --rec-movie: #FDF5E6;   /* 영화: 아이보리색 */
+    --rec-drama: #FFA07A;   /* 드라마: 주황색 */
+    --rec-book: #77DD77;    /* 책: 초록색 */
     --rec-char: #FFB7B2;    /* 캐릭터: 핑크색 */
     --rec-game: #536DFE;    /* 게임: 남색 */
     --rec-song: #A0E8AF;    /* 노래: 민트색 */
@@ -15,16 +12,13 @@
     --rec-video: #8E8E93;   /* 영상: 회색 */
 }
 
-/* ==========================================================================
-   2. 기본 레이아웃 및 가독성 (모바일 최우선, 줄간격/자간 최적화)
-   ========================================================================== */
 .record-wrapper {
-    font-family: 'Noto Serif KR', serif; /* 지식인의 서재 감성 */
+    font-family: 'Noto Serif KR', serif; 
     font-size: 13px;
     line-height: 1.8;
     letter-spacing: -0.02em;
     color: var(--main-color);
-    height: calc(100vh - 60px); /* 하단 네비게이션 공간 제외 */
+    height: calc(100vh - 60px); 
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -32,33 +26,24 @@
     padding-bottom: 50px;
 }
 
-/* ==========================================================================
-   3. 탭 메뉴 화면 (부드러운 페이드인 애니메이션)
-   ========================================================================== */
 .record-tab-content {
     display: none;
     flex: 1;
     overflow-y: auto;
     width: 100%;
     padding: 15px 0;
-    animation: fadeIn 0.3s ease-in-out; /* 부드러운 전환 효과 */
-    -ms-overflow-style: none; /* 스크롤바 숨김 */
+    animation: fadeIn 0.3s ease-in-out; 
+    -ms-overflow-style: none; 
     scrollbar-width: none;
 }
 .record-tab-content::-webkit-scrollbar { display: none; }
-.record-tab-content.active {
-    display: flex;
-    flex-direction: column;
-}
+.record-tab-content.active { display: flex; flex-direction: column; }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ==========================================================================
-   4. 하단 네비게이션 바 (투두 시스템과 동일한 감성)
-   ========================================================================== */
 .record-bottom-nav {
     position: fixed;
     bottom: 0;
@@ -76,15 +61,81 @@
     -webkit-backdrop-filter: blur(10px);
 }
 .nav-btn {
-    background: none;
-    border: none;
-    font-size: 18px;
-    color: var(--sub-color);
-    cursor: pointer;
-    padding: 10px;
+    background: none; border: none; font-size: 18px;
+    color: var(--sub-color); cursor: pointer; padding: 10px;
     transition: color 0.2s ease, transform 0.2s ease;
 }
-.nav-btn.active {
-    color: var(--point-color);
-    transform: translateY(-2px);
+.nav-btn.active { color: var(--point-color); transform: translateY(-2px); }
+
+/* ==========================================================================
+   🚨 [신규] 글쓰기 팝업 2단 반응형 레이아웃 (PC/모바일 완벽 대응)
+   ========================================================================== */
+.record-write-layout {
+    display: flex;
+    gap: 25px;
+    height: 100%;
+    width: 100%;
+}
+.record-write-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.record-write-right {
+    width: 140px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    border-left: 1px solid var(--divider-bg);
+    padding-left: 20px;
+}
+
+/* 툴바 디자인 */
+.record-toolbar {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--divider-bg);
+    margin-bottom: 10px;
+}
+.record-toolbar button {
+    background: none; border: none; color: var(--sub-color); 
+    font-size: 14px; cursor: pointer; transition: 0.2s;
+}
+.record-toolbar button:hover { color: var(--point-color); }
+
+/* 에디터 내부 디자인 (요청하신 구분선 hr 스타일 포함) */
+#modal-content {
+    flex: 1; overflow-y: auto; width: 100%;
+    background: transparent; border: none; outline: none;
+    color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px;
+    padding: 10px 0; -ms-overflow-style: none; scrollbar-width: none;
+}
+#modal-content::-webkit-scrollbar { display: none; }
+#modal-content hr {
+    border: none; border-top: 1px solid var(--divider-bg); 
+    margin: 20px 0; width: 100%; opacity: 0.7;
+}
+
+/* 📱 모바일 (768px 이하) 레이아웃 변경: 포스터가 위로, 1단으로 스르륵 변신 */
+@media (max-width: 768px) {
+    .record-write-layout {
+        flex-direction: column-reverse; /* 모바일: 글쓰기 영역이 아래, 사진이 위 */
+        overflow-y: auto;
+        gap: 15px;
+    }
+    .record-write-left { overflow-y: visible; }
+    .record-write-right {
+        width: 100%;
+        border-left: none;
+        border-bottom: 1px solid var(--divider-bg);
+        padding-left: 0;
+        padding-bottom: 15px;
+        flex-direction: row; /* 포스터와 별점이 나란히 또는 세로 정렬 */
+        justify-content: center;
+    }
+    .record-write-right img { height: 130px; width: auto; }
 }
