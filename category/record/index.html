@@ -9,103 +9,120 @@
         </div>
         
         <select id="record-category-filter" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 12px; cursor: pointer; font-weight: 600;">
-            <option value="all">전체 기록</option>
+            <option value="all">All</option>
             <option value="movie">영화</option>
             <option value="drama">드라마</option>
             <option value="book">책</option>
             <option value="character">캐릭터</option>
             <option value="game">게임</option>
             <option value="song">노래</option>
-            <option value="webtoon">웹툰/웹소설</option>
-            <option value="show">공연/전시</option>
+            <option value="webtoon">웹툰</option>
+            <option value="show">전시</option>
             <option value="video">영상</option>
+            <option value="etc">기타</option> <!-- 추가됨 -->
+        </select>
+
         </select>
         
         <button id="btn-add-record" onclick="openRecordModal()" title="새 기록" style="background: none; border: none; color: var(--point-color); cursor: pointer; font-size: 16px; padding: 0; transition: transform 0.2s;"><i class="xi-pen"></i></button>
     </div>
 
-    <div id="record-tab-list" class="record-tab-content active">
-        <div id="record-list-container" style="display: flex; flex-direction: column; gap: 15px;">
-            <p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 30px; opacity: 0.6;">기록을 불러오는 중입니다...</p>
-        </div>
-    </div>
-
-    <div id="record-tab-cal" class="record-tab-content">
-        <div id="record-cal-container"></div>
-    </div>
-
-    <div id="record-tab-stats" class="record-tab-content">
-        <div id="record-stats-container"></div>
-    </div>
+    <div id="record-tab-list" class="record-tab-content active"><div id="record-list-container" style="display: flex; flex-direction: column; gap: 15px;"></div></div>
+    <div id="record-tab-cal" class="record-tab-content"><div id="record-cal-container"></div></div>
+    <div id="record-tab-stats" class="record-tab-content"><div id="record-stats-container"></div></div>
 
     <div class="record-bottom-nav">
-        <button class="nav-btn active" onclick="switchRecordTab('list', this)" title="목록 보기"><i class="xi-view-list"></i></button>
-        <button class="nav-btn" onclick="switchRecordTab('cal', this)" title="캘린더 보기"><i class="xi-calendar"></i></button>
-        <button class="nav-btn" onclick="switchRecordTab('stats', this)" title="통계 보기"><i class="xi-chart-bar"></i></button>
+        <button class="nav-btn active" onclick="switchRecordTab('list', this)"><i class="xi-view-list"></i></button>
+        <button class="nav-btn" onclick="switchRecordTab('cal', this)"><i class="xi-calendar"></i></button>
+        <button class="nav-btn" onclick="switchRecordTab('stats', this)"><i class="xi-chart-bar"></i></button>
     </div>
 
     <div id="record-lightbox" class="record-lightbox" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 20000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;" onclick="if(event.target === this) closeRecordModal()">
         
-        <div class="record-lightbox-card" style="background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 8px; padding: 30px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px; box-sizing: border-box; animation: fadeIn 0.3s ease;">
+        <div class="record-lightbox-card" style="background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 8px; padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.1); box-sizing: border-box; animation: fadeIn 0.3s ease;">
             
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <label for="record-file-input" style="cursor: pointer; color: var(--sub-color); font-size: 18px; transition: 0.2s;" onmouseover="this.style.color='var(--point-color)'" onmouseout="this.style.color='var(--sub-color)'" title="수정/수동 이미지 업로드"><i class="xi-image-o"></i></label>
-                    <input type="file" id="record-file-input" accept="image/*" style="display: none;" onchange="handleRecordImageUpload(event)">
-                    
-                    <button id="btn-api-search" onclick="openApiSearchModal()" style="background: none; border: 1px solid var(--divider-bg); border-radius: 12px; padding: 4px 10px; font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--main-color); cursor: pointer; transition: 0.2s;"><i class="xi-search"></i> 작품 정보 자동 불러오기</button>
-                </div>
-                <i class="xi-close" onclick="closeRecordModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px;"></i>
-            </div>
-
-            <div id="record-preview-wrap" style="position: relative; display: none; margin-bottom: 10px; width: 100%; text-align: center;">
-                <button onclick="removeRecordPreview()" style="position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 12;"><i class="xi-close"></i></button>
-                <img id="record-image-preview" src="" style="max-width: 100%; height: auto; max-height: 250px; object-fit: contain; border-radius: 4px; border: 1px solid var(--divider-bg); display: block; margin: 0 auto;">
-                <input type="hidden" id="record-cover-url" value=""> 
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <select id="modal-category" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none; padding: 5px 0; width: 30%; cursor: pointer;">
-                    <option value="movie" selected>영화</option>
-                    <option value="drama">드라마</option>
-                    <option value="book">책</option>
-                    <option value="character">캐릭터</option>
-                    <option value="game">게임</option>
-                    <option value="song">노래</option>
-                    <option value="webtoon">웹툰/소설</option>
-                    <option value="show">공연/전시</option>
-                    <option value="video">영상</option>
-                </select>
-                <input type="text" id="modal-title" placeholder="작품명 (Title)" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none; padding: 5px 0; width: 70%; font-weight: 600;">
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="modal-release-year" placeholder="출시 연도 (예: 1998)" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 5px 0; width: 33%;">
-                <input type="text" id="modal-creator" placeholder="감독/저자/아티스트" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 5px 0; width: 33%;">
-                <input type="text" id="modal-nth" placeholder="N회차 (예: 1st)" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 5px 0; width: 33%;">
-            </div>
-
-            <input type="text" id="modal-oneliner" placeholder="한 줄 평 (목록에서 보일 문구)" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 12px; font-style: italic; outline: none; padding: 5px 0; width: 100%;">
-
-            <div id="modal-content" contenteditable="true" spellcheck="false" placeholder="기록을 남겨주세요..." style="width: 100%; min-height: 120px; background: transparent; border: none; color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; line-height: 1.8; outline: none; padding: 10px 0; word-break: break-all;"></div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--divider-bg); padding-top: 15px;">
+            <div class="record-write-layout">
                 
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="display: flex; align-items: center; gap: 4px; color: var(--point-color); font-size: 13px;">
-                        <i class="xi-star"></i>
-                        <input type="number" id="modal-rating" placeholder="5.0" step="0.1" min="0" max="5" style="background: transparent; border: none; outline: none; color: var(--main-color); font-family: 'Courier New', monospace; font-size: 12px; width: 30px; font-weight: bold;">
+                <div class="record-write-left">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <label for="record-file-input" style="cursor: pointer; color: var(--sub-color); font-size: 18px; transition: 0.2s;" title="수동 사진 업로드"><i class="xi-image-o"></i></label>
+                            <input type="file" id="record-file-input" accept="image/*" style="display: none;" onchange="handleRecordImageUpload(event)">
+                            <button onclick="openApiSearchModal()" style="background: none; border: 1px solid var(--divider-bg); border-radius: 12px; padding: 4px 10px; font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--main-color); cursor: pointer;"><i class="xi-search"></i> Search</button>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <select id="modal-author" style="background: transparent; border: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; cursor: pointer;">
+                                <option value="김민정" selected>김민정</option>
+                                <option value="하시온">하시온</option>
+                            </select>
+                            <i class="xi-close" onclick="closeRecordModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px;"></i>
+                        </div>
                     </div>
-                    <label style="font-size: 11px; color: var(--sub-color); cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                        <input type="checkbox" id="modal-is-main" style="accent-color: var(--point-color);"> 대표 지정
-                    </label>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                        <select id="modal-category" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none; padding: 5px 0; width: 60px; text-align-last: center; cursor: pointer; flex-shrink: 0;">
+                        <select id="modal-category" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none; padding: 5px 0; width: 60px; text-align-last: center; cursor: pointer; flex-shrink: 0;">
+                            <option value="movie" selected>Movie</option>
+                            <option value="drama">Drama</option>
+                            <option value="book">Book</option>
+                            <option value="character">Char</option>
+                            <option value="game">Game</option>
+                            <option value="song">Song</option>
+                            <option value="webtoon">Toon</option>
+                            <option value="show">Show</option>
+                            <option value="video">Video</option>
+                            <option value="etc">Etc</option> <!-- 추가됨 -->
+                        </select>
+
+                        </select>
+                        <input type="text" id="modal-title" placeholder="Title" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none; padding: 5px 0; flex: 1; font-weight: 600;">
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                        <input type="text" id="modal-creator" placeholder="Creator" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 5px 0; width: 30%;">
+                        <input type="text" id="modal-tags" placeholder="#Tags" autocomplete="off" style="background: transparent; border: none; border-bottom: 1px solid var(--divider-bg); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 12px; outline: none; padding: 5px 0; flex: 1;">
+                    </div>
+
+                    <div class="record-toolbar">
+                        <button onclick="formatRecord('bold')" title="굵게"><i class="xi-bold"></i></button>
+                        <button onclick="formatRecord('foreColor', '#D04978')" title="핑크 포인트"><i class="xi-tint" style="color:#D04978;"></i></button>
+                        <button onclick="formatRecord('foreColor', '#0E865E')" title="민트 포인트"><i class="xi-tint" style="color:#0E865E;"></i></button>
+                        <button onclick="formatRecord('insertHorizontalRule')" title="구분선 삽입"><i class="xi-minus"></i></button>
+                    </div>
+
+                    <div id="modal-content" contenteditable="true" spellcheck="false"></div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--divider-bg); padding-top: 15px; flex-shrink: 0;">
+                        <label style="font-size: 11px; color: var(--sub-color); cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <input type="checkbox" id="modal-is-main" style="accent-color: var(--point-color);"> Date Main
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="date" id="modal-date-picker" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
+                            <button id="btn-save-record" onclick="saveRecordPost()" style="background: none; border: none; color: var(--point-color); font-size: 20px; cursor: pointer; transition: 0.2s;"><i class="xi-arrow-right"></i></button>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <input type="date" id="modal-date-picker" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
-                    <button id="btn-save-record" onclick="saveRecordPost()" style="background: none; border: none; color: var(--point-color); font-size: 20px; cursor: pointer; transition: 0.2s; opacity: 0.7;" onmouseover="this.style.opacity='1'; this.style.transform='translateX(3px)'" onmouseout="this.style.opacity='0.7'; this.style.transform='translateX(0)'">
-                        <i class="xi-arrow-right"></i>
-                    </button>
+                <div class="record-write-right">
+                    <div id="record-preview-wrap" style="position: relative; width: 100%; display: flex; flex-direction: column; align-items: center;">
+                        <button onclick="removeRecordPreview()" style="position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 12; display: none;" id="btn-remove-preview"><i class="xi-close"></i></button>
+                        
+                        <div id="record-image-frame" style="width: 110px; height: 160px; border-radius: 6px; border: 1px solid var(--divider-bg); background: var(--input-bg); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                            <i class="xi-image-o" id="record-image-placeholder" style="color: var(--sub-color); font-size: 24px; opacity: 0.5;"></i>
+                            <img id="record-image-preview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                        </div>
+                        <input type="hidden" id="record-cover-url" value="">
+                    </div>
+
+                    <div id="star-rating-ui" style="display: flex; gap: 2px; color: var(--divider-bg); font-size: 22px; cursor: pointer;">
+                        <i class="xi-star-o star-icon" data-idx="1"></i>
+                        <i class="xi-star-o star-icon" data-idx="2"></i>
+                        <i class="xi-star-o star-icon" data-idx="3"></i>
+                        <i class="xi-star-o star-icon" data-idx="4"></i>
+                        <i class="xi-star-o star-icon" data-idx="5"></i>
+                    </div>
+                    <input type="hidden" id="modal-rating" value="0">
                 </div>
             </div>
         </div>
@@ -113,19 +130,16 @@
 
     <div id="api-search-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 30000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;" onclick="if(event.target === this) this.style.display='none'">
         <div style="background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 8px; padding: 20px; width: 100%; max-width: 380px; max-height: 70vh; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: fadeIn 0.2s ease;">
-            
             <div style="display: flex; gap: 10px; align-items: center; border-bottom: 1.5px solid var(--main-color); padding-bottom: 5px;">
-                <input type="text" id="api-search-input" placeholder="작품명 검색..." autocomplete="off" onkeypress="handleApiSearchEnter(event)" style="flex: 1; border: none; background: transparent; outline: none; font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color);">
+                <input type="text" id="api-search-input" placeholder="Search..." autocomplete="off" onkeypress="handleApiSearchEnter(event)" style="flex: 1; border: none; background: transparent; outline: none; font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color);">
                 <i class="xi-search" onclick="executeApiSearch()" style="cursor: pointer; color: var(--main-color); font-size: 16px; transition: transform 0.2s;"></i>
             </div>
-            
             <div id="api-search-results" style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; -ms-overflow-style: none; scrollbar-width: none;">
                 <p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 20px; opacity: 0.6;">엔터키를 눌러 검색하세요.</p>
             </div>
             <style>#api-search-results::-webkit-scrollbar { display: none; }</style> 
         </div>
     </div>
-
 </div>
 
-<script src="category/record/record.js?v=3"></script>
+<script src="category/record/record.js?v=4"></script>
