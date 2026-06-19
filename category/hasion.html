@@ -169,15 +169,14 @@
     @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     /* ==========================================================================
-       [🚨 텍스트 툴바 (모바일 반응형 완벽 대응)]
+       [🚨 드래그 텍스트 툴바 (2단 접힘 및 높이 계산 최적화)]
        ========================================================================== */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
-        border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
+        border: 1px solid var(--point-color); border-radius: 8px; padding: 6px 8px; /* 위아래 패딩 약간 증가 */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 9999;
         align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
-        /* 👇 화면폭이 좁으면 자동으로 2단으로 접히도록 설정 */
-        flex-wrap: wrap; justify-content: center; max-width: 280px;
+        flex-wrap: wrap; justify-content: center; max-width: 290px;
     }
     .format-toolbar button { background: none; border: none; color: var(--main-color); font-size: 14px; cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
     .format-toolbar button:hover { background: rgba(0,0,0,0.05); }
@@ -212,7 +211,7 @@
     .img-format-toolbar .btn-delete { color: #ff3b30; }
     .img-format-toolbar .btn-delete:hover { background: rgba(255,59,48,0.1); color: #ff3b30; }
 
-    /* 🚨 리스트 디자인 (아코디언) - font-size 13px로 통일 완료 */
+    /* 리스트 디자인 (아코디언) */
     .hasion-accordion-header {
         font-size: 13px; font-family: 'Noto Serif KR', serif; font-weight: normal; 
         color: var(--main-color); cursor: pointer; padding: 12px 0 6px 0; 
@@ -225,10 +224,13 @@
 </style>
 
 <div id="format-toolbar" class="format-toolbar">
-    <button onmousedown="event.preventDefault(); formatText('bold')"><i class="xi-bold"></i></button>
-    <button onmousedown="event.preventDefault(); formatText('italic')"><i class="xi-italic"></i></button>
-    <button onmousedown="event.preventDefault(); formatText('underline')"><i class="xi-underline"></i></button>
-    <button onmousedown="event.preventDefault(); formatText('strikeThrough')"><i class="xi-strikethrough"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('undo')" title="뒤로 가기 (실행 취소)"><i class="xi-undo"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('redo')" title="앞으로 가기 (다시 실행)"><i class="xi-redo"></i></button>
+    <div class="divider"></div>
+    <button onmousedown="event.preventDefault(); formatText('bold')" title="굵게"><i class="xi-bold"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('italic')" title="기울임"><i class="xi-italic"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('underline')" title="밑줄"><i class="xi-underline"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('strikeThrough')" title="취소선"><i class="xi-strikethrough"></i></button>
     <div class="divider"></div>
     <label class="color-picker-label" onmousedown="saveSelection()"><i class="xi-font"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('foreColor', this.value)" onchange="applyCustomColor('foreColor', this.value)"></label>
     <label class="color-picker-label" onmousedown="saveSelection()"><i class="xi-palette"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('backColor', this.value)" onchange="applyCustomColor('backColor', this.value)"></label>
@@ -311,6 +313,7 @@
     window.applyExactFontSize = function(size) { if (savedSelectionRange) { var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } else { var editor = document.activeElement; if(!editor || editor.getAttribute('contenteditable') !== 'true') return; } document.execCommand("fontSize", false, "7"); var fontElements = document.getElementsByTagName("font"); for (var i = 0; i < fontElements.length; i++) { if (fontElements[i].size == "7") { fontElements[i].removeAttribute("size"); fontElements[i].style.fontSize = size + "px"; } } checkSelection(); };
     window.adjustFontSize = function(delta) { var input = document.getElementById('fontSizeInput'); var currentSize = parseInt(input.value) || 13; var newSize = currentSize + delta; if(newSize < 8) newSize = 8; if(newSize > 72) newSize = 72; input.value = newSize; applyExactFontSize(newSize); };
 
+    /* 🚨 [텍스트 툴바 위치 계산 픽스] - 툴바가 텍스트를 덮지 않도록 안전 여백 적용 */
     function checkSelection() {
         setTimeout(() => {
             var selection = window.getSelection();
@@ -320,14 +323,25 @@
                 while (node) { if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') { isInsideEditor = true; break; } node = node.parentNode; }
                 if (isInsideEditor) {
                     var range = selection.getRangeAt(0); var rect = range.getBoundingClientRect();
-                    toolbar.css('display', 'flex');
-                    var top = rect.top + window.scrollY - toolbar.outerHeight() - 8;
-                    var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.outerWidth() / 2);
-                    if (top < window.scrollY) top = rect.bottom + window.scrollY + 8; 
-                    if (left < 10) left = 10;
                     
-                    // 🚨 툴바가 오른쪽 화면 밖으로 나가지 않도록 핀셋 방어
-                    var maxLeft = $(window).width() - toolbar.outerWidth() - 10;
+                    // 디스플레이를 먼저 켜야 2줄로 꺾였을 때의 실제 높이를 구할 수 있습니다.
+                    toolbar.css('display', 'flex');
+                    
+                    var tWidth = toolbar.outerWidth();
+                    var tHeight = toolbar.outerHeight();
+                    
+                    // 텍스트 위로 안전하게 12px 띄워서 배치
+                    var top = rect.top + window.scrollY - tHeight - 12;
+                    var left = rect.left + window.scrollX + (rect.width / 2) - (tWidth / 2);
+                    
+                    // 화면 위를 뚫고 나갈 것 같으면, 텍스트의 아랫부분으로 배치
+                    if (top < window.scrollY + 10) {
+                        top = rect.bottom + window.scrollY + 12; 
+                    }
+                    
+                    // 좌/우 화면 밖으로 나가지 않도록 방어
+                    if (left < 10) left = 10;
+                    var maxLeft = $(window).width() - tWidth - 10;
                     if (left > maxLeft) left = maxLeft;
 
                     toolbar.css({ top: top + 'px', left: left + 'px' });
@@ -336,6 +350,7 @@
         }, 100);
     }
     document.addEventListener('selectionchange', checkSelection); document.addEventListener('mouseup', checkSelection); document.addEventListener('touchend', checkSelection);
+    
     window.formatText = function(command, value = null) { document.execCommand(command, false, value); checkSelection(); };
     window.applyColor = function(textColor, bgColor) { document.execCommand('foreColor', false, textColor); document.execCommand('backColor', false, bgColor); checkSelection(); };
 
@@ -409,9 +424,15 @@
 
         for(var file of files) {
             var compressed = await compressImage(file, qualityOption);
-            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${compressed.ext}`;
-            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
+            var fileExt = compressed.ext || 'jpg';
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob, {
+                contentType: compressed.fileOrBlob.type || 'image/jpeg'
+            });
+            
             if(!error) {
+                pendingUploads.push(fileName); 
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
             }
@@ -553,14 +574,14 @@
                 var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
-                var safeTitle = post.title ? post.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
-                var safeTags = tagsText ? tagsText.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
+                var safeTitle = (post.title || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                var safeTags = tagsText.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
                 var jsSafeTags = tagsText ? tagsText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
                 
                 var plainSearchText = `${post.title || ''} ${tagsText} ${displayDate}`.replace(/"/g, "");
                 var tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${jsSafeTags}')">${tagsText}</div>` : "";
 
-                // 🚨 핀셋 수정: 목록 제목 폰트 크기 및 두께 통일 (13px, normal)
+                // 🚨 목록 제목의 볼드 처리(font-weight) 삭제 적용 완료
                 var postHtml = `
                     <div class="feed-item fade-in-element" id="post-${post.id}" data-search="${plainSearchText}">
                         <div class="hasion-accordion-header" id="accordion-header-${post.id}" onclick="toggleHasionAccordion(${post.id})">
@@ -648,9 +669,15 @@
 
         for(var file of files) {
             var compressed = await compressImage(file, qualityOption);
-            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${compressed.ext}`;
-            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob);
+            var fileExt = compressed.ext || 'jpg';
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            
+            var { error } = await hasionSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob, {
+                contentType: compressed.type || 'image/jpeg'
+            });
+            
             if(!error) {
+                pendingUploads.push(fileName); 
                 var { data } = hasionSupabase.storage.from('images').getPublicUrl(fileName);
                 allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
             }
@@ -693,6 +720,8 @@
             }]);
             
             if (error) throw error;
+            
+            pendingUploads = []; 
             
             $('#hasion-title').val('');
             $('#hasion-content').html(''); 
@@ -748,6 +777,8 @@
             }).eq('id', id);
             
             if (error) throw error;
+
+            pendingUploads = []; 
 
             if (oldPost && oldPost.content) {
                 var oldImages = extractImageNamesFromHtml(oldPost.content);
@@ -825,6 +856,7 @@
             pendingUploads = [];
         }
     }
+    
     window.addEventListener('beforeunload', clearOrphanImages);
     
     var hasionObserver = new MutationObserver(function(mutations) {
