@@ -96,7 +96,7 @@ window.openRecordModal = function(prefill = false) {
     }
     
     $('#modal-content').html('');
-    $('#modal-rating').val('0');
+    $('#modal-rating').val('0'); // 🚨 열릴 때 별점 데이터 0으로 초기화
     $('#modal-is-main').prop('checked', false);
     window.updateStarUI(0);
     window.setRecordDefaultDate();
@@ -108,8 +108,9 @@ window.closeRecordModal = function() {
 };
 
 // ==========================================================================
-// 4. 별점 (0.5 단위) 인터랙티브 로직
+// 4. 별점 (0.5 단위) 인터랙티브 로직 (🚨 클릭 시 완벽 고정)
 // ==========================================================================
+// 마우스를 올릴 때 (미리보기)
 $(document).off('mousemove', '.star-icon').on('mousemove', '.star-icon', function(e) {
     var rect = this.getBoundingClientRect();
     var val = parseFloat($(this).attr('data-idx'));
@@ -117,18 +118,23 @@ $(document).off('mousemove', '.star-icon').on('mousemove', '.star-icon', functio
     window.updateStarUI(isHalf ? val - 0.5 : val);
 });
 
+// 🚨 마우스 클릭 시 (점수 확정 & 숨겨진 input에 저장)
 $(document).off('click', '.star-icon').on('click', '.star-icon', function(e) {
     var rect = this.getBoundingClientRect();
     var val = parseFloat($(this).attr('data-idx'));
     var isHalf = (e.clientX - rect.left) < (rect.width / 2);
-    $('#modal-rating').val(isHalf ? val - 0.5 : val); 
+    var finalRating = isHalf ? val - 0.5 : val;
+    $('#modal-rating').val(finalRating); 
+    window.updateStarUI(finalRating);
 });
 
+// 마우스가 별 영역을 벗어나면 (확정된 점수로 복구)
 $(document).off('mouseleave', '#star-rating-ui').on('mouseleave', '#star-rating-ui', function() {
     var currentRating = parseFloat($('#modal-rating').val()) || 0;
     window.updateStarUI(currentRating);
 });
 
+// 별 UI 렌더링 함수
 window.updateStarUI = function(rating) {
     $('.star-icon').each(function() {
         var idx = parseFloat($(this).attr('data-idx'));
@@ -246,7 +252,7 @@ window.executeApiSearch = async function() {
                 $('#modal-title').val(item.title);
                 $('#modal-release-year').val(item.year);
                 
-                // 감독 정보 2차 검색 마법
+                // 감독 정보 2차 검색
                 if (category === 'movie' || category === 'drama') {
                     $('#modal-creator').val('감독 정보 로딩 중...');
                     try {
@@ -332,7 +338,7 @@ window.loadRecordData = async function() {
     var { data, error } = await window.recordSupabase.from('record').select('*').order('created_at', { ascending: true });
     if (error) { console.error(error); return; }
     
-    // N회차 자동 계산 로직 (과거부터 누적)
+    // N회차 자동 계산 로직 (과거 날짜부터 누적 계산)
     var titleCount = {};
     data.forEach(item => {
         if(item.title) {
@@ -342,7 +348,7 @@ window.loadRecordData = async function() {
         }
     });
 
-    // 화면용 최신순 정렬
+    // 화면용 최신순(내림차순) 정렬
     data.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
     window.recordData = data;
     
@@ -410,7 +416,6 @@ window.renderRecordCalendar = function() {
     var firstDay = new Date(y, m, 1).getDay();
     var lastDate = new Date(y, m + 1, 0).getDate();
     
-    // 월 이동 네비게이션
     var html = `
         <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px; color: var(--main-color); font-weight: 600;">
             <i class="xi-angle-left" style="cursor:pointer;" onclick="changeRecordMonth(-1)"></i>
@@ -487,6 +492,7 @@ window.changeRecordMonth = function(delta) {
     window.renderRecordStats();
 };
 
+// N회차 이어쓰기 트리거
 window.addNthRecord = function(title, creator, category, cover) {
     window.openRecordModal(true); 
     $('#modal-title').val(title);
