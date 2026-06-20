@@ -46,9 +46,8 @@
 .nav-btn.active { color: var(--point-color); transform: translateY(-2px); }
 
 /* ==========================================================================
-   🚨 [수정] 팝업 레이아웃: 정보(2단) + 에디터(1단 전체)
+   글쓰기 팝업 레이아웃: 정보(2단) + 에디터(1단 전체)
    ========================================================================== */
-/* 상단 2단 정보 영역 */
 .record-top-info {
     display: flex;
     gap: 20px;
@@ -97,10 +96,10 @@
 #modal-content::-webkit-scrollbar { display: none; }
 #modal-content hr { border: none; border-top: 1px solid var(--divider-bg); margin: 20px 0; width: 100%; opacity: 0.7; }
 
-/* 📱 모바일 (768px 이하) 레이아웃 변경 */
+/* 📱 모바일 (768px 이하) 레이아웃 변경: 포스터가 위로 */
 @media (max-width: 768px) {
     .record-top-info {
-        flex-direction: column-reverse; /* 포스터가 위로 */
+        flex-direction: column-reverse; 
         align-items: center;
     }
     .record-info-left { width: 100%; }
