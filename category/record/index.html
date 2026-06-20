@@ -56,6 +56,7 @@
             </div>
 
             <div class="record-top-info">
+                
                 <div class="record-info-left">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <select id="modal-category" class="record-category-badge">
@@ -80,24 +81,26 @@
                 </div>
 
                 <div class="record-info-right">
-                    <div id="record-preview-wrap" style="position: relative; width: 100%; display: flex; justify-content: center;">
+                    <div id="record-preview-wrap" style="position: relative; width: 100px; height: 140px; display: flex; justify-content: center;">
                         <button onclick="removeRecordPreview()" style="position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px; z-index: 12; display: none;" id="btn-remove-preview"><i class="xi-close"></i></button>
-                        <div id="record-image-frame" style="width: 110px; height: 160px; border-radius: 6px; border: 1px solid var(--divider-bg); background: var(--input-bg); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        <div id="record-image-frame" style="width: 100%; height: 100%; border-radius: 6px; border: 1px solid var(--divider-bg); background: var(--input-bg); display: flex; align-items: center; justify-content: center; overflow: hidden;">
                             <i class="xi-image-o" id="record-image-placeholder" style="color: var(--sub-color); font-size: 24px; opacity: 0.5;"></i>
                             <img id="record-image-preview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
                         </div>
                         <input type="hidden" id="record-cover-url" value="">
                     </div>
-                    <div id="star-rating-ui" style="display: flex; gap: 2px; color: var(--divider-bg); font-size: 20px; cursor: pointer;">
-                        <i class="xi-star-o star-icon" data-idx="1"></i><i class="xi-star-o star-icon" data-idx="2"></i>
-                        <i class="xi-star-o star-icon" data-idx="3"></i><i class="xi-star-o star-icon" data-idx="4"></i>
+                    
+                    <div id="star-rating-ui" style="display: flex; justify-content: center; gap: 4px; color: var(--divider-bg); font-size: 22px; cursor: pointer; width: 100%;">
+                        <i class="xi-star-o star-icon" data-idx="1"></i>
+                        <i class="xi-star-o star-icon" data-idx="2"></i>
+                        <i class="xi-star-o star-icon" data-idx="3"></i>
+                        <i class="xi-star-o star-icon" data-idx="4"></i>
                         <i class="xi-star-o star-icon" data-idx="5"></i>
                     </div>
                     <input type="hidden" id="modal-rating" value="0">
                 </div>
-            </div>
 
-            <div id="modal-content" contenteditable="true" spellcheck="false" placeholder="기록을 남겨주세요..."></div>
+            </div> <div id="modal-content" contenteditable="true" spellcheck="false" placeholder="기록을 남겨주세요..."></div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--divider-bg); padding-top: 15px; flex-shrink: 0; margin-top: 10px;">
                 <label style="font-size: 11px; color: var(--sub-color); cursor: pointer; display: flex; align-items: center; gap: 4px;">
@@ -132,4 +135,4 @@
     </div>
 </div>
 
-<script src="category/record/record.js?v=5"></script>
+<script src="category/record/record.js?v=6"></script>
