@@ -46,11 +46,11 @@
 .nav-btn.active { color: var(--point-color); transform: translateY(-2px); }
 
 /* ==========================================================================
-   글쓰기 팝업 레이아웃: 정보(2단) + 에디터(1단 전체)
+   🚨 [수정] 글쓰기 팝업 레이아웃 (좌:텍스트정보 / 우:이미지+별점 / 하단:본문)
    ========================================================================== */
 .record-top-info {
     display: flex;
-    gap: 20px;
+    gap: 25px;
     margin-bottom: 15px;
     padding-bottom: 15px;
     border-bottom: 1px solid var(--divider-bg);
@@ -60,32 +60,33 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
 }
 .record-info-right {
-    width: 110px;
+    width: 120px; /* 우측 이미지+별점 영역 꽉 묶기 */
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    align-items: center; /* 정중앙 정렬 완벽 고정 */
+    justify-content: center;
+    gap: 10px; /* 이미지와 별점 사이 간격 */
 }
 
-/* 카테고리 뱃지 디자인 */
+/* 🚨 별점 부드러운 전환 애니메이션 (딱딱함 완벽 해소) */
+.star-icon {
+    transition: color 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: inline-block;
+}
+.star-icon:active {
+    transform: scale(0.8); /* 클릭 시 살짝 눌리는 쫀득한 효과 */
+}
+
 .record-category-badge {
-    background: var(--input-bg);
-    border: 1px solid var(--divider-bg);
-    border-radius: 6px;
-    color: var(--main-color);
-    font-family: 'Noto Serif KR', serif;
-    font-size: 11px;
-    padding: 4px 8px;
-    outline: none;
-    cursor: pointer;
-    font-weight: 600;
+    background: var(--input-bg); border: 1px solid var(--divider-bg); border-radius: 6px;
+    color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 11px;
+    padding: 4px 8px; outline: none; cursor: pointer; font-weight: 600; text-align-last: center;
 }
 
-/* 풀사이즈 1단 에디터 */
 #modal-content {
     flex: 1; width: 100%; overflow-y: auto;
     background: transparent; border: none; outline: none;
@@ -96,11 +97,7 @@
 #modal-content::-webkit-scrollbar { display: none; }
 #modal-content hr { border: none; border-top: 1px solid var(--divider-bg); margin: 20px 0; width: 100%; opacity: 0.7; }
 
-/* 📱 모바일 (768px 이하) 레이아웃 변경: 포스터가 위로 */
 @media (max-width: 768px) {
-    .record-top-info {
-        flex-direction: column-reverse; 
-        align-items: center;
-    }
+    .record-top-info { flex-direction: column-reverse; align-items: center; gap: 20px; }
     .record-info-left { width: 100%; }
 }
