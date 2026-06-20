@@ -475,7 +475,7 @@
             let extraHtml = "";
 
             if (dayTodos.length > 0) {
-                inlineStyle = `background: var(--cat-${color}); color: #fff; font-weight: bold;`;
+                inlineStyle = `background: var(--cat-${color}); font-weight: bold;`;
                 extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7.5px; color:var(--cat-${color}); font-weight:normal;">${dayTodos.length}개</div>`;
             }
             grid.append(`<div class="${classes}" style="${inlineStyle}" onclick="selectStatsDate('${dStr}')">${i}${extraHtml}</div>`);
