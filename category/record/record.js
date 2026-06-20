@@ -15,6 +15,7 @@ const KAKAO_REST_KEY = '261889b87c5bf523ddd8846c0c45ec2e';
 
 window.recordSelectedFile = null;
 window.recordData = []; 
+window.recordCurrentDate = new Date(); // 캘린더/통계 월 이동용
 
 // ==========================================================================
 // 2. 탭 메뉴 스위칭 로직
@@ -27,41 +28,78 @@ window.switchRecordTab = function(tabName, btn) {
 };
 
 // ==========================================================================
-// 3. 글쓰기 팝업 및 에디터 툴바 로직
+// 3. 플로팅 툴바 및 글쓰기 팝업 로직
 // ==========================================================================
+window.checkRecordSelection = function() {
+    var selection = window.getSelection();
+    var toolbar = document.getElementById('record-floating-toolbar');
+    if (!toolbar) return;
+    
+    if (selection.rangeCount > 0 && !selection.isCollapsed) {
+        var node = selection.anchorNode;
+        var isInsideEditor = false;
+        
+        while (node != null) {
+            if (node.id === 'modal-content') { isInsideEditor = true; break; }
+            node = node.parentNode;
+        }
+        
+        if (isInsideEditor) {
+            var range = selection.getRangeAt(0);
+            var rect = range.getBoundingClientRect();
+            toolbar.style.display = 'flex';
+            
+            var top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
+            var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
+            
+            if (top < window.scrollY) top = rect.bottom + window.scrollY + 8; 
+            if (left < 10) left = 10;
+            
+            toolbar.style.top = top + 'px'; 
+            toolbar.style.left = left + 'px';
+        } else { 
+            toolbar.style.display = 'none'; 
+        }
+    } else { 
+        toolbar.style.display = 'none'; 
+    }
+};
+
+document.addEventListener('selectionchange', window.checkRecordSelection);
+document.addEventListener('mouseup', window.checkRecordSelection);
+document.addEventListener('touchend', window.checkRecordSelection);
+
+window.formatRecord = function(command, value = null) {
+    document.execCommand(command, false, value);
+    window.checkRecordSelection();
+    $('#modal-content').focus();
+};
+
 window.setRecordDefaultDate = function() {
     var today = new Date();
     var yyyy = today.getFullYear();
     var mm = String(today.getMonth() + 1).padStart(2, '0');
     var dd = String(today.getDate()).padStart(2, '0');
     $('#modal-date-picker').val(`${yyyy}-${mm}-${dd}`);
-}
-
-// 🚨 에디터 툴바 (구분선, 굵게, 포인트 색상)
-window.formatRecord = function(command, value = null) {
-    document.execCommand(command, false, value);
-    $('#modal-content').focus();
 };
 
-window.openRecordModal = function(prefill = null) {
-    // prefill(미리채우기) 데이터가 없으면 완전 초기화
+window.openRecordModal = function(prefill = false) {
     if(!prefill) {
         $('#modal-title').val('');
         $('#modal-release-year').val('');
         $('#modal-creator').val('');
         $('#modal-tags').val('');
         $('#modal-author').val('김민정');
+        $('#modal-category').val('movie');
         $('#record-cover-url').val('');
         window.removeRecordPreview();
     }
     
-    // 내용 및 별점 초기화
     $('#modal-content').html('');
     $('#modal-rating').val('0');
     $('#modal-is-main').prop('checked', false);
     window.updateStarUI(0);
     window.setRecordDefaultDate();
-
     $('#record-lightbox').css('display', 'flex');
 };
 
@@ -72,31 +110,25 @@ window.closeRecordModal = function() {
 // ==========================================================================
 // 4. 별점 (0.5 단위) 인터랙티브 로직
 // ==========================================================================
-// 마우스가 별 위에서 움직일 때 (왼쪽 절반이면 0.5, 오른쪽 절반이면 1)
 $(document).off('mousemove', '.star-icon').on('mousemove', '.star-icon', function(e) {
     var rect = this.getBoundingClientRect();
     var val = parseFloat($(this).attr('data-idx'));
     var isHalf = (e.clientX - rect.left) < (rect.width / 2);
-    var hoverRating = isHalf ? val - 0.5 : val;
-    window.updateStarUI(hoverRating);
+    window.updateStarUI(isHalf ? val - 0.5 : val);
 });
 
-// 마우스를 클릭해서 별점 확정
 $(document).off('click', '.star-icon').on('click', '.star-icon', function(e) {
     var rect = this.getBoundingClientRect();
     var val = parseFloat($(this).attr('data-idx'));
     var isHalf = (e.clientX - rect.left) < (rect.width / 2);
-    var finalRating = isHalf ? val - 0.5 : val;
-    $('#modal-rating').val(finalRating); // 숨겨진 input에 값 저장
+    $('#modal-rating').val(isHalf ? val - 0.5 : val); 
 });
 
-// 마우스가 별점 영역을 벗어나면 확정된 별점으로 되돌아감
 $(document).off('mouseleave', '#star-rating-ui').on('mouseleave', '#star-rating-ui', function() {
     var currentRating = parseFloat($('#modal-rating').val()) || 0;
     window.updateStarUI(currentRating);
 });
 
-// 별 모양(아이콘)을 채워주는 함수
 window.updateStarUI = function(rating) {
     $('.star-icon').each(function() {
         var idx = parseFloat($(this).attr('data-idx'));
@@ -214,8 +246,9 @@ window.executeApiSearch = async function() {
                 $('#modal-title').val(item.title);
                 $('#modal-release-year').val(item.year);
                 
+                // 감독 정보 2차 검색 마법
                 if (category === 'movie' || category === 'drama') {
-                    $('#modal-creator').val('감독 정보 불러오는 중...');
+                    $('#modal-creator').val('감독 정보 로딩 중...');
                     try {
                         var detailType = category === 'movie' ? 'movie' : 'tv';
                         var detailRes = await fetch(`https://api.themoviedb.org/3/${detailType}/${item.id}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits`);
@@ -250,7 +283,7 @@ window.executeApiSearch = async function() {
 };
 
 // ==========================================================================
-// 7. DB 저장 및 불러오기 (N회차 자동계산 로직 포함)
+// 7. DB 저장, N회차 엔진 및 3대 렌더러(리스트, 캘린더, 통계)
 // ==========================================================================
 window.saveRecordPost = async function() {
     var btn = $('#btn-save-record');
@@ -262,16 +295,16 @@ window.saveRecordPost = async function() {
             title: $('#modal-title').val().trim(),
             release_year: $('#modal-release-year').val().trim(),
             creator: $('#modal-creator').val().trim(),
-            tags: $('#modal-tags').val().trim(),          // 🚨 태그 추가
-            author: $('#modal-author').val().trim(),      // 🚨 작성자 추가
+            tags: $('#modal-tags').val().trim(),
+            author: $('#modal-author').val().trim(),
             content: $('#modal-content').html(),
-            rating: parseFloat($('#modal-rating').val()) || 0, // 🚨 0.5 별점 연동
+            rating: parseFloat($('#modal-rating').val()) || 0,
             is_main: $('#modal-is-main').is(':checked'),
             created_at: $('#modal-date-picker').val() + 'T12:00:00+09:00', 
             cover_url: $('#record-cover-url').val()
         };
 
-        if (!dataObj.title) { alert("작품명을 입력해주세요."); throw new Error("Title is empty"); }
+        if (!dataObj.title) { alert("Title을 입력해주세요."); throw new Error("Title is empty"); }
 
         if (window.recordSelectedFile) {
             var file = window.recordSelectedFile;
@@ -295,33 +328,33 @@ window.saveRecordPost = async function() {
     }
 };
 
-// DB에서 불러오기 및 N회차 자동 계산
 window.loadRecordData = async function() {
     var { data, error } = await window.recordSupabase.from('record').select('*').order('created_at', { ascending: true });
     if (error) { console.error(error); return; }
     
-    // 🚨 핵심: 날짜순으로 과거부터 돌면서 이름(Title)이 같으면 1회차, 2회차 뱃지 누적
+    // N회차 자동 계산 로직 (과거부터 누적)
     var titleCount = {};
     data.forEach(item => {
         if(item.title) {
             var safeTitle = item.title.trim().toLowerCase();
             titleCount[safeTitle] = (titleCount[safeTitle] || 0) + 1;
-            item.calculated_nth = titleCount[safeTitle]; // 동적 N회차 부여
+            item.calculated_nth = titleCount[safeTitle]; 
         }
     });
 
-    // 화면에 보여줄 때는 최신순(내림차순)으로 다시 뒤집음
+    // 화면용 최신순 정렬
     data.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
     window.recordData = data;
     
-    renderRecordList();
-    // 캘린더와 통계는 다음 단계에서 조율 후 추가
+    window.renderRecordList();
+    window.renderRecordCalendar();
+    window.renderRecordStats();
 };
 
 window.renderRecordList = function() {
     var container = $('#record-list-container');
     if (window.recordData.length === 0) {
-        container.html('<p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 30px; opacity: 0.6;">아직 기록이 없습니다. 연필을 눌러 추가해보세요!</p>');
+        container.html('<p style="text-align: center; color: var(--sub-color); font-size: 11px; margin-top: 30px; opacity: 0.6;">아직 기록이 없습니다.</p>');
         return;
     }
     
@@ -336,7 +369,6 @@ window.renderRecordList = function() {
             ? `<img src="${item.cover_url}" style="width: 75px; height: 110px; object-fit: cover; border-radius: 6px; border: 1px solid var(--divider-bg); flex-shrink: 0;">`
             : `<div style="width: 75px; height: 110px; background: var(--divider-bg); border-radius: 6px; display: flex; align-items:center; justify-content:center; flex-shrink: 0;"><i class="xi-image-o" style="color:var(--sub-color); opacity:0.5;"></i></div>`;
             
-        // 🚨 N회차 이어쓰기용 데이터 문자열화 방어막 (따옴표 에러 방지)
         var safeTitle = item.title ? item.title.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
         var safeCreator = item.creator ? item.creator.replace(/'/g, "\\'").replace(/"/g, "&quot;") : '';
         var safeCat = item.category;
@@ -346,7 +378,6 @@ window.renderRecordList = function() {
         <div style="display: flex; gap: 15px; background: transparent; padding: 15px 0; border-bottom: 1px solid var(--divider-bg);">
             ${imgHtml}
             <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
-                
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="font-size: 9px; padding: 2px 6px; background: ${colorVar}; color: #333; border-radius: 10px; font-weight: 600;">${item.category}</span>
@@ -359,14 +390,11 @@ window.renderRecordList = function() {
                     ${item.title} ${nthStr}
                 </div>
                 <div style="font-size: 11px; color: var(--sub-color); margin-bottom: 8px;">${item.creator || ''}</div>
-                
                 ${tagsStr}
                 
                 <div style="font-size: 11px; color: var(--sub-color); margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end;">
                     <div style="font-weight: bold;">${starStr}</div>
-                    
-                    <!-- 🚨 이어쓰기 (N회차 추가) 버튼 -->
-                    <button onclick="addNthRecord('${safeTitle}', '${safeCreator}', '${safeCat}', '${safeCover}')" title="이 작품 N회차 기록하기" style="background: var(--input-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 4px 10px; font-family: 'Noto Serif KR', serif; font-size: 10px; color: var(--sub-color); cursor: pointer; transition: 0.2s;"><i class="xi-plus"></i> N회차 추가</button>
+                    <button onclick="addNthRecord('${safeTitle}', '${safeCreator}', '${safeCat}', '${safeCover}')" title="N회차 추가" style="background: var(--input-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 4px 10px; font-family: 'Noto Serif KR', serif; font-size: 10px; color: var(--sub-color); cursor: pointer; transition: 0.2s;"><i class="xi-plus"></i> Add</button>
                 </div>
             </div>
         </div>`;
@@ -374,14 +402,97 @@ window.renderRecordList = function() {
     container.html(html);
 };
 
-// 🚨 N회차 "이어쓰기" 버튼을 눌렀을 때 실행되는 함수
-window.addNthRecord = function(title, creator, category, cover) {
-    window.openRecordModal(true); // prefill=true 로 열어서 내용이 날아가지 않게 함
+// [캘린더 뷰 렌더링 엔진]
+window.renderRecordCalendar = function() {
+    var container = $('#record-cal-container');
+    var y = window.recordCurrentDate.getFullYear();
+    var m = window.recordCurrentDate.getMonth();
+    var firstDay = new Date(y, m, 1).getDay();
+    var lastDate = new Date(y, m + 1, 0).getDate();
     
+    // 월 이동 네비게이션
+    var html = `
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px; color: var(--main-color); font-weight: 600;">
+            <i class="xi-angle-left" style="cursor:pointer;" onclick="changeRecordMonth(-1)"></i>
+            <span>${y}년 ${m+1}월 아카이브</span>
+            <i class="xi-angle-right" style="cursor:pointer;" onclick="changeRecordMonth(1)"></i>
+        </div>`;
+        
+    html += `<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center;">`;
+    var days = ['일', '월', '화', '수', '목', '금', '토'];
+    days.forEach(d => { html += `<div style="font-size: 10px; color: var(--sub-color); padding-bottom: 5px;">${d}</div>`; });
+    
+    for(var i=0; i<firstDay; i++) { html += `<div></div>`; }
+    for(var i=1; i<=lastDate; i++) {
+        var dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+        var records = window.recordData.filter(r => r.created_at.startsWith(dateStr));
+        var mainRecord = records.find(r => r.is_main) || records[0]; 
+        
+        var cellContent = `<div style="font-size: 10px; color: var(--sub-color); position: absolute; top: 2px; left: 4px; z-index: 2; text-shadow: 0 0 2px rgba(255,255,255,0.8);">${i}</div>`;
+        if (mainRecord && mainRecord.cover_url) {
+            cellContent += `<img src="${mainRecord.cover_url}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.95; border-radius: 4px;">`;
+        } else if (mainRecord) {
+            cellContent += `<div style="width: 100%; height: 100%; background: var(--rec-${mainRecord.category}); opacity: 0.5; border-radius: 4px;"></div>`;
+        }
+
+        html += `<div style="position: relative; aspect-ratio: 3/4; border: 1px solid var(--divider-bg); border-radius: 4px; overflow: hidden; background: var(--dropdown-bg);">
+            ${cellContent}
+        </div>`;
+    }
+    html += `</div>`;
+    container.html(html);
+};
+
+// [통계 뷰 렌더링 엔진]
+window.renderRecordStats = function() {
+    var container = $('#record-stats-container');
+    var y = window.recordCurrentDate.getFullYear();
+    var m = window.recordCurrentDate.getMonth();
+    var firstDay = new Date(y, m, 1).getDay();
+    var lastDate = new Date(y, m + 1, 0).getDate();
+    
+    var html = `
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px; color: var(--main-color); font-weight: 600;">
+            <i class="xi-angle-left" style="cursor:pointer;" onclick="changeRecordMonth(-1)"></i>
+            <span>${y}년 ${m+1}월 통계</span>
+            <i class="xi-angle-right" style="cursor:pointer;" onclick="changeRecordMonth(1)"></i>
+        </div>`;
+        
+    html += `<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center;">`;
+    var days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    days.forEach(d => { html += `<div style="font-size: 10px; color: var(--sub-color);">${d}</div>`; });
+    
+    for(var i=0; i<firstDay; i++) { html += `<div></div>`; }
+    for(var i=1; i<=lastDate; i++) {
+        var dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+        var records = window.recordData.filter(r => r.created_at.startsWith(dateStr));
+        var dotsHtml = '';
+        records.forEach(r => {
+            dotsHtml += `<div style="width: 6px; height: 6px; border-radius: 50%; background: var(--rec-${r.category}); display: inline-block; margin: 1px;"></div>`;
+        });
+        
+        html += `<div style="font-size: 11px; padding: 5px 0; color: var(--main-color); border: 1px solid var(--divider-bg); border-radius: 4px; min-height: 40px; display: flex; flex-direction: column; align-items: center; background: var(--dropdown-bg);">
+            <div>${i}</div>
+            <div style="margin-top: 2px; display: flex; flex-wrap: wrap; justify-content: center; max-width: 80%;">${dotsHtml}</div>
+        </div>`;
+    }
+    html += `</div>`;
+    container.html(html);
+};
+
+// 월 이동 컨트롤러
+window.changeRecordMonth = function(delta) {
+    window.recordCurrentDate.setMonth(window.recordCurrentDate.getMonth() + delta);
+    window.renderRecordCalendar();
+    window.renderRecordStats();
+};
+
+window.addNthRecord = function(title, creator, category, cover) {
+    window.openRecordModal(true); 
     $('#modal-title').val(title);
     $('#modal-creator').val(creator);
     $('#modal-category').val(category);
-    $('#modal-tags').val(''); // 태그와 본문은 비워줌
+    $('#modal-tags').val(''); 
     $('#modal-content').html('');
     
     if(cover) {
