@@ -87,12 +87,6 @@
 
     .daily-post-item { display: flex; flex-direction: column; gap: 10px; }
     
-    .daily-post-img-wrapper { width: 100%; cursor: pointer; }
-    .daily-post-img {
-        width: 100%; max-height: 450px; object-fit: cover;
-        border-radius: 6px; border: 1px solid var(--divider-bg);
-    }
-
     .daily-post-title {
         font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color); cursor: pointer;
     }
@@ -102,13 +96,11 @@
         line-height: 1.8; word-break: break-all; white-space: pre-wrap; cursor: pointer; 
     }
 
-    /* 🚨 첫 줄 폰트 크기 일괄 고정 패치 (피드 및 에디터 내부) */
     .daily-post-text div, .daily-post-text p,
     .daily-modal-editor div, .daily-modal-editor p {
         font-size: 13.5px; line-height: 1.8; margin: 0; padding: 0;
     }
 
-    /* 클릭 시 나타나는 묶음 패널 (태그 + 버튼) */
     .daily-admin-panel {
         display: none; flex-direction: column; align-items: flex-end; gap: 6px; margin-top: 4px;
     }
@@ -153,7 +145,7 @@
     .daily-modal-input:focus { border-bottom-color: var(--point-color); }
     
     .daily-modal-editor {
-        width: 100%; min-height: 120px; background: transparent; border: none;
+        width: 100%; min-height: 150px; background: transparent; border: none;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13.5px;
         line-height: 1.8; outline: none; padding: 5px 0; word-break: break-all;
     }
@@ -164,18 +156,9 @@
         transition: 0.2s; opacity: 0.4;
     }
     .daily-add-img-btn:hover { opacity: 1; color: var(--point-color); }
-    
-    .daily-preview-wrap { position: relative; display: none; margin-bottom: 10px; }
-    .daily-preview-wrap img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 4px; }
-    
-    .daily-remove-preview {
-        position: absolute; top: -6px; right: -6px; background: var(--point-color); color: #fff;
-        border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center; font-size: 9px;
-    }
 
     .daily-modal-footer {
-        display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--divider-bg); padding-top: 15px;
+        display: flex; justify-content: space-between; align-items: center; margin-top: 5px; border-top: 1px solid var(--divider-bg); padding-top: 15px;
     }
     .daily-modal-date {
         background: transparent; border: none; outline: none; color: var(--sub-color);
@@ -187,52 +170,108 @@
     }
     .daily-modal-submit:hover { opacity: 1; transform: translateX(3px); }
 
+    /* ==========================================================================
+       [🚨 에디터 인라인 이미지 규격 (완벽한 자동 2px 그리드)]
+       ========================================================================== */
+    .editor-img-wrap {
+        display: inline-block; position: relative; vertical-align: top; 
+        margin: 0 0 2px 0; cursor: pointer; transition: width 0.25s ease;
+        box-sizing: border-box; border-radius: 4px; overflow: hidden;
+    }
+    
+    .img-full { width: 100%; display: block; margin-bottom: 2px; }
+    .img-half { width: calc(49.2% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
+    .img-third { width: calc(32.5% - 2px); display: inline-block; margin-right: 2px; margin-bottom: 2px; }
+    
+    .editor-img-wrap img {
+        width: 100%; height: auto; display: block; 
+        border: 1px solid var(--divider-bg); pointer-events: none;
+    }
+
+    .read-mode .editor-img-wrap img {
+        pointer-events: auto; cursor: pointer; -webkit-touch-callout: default;
+    }
+    .img-del-btn { display: none !important; }
+
+    /* ==========================================================================
+       [🚨 드래그 텍스트 툴바 (2단 접힘 및 높이 계산 최적화)]
+       ========================================================================== */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
-        border: 1px solid var(--point-color); border-radius: 6px; padding: 4px 6px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
-        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-        user-select: none; 
+        border: 1px solid var(--point-color); border-radius: 8px; padding: 6px 8px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 9999;
+        align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
+        flex-wrap: wrap; justify-content: center; max-width: 290px;
     }
-    .format-toolbar button {
-        background: none; border: none; color: var(--main-color); font-size: 14px;
-        cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s;
-        display: flex; align-items: center; justify-content: center; width: 26px; height: 26px;
-    }
+    .format-toolbar button { background: none; border: none; color: var(--main-color); font-size: 14px; cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
     .format-toolbar button:hover { background: rgba(0,0,0,0.05); }
     .format-toolbar .divider { width: 1px; height: 16px; background: var(--divider-bg); margin: 0 4px; }
-    
-    .color-picker-label {
-        display: flex; align-items: center; justify-content: center; width: 26px; height: 26px;
-        cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; overflow: hidden; margin: 0;
-    }
+    .color-picker-label { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; cursor: pointer; border-radius: 4px; transition: 0.2s; position: relative; overflow: hidden; margin: 0; }
     .color-picker-label:hover { background: rgba(0,0,0,0.05); }
     .color-picker-label i { font-size: 14px; color: var(--main-color); pointer-events: none; }
     .native-color-picker { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; border: none; padding: 0; }
-
-    .color-btn { 
-        font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; 
-        border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px;
-    }
+    .color-btn { font-family: 'Courier New', Courier, monospace; font-size: 12px !important; font-weight: bold; border-radius: 50% !important; width: 22px !important; height: 22px !important; margin: 0 2px; }
     .btn-mint { color: #0E865E !important; background: #E1F9F1 !important; }
     .btn-pink { color: #D04978 !important; background: #FDEDF4 !important; }
+    #fontSizeInput::-webkit-outer-spin-button, #fontSizeInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    /* ==========================================================================
+       [작고 미니멀한 1줄짜리 사진 조율 툴바]
+       ========================================================================== */
+    .img-format-toolbar {
+        position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
+        border: 1px solid var(--point-color); border-radius: 8px; padding: 4px 6px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 9999;
+        align-items: center; gap: 2px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        user-select: none; flex-direction: row;
+        animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .img-format-toolbar button {
+        background: none; border: none; color: var(--main-color); font-size: 16px;
+        cursor: pointer; padding: 0; border-radius: 4px; transition: 0.2s;
+        display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+    }
+    .img-format-toolbar button:hover { background: rgba(0,0,0,0.05); color: var(--point-color); }
+    .img-format-toolbar .divider { width: 1px; height: 18px; background: var(--divider-bg); margin: 0 4px; }
+    .img-format-toolbar .btn-delete { color: #ff3b30; }
+    .img-format-toolbar .btn-delete:hover { background: rgba(255,59,48,0.1); color: #ff3b30; }
 </style>
 
 <div id="format-toolbar" class="format-toolbar">
-    <button onmousedown="event.preventDefault(); formatText('bold')"><i class="xi-bold"></i></button>
-    <button onmousedown="event.preventDefault(); formatText('italic')"><i class="xi-italic"></i></button>
-    <button onmousedown="event.preventDefault(); formatText('underline')"><i class="xi-underline"></i></button>
-    <button onmousedown="event.preventDefault(); formatText('strikeThrough')"><i class="xi-strikethrough"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('undo')" title="뒤로 가기 (실행 취소)"><i class="xi-undo"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('redo')" title="앞으로 가기 (다시 실행)"><i class="xi-redo"></i></button>
+    <div class="divider"></div>
+    <button onmousedown="event.preventDefault(); formatText('bold')" title="굵게"><i class="xi-bold"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('italic')" title="기울임"><i class="xi-italic"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('underline')" title="밑줄"><i class="xi-underline"></i></button>
+    <button onmousedown="event.preventDefault(); formatText('strikeThrough')" title="취소선"><i class="xi-strikethrough"></i></button>
     <div class="divider"></div>
     <label class="color-picker-label" onmousedown="saveSelection()"><i class="xi-font"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('foreColor', this.value)" onchange="applyCustomColor('foreColor', this.value)"></label>
     <label class="color-picker-label" onmousedown="saveSelection()"><i class="xi-palette"></i><input type="color" class="native-color-picker" oninput="applyCustomColor('backColor', this.value)" onchange="applyCustomColor('backColor', this.value)"></label>
     <div class="divider"></div>
     <button onmousedown="event.preventDefault(); applyColor('#0E865E', '#E1F9F1')" class="color-btn btn-mint">M</button>
     <button onmousedown="event.preventDefault(); applyColor('#D04978', '#FDEDF4')" class="color-btn btn-pink">P</button>
+    <div class="divider"></div>
+    <div style="display:flex; align-items:center; gap:2px; padding:0 4px;">
+        <button onmousedown="event.preventDefault(); adjustFontSize(-1)" title="작게" style="width:20px;"><i class="xi-minus"></i></button>
+        <input type="number" id="fontSizeInput" value="13" style="width:34px; height:20px; background:transparent; border:1px solid var(--divider-bg); border-radius:3px; text-align:center; font-size:11px; color:var(--main-color); outline:none; -moz-appearance: textfield;" onchange="applyExactFontSize(this.value)">
+        <button onmousedown="event.preventDefault(); adjustFontSize(1)" title="크게" style="width:20px;"><i class="xi-plus"></i></button>
+        <span style="font-size:11px; color:var(--sub-color); margin-left:2px;">px</span>
+    </div>
+</div>
+
+<div id="img-format-toolbar" class="img-format-toolbar">
+    <button onmousedown="event.preventDefault(); setImgLayout('img-full')" title="꽉 차게 (1단)"><i class="xi-view-stream"></i></button>
+    <button onmousedown="event.preventDefault(); setImgLayout('img-half')" title="나란히 (2단)"><i class="xi-view-column"></i></button>
+    <button onmousedown="event.preventDefault(); setImgLayout('img-third')" title="옹기종기 (3단)"><i class="xi-apps"></i></button>
+    <div class="divider"></div>
+    <button onmousedown="event.preventDefault(); moveImgOrder('up')" title="위로"><i class="xi-arrow-up"></i></button>
+    <button onmousedown="event.preventDefault(); moveImgOrder('down')" title="아래로"><i class="xi-arrow-down"></i></button>
+    <div class="divider"></div>
+    <button class="btn-delete" onmousedown="event.preventDefault(); deleteSelectedImg()" title="지우기"><i class="xi-trash-o"></i></button>
 </div>
 
 <div class="daily-wrapper">
-    
     <div class="daily-top-actions">
         <div class="search-inner">
             <input type="text" id="daily-search" autocomplete="off" placeholder="Search">
@@ -252,44 +291,42 @@
         <div class="daily-tabs" id="daily-tabs"></div>
         <div class="daily-content-area" id="daily-content-area"></div>
     </div>
+</div>
 
+<div id="hasion-lightbox" class="hasion-lightbox" onclick="closeHasionLightbox()">
+    <img id="hasion-lightbox-img" src="" onclick="event.stopPropagation()">
 </div>
 
 <div id="daily-lightbox" class="daily-lightbox" onclick="if(event.target === this) closeDailyModal()">
     <div class="daily-lightbox-card">
-        
         <input type="hidden" id="daily-edit-id" value="">
-        <input type="hidden" id="daily-edit-img-url" value="">
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <label for="daily-file-input" class="daily-add-img-btn" title="Add Image"><i class="xi-image-o"></i></label>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--divider-bg); padding-bottom: 10px; margin-bottom: 15px;">
+            <input type="text" id="daily-modal-title" class="daily-modal-input" placeholder="Title" autocomplete="off" style="border: none; font-weight: 600; font-size: 14px; width: 100%; text-align: center; padding: 0;">
+            <i class="xi-close" onclick="closeDailyModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px; margin-left: 10px;"></i>
+        </div>
+
+        <div id="daily-modal-content" class="daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="Write here..."></div>
+
+        <div style="margin-top: 15px;">
+            <input type="text" id="daily-modal-tags" class="daily-modal-input" placeholder="Tags" autocomplete="off" style="font-size: 11px; padding: 4px 0;">
+        </div>
+
+        <div class="daily-modal-footer">
+            <input type="date" id="daily-modal-date" class="daily-modal-date" title="Change Date">
+            
+            <div style="display: flex; align-items: center; gap: 12px;">
                 <select id="daily-img-quality" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
                     <option value="original" selected>원본</option>
                     <option value="high">고화질</option>
                     <option value="low">저화질</option>
                 </select>
+                <label for="daily-file-input" class="daily-add-img-btn" title="사진 추가"><i class="xi-image-o"></i></label>
+                <input type="file" id="daily-file-input" accept="image/*" multiple style="display: none;">
+                <button class="daily-modal-submit" id="daily-submit-btn" onclick="saveDailyPost()">
+                    <i class="xi-arrow-right"></i>
+                </button>
             </div>
-            <i class="xi-close" onclick="closeDailyModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px;"></i>
-            <input type="file" id="daily-file-input" accept="image/*" style="display: none;">
-        </div>
-
-        <div class="daily-preview-wrap" id="daily-preview-wrap">
-            <button class="daily-remove-preview" onclick="removeDailyPreview()"><i class="xi-close"></i></button>
-            <img id="daily-image-preview" src="">
-        </div>
-
-        <input type="text" id="daily-modal-title" class="daily-modal-input" placeholder="Title" autocomplete="off">
-        
-        <input type="text" id="daily-modal-tags" class="daily-modal-input" placeholder="Tags" autocomplete="off">
-        
-        <div id="daily-modal-content" class="daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="Write here..."></div>
-
-        <div class="daily-modal-footer">
-            <input type="date" id="daily-modal-date" class="daily-modal-date" title="Change Date">
-            <button class="daily-modal-submit" id="daily-submit-btn" onclick="saveDailyPost()">
-                <i class="xi-arrow-right"></i>
-            </button>
         </div>
 
     </div>
@@ -306,15 +343,47 @@
     
     var allDailyPosts = []; 
     var allMonthPosts = []; 
-    var selectedFile = null;
     var isEditing = false;
+    var pendingUploads = []; // 🚨 작성 중인 임시 이미지 추적망
+
+    /* --- [텍스트 에디터 및 툴바 로직] --- */
+    var savedSelectionRange = null;
+    window.saveSelection = function() { var selection = window.getSelection(); if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0); };
+    window.applyCustomColor = function(command, color) { if (savedSelectionRange) { var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } document.execCommand(command, false, color); checkSelection(); };
+    window.applyExactFontSize = function(size) { if (savedSelectionRange) { var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } else { var editor = document.activeElement; if(!editor || editor.getAttribute('contenteditable') !== 'true') return; } document.execCommand("fontSize", false, "7"); var fontElements = document.getElementsByTagName("font"); for (var i = 0; i < fontElements.length; i++) { if (fontElements[i].size == "7") { fontElements[i].removeAttribute("size"); fontElements[i].style.fontSize = size + "px"; } } checkSelection(); };
+    window.adjustFontSize = function(delta) { var input = document.getElementById('fontSizeInput'); var currentSize = parseInt(input.value) || 13; var newSize = currentSize + delta; if(newSize < 8) newSize = 8; if(newSize > 72) newSize = 72; input.value = newSize; applyExactFontSize(newSize); };
+
+    function checkSelection() {
+        setTimeout(() => {
+            var selection = window.getSelection();
+            var toolbar = $('#format-toolbar');
+            if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+                var node = selection.anchorNode; var isInsideEditor = false;
+                while (node) { if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') { isInsideEditor = true; break; } node = node.parentNode; }
+                if (isInsideEditor) {
+                    var range = selection.getRangeAt(0); var rect = range.getBoundingClientRect();
+                    toolbar.css('display', 'flex');
+                    var tWidth = toolbar.outerWidth(); var tHeight = toolbar.outerHeight();
+                    var top = rect.top + window.scrollY - tHeight - 12;
+                    var left = rect.left + window.scrollX + (rect.width / 2) - (tWidth / 2);
+                    if (top < window.scrollY + 10) { top = rect.bottom + window.scrollY + 12; }
+                    if (left < 10) left = 10;
+                    var maxLeft = $(window).width() - tWidth - 10;
+                    if (left > maxLeft) left = maxLeft;
+                    toolbar.css({ top: top + 'px', left: left + 'px' });
+                } else { toolbar.hide(); }
+            } else { toolbar.hide(); }
+        }, 100);
+    }
+    document.addEventListener('selectionchange', checkSelection); document.addEventListener('mouseup', checkSelection); document.addEventListener('touchend', checkSelection);
+    window.formatText = function(command, value = null) { document.execCommand(command, false, value); checkSelection(); };
+    window.applyColor = function(textColor, bgColor) { document.execCommand('foreColor', false, textColor); document.execCommand('backColor', false, bgColor); checkSelection(); };
 
     function initDaily() {
         var today = new Date();
         currentYear = today.getFullYear();
         currentMonth = today.getMonth() + 1;
         selectedDay = today.getDate();
-        
         updateYMDisplay();
         fetchMonthData(); 
     }
@@ -345,7 +414,6 @@
     function renderTabs() {
         var daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         if (selectedDay > daysInMonth) selectedDay = daysInMonth; 
-
         var html = '';
         for(var i = 1; i <= daysInMonth; i++) {
             var isActive = (i === selectedDay) ? 'active' : '';
@@ -353,12 +421,9 @@
             html += `<span class="daily-tab-num fade-in-element ${isActive}" id="tab-day-${i}" onclick="selectDay(${i})">${displayDay}</span>`;
         }
         $('#daily-tabs').html(html);
-
         setTimeout(() => {
             var activeTab = document.getElementById(`tab-day-${selectedDay}`);
-            if(activeTab) {
-                activeTab.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            if(activeTab) { activeTab.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
         }, 100);
     }
 
@@ -375,9 +440,7 @@
             if (error) throw error;
             allDailyPosts = data; 
             filterMonthData();
-        } catch (error) {
-            console.error("데이터 로드 실패:", error);
-        }
+        } catch (error) { console.error("데이터 로드 실패:", error); }
     }
 
     function filterMonthData() {
@@ -392,7 +455,6 @@
     function renderContentForSelectedDay() {
         var container = $('#daily-content-area');
         container.empty();
-
         var dayPosts = allMonthPosts.filter(p => new Date(p.created_at).getDate() === selectedDay)
                                       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -400,31 +462,31 @@
             container.html('<p style="font-size: 12px; color: var(--sub-color); opacity: 0.5; font-family: \'Noto Serif KR\', serif; padding-top: 20px;">No entries for this day.</p>');
             return;
         }
-
         renderPostList(dayPosts, container, false);
     }
 
+    // 🚨 구버전 데이터(사진 따로)와 신버전 데이터(에디터 인라인)를 모두 지원하는 완벽한 호환 렌더링
     function renderPostList(postArray, container, isSearchResult) {
         postArray.forEach(post => {
-            var imageUrl = "";
             var textHtml = post.content || "";
             var tagsText = "";
-            
-            // 데이터 3단 분리 (이미지 ||| 캡션 ||| 태그)
+            var oldImgUrl = "";
+
             if (post.content && post.content.includes("|||")) {
                 var parts = post.content.split("|||");
-                imageUrl = parts[0];
-                textHtml = parts[1] || "";
-                tagsText = parts[2] || "";
+                if (parts.length === 3) {
+                    oldImgUrl = parts[0];
+                    textHtml = parts[1] || "";
+                    tagsText = parts[2] || "";
+                } else if (parts.length === 2) {
+                    textHtml = parts[0] || "";
+                    tagsText = parts[1] || "";
+                }
             }
 
-            var imgBlock = "";
-            if (imageUrl) {
-                imgBlock = `
-                    <div class="daily-post-img-wrapper" onclick="toggleDailyAdmin(${post.id})">
-                        <img class="daily-post-img" src="${imageUrl}" loading="lazy">
-                    </div>
-                `;
+            // 구버전 이미지가 있다면 텍스트의 맨 위로 예쁘게 올려서 붙여줍니다.
+            if (oldImgUrl) {
+                textHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${oldImgUrl}"></span>` + textHtml;
             }
 
             var titleBlock = post.title ? `<div class="daily-post-title" onclick="toggleDailyAdmin(${post.id})">${post.title}</div>` : "";
@@ -435,16 +497,12 @@
                 searchDateBlock = `<div style="font-size: 11px; color: var(--sub-color); margin-bottom: 5px;">${pd.getFullYear()}년 ${pd.getMonth()+1}월 ${pd.getDate()}일</div>`;
             }
 
-            // 🚨 DB 먹통(Syntax Error) 원천 차단: HTML 구문을 onclick 내부에 문자열로 넘기지 않고 우회합니다.
             var jsSafeTags = tagsText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "");
-
-            // 🚨 태그 클릭 시 글씨 영역만 정확히 눌리도록 span 처리
             var tagsBlock = tagsText ? `<div class="daily-post-tags"><span onclick="searchByTag('${jsSafeTags}')">${tagsText}</span></div>` : "";
 
             var postHtml = `
-                <div class="daily-post-item fade-in-element" id="daily-post-${post.id}">
+                <div class="daily-post-item fade-in-element read-mode" id="daily-post-${post.id}">
                     ${searchDateBlock}
-                    ${imgBlock}
                     ${titleBlock}
                     <div class="daily-post-text" id="daily-text-${post.id}" onclick="toggleDailyAdmin(${post.id})">${textHtml}</div>
                     
@@ -459,25 +517,21 @@
             `;
             container.append(postHtml);
         });
-        
         container.scrollTop(0);
     }
 
-    // 본문 클릭 시 태그와 버튼이 묶인 패널 등장
     window.toggleDailyAdmin = function(id) {
         $(`#daily-admin-${id}`).slideToggle(150).css('display', 'flex');
     };
 
-    // 🚨 해시태그 텍스트 클릭 시 자동 검색 연동 (키보드 팝업 차단용 .focus() 제거)
     window.searchByTag = function(tagStr) {
         if(!tagStr) return;
-        var pureTag = tagStr.match(/#[^\s#]+/)[0] || tagStr;
+        var pureTag = tagText.match(/#[^\s#]+/)[0] || tagText;
         $('#daily-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag);
         $('#search-icon').css('opacity', '0.7');
         $('#daily-search').trigger('input');
     };
 
-    // 검색 기능
     $('#search-icon').click(function() {
         $('#daily-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
         $(this).css('opacity', '0.7');
@@ -491,6 +545,7 @@
         }
     });
 
+    // 🚨 검색 기능 고도화: '/이미지' 검색 시 사진이 포함된 글만 필터링
     $('#daily-search').on('input', function() {
         var keyword = $(this).val().toLowerCase();
         var container = $('#daily-content-area');
@@ -504,12 +559,24 @@
         var matchedPosts = allDailyPosts.filter(post => {
             var textHtml = post.content || '';
             var safeTitle = post.title || '';
-            
             var tagsText = "";
+            var oldImgUrl = "";
+            
             if (post.content && post.content.includes("|||")) {
                 var parts = post.content.split("|||");
-                textHtml = parts[1] || "";
-                tagsText = parts[2] || "";
+                if (parts.length === 3) {
+                    oldImgUrl = parts[0];
+                    textHtml = parts[1];
+                    tagsText = parts[2];
+                } else {
+                    textHtml = parts[0];
+                    tagsText = parts[1];
+                }
+            }
+
+            // [요청] /이미지 특수 필터
+            if (keyword === '/이미지') {
+                return textHtml.includes('<img') || oldImgUrl !== "";
             }
 
             var pd = new Date(post.created_at);
@@ -529,7 +596,7 @@
         renderPostList(matchedPosts, container, true);
     });
 
-    // 🚨 안전한 압축 엔진 (File 객체 에러 폴백 포함)
+    /* 🚨 [안전한 이미지 압축 모듈] */
     window.compressImage = async function(file, qualityType) {
         if (qualityType === 'original' || file.type === 'image/gif') {
             return { fileOrBlob: file, ext: file.name.split('.').pop() };
@@ -548,10 +615,8 @@
                     }
                     var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
                     var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-                    
                     var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
                     var ext = (outType === 'image/webp') ? 'webp' : 'jpg';
-                    
                     canvas.toBlob((blob) => { 
                         if (!blob) { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); return; }
                         try {
@@ -566,14 +631,120 @@
         });
     };
 
+    // 🚨 파일 업로드 시 에디터 본문에 삽입
+    $('#daily-file-input').on('change', async function(e) {
+        var files = Array.from(e.target.files); if(!files.length) return;
+        
+        var dateVal = $('#daily-modal-date').val();
+        if(!dateVal) {
+            var firstDate = new Date(files[0].lastModified);
+            var yyyy = firstDate.getFullYear(); var mm = String(firstDate.getMonth()+1).padStart(2, '0'); var dd = String(firstDate.getDate()).padStart(2, '0');
+            $('#daily-modal-date').val(`${yyyy}-${mm}-${dd}`);
+        }
+        
+        $('#daily-submit-btn').prop('disabled', true).css('opacity', '0.3'); $('.daily-add-img-btn').css('opacity', '0.3');
+        var qualityOption = $('#daily-img-quality').val() || 'original';
+        var allImgHtml = '';
+
+        for(var file of files) {
+            var compressed = await compressImage(file, qualityOption);
+            var fileExt = compressed.ext || 'jpg';
+            var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            
+            var { error } = await dailySupabase.storage.from('images').upload(fileName, compressed.fileOrBlob, {
+                contentType: compressed.fileOrBlob.type || 'image/jpeg'
+            });
+            
+            if(!error) {
+                pendingUploads.push(fileName); 
+                var { data } = dailySupabase.storage.from('images').getPublicUrl(fileName);
+                allImgHtml += `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${data.publicUrl}"></span> `;
+            }
+        }
+        if(allImgHtml !== '') { $('#daily-modal-content').focus(); document.execCommand('insertHTML', false, allImgHtml); }
+        $('#daily-submit-btn').prop('disabled', false).css('opacity', '0.7'); $('.daily-add-img-btn').css('opacity', '1'); $(this).val('');
+    });
+
+    /* --- [이미지 조율 툴바 로직] --- */
+    var activeImgWrap = null;
+
+    window.showImgToolbar = function(imgWrap) {
+        activeImgWrap = imgWrap;
+        var toolbar = $('#img-format-toolbar');
+        toolbar.css('display', 'flex');
+        
+        var rect = imgWrap[0].getBoundingClientRect();
+        var top = rect.top + window.scrollY - toolbar.outerHeight() - 10;
+        var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.outerWidth() / 2);
+        
+        if (top < window.scrollY + 10) top = rect.bottom + window.scrollY + 10; 
+        if (left < 10) left = 10;
+        
+        toolbar.css({ top: top + 'px', left: left + 'px' });
+    };
+
+    $(document).on('mousedown touchstart', '.daily-modal-editor .editor-img-wrap', function(e) {
+        e.preventDefault(); 
+        if (document.activeElement) document.activeElement.blur(); 
+        showImgToolbar($(this));
+    });
+
+    $(document).on('mousedown touchstart', function(e) {
+        if (!$(e.target).closest('.editor-img-wrap, #img-format-toolbar').length) {
+            $('#img-format-toolbar').hide();
+            activeImgWrap = null;
+        }
+    });
+
+    $(document).on('click', '.read-mode .editor-img-wrap img', function(e) {
+        e.stopPropagation();
+        $('#hasion-lightbox-img').attr('src', $(this).attr('src'));
+        $('#hasion-lightbox').css('display', 'flex').hide().fadeIn(150);
+    });
+
+    window.closeHasionLightbox = function() { $('#hasion-lightbox').fadeOut(150); };
+
+    window.setImgLayout = function(layoutClass) {
+        if(!activeImgWrap) return;
+        activeImgWrap.removeClass('img-full img-half img-third').addClass(layoutClass);
+        setTimeout(() => showImgToolbar(activeImgWrap), 50); 
+    };
+
+    window.moveImgOrder = function(dir) {
+        if(!activeImgWrap) return;
+        var node = activeImgWrap[0];
+        if (dir === 'up') {
+            if (node.previousSibling) { node.parentNode.insertBefore(node, node.previousSibling); }
+        } else if (dir === 'down') {
+            if (node.nextSibling) { node.parentNode.insertBefore(node, node.nextSibling.nextSibling); }
+        }
+        showImgToolbar(activeImgWrap);
+    };
+
+    window.deleteSelectedImg = function() {
+        if(!activeImgWrap) return;
+        
+        var imgUrl = activeImgWrap.find('img').attr('src');
+        if (imgUrl && imgUrl.includes('supabase.co/storage/v1/object/public/images/')) {
+            var fileName = imgUrl.split('/').pop();
+            dailySupabase.storage.from('images').remove([fileName]); 
+            var pIndex = pendingUploads.indexOf(fileName);
+            if (pIndex > -1) pendingUploads.splice(pIndex, 1);
+        }
+
+        activeImgWrap.remove();
+        $('#img-format-toolbar').hide();
+        activeImgWrap = null;
+    };
+
+
+    // 🚨 모달 창 열기
     window.openDailyWriteModal = function() {
         isEditing = false;
         $('#daily-edit-id').val('');
-        $('#daily-edit-img-url').val('');
         $('#daily-modal-title').val('');
         $('#daily-modal-tags').val(''); 
         $('#daily-modal-content').html('');
-        removeDailyPreview();
 
         var mm = String(currentMonth).padStart(2, '0');
         var dd = String(selectedDay).padStart(2, '0');
@@ -582,36 +753,37 @@
         $('#daily-lightbox').css('display', 'flex').hide().fadeIn(200);
     };
 
-    // 🚨 DB 먹통 원천 방지를 위한 우회 로직 (데이터를 DOM이나 Array에서 직접 뽑습니다)
     window.openDailyEditModal = function(id) {
         var post = allDailyPosts.find(p => p.id === id);
         if(!post) return;
 
-        var imageUrl = "";
         var textHtml = post.content || "";
         var tagsText = "";
+        var oldImgUrl = "";
         
         if (post.content && post.content.includes("|||")) {
             var parts = post.content.split("|||");
-            imageUrl = parts[0];
-            textHtml = parts[1] || "";
-            tagsText = parts[2] || "";
+            if (parts.length === 3) {
+                oldImgUrl = parts[0];
+                textHtml = parts[1] || "";
+                tagsText = parts[2] || "";
+            } else if (parts.length === 2) {
+                textHtml = parts[0] || "";
+                tagsText = parts[1] || "";
+            }
+        }
+
+        // 구버전 이미지가 있다면 텍스트의 맨 위로 올려 편집 모드용으로 전환
+        if (oldImgUrl) {
+            textHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${oldImgUrl}"></span>` + textHtml;
         }
 
         isEditing = true;
         $('#daily-edit-id').val(id);
-        $('#daily-edit-img-url').val(imageUrl);
         
         $('#daily-modal-title').val(post.title || "");
         $('#daily-modal-tags').val(tagsText); 
         $('#daily-modal-content').html(textHtml);
-        
-        if(imageUrl) {
-            $('#daily-image-preview').attr('src', imageUrl);
-            $('#daily-preview-wrap').show();
-        } else {
-            removeDailyPreview();
-        }
 
         var dateObj = new Date(post.created_at);
         var yyyy = dateObj.getFullYear();
@@ -626,28 +798,21 @@
         $('#daily-lightbox').fadeOut(200);
     };
 
-    $('#daily-file-input').on('change', function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        selectedFile = file;
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            $('#daily-image-preview').attr('src', e.target.result);
-            $('#daily-preview-wrap').slideDown(200);
+    function extractImageNamesFromHtml(htmlContent) {
+        var names = [];
+        var regex = /<img[^>]+src="([^">]+)"/g;
+        var match;
+        while ((match = regex.exec(htmlContent)) !== null) {
+            var url = match[1];
+            if (url.includes('supabase.co/storage/v1/object/public/images/')) {
+                var fileName = url.split('/').pop();
+                if (fileName) names.push(fileName);
+            }
         }
-        reader.readAsDataURL(file);
-    });
+        return names;
+    }
 
-    window.removeDailyPreview = function() {
-        selectedFile = null;
-        $('#daily-file-input').val('');
-        // 사용자가 X버튼을 누르면 수정모드일 경우에도 이미지를 날리겠다는 뜻입니다.
-        if(isEditing) { $('#daily-edit-img-url').val(''); } 
-        $('#daily-preview-wrap').slideUp(200, function() {
-            $('#daily-image-preview').attr('src', '');
-        });
-    };
-
+    // 🚨 글 저장 (hasion.html 방식 100% 이식)
     window.saveDailyPost = async function() {
         var titleVal = $('#daily-modal-title').val().trim();
         var tagsVal = $('#daily-modal-tags').val().trim(); 
@@ -655,53 +820,15 @@
         var dateVal = $('#daily-modal-date').val();
         var btn = $('#daily-submit-btn');
 
-        if (!textVal && !selectedFile && !$('#daily-edit-img-url').val()) {
-            alert("Please add an image or write something."); return;
+        if (!textVal && !$('#daily-modal-content img').length) {
+            alert("내용을 적어주세요."); return;
         }
 
         try {
             btn.prop('disabled', true).css('opacity', '0.3');
 
-            var finalImageUrl = isEditing ? $('#daily-edit-img-url').val() : "";
-            var oldImageUrl = "";
-            
-            if (isEditing) {
-                var postId = $('#daily-edit-id').val();
-                var oldPost = allDailyPosts.find(p => p.id == postId);
-                if (oldPost && oldPost.content && oldPost.content.includes("|||")) {
-                    oldImageUrl = oldPost.content.split("|||")[0];
-                }
-            }
-
-            if (selectedFile) {
-                var qualityOption = $('#daily-img-quality').val() || 'original';
-                var compressed = await compressImage(selectedFile, qualityOption);
-                var fileExt = compressed.ext || 'jpg';
-                var fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-                
-                var { error: uploadError } = await dailySupabase.storage.from('images').upload(fileName, compressed.fileOrBlob, {
-                    contentType: compressed.fileOrBlob.type || 'image/jpeg'
-                });
-                if (uploadError) throw uploadError;
-                
-                var { data: publicUrlData } = dailySupabase.storage.from('images').getPublicUrl(fileName);
-                finalImageUrl = publicUrlData.publicUrl;
-
-                // 🚨 새 사진 업로드 성공 시, 기존 사진이 있었다면 스토리지에서 삭제 처리
-                if (isEditing && oldImageUrl && oldImageUrl.includes('supabase.co/storage/v1/object/public/images/')) {
-                    var oldFileName = oldImageUrl.split('/').pop();
-                    dailySupabase.storage.from('images').remove([oldFileName]);
-                }
-            } else if (isEditing && !$('#daily-preview-wrap').is(':visible') && oldImageUrl) {
-                // 🚨 수정 모드인데 X 버튼을 눌러서 사진을 아예 지워버렸을 경우 삭제 처리
-                finalImageUrl = "";
-                if (oldImageUrl.includes('supabase.co/storage/v1/object/public/images/')) {
-                    var oldFileName = oldImageUrl.split('/').pop();
-                    dailySupabase.storage.from('images').remove([oldFileName]);
-                }
-            }
-
-            var contentString = finalImageUrl + "|||" + textVal + "|||" + tagsVal;
+            // 새 규격은 imageUrl 부분을 비워두고 텍스트 에어리어 전체를 파트1에 넣습니다. (||| + 내용 + ||| + 태그)
+            var finalContent = "" + "|||" + textVal + "|||" + tagsVal;
 
             var finalDate = new Date();
             if (dateVal) {
@@ -713,17 +840,37 @@
 
             if (isEditing) {
                 var postId = $('#daily-edit-id').val();
+                var oldPost = allDailyPosts.find(p => p.id == postId);
+                
                 var { error } = await dailySupabase.from('posts').update({ 
-                    title: titleVal, content: contentString, created_at: localISOString 
+                    title: titleVal, content: finalContent, created_at: localISOString 
                 }).eq('id', postId);
                 if (error) throw error;
+
+                // [스토리지 청소] 기존 글에서 지워진 이미지 영구 삭제
+                if (oldPost && oldPost.content) {
+                    var oldText = oldPost.content;
+                    // 만약 구버전 글이었다면?
+                    if (oldPost.content.includes("|||") && oldPost.content.split("|||").length === 3) {
+                        var oldImg = oldPost.content.split("|||")[0];
+                        if (oldImg) oldText += `<img src="${oldImg}">`;
+                    }
+                    var oldImages = extractImageNamesFromHtml(oldText);
+                    var newImages = extractImageNamesFromHtml(textVal);
+                    var deletedImages = oldImages.filter(img => !newImages.includes(img));
+                    if (deletedImages.length > 0) {
+                        await dailySupabase.storage.from('images').remove(deletedImages);
+                    }
+                }
+
             } else {
                 var { error } = await dailySupabase.from('posts').insert([{ 
-                    category: 'daily', title: titleVal, content: contentString, created_at: localISOString 
+                    category: 'daily', title: titleVal, content: finalContent, created_at: localISOString 
                 }]);
                 if (error) throw error;
             }
 
+            pendingUploads = []; 
             closeDailyModal();
             
             if (dateVal) {
@@ -736,84 +883,54 @@
             fetchMonthData(); 
 
         } catch (error) {
-            alert('Failed to save.');
+            alert('저장에 실패했습니다.');
         } finally {
             btn.prop('disabled', false).css('opacity', '0.7');
         }
     };
 
     window.deleteDailyPost = async function(id) {
-        if (!confirm("Are you sure you want to delete this?")) return;
+        if (!confirm("이 기록을 삭제하시겠습니까?")) return;
         try {
-            // 🚨 글을 삭제하기 전에 이미지 정보 미리 스캔
             var postData = allDailyPosts.find(p => p.id == id);
             
             var { error } = await dailySupabase.from('posts').delete().eq('id', id);
             if (error) throw error;
 
-            // 🚨 글 안에 이미지가 있었다면 스토리지에서도 영구 파기
-            if (postData && postData.content && postData.content.includes("|||")) {
-                var imgUrl = postData.content.split("|||")[0];
-                if (imgUrl && imgUrl.includes('supabase.co/storage/v1/object/public/images/')) {
-                    var fileName = imgUrl.split('/').pop();
-                    dailySupabase.storage.from('images').remove([fileName]);
+            if (postData && postData.content) {
+                var contentToParse = postData.content;
+                if (postData.content.includes("|||") && postData.content.split("|||").length === 3) {
+                    var oldImg = postData.content.split("|||")[0];
+                    if (oldImg) contentToParse += `<img src="${oldImg}">`;
+                }
+                var fileNames = extractImageNamesFromHtml(contentToParse);
+                if (fileNames.length > 0) {
+                    await dailySupabase.storage.from('images').remove(fileNames);
                 }
             }
 
             fetchMonthData();
-        } catch (error) { alert('Failed to delete.'); }
+        } catch (error) { alert('삭제하지 못했습니다.'); }
     };
 
-    var savedSelectionRange = null;
-    window.saveSelection = function() {
-        var selection = window.getSelection();
-        if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0);
-    };
-    window.applyCustomColor = function(command, color) {
-        if (savedSelectionRange) {
-            var selection = window.getSelection();
-            selection.removeAllRanges(); selection.addRange(savedSelectionRange);
+    function clearOrphanImages() {
+        if (pendingUploads.length > 0) {
+            dailySupabase.storage.from('images').remove(pendingUploads);
+            pendingUploads = [];
         }
-        document.execCommand(command, false, color); checkSelection();
-    };
-
-    function checkSelection() {
-        setTimeout(() => {
-            var selection = window.getSelection();
-            var toolbar = document.getElementById('format-toolbar');
-            if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-                var node = selection.anchorNode;
-                var isInsideEditor = false;
-                while (node) {
-                    if (node.nodeType === 1 && node.getAttribute('contenteditable') === 'true') {
-                        isInsideEditor = true; break;
-                    }
-                    node = node.parentNode;
-                }
-                if (isInsideEditor) {
-                    var range = selection.getRangeAt(0);
-                    var rect = range.getBoundingClientRect();
-                    toolbar.style.display = 'flex';
-                    var top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
-                    var left = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
-                    if (top < window.scrollY) top = rect.bottom + window.scrollY + 8;
-                    if (left < 10) left = 10;
-                    toolbar.style.top = top + 'px'; toolbar.style.left = left + 'px';
-                } else { toolbar.style.display = 'none'; }
-            } else { toolbar.style.display = 'none'; }
-        }, 100);
     }
-    document.addEventListener('selectionchange', checkSelection);
-    document.addEventListener('mouseup', checkSelection);
-    document.addEventListener('touchend', checkSelection);
-
-    window.formatText = function(command, value = null) {
-        document.execCommand(command, false, value); checkSelection();
-    };
-    window.applyColor = function(textColor, bgColor) {
-        document.execCommand('foreColor', false, textColor);
-        document.execCommand('backColor', false, bgColor); checkSelection();
-    };
+    window.addEventListener('beforeunload', clearOrphanImages);
+    
+    var dailyObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.removedNodes.forEach(function(node) {
+                if (node.classList && node.classList.contains('daily-wrapper')) {
+                    clearOrphanImages();
+                }
+            });
+        });
+    });
+    dailyObserver.observe(document.body, { childList: true, subtree: true });
 
     setTimeout(() => { initDaily(); }, 100);
 </script>
