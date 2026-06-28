@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 스타일 시트 (PC 가독성 고도화 버전)
+   토끼굴 Todo 전용 스타일 시트 (모바일 레이아웃 고정 및 최적화)
    ========================================================================== */
 :root {
     --cat-gray: #8e8e93; --cat-red: #ff3b30; --cat-orange: #ff9500; --cat-yellow: #ffcc00;
@@ -32,8 +32,8 @@
 
 .matrix-grid { display: grid; grid-template-columns: 16px 1fr 1fr; grid-template-rows: 14px 1fr 1fr; gap: 8px; flex: 1; min-height: 0; width: 100%; }
 .m-header-empty { grid-area: 1 / 1 / 2 / 2; }
-.m-header-top { font-size: 9.5px !important; font-weight: 600; color: #666; display: flex; align-items: flex-end; justify-content: center; }
-.m-header-left { font-size: 9.5px !important; font-weight: 600; color: #666; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; }
+.m-header-top { font-size: 9.5px !important; font-weight: 600; color: #666; text-align: center; display: flex; align-items: flex-end; justify-content: center; }
+.m-header-left { font-size: 9.5px !important; font-weight: 600; color: #666; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; text-align: center; display: flex; align-items: center; justify-content: center; }
 .quadrant-box { background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; }
 .inbox-area { margin-top: 15px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px; min-height: 80px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; align-items: flex-start; width: 100%; box-sizing: border-box; }
 
@@ -138,43 +138,14 @@
 .stats-detail-content { padding: 15px; width: 100%; flex: 1; overflow-y: auto; padding-bottom: 50px; }
 
 /* ==========================================================================
-   🚨 [신규 추가] PC 환경 가독성 고도화 미디어 쿼리 (768px 이상 대응)
+   🚨 [수정 완료] PC 전용 미디어 쿼리 분기점 상향 (모바일 뚱뚱해짐 완벽 방지)
    ========================================================================== */
-@media (min-width: 768px) {
-    /* 와이드 모니터에서 리스트가 찢어지는 현상을 막고 정갈한 서재 감성을 위해 가로폭 제어 */
-    .todo-tab-content {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 20px 15px;
-    }
-    
-    /* 하단 인박스 및 타임라인 구역도 함께 정렬 연동 */
-    .inbox-area {
-        width: 100%;
-        max-width: 900px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    
-    /* 🚨 4분면 찌그러짐 방지: 세로 최소 높이를 강제 부여하여 칸을 큼직하게 확장 */
-    .matrix-grid {
-        min-height: 540px; 
-        gap: 12px; /* 칸 사이의 여백을 시원하게 부여 */
-    }
-    
-    /* 내부 패딩을 넓혀 텍스트 배치가 답답하지 않게 조율 */
-    .quadrant-box {
-        padding: 18px;
-        gap: 8px;
-    }
-    
-    /* 구조 틀 타이틀 가독성 미세 보정 */
-    .m-header-top {
-        font-size: 11px !important;
-        padding-bottom: 6px;
-    }
-    .m-header-left {
-        font-size: 11px !important;
-        letter-spacing: 4px;
-    }
+@media (min-width: 1024px) {
+    .todo-tab-content { max-width: 900px; margin: 0 auto; padding: 20px 15px; }
+    .inbox-area { width: 100%; max-width: 900px; margin-left: auto; margin-right: auto; }
+    /* 모바일 기기(고해상도 폰)가 데스크톱 흉내를 내지 못하도록 격리벽을 1024px로 세웠습니다 */
+    .matrix-grid { min-height: 500px; gap: 12px; }
+    .quadrant-box { padding: 18px; gap: 8px; }
+    .m-header-top { font-size: 11px !important; padding-bottom: 6px; }
+    .m-header-left { font-size: 11px !important; letter-spacing: 4px; }
 }
