@@ -88,7 +88,7 @@
     .daily-post-item { display: flex; flex-direction: column; gap: 10px; }
     
     .daily-post-title {
-        font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color); cursor: pointer;
+        font-family: 'Noto Serif KR', serif; font-size: 13px; font-weight: normal; color: var(--main-color); cursor: pointer;
     }
     
     .daily-post-text {
@@ -123,17 +123,20 @@
     .admin-btn.edit { color: var(--point-color); }
     .admin-btn.delete { color: #ff3b30; }
 
-    /* 🚨 팝업의 개방감 및 패딩 넘침 방지 */
+    /* 🚨 팝업의 개방감 및 패딩 넘침 방지 + 스크롤 분리 수술 */
     .daily-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         z-index: 20000; align-items: center; justify-content: center; padding: 20px;
         box-sizing: border-box;
     }
+    
     .daily-lightbox-card {
         background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 6px;
-        padding: 30px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px;
+        padding: 20px 25px; width: 100%; max-width: 500px; 
+        height: 80vh; max-height: 600px; /* 🚨 모달 창 전체 높이를 80vh로 딱 고정 */
+        display: flex; flex-direction: column; /* 플렉스 구조 유지 */
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1); 
         box-sizing: border-box;
     }
 
@@ -144,34 +147,27 @@
     }
     .daily-modal-input:focus { border-bottom-color: var(--point-color); }
     
+    /* 🚨 에디터 구역만 독립적으로 위아래 스크롤되도록 분리 (flex: 1) */
     .daily-modal-editor {
-        width: 100%; min-height: 150px; background: transparent; border: none;
+        flex: 1; 
+        overflow-y: auto; 
+        width: 100%; background: transparent; border: none;
         color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 13.5px;
-        line-height: 1.8; outline: none; padding: 5px 0; word-break: break-all;
+        line-height: 1.8; outline: none; padding: 10px 0; word-break: break-all;
+        -ms-overflow-style: none; scrollbar-width: none;
     }
+    .daily-modal-editor::-webkit-scrollbar { display: none; }
+    
     [contenteditable]:empty::before { content: attr(placeholder); color: var(--sub-color); opacity: 0.6; pointer-events: none; }
 
     .daily-add-img-btn {
         display: inline-block; cursor: pointer; color: var(--sub-color); font-size: 18px;
-        transition: 0.2s; opacity: 0.4;
+        transition: 0.2s; opacity: 0.4; margin: 0;
     }
     .daily-add-img-btn:hover { opacity: 1; color: var(--point-color); }
 
-    .daily-modal-footer {
-        display: flex; justify-content: space-between; align-items: center; margin-top: 5px; border-top: 1px solid var(--divider-bg); padding-top: 15px;
-    }
-    .daily-modal-date {
-        background: transparent; border: none; outline: none; color: var(--sub-color);
-        font-family: 'Noto Serif KR', serif; font-size: 12px; cursor: pointer;
-    }
-    .daily-modal-submit {
-        background: none; border: none; color: var(--point-color); font-size: 20px;
-        cursor: pointer; transition: 0.2s; opacity: 0.7; padding: 0 5px;
-    }
-    .daily-modal-submit:hover { opacity: 1; transform: translateX(3px); }
-
     /* ==========================================================================
-       [🚨 에디터 인라인 이미지 규격 (완벽한 자동 2px 그리드)]
+       [에디터 인라인 이미지 규격 (완벽한 자동 2px 그리드)]
        ========================================================================== */
     .editor-img-wrap {
         display: inline-block; position: relative; vertical-align: top; 
@@ -194,7 +190,7 @@
     .img-del-btn { display: none !important; }
 
     /* ==========================================================================
-       [🚨 드래그 텍스트 툴바 (2단 접힘 및 높이 계산 최적화)]
+       [드래그 텍스트 툴바 (2단 접힘, 앞/뒤로가기 포함)]
        ========================================================================== */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
@@ -237,6 +233,7 @@
     .img-format-toolbar .btn-delete:hover { background: rgba(255,59,48,0.1); color: #ff3b30; }
 </style>
 
+<!-- 🚨 텍스트 편집 툴바 (앞/뒤로가기 포함 완료) -->
 <div id="format-toolbar" class="format-toolbar">
     <button onmousedown="event.preventDefault(); formatText('undo')" title="뒤로 가기 (실행 취소)"><i class="xi-undo"></i></button>
     <button onmousedown="event.preventDefault(); formatText('redo')" title="앞으로 가기 (다시 실행)"><i class="xi-redo"></i></button>
@@ -297,33 +294,38 @@
     <img id="hasion-lightbox-img" src="" onclick="event.stopPropagation()">
 </div>
 
+<!-- 🚨 글쓰기/수정 모달 (버튼 공중부양 해결 완료) -->
 <div id="daily-lightbox" class="daily-lightbox" onclick="if(event.target === this) closeDailyModal()">
     <div class="daily-lightbox-card">
         <input type="hidden" id="daily-edit-id" value="">
         
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--divider-bg); padding-bottom: 10px; margin-bottom: 15px;">
-            <input type="text" id="daily-modal-title" class="daily-modal-input" placeholder="Title" autocomplete="off" style="border: none; font-weight: 600; font-size: 14px; width: 100%; text-align: center; padding: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--divider-bg); padding-bottom: 10px; margin-bottom: 10px; flex-shrink: 0;">
+            <input type="text" id="daily-modal-title" class="daily-modal-input" placeholder="title" autocomplete="off" style="border: none; font-weight: 600; font-size: 14px; width: 100%; text-align: center; padding: 0;">
             <i class="xi-close" onclick="closeDailyModal()" style="color: var(--sub-color); cursor: pointer; font-size: 16px; margin-left: 10px;"></i>
         </div>
 
-        <div id="daily-modal-content" class="daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="Write here..."></div>
+        <!-- 🚨 에디터 부분만 독립적으로 위아래 스크롤 됨 -->
+        <div id="daily-modal-content" class="daily-modal-editor" contenteditable="true" spellcheck="false" placeholder="당신의 일상을 이곳에 남겨주세요..."></div>
 
-        <div style="margin-top: 15px;">
-            <input type="text" id="daily-modal-tags" class="daily-modal-input" placeholder="Tags" autocomplete="off" style="font-size: 11px; padding: 4px 0;">
-        </div>
-
-        <div class="daily-modal-footer">
-            <input type="date" id="daily-modal-date" class="daily-modal-date" title="Change Date">
+        <!-- 🚨 태그칸과 도구들을 모두 하단 Footer로 예쁘게 내림 -->
+        <div class="daily-modal-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--divider-bg); padding-top: 15px; margin-top: 10px; flex-shrink: 0;">
+            
+            <!-- 태그 입력칸을 깔끔하게 하단 좌측으로 이동 -->
+            <input type="text" id="daily-modal-tags" placeholder="tags" autocomplete="off" style="width: 120px; background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px;">
             
             <div style="display: flex; align-items: center; gap: 12px;">
+                <input type="date" id="daily-modal-date" class="daily-modal-date" title="Change Date" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
+                
                 <select id="daily-img-quality" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
                     <option value="original" selected>원본</option>
                     <option value="high">고화질</option>
                     <option value="low">저화질</option>
                 </select>
-                <label for="daily-file-input" class="daily-add-img-btn" title="사진 추가"><i class="xi-image-o"></i></label>
+                
+                <label for="daily-file-input" class="daily-add-img-btn" title="사진 추가" style="margin: 0; font-size: 18px; cursor: pointer;"><i class="xi-image-o"></i></label>
                 <input type="file" id="daily-file-input" accept="image/*" multiple style="display: none;">
-                <button class="daily-modal-submit" id="daily-submit-btn" onclick="saveDailyPost()">
+                
+                <button class="daily-modal-submit" id="daily-submit-btn" onclick="saveDailyPost()" style="background: none; border: none; color: var(--point-color); font-size: 20px; cursor: pointer; padding: 0 5px; opacity: 0.7; transition: 0.2s;">
                     <i class="xi-arrow-right"></i>
                 </button>
             </div>
@@ -344,7 +346,7 @@
     var allDailyPosts = []; 
     var allMonthPosts = []; 
     var isEditing = false;
-    var pendingUploads = []; // 🚨 작성 중인 임시 이미지 추적망
+    var pendingUploads = []; 
 
     /* --- [텍스트 에디터 및 툴바 로직] --- */
     var savedSelectionRange = null;
@@ -376,6 +378,13 @@
         }, 100);
     }
     document.addEventListener('selectionchange', checkSelection); document.addEventListener('mouseup', checkSelection); document.addEventListener('touchend', checkSelection);
+    
+    // 🚨 팝업 에디터를 위아래로 스크롤할 때, 툴바가 잔상처럼 남아있는 현상 방지
+    $(document).on('scroll', '.daily-modal-editor', function() {
+        $('#format-toolbar').hide();
+        $('#img-format-toolbar').hide();
+    });
+
     window.formatText = function(command, value = null) { document.execCommand(command, false, value); checkSelection(); };
     window.applyColor = function(textColor, bgColor) { document.execCommand('foreColor', false, textColor); document.execCommand('backColor', false, bgColor); checkSelection(); };
 
@@ -465,7 +474,6 @@
         renderPostList(dayPosts, container, false);
     }
 
-    // 🚨 구버전 데이터(사진 따로)와 신버전 데이터(에디터 인라인)를 모두 지원하는 완벽한 호환 렌더링
     function renderPostList(postArray, container, isSearchResult) {
         postArray.forEach(post => {
             var textHtml = post.content || "";
@@ -484,7 +492,6 @@
                 }
             }
 
-            // 구버전 이미지가 있다면 텍스트의 맨 위로 예쁘게 올려서 붙여줍니다.
             if (oldImgUrl) {
                 textHtml = `<span class="editor-img-wrap img-full" contenteditable="false"><img src="${oldImgUrl}"></span>` + textHtml;
             }
@@ -526,7 +533,7 @@
 
     window.searchByTag = function(tagStr) {
         if(!tagStr) return;
-        var pureTag = tagText.match(/#[^\s#]+/)[0] || tagText;
+        var pureTag = tagStr.match(/#[^\s#]+/)[0] || tagStr;
         $('#daily-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag);
         $('#search-icon').css('opacity', '0.7');
         $('#daily-search').trigger('input');
@@ -545,7 +552,7 @@
         }
     });
 
-    // 🚨 검색 기능 고도화: '/이미지' 검색 시 사진이 포함된 글만 필터링
+    // 🚨 '/이미지' 검색 시 사진이 포함된 글만 필터링 기능 (안전 보존)
     $('#daily-search').on('input', function() {
         var keyword = $(this).val().toLowerCase();
         var container = $('#daily-content-area');
@@ -574,7 +581,6 @@
                 }
             }
 
-            // [요청] /이미지 특수 필터
             if (keyword === '/이미지') {
                 return textHtml.includes('<img') || oldImgUrl !== "";
             }
@@ -596,7 +602,7 @@
         renderPostList(matchedPosts, container, true);
     });
 
-    /* 🚨 [안전한 이미지 압축 모듈] */
+    /* [안전한 이미지 압축 모듈] */
     window.compressImage = async function(file, qualityType) {
         if (qualityType === 'original' || file.type === 'image/gif') {
             return { fileOrBlob: file, ext: file.name.split('.').pop() };
@@ -850,7 +856,6 @@
                 // [스토리지 청소] 기존 글에서 지워진 이미지 영구 삭제
                 if (oldPost && oldPost.content) {
                     var oldText = oldPost.content;
-                    // 만약 구버전 글이었다면?
                     if (oldPost.content.includes("|||") && oldPost.content.split("|||").length === 3) {
                         var oldImg = oldPost.content.split("|||")[0];
                         if (oldImg) oldText += `<img src="${oldImg}">`;
