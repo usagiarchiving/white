@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>타임라인 변환기</title>
+  <style>
+    /* =========================================
+       변환기 웹사이트 자체의 모던 UI 스타일
+       ========================================= */
+    :root {
+      --bg-main: #f2f3f5;
+      --bg-panel: #ffffff;
+      --text-main: #202124;
+      --text-muted: #5f6368;
+      --border-color: #dadce0;
+      --primary: #1a73e8;
+      --primary-hover: #1557b0;
+      --danger: #ea4335;
+      --success: #34a853;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      margin: 0;
+      padding: 30px;
+      line-height: 1.5;
+    }
+
+    .app-header {
+      max-width: 1400px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2px solid var(--text-main);
+      padding-bottom: 15px;
+    }
+
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.8em;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .workspace {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 800px; 
+    }
+
+    .panel-header {
+      padding: 20px 25px;
+      border-bottom: 1px solid var(--border-color);
+      background: #fafafa;
+      border-radius: var(--radius) var(--radius) 0 0;
+      font-weight: 700;
+      font-size: 1.1em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 25px;
+      background: #fff;
+    }
+
+    .block-item {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      transition: border-color 0.2s;
+    }
+
+    .block-item:focus-within {
+      border-color: var(--primary);
+    }
+
+    .block-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      background: #f8f9fa;
+      border-bottom: 1px solid var(--border-color);
+      border-radius: 8px 8px 0 0;
+    }
+
+    .block-controls select {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 0.9em;
+      outline: none;
+      font-weight: 600;
+    }
+    .block-controls select.theme-base { color: #555; }
+    /* 웹사이트 자체의 민트 선택 텍스트 색상도 새 컬러로 변경 */
+    .block-controls select.theme-mint { color: #b4d9c4; }
+    .block-controls select.theme-pink { color: #E07A93; }
+
+    .block-actions button {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    .block-actions button:hover {
+      background: #e8eaed;
+      color: var(--text-main);
+    }
+    .block-actions button.btn-del:hover {
+      color: var(--danger);
+      background: #fce8e6;
+    }
+
+    .block-item textarea {
+      width: 100%;
+      min-height: 250px;
+      border: none;
+      padding: 15px;
+      box-sizing: border-box;
+      resize: vertical;
+      font-family: inherit;
+      font-size: 0.95em;
+      line-height: 1.6;
+      outline: none;
+      color: #333;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-add {
+      background: #f1f3f4;
+      color: var(--text-main);
+      width: 100%;
+      border: 1px dashed #ccc;
+      padding: 15px;
+    }
+    .btn-add:hover { background: #e8eaed; }
+    
+    .btn-primary { background: var(--text-main); color: #fff; width: 100%; padding: 15px;}
+    .btn-primary:hover { background: #000; }
+    .btn-success { background: var(--success) !important; color: #fff !important; }
+
+    .output-code {
+      width: 100%;
+      height: 150px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border: none;
+      padding: 15px;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-family: monospace;
+      font-size: 0.85em;
+      margin-bottom: 15px;
+      resize: vertical;
+    }
+
+    #previewArea {
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      background: #fcfcfc;
+      padding: 20px;
+      margin-bottom: 15px;
+      min-height: 300px;
+    }
+
+    /* 미리보기 창 안에서는 애니메이션을 무시하고 대사가 무조건 100% 보이도록 강제 처리 */
+    #previewArea .scroll-msg-box {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    }
+
+    .list-panel {
+      max-width: 1400px;
+      margin: 30px auto 0 auto;
+      background: var(--bg-panel);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      border: 1px solid var(--border-color);
+      padding: 25px;
+    }
+    
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+
+    .session-list { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
+    .session-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 15px; border-bottom: 1px solid #eee; transition: background 0.2s;
+    }
+    .session-item:hover { background: #f8f9fa; }
+    .session-item.active { border-left: 4px solid var(--text-main); background: #f8f9fa; }
+    
+    .session-title-input {
+      flex: 1; border: 1px solid transparent; background: transparent;
+      font-size: 1em; font-weight: 600; padding: 5px; outline: none;
+    }
+    .session-title-input:focus { border: 1px solid #ccc; background: #fff; border-radius: 4px; }
+    
+    .btn-outline { background: #fff; border: 1px solid #ccc; color: #333; padding: 6px 12px; border-radius: 4px; font-size: 0.85em;}
+    .btn-outline:hover { background: #f1f3f4; }
+
+    @media (max-width: 992px) {
+      .workspace { grid-template-columns: 1fr; }
+      .panel { height: auto; min-height: 600px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-header">
+    <h1>⏳ 타임라인 변환기</h1>
+  </div>
+
+  <div class="workspace">
+    <div class="panel">
+      <div class="panel-header">
+        <span>📝 블록 편집창</span>
+        <span style="font-size: 0.8em; color: #888; font-weight: normal;">(실시간 동기화)</span>
+      </div>
+      <div class="panel-content" id="blockContainer">
+      </div>
+      <div style="padding: 15px; border-top: 1px solid var(--border-color); background: #fafafa; border-radius: 0 0 var(--radius) var(--radius);">
+        <button class="btn btn-add" onclick="addBlock()">➕ 새로운 타임라인 블록 추가</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">🎨 미리보기 및 코드</div>
+      <div class="panel-content">
+        <div id="previewArea"></div>
+        <textarea id="outputCode" class="output-code" readonly></textarea>
+        <button id="copyBtn" class="btn btn-primary" onclick="copyHTML()">📋 HTML (티스토리용) 복사하기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="list-panel">
+    <div class="list-header">
+      <h2 style="margin: 0; font-size: 1.2em;">📁 자동 저장된 대화 목록</h2>
+      <button class="btn btn-outline" onclick="createNewDocument()">+ 새 문서 만들기</button>
+    </div>
+    <ul id="sessionList" class="session-list"></ul>
+  </div>
+
+  <script>
+    // ==========================================
+    // 로컬 스토리지 & UI 상태 관리
+    // ==========================================
+    const STORAGE_KEY = 'timeline_sessions_v23'; 
+    let sessions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    let currentDocId = Date.now();
+    let currentBlocks = [];
+
+    window.onload = () => { createNewDocument(); };
+
+    function autoSave() {
+      const blockEls = document.querySelectorAll('.block-item');
+      currentBlocks = Array.from(blockEls).map(el => {
+        return {
+          id: el.dataset.id,
+          theme: el.querySelector('.theme-select').value,
+          text: el.querySelector('.block-textarea').value
+        };
+      });
+
+      const isEmpty = currentBlocks.every(b => b.text.trim() === '');
+
+      if (isEmpty) {
+        sessions = sessions.filter(s => s.id !== currentDocId);
+      } else {
+        const docIndex = sessions.findIndex(s => s.id === currentDocId);
+        if (docIndex !== -1) {
+          sessions[docIndex].blocks = currentBlocks;
+        } else {
+          const title = extractTitle(currentBlocks[0].text);
+          sessions.unshift({ id: currentDocId, title: title, blocks: currentBlocks });
+        }
+      }
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      renderSessionList();
+      generateFinalHTML();
+    }
+
+    function extractTitle(text) {
+      const match = text.match(/🗓️\s*달력\s*\|(.*)/);
+      return (match && match[1].trim() !== '') ? match[1].trim() : '새로운 타임라인 (' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ')';
+    }
+
+    const blockContainer = document.getElementById('blockContainer');
+
+    function createNewDocument() {
+      currentDocId = Date.now();
+      currentBlocks = [{ id: Date.now().toString(), theme: 'base', text: '' }];
+      renderBlocks();
+      autoSave();
+    }
+
+    function renderBlocks() {
+      blockContainer.innerHTML = '';
+      currentBlocks.forEach((block, index) => {
+        const div = document.createElement('div');
+        div.className = 'block-item';
+        div.dataset.id = block.id;
+        
+        let themeClass = 'theme-base';
+        if(block.theme === 'mint') themeClass = 'theme-mint';
+        if(block.theme === 'pink') themeClass = 'theme-pink';
+
+        div.innerHTML = `
+          <div class="block-toolbar">
+            <div class="block-controls">
+              <select class="theme-select ${themeClass}" onchange="changeTheme(this, '${block.id}')">
+                <option value="base" ${block.theme === 'base' ? 'selected' : ''}>기본 버전 (!)</option>
+                <option value="mint" ${block.theme === 'mint' ? 'selected' : ''}>민트 버전</option>
+                <option value="pink" ${block.theme === 'pink' ? 'selected' : ''}>핑크 버전</option>
+              </select>
+            </div>
+            <div class="block-actions">
+              <button onclick="moveBlock(${index}, -1)" title="위로">▲</button>
+              <button onclick="moveBlock(${index}, 1)" title="아래로">▼</button>
+              <button class="btn-del" onclick="deleteBlock('${block.id}')" title="삭제">🗑️</button>
+            </div>
+          </div>
+          <textarea class="block-textarea" placeholder="여기에 대화 양식을 입력하세요..." oninput="autoSave()">${block.text}</textarea>
+        `;
+        blockContainer.appendChild(div);
+      });
+      generateFinalHTML();
+    }
+
+    function addBlock() {
+      currentBlocks.push({ id: Date.now().toString(), theme: 'base', text: '' });
+      renderBlocks();
+      autoSave();
+      blockContainer.scrollTop = blockContainer.scrollHeight;
+    }
+
+    function deleteBlock(id) {
+      if(currentBlocks.length <= 1) { currentBlocks[0].text = ''; } 
+      else { currentBlocks = currentBlocks.filter(b => b.id !== id); }
+      renderBlocks();
+      autoSave();
+    }
+
+    function moveBlock(index, direction) {
+      if (index + direction < 0 || index + direction >= currentBlocks.length) return;
+      const temp = currentBlocks[index];
+      currentBlocks[index] = currentBlocks[index + direction];
+      currentBlocks[index + direction] = temp;
+      renderBlocks();
+      autoSave();
+    }
+
+    function changeTheme(selectEl, id) {
+      selectEl.className = 'theme-select theme-' + selectEl.value;
+      const block = currentBlocks.find(b => b.id === id);
+      if(block) block.theme = selectEl.value;
+      autoSave();
+    }
+
+    function renderSessionList() {
+      const listEl = document.getElementById('sessionList');
+      if (sessions.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;">저장된 타임라인이 없습니다.</div>';
+        return;
+      }
+      listEl.innerHTML = '';
+      sessions.forEach(session => {
+        const li = document.createElement('li');
+        li.className = 'session-item' + (session.id === currentDocId ? ' active' : '');
+        li.innerHTML = `
+          <input type="text" class="session-title-input" value="${session.title}" onchange="updateTitle(${session.id}, this.value)">
+          <div style="display:flex; gap:5px;">
+            <button class="btn-outline" onclick="loadDocument(${session.id})">열기</button>
+            <button class="btn-outline" style="color:var(--danger);" onclick="deleteDocument(${session.id})">삭제</button>
+          </div>
+        `;
+        listEl.appendChild(li);
+      });
+    }
+
+    function loadDocument(id) {
+      const doc = sessions.find(s => s.id === id);
+      if (doc) {
+        currentDocId = doc.id;
+        currentBlocks = JSON.parse(JSON.stringify(doc.blocks)); 
+        renderBlocks();
+        renderSessionList();
+      }
+    }
+
+    function deleteDocument(id) {
+      sessions = sessions.filter(s => s.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      if (id === currentDocId) createNewDocument();
+      else renderSessionList();
+    }
+
+    function updateTitle(id, newTitle) {
+      const doc = sessions.find(s => s.id === id);
+      if (doc) {
+        doc.title = newTitle.trim() === '' ? '제목 없음' : newTitle;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      }
+    }
+
+    function copyHTML() {
+      const outputArea = document.getElementById('outputCode');
+      const copyBtn = document.getElementById('copyBtn');
+      if(outputArea.value.trim() === '') return;
+      
+      outputArea.select();
+      document.execCommand('copy');
+      
+      const originalText = copyBtn.innerText;
+      copyBtn.innerText = '✅ 복사 완료!';
+      copyBtn.classList.add('btn-success');
+      setTimeout(() => {
+        copyBtn.innerText = originalText;
+        copyBtn.classList.remove('btn-success');
+      }, 2000);
+    }
+
+    // ==========================================
+    // ⭐️ 진화된 HTML 출력 파싱 엔진 ⭐️
+    // ==========================================
+    
+    const dialogueRegex = /^[-*▪️▫️\s]*\[?\s*(뱅|하시온|SION\s*HA|NPC|유이|YUI|PC)\s*\]?[-*\s]*[:：]?\s*/i;
+
+    const cleanStr = (str) => {
+        if (!str) return '';
+        // 큰따옴표 유지
+        return str.replace(/NPC/g, '뱅').replace(/PC/g, '유이');
+    };
+
+    const getLine = (textSegment, markers) => {
+      let safeMarkers = markers.map(m => m.replace(/\s+/g, '\\s*'));
+      let regexStr = '^\\s*(?:' + safeMarkers.join('|') + ')\\s*[:|]?\\s*(.*)';
+      let regex = new RegExp(regexStr, 'mi');
+      let match = textSegment.match(regex);
+      if(!match) return '';
+      return cleanStr(match[1].trim());
+    };
+
+    const getBlock = (textSegment, startMarkers, endMarkers) => {
+      let safeStart = startMarkers.map(m => m.replace(/\s+/g, '\\s*'));
+      let safeEnd = endMarkers.map(m => m.replace(/\s+/g, '\\s*'));
+      
+      let startStr = '^\\s*(?:' + safeStart.join('|') + ')';
+      let endStr = safeEnd.length > 0 ? '(?=^\\s*(?:' + safeEnd.join('|') + '))' : '$';
+      let regex = new RegExp(startStr + '(?:\\s*\\([^)]*\\))?\\s*:?\\s*([\\s\\S]*?)' + endStr, 'im');
+      let match = textSegment.match(regex);
+      if(!match) return '';
+      return cleanStr(match[1].trim());
+    };
+
+    const extractBubbles = (textStr, speaker, tone = '') => {
+        let matches = [...textStr.matchAll(/["“](.*?)["”]/g)];
+        if (matches.length > 0) {
+            return matches.map((m, idx) => ({
+                speaker: speaker,
+                text: m[1].trim(),
+                tone: (idx === matches.length - 1) ? tone : ''
+            }));
+        } else {
+            let fallbackText = textStr.replace(/["“”]/g, '').trim();
+            if(!fallbackText) return [];
+            return [{ speaker: speaker, text: fallbackText, tone: tone }];
+        }
+    };
+
+    function buildChatHTML(dialogues, forceAvatar = false) {
+      if (!dialogues || dialogues.length === 0) return '';
+      
+      let html = '<div class="tistory-post-wrapper chat-section" style="display: flex; flex-direction: column; width: 100%;">';
+      let prevSpeaker = null;
+
+      dialogues.forEach(d => {
+        let isConsecutive = forceAvatar ? false : (prevSpeaker === d.speaker);
+        let marginTop = (prevSpeaker === null) ? '0' : (isConsecutive ? '0.3em' : '1.2em');
+        let isYui = (d.speaker === 'yui');
+
+        let flexDir = 'row';
+        let alignItem = 'flex-start';
+        let bgColor = isYui ? '#FFF6FA' : '#F2FCF7';
+        let borderColor = isYui ? '#FFF6FA' : '#F2FCF7';
+        let profilePic = isYui ? 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg' : 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
+
+        let profileHTML = isConsecutive
+          ? `<div style="flex-shrink: 0; width: 2em; height: 0;"></div>`
+          : `<div style="flex-shrink: 0; width: 2em; height: 2em; border-radius: 50%; overflow: hidden; box-shadow: 0 0.1em 0.2em rgba(0,0,0,0.1); border: 0.1em solid ${borderColor}; box-sizing: border-box;"><img src="${profilePic}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>`;
+
+        let toneHTML = d.tone ? `<div style="font-size: 0.75em; color: #888; margin-top: 0.4em; padding: 0 0.3em; line-height: 1.3; font-weight: 400;">(${d.tone})</div>` : '';
+
+        html += `
+        <div class="scroll-msg-box" style="width: 100%; margin: ${marginTop} 0 0 0; padding: 0; display: flex; align-items: flex-start; justify-content: flex-start; flex-direction: ${flexDir}; gap: 0.5em; box-sizing: border-box;">
+          ${profileHTML}
+          <div style="display: flex; flex-direction: column; align-items: ${alignItem}; max-width: 80%;">
+            <div style="background-color: ${bgColor}; color: #333; padding: 0.5em 0.8em; border-radius: 1em; font-size: 0.85em; line-height: 1.5; letter-spacing: -0.02em; box-shadow: 0 0.05em 0.1em rgba(0,0,0,0.05); width: fit-content; word-break: keep-all; overflow-wrap: break-word;">
+              <div>${d.text}</div>
+            </div>
+            ${toneHTML}
+          </div>
+        </div>
+        `;
+        prevSpeaker = d.speaker;
+      });
+      html += '</div>';
+      return html;
+    }
+
+    function generateFinalHTML() {
+      const hasContent = currentBlocks.some(b => b.text.trim() !== '');
+      if (!hasContent) {
+        document.getElementById('previewArea').innerHTML = '<div style="text-align:center; color:#888; margin-top:50px;">텍스트를 입력하면 타임라인이 생성됩니다.</div>';
+        document.getElementById('outputCode').value = '';
+        return;
+      }
+
+      let finalHTML = `<style>
+        .extracted-timeline-widget {
+            font-size: 16px; 
+            background: transparent; border-radius: 0; padding: 0.5em; 
+            box-shadow: none; width: 100%;
+            display: flex; flex-direction: column; color: inherit;
+            max-width: 50em; margin: 2em auto; line-height: 1.5;
+            box-sizing: border-box;
+        }
+        .extracted-timeline-widget * { font-family: inherit; }
+        
+        .widget-title-main {
+            font-size: 0.75em; font-weight: 700; color: #888; margin-bottom: 0.75em; 
+            text-transform: uppercase; letter-spacing: 0.08em; 
+            border-bottom: 0.06em solid #eee; padding-bottom: 0.5em; 
+        }
+        .tl-container { padding-left: 0.6em; margin-top: 0.3em; width: 100%; box-sizing: border-box; }
+        
+        .tl-entry {
+            position: relative; padding-bottom: 2em; 
+            border-left: 0.125em solid #e0e0e0; padding-left: 1.5em; 
+            width: 100%; box-sizing: border-box;
+        }
+
+        .tl-node {
+            position: absolute; left: -0.875em; top: 0;
+            width: 1.6em; height: 1.6em; border-radius: 50%; background: #fff;
+            border: 0.15em solid #999; 
+            box-shadow: 0 0 0 0.3em #fff; display: flex; align-items: center; justify-content: center;
+            font-size: 0.75em; font-weight: 700; line-height: 1; padding-top: 0.1em; z-index: 10;
+        }
+
+        .tl-content-box {
+            background: transparent; border: none; border-radius: 0; 
+            padding: 0 0 1.5em 0; box-shadow: none; width: 100%; box-sizing: border-box;
+        }
+        .tl-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1em; }
+        .tl-date {
+            background: #999; color: #fff; padding: 0.3em 0.8em; border-radius: 1em; 
+            font-size: 0.75em; font-weight: 700; letter-spacing: 0.05em; 
+        }
+        .tl-dday { font-size: 0.85em; font-weight: 400; letter-spacing: 0.05em; }
+
+        .top-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8em; margin-bottom: 1.2em; width: 100%; box-sizing: border-box; }
+        .info-card { background: #fff; border: 0.06em solid #eaeaea; padding: 0.5em 0.6em; border-radius: 0.4em; }
+        .info-card-title { font-size: 0.7em; color: #888; margin-bottom: 0.3em; font-weight: 700; }
+        .info-card-content { font-size: 0.85em; color: #444; line-height: 1.4; }
+
+        .gauge-section { margin-bottom: 1.5em; width: 100%; box-sizing: border-box; }
+        .gauge-text-row { display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.85em; margin-bottom: 0.4em; }
+        .gauge-label { font-weight: 600; color: #555; }
+        .gauge-value { font-weight: 600; text-align: right; }
+        .gauge-bar-bg { width: 100%; height: 0.3em; background: #f0f0f0; border-radius: 0.15em; overflow: hidden; }
+        .gauge-bar-fill { height: 100%; border-radius: 0.15em; transition: width 1s ease-in-out; }
+
+        .info-section { margin-bottom: 1.2em; width: 100%; box-sizing: border-box; }
+        .section-title { font-size: 0.8em; font-weight: 700; color: #444; margin: 0 0 0.4em 0; padding-left: 0.5em; border-left: 0.2em solid #999; }
+        
+        .section-text { color: #444; background: #fff; border-radius: 0.5em; border: 0.06em solid #eaeaea; margin: 0; box-sizing: border-box; width: 100%; }
+
+        .info-list { list-style-type: margin: 0; padding: 0 0 0 0.5em; font-size: inherit; color: inherit; }
+        .info-list li { margin-bottom: 0.3em; word-break: keep-all; line-height: 1.5;}
+
+        /* ✨ 요청하신 b4d9c4 컬러 교체 적용 완료 */
+        .tag-yui { background: #FCE3E9; color: #111; padding: 0.1em 0.5em; border-radius: 0.3em; font-weight: 600; font-size: 0.85em; border: 0.05em solid #FFCBD9;}
+        .tag-bang { background: #eaf2ee; color: #111; padding: 0.1em 0.5em; border-radius: 0.3em; font-weight: 600; font-size: 0.85em; border: 0.05em solid #b4d9c4;}
+
+        /* 말풍선 애니메이션 */
+        .tistory-post-wrapper * { box-sizing: border-box; }
+        .scroll-msg-box { 
+            opacity: 0; 
+            transform: translateY(2em); 
+            transition: opacity 1.5s cubic-bezier(0.2, 0.8, 0.2, 1), transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        }
+        .scroll-msg-box.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* 모바일 반응형 처리 */
+        @media (max-width: 768px) {
+            .extracted-timeline-widget { font-size: 14px; }
+            .top-info-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 480px) {
+            .extracted-timeline-widget { font-size: 13px; }
+        }
+    </style>
+
+    <div class="extracted-timeline-widget">
+        <div class="widget-title-main">Operation Timeline</div>
+        <div class="tl-container">`;
+
+      currentBlocks.forEach(block => {
+        let fullText = block.text;
+        if (!fullText.trim()) return;
+
+        let segments = fullText.split('---');
+        
+        segments.forEach(text => {
+            if (!text.trim()) return;
+
+            /* ✨ 요청하신 b4d9c4 포인트 컬러 전면 교체 완료 */
+            let themeColor = { line: '#e0e0e0', nodeBg: '#fff', nodeBorder: '#999', nodeText: '!', dateBg: '#999', dday: '#888', gaugeText: '#555' };
+            if (block.theme === 'mint') {
+              themeColor = { line: '#b4d9c4', nodeBg: '#b4d9c4', nodeBorder: '#b4d9c4', nodeText: '', dateBg: '#b4d9c4', dday: '#8cb8a1', gaugeText: '#8cb8a1' };
+            } else if (block.theme === 'pink') {
+              themeColor = { line: '#FFCBD9', nodeBg: '#FFCBD9', nodeBorder: '#FFCBD9', nodeText: '', dateBg: '#E07A93', dday: '#E07A93', gaugeText: '#E07A93' };
+            }
+
+            let calLine = getLine(text, ['🗓️ 달력', '🗓️달력']);
+            let dateStr = "날짜", ddayStr = "";
+            if(calLine.includes('/')) {
+              let parts = calLine.split('/');
+              ddayStr = parts[1] ? parts[1].trim() : "";
+              let dtParts = parts[0].split('.');
+              if(dtParts.length >= 4) { dtParts.pop(); dateStr = dtParts.join('. ').trim(); }
+              else dateStr = parts[0].trim();
+            }
+
+            let locLine = getLine(text, ['📍 위치', '📍위치']);
+            let outfitLine = getLine(text, ['👕 복장', '👕복장']);
+            let outfitHtml = outfitLine.replace(/뱅\s*:/g, '뱅: ').replace(/(\/|,)?\s*유이\s*:/g, '<br>유이: ');
+
+            let affLine = getLine(text, ['💕 호감도', '💕호감도']);
+            let affPct = '0%';
+            let affText = affLine.replace(/^.*?:\s*/, '');
+            let affMatch = affLine.match(/([0-9]+)\s*\/\s*1000/);
+            if(affMatch) affPct = (parseInt(affMatch[1]) / 10) + '%';
+
+            let summary = getBlock(text, ['사건 요약'], ['NPC의 대표 대사', '뱅의 대표 대사', 'PC의 대표 대사', '유이의 대표 대사', '대표 대사', '대표대사']).replace(/\n/g, '<br>');
+            
+            let repSafeStarts = ['대표 대사', '대표대사', 'NPC의 대표 대사', '뱅의 대표 대사', 'PC의 대표 대사', '유이의 대표 대사'];
+            let repBlockRaw = getBlock(text, repSafeStarts, ['서사 전체를 지탱하는 가장 결정적인 단어/문장']);
+            
+            let initialSpeaker = 'bang'; 
+            let startMatch = text.match(new RegExp('^\\s*(' + repSafeStarts.map(m => m.replace(/\s+/g, '\\s*')).join('|') + ')', 'im'));
+            
+            if (startMatch) {
+                let matchStr = startMatch[1].toUpperCase();
+                if (matchStr.includes('NPC') || matchStr.includes('뱅') || matchStr.includes('하시온')) {
+                    initialSpeaker = 'bang';
+                } else if (matchStr.match(/\bPC\b/) || matchStr.includes('PC') || matchStr.includes('유이') || matchStr.includes('YUI')) {
+                    initialSpeaker = 'yui';
+                }
+            }
+
+            let repDialogues = [];
+            let currentSpeaker = initialSpeaker;
+
+            repBlockRaw.split('\n').filter(l => l.trim() !== '').forEach(l => {
+                let cleanL = l.trim();
+                
+                let headerMatch = cleanL.match(/^[-*▪️▫️\s]*\[?(NPC|뱅|하시온|SION\s*HA|PC|유이|YUI)\]?의?\s*대표\s*대사\s*[:：]?\s*(.*)/i);
+                if (headerMatch) {
+                    let hmStr = headerMatch[1].toUpperCase();
+                    currentSpeaker = (hmStr.includes('NPC') || hmStr.includes('뱅') || hmStr.includes('하시온')) ? 'bang' : 'yui';
+                    let quoteText = headerMatch[2].trim();
+                    if (quoteText) repDialogues.push(...extractBubbles(quoteText, currentSpeaker, ''));
+                    return; 
+                }
+
+                let speakerMatch = cleanL.match(dialogueRegex);
+                if (speakerMatch) {
+                    let smStr = speakerMatch[1].toUpperCase();
+                    currentSpeaker = (smStr.includes('NPC') || smStr.includes('뱅') || smStr.includes('하시온')) ? 'bang' : 'yui';
+                    let quoteText = cleanL.replace(dialogueRegex, '').trim();
+                    let toneMatch = quoteText.match(/\((.*?)\)$/);
+                    let tone = toneMatch ? toneMatch[1] : '';
+                    quoteText = quoteText.replace(/\(.*?\)$/, '').trim();
+                    if(quoteText) repDialogues.push(...extractBubbles(quoteText, currentSpeaker, tone));
+                } else {
+                    let toneMatch = cleanL.match(/\((.*?)\)$/);
+                    let tone = toneMatch ? toneMatch[1] : '';
+                    let quoteText = cleanL.replace(/\(.*?\)$/, '').trim();
+                    if(quoteText) repDialogues.push(...extractBubbles(quoteText, currentSpeaker, tone));
+                }
+            });
+
+            let repChatHTML = buildChatHTML(repDialogues); 
+
+            let keysRaw = getBlock(text, ['서사 전체를 지탱하는 가장 결정적인 단어/문장'], ['각 항목이 캐릭터에게 미친 물리적/심리적 영향력']);
+            let keyHtml = '';
+            keysRaw.split('\n').filter(l => l.trim() !== '').forEach(line => {
+              let cleanLine = line.replace(/^\d+\.\s*/, '').trim();
+              let match = cleanLine.match(/^(.*?)\s*(\(.*?\))$/);
+              if(match) keyHtml += `<li>· <strong>${match[1]}</strong> ${match[2]}</li>`;
+              else keyHtml += `<li>· <strong>${cleanLine}</strong></li>`;
+            });
+
+            let impact = getBlock(text, ['각 항목이 캐릭터에게 미친 물리적/심리적 영향력'], ['NPC와 PC의 관계', '뱅과 유이의 관계']);
+            let relationMain = getBlock(text, ['NPC와 PC의 관계', '뱅과 유이의 관계'], ['👥\\[캐릭터 관계\\]', '👥캐릭터 관계', '👥 \\[\\]캐릭터 관계', '👥 \\[캐릭터 관계\\]']);
+            
+            let rel1Raw = getBlock(text, ['1\\) 🔗', '1\\)🔗'], ['2\\) 🎭', '2\\)🎭']);
+            let rel1Dialogues = [];
+            rel1Raw.split('\n').filter(l => l.trim() !== '').forEach(l => {
+              let cleanL = l.replace(/^-\s*/, '').trim();
+              let match = cleanL.match(/\[?(뱅|유이|하시온|SION HA|NPC|PC|YUI)\]?\s*(?:=>|->|->|→)\s*\[?(?:뱅|유이|하시온|SION HA|NPC|PC|YUI)\]?\s*[:：]\s*(.*)/i);
+              if (match) {
+                  let speakerStr = /(뱅|하시온|SION HA|NPC)/i.test(match[1]) ? 'bang' : 'yui';
+                  let rest = match[2];
+                  let toneMatch = rest.match(/\((.*?)\)$/);
+                  let tone = toneMatch ? toneMatch[1] : '';
+                  let quoteText = rest.replace(/\(.*?\)$/, '').trim();
+                  rel1Dialogues.push({ speaker: speakerStr, text: quoteText.replace(/["“”]/g, '').trim(), tone: tone });
+              } else {
+                  let speakerMatch = cleanL.match(dialogueRegex);
+                  if (speakerMatch) {
+                      let smStr = speakerMatch[1].toUpperCase();
+                      let speakerStr = (smStr.includes('NPC') || smStr.includes('뱅') || smStr.includes('하시온')) ? 'bang' : 'yui';
+                      let rest = cleanL.replace(dialogueRegex, '').trim();
+                      let toneMatch = rest.match(/\((.*?)\)$/);
+                      let tone = toneMatch ? toneMatch[1] : '';
+                      let quoteText = rest.replace(/\(.*?\)$/, '').trim();
+                      rel1Dialogues.push({ speaker: speakerStr, text: quoteText.replace(/["“”]/g, '').trim(), tone: tone });
+                  }
+              }
+            });
+            let rel1ChatHTML = buildChatHTML(rel1Dialogues);
+            
+            let rel2Raw = getBlock(text, ['2\\) 🎭', '2\\)🎭'], ['3\\) ⚡️', '3\\)⚡️']);
+            let bangEmo = (rel2Raw.match(/[-]*\s*\[?뱅\]?\s*:\s*(.*)/) || [])[1] || '';
+            let yuiEmo = (rel2Raw.match(/[-]*\s*\[?유이\]?\s*:\s*(.*)/) || [])[1] || '';
+            let bangRelDescMatch = rel2Raw.match(/뱅\s*[→>]\s*유이(?:를|에게)?\s*\[(.*?)\]/);
+            let bangRelDesc = bangRelDescMatch ? bangRelDescMatch[1] : '';
+            let yuiRelDescMatch = rel2Raw.match(/유이\s*[→>]\s*뱅(?:을|에게)?\s*\[(.*?)\]/);
+            let yuiRelDesc = yuiRelDescMatch ? yuiRelDescMatch[1] : '';
+            let bangAttMatch = rel2Raw.match(/뱅\s*[→>]\s*유이\s*감정과\s*태도\s*:\s*\[?([^\]\n]*)\]?/);
+            let bangAttitude = bangAttMatch ? bangAttMatch[1].trim() : '';
+
+            const formatEmo = (str) => {
+                if(!str) return '';
+                return str.split(/→|->|=>/).map(e => {
+                    let text = e.trim();
+                    text = text.replace(/^([^\(]+)(\(.*?\))/, '<span style="font-size: 0.75em;">$1</span><span style="font-size: 1em;">$2</span>');
+                    return `<span style="color: #222;">${text}</span>`;
+                }).join(' <span style="font-size: 0.7em; margin: 0 0.3em; color: #999;">▶</span> ');
+            };
+
+            let rel2Html = '';
+            if (bangEmo || yuiEmo || bangRelDesc || yuiRelDesc) {
+                rel2Html += `<div style="display: flex; flex-direction: column; gap: 0.6em;">`;
+                if (bangEmo || bangRelDesc || bangAttitude) {
+                    /* ✨ 변경된 b4d9c4 컬러를 요소에 맞춰 가독성 있게 적용 */
+                    rel2Html += `
+                    <div style="background: #eaf2ee; padding: 0.8em 1em; border-radius: 0.6em; border-left: 0.25em solid #b4d9c4; box-shadow: 0 0.06em 0.2em rgba(0,0,0,0.02);">
+                        <div style="display: flex; align-items: center; margin-bottom: 0.5em;">
+                            <span style="font-weight: 800; font-size: 0.95em; margin-right: 0.5em; color: #6a9680;">🐺 BANG</span>
+                        </div>`;
+                    
+                    if (bangRelDesc) rel2Html += `<div style="font-size: 0.85em; color: #444; margin-bottom: 0.4em; word-break: keep-all; line-height: 1.4;">유이를 <span style="color: #6a9680; font-weight: 700;">${bangRelDesc}</span>고 있음</div>`;
+                    if (bangAttitude) rel2Html += `<div style="font-size: 0.8em; color: #6a9680; margin-bottom: 0.6em; background: #fff; padding: 0.4em 0.6em; border-radius: 0.4em; display: inline-block; border: 1px solid #b4d9c4; font-weight: 500;">💡 태도: ${bangAttitude}</div>`;
+                    if (bangEmo) rel2Html += `<div style="display: flex; align-items: center; font-size: 0.95em; flex-wrap: wrap; gap: 0.1em;">${formatEmo(bangEmo)}</div>`;
+                    rel2Html += `</div>`;
+                }
+
+                if (yuiEmo || yuiRelDesc) {
+                    rel2Html += `
+                    <div style="background: #fdf5f7; padding: 0.8em 1em; border-radius: 0.6em; border-left: 0.25em solid #FFCBD9; box-shadow: 0 0.06em 0.2em rgba(0,0,0,0.02);">
+                        <div style="display: flex; align-items: center; margin-bottom: 0.5em;">
+                            <span style="font-weight: 800; font-size: 0.95em; margin-right: 0.5em; color: #a13554;">🐰 YUI</span>
+                        </div>`;
+                    if (yuiRelDesc) rel2Html += `<div style="font-size: 0.85em; color: #444; margin-bottom: 0.6em; word-break: keep-all; line-height: 1.4;">뱅을 <span style="color: #E07A93; font-weight: 700;">${yuiRelDesc}</span>고 있음</div>`;
+                    if (yuiEmo) rel2Html += `<div style="display: flex; align-items: center; font-size: 0.95em; flex-wrap: wrap; gap: 0.1em;">${formatEmo(yuiEmo)}</div>`;
+                    rel2Html += `</div>`;
+                }
+                rel2Html += `</div>`;
+            }
+            if (!rel2Html && rel2Raw) {
+              rel2Html = '<ul class="info-list">' + rel2Raw.split('\n').filter(l => l.trim()!=='').map(l => {
+                l = l.replace(/^-🎭\s*/, '').replace(/^[▪️\-▫️\s]+/, '');
+                l = l.replace(/\[뱅\]/g, '<span class="tag-bang">뱅</span>').replace(/\[유이\]/g, '<span class="tag-yui">유이</span>');
+                return `<li>· ${l}</li>`;
+              }).join('') + '</ul>';
+            }
+
+            let rel3 = getBlock(text, ['3\\) ⚡️', '3\\)⚡️'], ['💬 결정적 대사', '💬결정적 대사']);
+            let rel3Html = rel3.split('\n').filter(l => l.trim()!=='').map(l => {
+                l = l.replace(/^[▪️\-▫️\s]+/, ''); 
+                l = l.replace(/\s*(?:=>|->|→)\s*/g, ' → ');
+                return `<li>· ${l}</li>`;
+            }).join('');
+
+            let dialogs = getBlock(text, ['💬 결정적 대사', '💬결정적 대사'], ['4\\) 중요 정보', '4\\) 중요정보']);
+            let critDialogues = [];
+            let critCurrentSpeaker = 'bang'; 
+            
+            dialogs.split('\n').filter(l => l.trim()!=='').forEach(l => {
+                let speakerMatch = l.match(dialogueRegex);
+                let cleanText = l;
+                if (speakerMatch) {
+                    let smStr = speakerMatch[1].toUpperCase();
+                    critCurrentSpeaker = (smStr.includes('NPC') || smStr.includes('뱅') || smStr.includes('하시온')) ? 'bang' : 'yui';
+                    cleanText = l.replace(dialogueRegex, '').trim();
+                } else {
+                    cleanText = l.trim();
+                }
+                let toneMatch = cleanText.match(/\((.*?)\)$/);
+                let tone = toneMatch ? toneMatch[1] : '';
+                let quoteText = cleanText.replace(/\(.*?\)$/, '').trim();
+                if(quoteText) critDialogues.push(...extractBubbles(quoteText, critCurrentSpeaker, tone));
+            });
+            let critChatHTML = buildChatHTML(critDialogues, true); 
+
+            let info4 = getBlock(text, ['4\\) 중요 정보', '4\\) 중요정보'], []);
+            let info4Html = info4.split('\n').filter(l => l.trim()!=='').map(l => `<li>· ${l.replace(/^[▪️\-▫️\s]+/,'').trim()}</li>`).join('');
+
+            let innerContent = '';
+
+            // ⚠️ 요청하신 수정사항 반영 구간 (calLine이 있을 때만 달력 헤더 생성)
+            if (calLine && calLine.trim() !== '') {
+                innerContent += `
+                    <div class="tl-header">
+                        <span class="tl-date" style="background-color: ${themeColor.dateBg};">${dateStr}</span>
+                        <span class="tl-dday" style="color: ${themeColor.dday};">${ddayStr}</span>
+                    </div>`;
+            }
+
+            if(locLine || outfitLine) {
+                innerContent += `<div class="top-info-grid">`;
+                if(locLine) innerContent += `<div class="info-card"><div class="info-card-title">📍 LOCATION</div><div class="info-card-content">${locLine}</div></div>`;
+                if(outfitLine) innerContent += `<div class="info-card"><div class="info-card-title">👕 OUTFIT</div><div class="info-card-content">${outfitHtml}</div></div>`;
+                innerContent += `</div>`;
+            }
+
+            if(affLine) {
+                innerContent += `
+                    <div class="gauge-section">
+                        <div class="gauge-text-row">
+                            <span class="gauge-label">💕</span>
+                            <span class="gauge-value" style="color: ${themeColor.gaugeText}; font-size: 0.85em;">${affText}</span>
+                        </div>
+                        <div class="gauge-bar-bg">
+                            <div class="gauge-bar-fill" style="width: ${affPct}; background: #FFCBD9;"></div>
+                        </div>
+                    </div>`;
+            }
+
+            const styleSmall = 'font-size: 0.85em; padding: 0.8em 1em;';
+            const styleChat  = 'font-size: 0.95em; padding: 1.2em 1em;'; 
+
+            if(summary) {
+                innerContent += `
+                    <div class="info-section">
+                        <h4 class="section-title">사건 요약</h4>
+                        <div class="section-text" style="${styleSmall}">${summary}</div>
+                    </div>`;
+            }
+
+            if(repChatHTML) {
+                innerContent += `
+                    <div class="info-section">
+                        <h4 class="section-title" style="border-left-color: #999;">대표 대사</h4>
+                        <div class="section-text" style="${styleChat}">${repChatHTML}</div>
+                    </div>
+                `;
+            }
+
+            if(keyHtml || impact || relationMain) {
+                if(keyHtml) {
+                    innerContent += `
+                        <div class="info-section">
+                            <h4 class="section-title" style="border-left-color: ${themeColor.line};">결정적인 단어/문장</h4>
+                            <div class="section-text" style="${styleSmall}"><ul class="info-list">${keyHtml}</ul></div>
+                        </div>`;
+                }
+                if(impact) {
+                    innerContent += `
+                        <div class="info-section">
+                            <h4 class="section-title" style="border-left-color: #FFCBD9;">물리적/심리적 영향력</h4>
+                            <div class="section-text" style="${styleSmall}">${impact}</div>
+                        </div>`;
+                }
+                if(relationMain) {
+                    innerContent += `
+                        <div class="info-section">
+                            <h4 class="section-title" style="border-left-color: #ccc;">관계</h4>
+                            <div class="section-text" style="${styleSmall}">${relationMain}</div>
+                        </div>`;
+                }
+            }
+
+            if(rel1ChatHTML || rel2Html || rel3Html || critChatHTML || info4Html) {
+                innerContent += `<div style="margin-top: 1.5em; margin-bottom: 1em; font-weight: 700; color: #333; font-size: 0.85em; border-bottom: 2px solid #333; padding-bottom: 0.4em;">상세 분석</div>`;
+                
+                if(rel1ChatHTML) {
+                    innerContent += `
+                        <div class="info-section">
+                            <h4 class="section-title" style="border-left-color: #999;">호칭</h4>
+                            <div class="section-text" style="${styleChat}">${rel1ChatHTML}</div>
+                        </div>`;
+                }
+                if(rel2Html) {
+                    innerContent += `
+                        <div class="info-section">
+                            <h4 class="section-title" style="border-left-color: ${themeColor.line};">감정 변화 및 태도</h4>
+                            <div class="section-text" style="${styleSmall}">${rel2Html}</div>
+                        </div>`;
+                }
+                if(rel3Html) {
+                    innerContent += `
+                        <div class="info-section">
+                            <h4 class="section-title" style="border-left-color: #FFCBD9;">상호작용</h4>
+                            <div class="section-text" style="${styleSmall}"><ul class="info-list">${rel3Html}</ul></div>
+                        </div>`;
+                }
+                if(critChatHTML) {
+                    innerContent += `
+                        <div class="info-section">
+                            <h4 class="section-title" style="border-left-color: #777;">대사</h4>
+                            <div class="section-text" style="${styleChat}">${critChatHTML}</div>
+                        </div>`;
+                }
+                if(info4Html) {
+                    innerContent += `
+                        <div class="info-section" style="margin-bottom: 0;">
+                            <h4 class="section-title" style="border-left-color: #ccc;">중요 정보</h4>
+                            <div class="section-text" style="${styleSmall}"><ul class="info-list">${info4Html}</ul></div>
+                        </div>`;
+                }
+            }
+
+            finalHTML += `
+            <div class="tl-entry" style="border-left-color: ${themeColor.line};">
+                <div class="tl-node" style="background-color: ${themeColor.nodeBg}; border-color: ${themeColor.nodeBorder};">${themeColor.nodeText}</div>
+                <div class="tl-content-box">
+                    ${innerContent}
+                </div>
+            </div>`;
+        });
+      });
+
+      finalHTML += `
+        </div>
+    </div>
+    <script>
+    // 대기열 및 애니메이션 시스템
+    window.addEventListener('DOMContentLoaded', function() { 
+        let queue = [];
+        let isProcessing = false;
+        
+        function processQueue() {
+            if (queue.length === 0) {
+                isProcessing = false;
+                return;
+            }
+            isProcessing = true;
+            setTimeout(function() {
+                if (queue.length > 0) {
+                    let target = queue.shift();
+                    target.classList.add('is-visible');
+                }
+                processQueue();
+            }, 500); 
+        }
+
+        const observer = new IntersectionObserver(function(entries, observer) { 
+            let added = false;
+            entries.forEach(function(entry) { 
+                if (entry.isIntersecting) { 
+                    queue.push(entry.target); 
+                    observer.unobserve(entry.target); 
+                    added = true;
+                } 
+            }); 
+            if (added && !isProcessing) {
+                processQueue();
+            }
+        }, { threshold: 0.1 }); 
+        
+        const msgBoxes = document.querySelectorAll('.scroll-msg-box'); 
+        msgBoxes.forEach(function(box) { observer.observe(box); }); 
+    });
+    <\/script>`;
+
+      document.getElementById('previewArea').innerHTML = finalHTML;
+      document.getElementById('outputCode').value = finalHTML;
+    }
+  </script>
+</body>
+</html>
