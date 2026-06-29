@@ -1,0 +1,233 @@
+:root {
+    /* 기본(라이트) 모드 색상 변수 */
+    --bg-color: #ffffff;
+    --panel-bg: #ffffff;
+    --border: #e5e5ea;
+    --primary: #007aff;
+    --text-main: #333333;
+    --text-muted: #8e8e93;
+    --input-bg: #ffffff;
+    --block-bg: #fafbfc;
+    --block-hover: #ffffff;
+    --preview-bg: #ffffff;
+}
+
+/* 다크모드 색상 변수 */
+body.dark-mode {
+    --bg-color: #1B1B1B;
+    --panel-bg: #242424;
+    --border: #444444;
+    --primary: #0a84ff;
+    --text-main: #F9F9F8;
+    --text-muted: #aaaaaa;
+    --input-bg: #333333;
+    --block-bg: #2a2a2a;
+    --block-hover: #333333;
+    --preview-bg: #1B1B1B;
+}
+
+body {
+    font-family: 'Noto Serif KR', serif;
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 20px;
+    color: var(--text-main);
+    line-height: 1.6;
+    letter-spacing: -0.02em;
+    word-break: break-all;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.page-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.panel-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+    color: var(--text-main);
+}
+.help-text { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.5; word-break: break-all; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
+    line-height: 1.5;
+    background-color: var(--input-bg);
+    color: var(--text-main);
+}
+input[type="text"] {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    background-color: var(--input-bg);
+    color: var(--text-main);
+}
+button {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s;
+    word-break: break-all;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+button:hover { background-color: #005bb5; }
+.btn-small { padding: 4px 8px; font-size: 12px; font-weight: 500; border-radius: 4px; }
+.btn-secondary { background-color: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); }
+.btn-secondary:hover { opacity: 0.8; }
+.btn-danger { background-color: #ff3b30; color: white; }
+.btn-danger:hover { background-color: #d70015; }
+.btn-quick-mint { background-color: #F2FCF7; color: #459fa5; border: 1px solid #bbf7d0; font-weight: bold; }
+.btn-quick-pink { background-color: #FFF6FA; color: #f5bdcc; border: 1px solid #fbcfe8; font-weight: bold; }
+.btn-quick-status { background-color: #f8f9fa; color: #495057; border: 1px solid #ced4da; font-weight: bold; }
+
+body.dark-mode .btn-quick-mint { background-color: #1a332a; color: #B2E4D4; border-color: #2e5c4d; }
+body.dark-mode .btn-quick-pink { background-color: #331f26; color: #f5bdcc; border-color: #5c3845; }
+body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-color: #555; }
+
+.btn-sync { background-color: #5856d6; color: white; }
+.btn-sync:hover { background-color: #403fb0; }
+
+.tool-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: var(--block-bg);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+#editorList {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 700px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+.block-item {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    background: var(--block-bg);
+    transition: box-shadow 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+}
+.block-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.03);
+    background: var(--block-hover);
+}
+.block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.preview-container {
+    width: 100%;
+    height: 700px;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px 0;
+    background: var(--preview-bg);
+    color: var(--text-main);
+    overflow-y: auto;
+    box-sizing: border-box;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+.preview-container:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.preview-gap {
+    height: 12px;
+    margin: 2px 0;
+    border: 1px dashed transparent;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s;
+    background-color: transparent;
+}
+.preview-gap:hover {
+    border-color: var(--text-muted);
+    background-color: var(--block-bg);
+    opacity: 1;
+    height: 24px;
+}
+.preview-gap span {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.empty-line-preview {
+    height: 30px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin: 5px 15px;
+    background: var(--block-bg);
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 5px;
+}
+
+/* 모바일 반응형 규칙 */
+@media (max-width: 992px) {
+    .grid-2col { grid-template-columns: 1fr; }
+    .settings-grid { grid-template-columns: 1fr; }
+}
