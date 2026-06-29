@@ -58,9 +58,27 @@ function undo() {
                 focusInfo = { type: 'preview' };
             }
         }
+
+        // 💡 렌더링 전 현재 스크롤 위치 임시 저장 (튕김 방지)
+        const editorList = document.getElementById('editorList');
+        const htmlPreview = document.getElementById('htmlPreview');
+        const scrollPos = {
+            editor: editorList ? editorList.scrollTop : 0,
+            preview: htmlPreview ? htmlPreview.scrollTop : 0,
+            window: window.scrollY
+        };
+
         historyIndex--;
         blocks = JSON.parse(historyStack[historyIndex]);
         renderEditor();
+
+        // 💡 렌더링 직후 스크롤 위치 원상 복구
+        setTimeout(() => {
+            if (editorList) editorList.scrollTop = scrollPos.editor;
+            if (htmlPreview) htmlPreview.scrollTop = scrollPos.preview;
+            window.scrollTo(0, scrollPos.window);
+        }, 0);
+
         restoreFocus(focusInfo);
     }
 }
@@ -77,9 +95,27 @@ function redo() {
                 focusInfo = { type: 'preview' };
             }
         }
+
+        // 💡 렌더링 전 현재 스크롤 위치 임시 저장 (튕김 방지)
+        const editorList = document.getElementById('editorList');
+        const htmlPreview = document.getElementById('htmlPreview');
+        const scrollPos = {
+            editor: editorList ? editorList.scrollTop : 0,
+            preview: htmlPreview ? htmlPreview.scrollTop : 0,
+            window: window.scrollY
+        };
+
         historyIndex++;
         blocks = JSON.parse(historyStack[historyIndex]);
         renderEditor();
+
+        // 💡 렌더링 직후 스크롤 위치 원상 복구
+        setTimeout(() => {
+            if (editorList) editorList.scrollTop = scrollPos.editor;
+            if (htmlPreview) htmlPreview.scrollTop = scrollPos.preview;
+            window.scrollTo(0, scrollPos.window);
+        }, 0);
+
         restoreFocus(focusInfo);
     }
 }
