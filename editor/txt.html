@@ -65,11 +65,7 @@
 NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.
 7.*OOC:  npc의 대사는제작자가 만든 설정으로 출력한다. 큰 따옴표 안에 영어 또는 모국어를 넣고, 괄호 안에 한국어 번역을 한다*
 8.OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.
-9.*OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.*
-10.⟦OTAKU_TURN⟧
-11.**
-                
-                </textarea>
+9.*OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.*</textarea>
             </div>
 
             <div>
@@ -177,7 +173,6 @@ NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.
             
             // 상태창 이모지
             const statusEmojis = /^[* \t]*(🗓️|💍|📍|👕|👥️|💭|🔔|🚨|❤️‍🔥|✏️|🔫|💕|📰|💘)/;
-            const quoteMark = '"';
 
             for (let line of lines) {
                 let trimmed = line.trim();
@@ -187,12 +182,18 @@ NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.
                     continue;
                 }
 
-                // [턴 숫자] 패턴이 있는 줄은 통째로 삭제
-                if (/\[턴\s*\d+\]/.test(trimmed)) {
-                    continue;
-                }
+                // 2. 고정 삭제 파트 추가 (턴 숫자, 특정 키워드, #, **)
+                if (/\[턴\s*\d+\]/.test(trimmed)) continue;
+                trimmed = trimmed.replace(/⟦OTAKU_TURN⟧/g, ''); // 요구사항 2 추가
+                trimmed = trimmed.replace(/#/g, ''); // 요구사항 2 추가
+                
+                // 요구사항 3: ** 모두 삭제 (이후 나레이션 판별로 자연스럽게 넘어가도록)
+                trimmed = trimmed.replace(/\*\*/g, ''); 
+                trimmed = trimmed.trim();
+                
+                if (!trimmed) continue;
 
-                // 2. 반복 지시문 "띄어쓰기 무시하고" 일치할 때 통째로 스킵
+                // 반복 지시문 "띄어쓰기 무시하고" 일치할 때 통째로 스킵
                 let normLine = trimmed.replace(/\s+/g, '');
                 if (exactExclusions.includes(normLine)) {
                     continue; 
@@ -224,46 +225,62 @@ NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.
 
                 // 6. 포맷 변환 (버전 1, 버전 2)
                 if (applyV1 || applyV2) {
-                    let hasQuotes = trimmed.includes('"');
-
                     // 상태창 줄 스킵 (서술 기호나 따옴표 씌우지 않음)
                     if (statusEmojis.test(trimmed) || /^(🗓️|💍|📍|👕|👥️|💭|🔔|🚨|❤️‍🔥|✏️|🔫|💕|📰|💘)/.test(trimmed)) {
                         result.push(trimmed);
                         continue;
                     }
 
+                    // 요구사항 1: 큰따옴표 포함 여부 확인 (기호 정리 전에 확인)
+                    let hasQuotes = /["“”]/.test(trimmed);
+
+                    // 요구사항 4: 기호가 첫 번째로 나오는지 확인 (나레이션 강제 조건)
+                    // 영문, 숫자, 한글, 공백, 따옴표가 아닌 문자로 시작하면 기호로 간주
+                    let isSymbolStart = /^[^\sa-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ"“'‘]/.test(trimmed);
+
                     // 기호 정리
                     if (applyV1 && !applyV2) {
                         // 역극 폼 단독 켜짐: 기존 기호 전부 제거
-                        trimmed = trimmed.replace(/[*#'\[\]\-]/g, '').trim();
+                        trimmed = trimmed.replace(/[*'\[\]\-]/g, '').trim();
                     } else if (applyV2) {
-                        // 소설 폼 켜짐: # * 만 삭제
-                        trimmed = trimmed.replace(/[#*]/g, '').trim();
+                        // 소설 폼 켜짐: * 만 삭제 (#는 위에서 이미 삭제됨)
+                        trimmed = trimmed.replace(/[*]/g, '').trim();
                     }
                     
                     if (!trimmed) continue;
 
-                    // 대사/서술 판별
-                    if (trimmed.length <= 5 || dialogueRegex.test(trimmed)) {
-                        // 기존 따옴표 삭제 후 새 따옴표 적용
+                    // 대사/서술 판별 로직 수정
+                    let isDialogue = false;
+                    
+                    // 기호로 시작하지 않을 때만 대사 어미 판별 진행 (요구사항 4)
+                    if (!isSymbolStart) {
+                        if (trimmed.length <= 5 || dialogueRegex.test(trimmed)) {
+                            isDialogue = true;
+                        }
+                    }
+
+                    if (isDialogue) {
+                        // 대사인 경우: 기존 따옴표 삭제 후 새 따옴표 적용 (중복 방지)
                         trimmed = trimmed.replace(/^[“"']|[”"']$/g, '').trim();
                         result.push(`"${trimmed}"`);
                     } else {
-                        // 서술인 경우
+                        // 서술(나레이션)인 경우
                         if (applyV1 && !applyV2) {
-                            // 역극 폼 단독 적용: 쌍따옴표가 없었던 서술에만 양쪽 * 적용
+                            // 역극 폼 단독 적용
                             if (hasQuotes) {
+                                // 요구사항 1: 큰따옴표가 포함된 문장은 대사가 섞인 것이므로 *를 씌우지 않음
                                 result.push(trimmed);
                             } else {
+                                // 쌍따옴표가 없는 순수 서술에만 양쪽 * 적용
                                 result.push(`*${trimmed}*`);
                             }
                         } else {
-                            // 소설 폼 켜짐: 서술은 기호 없이 그대로
+                            // 소설 폼 켜짐: 서술은 기호 없이 그대로 출력
                             result.push(trimmed);
                         }
                     }
                 } else {
-                    // 포맷 체크박스가 모두 꺼진 경우 (OOC/이모티콘 삭제만 적용된 상태로 원본 출력)
+                    // 포맷 체크박스가 모두 꺼진 경우 (원본 출력)
                     result.push(trimmed);
                 }
             }
