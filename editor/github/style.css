@@ -226,6 +226,115 @@ body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-c
     margin-bottom: 5px;
 }
 
+
+/* --- 애플 스타일 툴바 CSS (추가됨) --- */
+.apple-toolbar {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid #7eb898; 
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: max-content;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+body.dark-mode .apple-toolbar {
+    background: rgba(40, 40, 40, 0.96);
+    border-color: #5d8c72;
+}
+.tb-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: flex-start;
+}
+.tb-btn {
+    background: none;
+    border: none;
+    color: var(--text-main);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+.tb-btn:hover { background-color: rgba(0,0,0,0.05); }
+body.dark-mode .tb-btn:hover { background-color: rgba(255,255,255,0.1); }
+.tb-divider {
+    width: 1px;
+    height: 18px;
+    background-color: var(--border);
+}
+.tb-circle {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+}
+.tb-circle.mint-bg { background: #E1F9F1; color: #0E865E; }
+.tb-circle.pink-bg { background: #FDEDF4; color: #D04978; }
+.tb-font-size {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.tb-font-size button {
+    background: none;
+    border: none;
+    color: var(--text-main);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+}
+.tb-font-size .val-box {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    min-width: 20px;
+    text-align: center;
+    color: var(--text-main);
+    background: var(--input-bg);
+}
+.color-picker-label {
+    position: relative;
+    overflow: hidden;
+}
+.color-picker-label input[type="color"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+/* 포스트잇 내부 내용 길어질 때 스크롤 CSS (추가됨) */
+.postit-scroll {
+    max-height: 350px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+}
+.postit-scroll::-webkit-scrollbar { width: 5px; }
+.postit-scroll::-webkit-scrollbar-track { background: transparent; }
+.postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+body.dark-mode .postit-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+
+
 /* 모바일 반응형 규칙 */
 @media (max-width: 992px) {
     .grid-2col { grid-template-columns: 1fr; }
