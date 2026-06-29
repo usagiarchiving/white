@@ -57,7 +57,7 @@ function applyAutoCustomColor(safeKey) {
     if (count > 0) {
         document.getElementById('customCharacterAutoList').innerHTML = ''; 
         renderEditor(); 
-        saveState(); // 변경사항 히스토리 저장
+        saveState(); 
         showToast(`총 ${count}개의 대사에 색상이 일괄 적용되었습니다! 🚀`);
     } else {
         showToast("해당 캐릭터를 사용하는 대사가 없습니다.");
@@ -121,7 +121,7 @@ function handleTextareaKeydown(e, index) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    saveState(); // 최초 빈 상태 저장
+    saveState(); 
 
     const previewEl = document.getElementById('htmlPreview');
     previewEl.addEventListener('mouseup', handleSelection);
@@ -289,6 +289,10 @@ function parseBulkInput() {
                 if (seg.startsWith('제3자:')) { blocks.push({ type: 'custom', content: stripSymbols(seg.replace(/^제3자:\s*/, '')), customTextColor: '#333333' }); return; }
                 if (seg.startsWith('속마음:')) { blocks.push({ type: 'thought', content: stripSymbols(seg.replace(/^속마음:\s*/, '')) }); return; }
                 
+                // 내 메시지, 상대 메시지 일괄 변환 처리 추가
+                if (seg.startsWith('내메시지:')) { blocks.push({ type: 'myMsg', content: stripSymbols(seg.replace(/^내메시지:\s*/, '')) }); return; }
+                if (seg.startsWith('상대메시지:')) { blocks.push({ type: 'opMsg', content: stripSymbols(seg.replace(/^상대메시지:\s*/, '')) }); return; }
+
                 if (seg.startsWith('포스트잇:')) { blocks.push({ type: 'postit', content: stripSymbols(seg.replace(/^포스트잇:\s*/, '')) }); return; }
                 if (seg.startsWith('폴라로이드:')) { 
                     let parts = stripSymbols(seg.replace(/^폴라로이드:\s*/, '')).split('|');
@@ -296,7 +300,6 @@ function parseBulkInput() {
                     return;
                 }
                 
-                // 접은글 일괄 변환 처리
                 if (seg.startsWith('접은글:')) { blocks.push({ type: 'fold', content: stripSymbols(seg.replace(/^접은글:\s*/, '')), foldStyle: 'notion', foldTitle: '접은글' }); return; }
 
                 if (seg.startsWith('브금:')) {
@@ -314,7 +317,7 @@ function parseBulkInput() {
 
                 if (seg.startsWith('(') && seg.endsWith(')')) {
                     let lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
-                    if (lastBlock && ['mint', 'pink', 'mob', 'custom'].includes(lastBlock.type)) {
+                    if (lastBlock && ['mint', 'pink', 'mob', 'custom', 'myMsg', 'opMsg'].includes(lastBlock.type)) {
                         lastBlock.content += '\n' + seg;
                         return;
                     }
@@ -334,7 +337,7 @@ function parseBulkInput() {
                         } else { 
                            if (/^\(.*\)$/.test(part)) {
                               let lastBlock = blocks[blocks.length - 1];
-                               if (lastBlock && ['mint', 'pink', 'mob', 'custom'].includes(lastBlock.type)) {
+                               if (lastBlock && ['mint', 'pink', 'mob', 'custom', 'myMsg', 'opMsg'].includes(lastBlock.type)) {
                                   lastBlock.content += '\n' + part;
                                  return;
                                 }
@@ -505,36 +508,54 @@ function renderEditor() {
 
         let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
 
+        // 💡 드롭다운 3개로 분리한 핵심 영역
         item.innerHTML = `
             <div style="text-align: center; margin-bottom: 5px;">
                 <button class="btn-small btn-secondary" onclick="addBlock('narration', ${index})">⬆ 이 위에 추가</button>
             </div>
-            <div class="block-header">
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px;">
-                        <option value="title" ${block.type==='title'?'selected':''}>제목</option>
+            <div class="block-header" style="display: block;">
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; width: 100%;">
+                    <!-- 1. 대사/지문 드롭다운 -->
+                    <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px; max-width: 120px;">
+                        <option value="" disabled ${['narration','mint','pink','mob','custom','thought','myMsg','opMsg','fold'].includes(block.type)?'':'selected'} hidden>대사/지문</option>
                         <option value="narration" ${block.type==='narration'?'selected':''}>나레이션</option>
                         <option value="mint" ${block.type==='mint'?'selected':''}>민트 대사</option>
                         <option value="pink" ${block.type==='pink'?'selected':''}>핑크 대사</option>
                         <option value="mob" ${block.type==='mob'?'selected':''}>모브 대사</option>
                         <option value="custom" ${block.type==='custom'?'selected':''}>제3자 대사</option>
-                        <option value="bgm" ${block.type==='bgm'?'selected':''}>BGM 재생</option>
                         <option value="thought" ${block.type==='thought'?'selected':''}>속마음</option>
-                        <option value="status" ${block.type==='status'?'selected':''}>상태창</option>
-                        <option value="postit" ${block.type==='postit'?'selected':''}>포스트잇</option>
-                        <option value="polaroid" ${block.type==='polaroid'?'selected':''}>폴라로이드</option>
+                        <option value="myMsg" ${block.type==='myMsg'?'selected':''}>내 메시지</option>
+                        <option value="opMsg" ${block.type==='opMsg'?'selected':''}>상대 메시지</option>
                         <option value="fold" ${block.type==='fold'?'selected':''}>접은글</option>
-                        <option value="divider" ${block.type==='divider'?'selected':''}>구분선</option>
+                    </select>
+
+                    <!-- 2. 텍스트 드롭다운 -->
+                    <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px; max-width: 100px;">
+                        <option value="" disabled ${['title','dday','empty'].includes(block.type)?'':'selected'} hidden>텍스트</option>
+                        <option value="title" ${block.type==='title'?'selected':''}>제목</option>
                         <option value="dday" ${block.type==='dday'?'selected':''}>작은 텍스트</option>
-                        <option value="image" ${block.type==='image'?'selected':''}>이미지</option>
-                        <option value="html" ${block.type==='html'?'selected':''}>HTML</option>
                         <option value="empty" ${block.type==='empty'?'selected':''}>공백 줄</option>
                     </select>
-                    <button class="btn-small btn-quick-mint" onclick="changeBlockType(${index}, 'mint')">민트</button>
-                    <button class="btn-small btn-quick-pink" onclick="changeBlockType(${index}, 'pink')">핑크</button>
-                    <button class="btn-small btn-quick-status" onclick="changeBlockType(${index}, 'narration')">나레이션</button>
+
+                    <!-- 3. 미디어/꾸미기 드롭다운 -->
+                    <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px; max-width: 120px;">
+                        <option value="" disabled ${['bgm','status','divider','postit','polaroid','image','html'].includes(block.type)?'':'selected'} hidden>미디어/꾸미기</option>
+                        <option value="bgm" ${block.type==='bgm'?'selected':''}>BGM 재생</option>
+                        <option value="status" ${block.type==='status'?'selected':''}>상태창</option>
+                        <option value="divider" ${block.type==='divider'?'selected':''}>구분선</option>
+                        <option value="postit" ${block.type==='postit'?'selected':''}>포스트잇</option>
+                        <option value="polaroid" ${block.type==='polaroid'?'selected':''}>폴라로이드</option>
+                        <option value="image" ${block.type==='image'?'selected':''}>이미지</option>
+                        <option value="html" ${block.type==='html'?'selected':''}>HTML 코드</option>
+                    </select>
                 </div>
-                <div class="block-actions">
+                
+                <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 4px;">
+                        <button class="btn-small btn-quick-mint" onclick="changeBlockType(${index}, 'mint')">민트</button>
+                        <button class="btn-small btn-quick-pink" onclick="changeBlockType(${index}, 'pink')">핑크</button>
+                        <button class="btn-small btn-quick-status" onclick="changeBlockType(${index}, 'narration')">나레이션</button>
+                    </div>
                     <button class="btn-small btn-danger" onclick="deleteBlock(${index})">삭제</button>
                 </div>
             </div>
@@ -570,9 +591,17 @@ function syncPreviewToBlocks() {
 
         if (block.type === 'status' || block.type === 'html') {
             block.content = el.innerHTML;
-        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid', 'fold'].includes(block.type)) {
+        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid', 'fold', 'myMsg', 'opMsg'].includes(block.type)) {
             
-            if (block.type === 'fold') {
+            if (['myMsg', 'opMsg'].includes(block.type)) {
+                const txtDiv = el.querySelector('div > div > div'); // 안쪽 텍스트 div 타겟팅
+                if (txtDiv) {
+                    let htmlText = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+                    block.content = htmlText.replace(/^\n+|\n+$/g, '');
+                    let ta = document.getElementById(`textarea-${index}`);
+                    if (ta && document.activeElement !== ta && document.activeElement !== el) { ta.value = block.content; }
+                }
+            } else if (block.type === 'fold') {
                 const summarySpan = el.querySelector('summary span[contenteditable="true"]');
                 if (summarySpan) {
                     block.foldTitle = (summarySpan.innerText || summarySpan.textContent || '').trim();
@@ -730,7 +759,7 @@ function updateOutput(skipPreviewUpdate = false) {
             
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">\n    ${dividerInner}\n</div>\n`;
         } else {
-            let lines = block.content.split('\n').filter(l => l.trim() !== '' || curr === 'fold');
+            let lines = block.content.split('\n').filter(l => l.trim() !== '' || curr === 'fold' || curr === 'postit' || curr === 'myMsg' || curr === 'opMsg');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
@@ -744,6 +773,14 @@ function updateOutput(skipPreviewUpdate = false) {
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
                 htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? '10px' : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${divContent}\n</div>\n`;
+            }
+            else if (curr === 'myMsg') {
+                htmlStr = `<div id="preview-block-${index}" data-type="myMsg" onclick="focusAndScrollBlock(${index}, true)" style="display: flex; flex-direction: column; padding: 0 5px; width: 100%; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;">\n    <div class="msg-bubble" style="display: flex; justify-content: flex-end; align-items: flex-end; margin: 10px 0;">\n        <div style="position: relative; max-width: 80%; margin-right:8px;">\n            <div style="padding: 8px 14px; background-color: #007aff; border-radius: 18px 18px 6px 18px; color: #fff; line-height: 1.5; letter-spacing: -0.01em; outline: none; position: relative; z-index: 1; word-break: break-word;">${divContent}</div>\n            <svg width="18" height="18" viewBox="0 0 18 18" style="position: absolute; right: -7px; bottom: 0; z-index: -1;"><path d="M0 18H18C12 18 9 11 0 0V18Z" fill="#007aff"></path></svg>\n        </div>\n    </div>\n</div>\n`;
+            }
+            else if (curr === 'opMsg') {
+                let opBg = isDarkMode ? '#262628' : '#e9e9eb';
+                let opTxt = isDarkMode ? '#F9F9F8' : '#000000';
+                htmlStr = `<div id="preview-block-${index}" data-type="opMsg" onclick="focusAndScrollBlock(${index}, true)" style="display: flex; flex-direction: column; padding: 0 5px; width: 100%; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;">\n    <div class="msg-bubble" style="display: flex; justify-content: flex-start; align-items: flex-end; margin: 10px 0;">\n        <div style="position: relative; max-width: 80%; margin-left:8px;">\n            <div style="padding: 8px 14px; background-color: ${opBg}; border-radius: 18px 18px 18px 6px; color: ${opTxt}; line-height: 1.5; letter-spacing: -0.01em; outline: none; position: relative; z-index: 1; word-break: break-word;">${divContent}</div>\n            <svg width="18" height="18" viewBox="0 0 18 18" style="position: absolute; left: -7px; bottom: 0; z-index: -1;"><path d="M18 18H0C6 18 9 11 18 0V18Z" fill="${opBg}"></path></svg>\n        </div>\n    </div>\n</div>\n`;
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
@@ -1173,6 +1210,10 @@ function importFromHtml() {
                 type = 'polaroid';
             } else if (outerHtml.includes('data-type="fold"') || child.tagName === 'DETAILS') {
                 type = 'fold';
+            } else if (outerHtml.includes('data-type="myMsg"') || (outerHtml.includes('#007aff') && outerHtml.includes('border-radius: 18px 18px 6px 18px'))) {
+                type = 'myMsg';
+            } else if (outerHtml.includes('data-type="opMsg"') || (outerHtml.includes('border-radius: 18px 18px 18px 6px') && (outerHtml.includes('#e9e9eb') || outerHtml.includes('#262628')))) {
+                type = 'opMsg';
             } else if (innerTextClean === '' && !child.querySelector('img')) {
                 type = 'empty';
             } else {
@@ -1243,6 +1284,12 @@ function importFromHtml() {
             if (contentDiv) {
                 let rawHtml = contentDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
                 content = rawHtml.replace(/^\n+|\n+$/g, '');
+            }
+        } else if (type === 'myMsg' || type === 'opMsg') {
+            const txtDiv = child.querySelector('div > div > div');
+            if (txtDiv) {
+                let rawHtml = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n');
+                content = rawHtml.replace(/^\n+|\n+$/g, '').replace(/<[^>]*>?/gm, ''); 
             }
         } else if (type === 'narration') {
             let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
