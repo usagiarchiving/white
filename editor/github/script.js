@@ -369,7 +369,9 @@ function handleTextareaKeydown(e, index) {
             content: textAfter,
             customTextColor: currentBlock.customTextColor || '#333333',
             bgmTitle: currentBlock.bgmTitle,
-            bgmUrl: currentBlock.bgmUrl
+            bgmUrl: currentBlock.bgmUrl,
+            polaroidDate: currentBlock.polaroidDate || '',
+            polaroidCaption: currentBlock.polaroidCaption || ''
         };
 
         blocks.splice(index + 1, 0, newBlock);
@@ -543,7 +545,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         content: parts.slice(1).join('').replace(/^[\n\r]+/, '').trim(),
                         customTextColor: currentBlock.customTextColor || '#333333',
                         bgmTitle: currentBlock.bgmTitle,
-                        bgmUrl: currentBlock.bgmUrl
+                        bgmUrl: currentBlock.bgmUrl,
+                        polaroidDate: currentBlock.polaroidDate || '',
+                        polaroidCaption: currentBlock.polaroidCaption || ''
                     };
                     blocks.splice(index + 1, 0, newBlock);
                     renderEditor(); 
@@ -652,6 +656,15 @@ function parseBulkInput() {
                 if (seg.startsWith('모브:')) { blocks.push({ type: 'mob', content: stripSymbols(seg.replace(/^모브:\s*/, '')) }); return; }
                 if (seg.startsWith('제3자:')) { blocks.push({ type: 'custom', content: stripSymbols(seg.replace(/^제3자:\s*/, '')), customTextColor: '#333333' }); return; }
                 if (seg.startsWith('속마음:')) { blocks.push({ type: 'thought', content: stripSymbols(seg.replace(/^속마음:\s*/, '')) }); return; }
+                
+                // 추가된 포스트잇/폴라로이드 일괄 변환 처리
+                if (seg.startsWith('포스트잇:')) { blocks.push({ type: 'postit', content: stripSymbols(seg.replace(/^포스트잇:\s*/, '')) }); return; }
+                if (seg.startsWith('폴라로이드:')) { 
+                    let parts = stripSymbols(seg.replace(/^폴라로이드:\s*/, '')).split('|');
+                    blocks.push({ type: 'polaroid', content: parts[0] ? parts[0].trim() : '', polaroidDate: parts[1] ? parts[1].trim() : '', polaroidCaption: parts[2] ? parts[2].trim() : '' });
+                    return;
+                }
+
                 if (seg.startsWith('브금:')) {
                     let parts = stripSymbols(seg.replace(/^브금:\s*/, '')).split('|');
                     blocks.push({ type: 'bgm', content: '', bgmTitle: parts[0] ? parts[0].trim() : '', bgmUrl: parts[1] ? parts[1].trim() : '' });
@@ -725,7 +738,7 @@ function addBlock(type, index = -1) {
     let defaultContent = '';
     if (type === 'divider') defaultContent = 'solid-gray';
     
-    const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '' };
+    const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     let addedIndex = -1;
     if (index === -1) {
         blocks.push(newBlock);
@@ -740,7 +753,7 @@ function addBlock(type, index = -1) {
 }
 
 function insertEmptyLine(index) {
-    const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '' };
+    const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     blocks.splice(index + 1, 0, newBlock);
     renderEditor();
     saveState(); // 변경사항 히스토리 저장
@@ -763,6 +776,8 @@ function updateBlockCustom(index, field, value) {
     if (field === 'textColor') blocks[index].customTextColor = value;
     if (field === 'bgmTitle') blocks[index].bgmTitle = value;
     if (field === 'bgmUrl') blocks[index].bgmUrl = value;
+    if (field === 'polaroidDate') blocks[index].polaroidDate = value;
+    if (field === 'polaroidCaption') blocks[index].polaroidCaption = value;
     updateOutput();
     debounceSaveState(); // 커스텀 값 수정 시 디바운스 적용 히스토리 저장
 }
@@ -775,6 +790,10 @@ function changeBlockType(index, newType) {
     if (newType === 'bgm') {
         blocks[index].bgmTitle = blocks[index].bgmTitle || '';
         blocks[index].bgmUrl = blocks[index].bgmUrl || '';
+    }
+    if (newType === 'polaroid') {
+        blocks[index].polaroidDate = blocks[index].polaroidDate || '';
+        blocks[index].polaroidCaption = blocks[index].polaroidCaption || '';
     }
     if (newType === 'divider' && !['solid-black', 'solid-gray', 'dashed-gray', 'dots', 'diamond'].includes(blocks[index].content)) {
         blocks[index].content = 'solid-gray';
@@ -800,6 +819,7 @@ function renderEditor() {
         let isBgm = false;
         let isEmpty = block.type === 'empty';
         let isDivider = block.type === 'divider';
+        let isPolaroid = block.type === 'polaroid';
 
         if (block.type === 'custom') {
             let validTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customTextColor) ? block.customTextColor : '#333333';
@@ -819,7 +839,19 @@ function renderEditor() {
                     <input type="text" placeholder="유튜브 링크" value="${escapeHtml(block.bgmUrl)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" onchange="updateBlockCustom(${index}, 'bgmUrl', this.value)" style="flex: 1.5; font-size: 11px; padding: 6px; margin: 0; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                 </div>
             `;
+        } else if (block.type === 'polaroid') {
+            customFields = `
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
+                    <input type="text" placeholder="이미지 URL" value="${escapeHtml(block.content)}" onchange="updateBlockContent(${index}, this.value)" style="font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" placeholder="날짜 (예: 2026. 06. 29)" value="${escapeHtml(block.polaroidDate || '')}" onchange="updateBlockCustom(${index}, 'polaroidDate', this.value)" style="flex: 1; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                        <input type="text" placeholder="캡션 (예: 그날의 기억...)" value="${escapeHtml(block.polaroidCaption || '')}" onchange="updateBlockCustom(${index}, 'polaroidCaption', this.value)" style="flex: 2; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                    </div>
+                </div>
+            `;
         }
+
+        let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
 
         item.innerHTML = `
             <div style="text-align: center; margin-bottom: 5px;">
@@ -837,6 +869,8 @@ function renderEditor() {
                         <option value="bgm" ${block.type==='bgm'?'selected':''}>BGM 재생</option>
                         <option value="thought" ${block.type==='thought'?'selected':''}>속마음</option>
                         <option value="status" ${block.type==='status'?'selected':''}>상태창</option>
+                        <option value="postit" ${block.type==='postit'?'selected':''}>포스트잇</option>
+                        <option value="polaroid" ${block.type==='polaroid'?'selected':''}>폴라로이드</option>
                         <option value="divider" ${block.type==='divider'?'selected':''}>구분선</option>
                         <option value="dday" ${block.type==='dday'?'selected':''}>작은 텍스트</option>
                         <option value="image" ${block.type==='image'?'selected':''}>이미지</option>
@@ -854,6 +888,7 @@ function renderEditor() {
             ${customFields}
             ${isEmpty ? `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px; background:var(--input-bg); border-radius:4px; border:1px solid var(--border);">[공백 줄 - 화면을 띄우는 용도]</div>` 
                       : isBgm ? `` 
+                      : isPolaroid ? ``
                       : isDivider ? `
                         <select onchange="updateBlockContent(${index}, this.value)" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-family: inherit; background: var(--input-bg); color: var(--text-main);">
                             <option value="solid-black" ${block.content === 'solid-black' ? 'selected' : ''}>검은 1자선</option>
@@ -882,27 +917,50 @@ function syncPreviewToBlocks() {
 
         if (block.type === 'status' || block.type === 'html') {
             block.content = el.innerHTML;
-        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday'].includes(block.type)) {
-            let target = el;
-            if (block.type === 'dday') {
-                target = el.querySelector('span');
-            }
+        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid'].includes(block.type)) {
+            
+            if (block.type === 'postit') {
+                const txtDiv = el.querySelectorAll('div')[1]; 
+                if (txtDiv) {
+                    let htmlText = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+                    block.content = htmlText.replace(/^\n+|\n+$/g, '');
+                    let ta = document.getElementById(`textarea-${index}`);
+                    if (ta && document.activeElement !== ta && document.activeElement !== el) { ta.value = block.content; }
+                }
+            } else if (block.type === 'polaroid') {
+                const img = el.querySelector('img');
+                if (img) block.content = img.src;
+                
+                const textContainer = el.children[2];
+                if (textContainer) {
+                    const txtDivs = textContainer.querySelectorAll('div');
+                    if (txtDivs.length >= 2) {
+                        block.polaroidDate = txtDivs[0].innerText || txtDivs[0].textContent;
+                        block.polaroidCaption = txtDivs[1].innerText || txtDivs[1].textContent;
+                    }
+                }
+            } else {
+                let target = el;
+                if (block.type === 'dday') {
+                    target = el.querySelector('span');
+                }
 
-            if (target) {
-                let htmlText = target.innerHTML;
-                htmlText = htmlText.replace(/<br\s*[\/]?>/gi, '\n');
-                htmlText = htmlText.replace(/<div[^>]*>/gi, '\n');
-                htmlText = htmlText.replace(/<\/div>/gi, '');
-                htmlText = htmlText.replace(/<p[^>]*>/gi, '\n');
-                htmlText = htmlText.replace(/<\/p>/gi, '');
-                htmlText = htmlText.replace(/&nbsp;/gi, ' ');
-                htmlText = htmlText.replace(/^\n+|\n+$/g, ''); 
-                
-                block.content = htmlText;
-                
-                let ta = document.getElementById(`textarea-${index}`);
-                if (ta && document.activeElement !== ta && document.activeElement !== el) {
-                    ta.value = block.content;
+                if (target) {
+                    let htmlText = target.innerHTML;
+                    htmlText = htmlText.replace(/<br\s*[\/]?>/gi, '\n');
+                    htmlText = htmlText.replace(/<div[^>]*>/gi, '\n');
+                    htmlText = htmlText.replace(/<\/div>/gi, '');
+                    htmlText = htmlText.replace(/<p[^>]*>/gi, '\n');
+                    htmlText = htmlText.replace(/<\/p>/gi, '');
+                    htmlText = htmlText.replace(/&nbsp;/gi, ' ');
+                    htmlText = htmlText.replace(/^\n+|\n+$/g, ''); 
+                    
+                    block.content = htmlText;
+                    
+                    let ta = document.getElementById(`textarea-${index}`);
+                    if (ta && document.activeElement !== ta && document.activeElement !== el) {
+                        ta.value = block.content;
+                    }
                 }
             }
         }
@@ -938,11 +996,12 @@ function updateOutput(skipPreviewUpdate = false) {
     let hasBgm = false;
     let prevValidType = null;
     let lastCustomTextColor = null;
+    let consecutivePostitCount = 0;
 
     innerContent += `<div class="preview-gap" onclick="insertEmptyLine(-1)" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>\n`;
 
     blocks.forEach((block, index) => {
-        if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider'].includes(block.type)) return;
+        if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid'].includes(block.type)) return;
 
         let curr = block.type;
         let isCurrDiag = ['mint', 'pink', 'mob', 'custom'].includes(curr);
@@ -958,6 +1017,12 @@ function updateOutput(skipPreviewUpdate = false) {
             } else {
                 isSameAsPrev = true;
             }
+        }
+
+        if (curr === 'postit') {
+            consecutivePostitCount++;
+        } else {
+            consecutivePostitCount = 0;
         }
 
         let mt = '0px';
@@ -1169,6 +1234,37 @@ function updateOutput(skipPreviewUpdate = false) {
             else if (block.type === 'dday') {
                 htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;">\n    <span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span>\n</div>\n`;
             }
+            else if (block.type === 'postit') {
+                let isEven = consecutivePostitCount % 2 === 0;
+                
+                let bgStr = isDarkMode ? (isEven ? '#333333' : '#2A2A2A') : (isEven ? '#F4F4F6' : '#FAFAFA');
+                let borderStr = isDarkMode ? '#555555' : (isEven ? '#D1D1D6' : '#E5E5EA');
+                let textStr = isDarkMode ? '#dddddd' : '#333333';
+                let rotStr = isEven ? 'rotate(1.2deg)' : 'rotate(-1.5deg)';
+                let zIdxStr = isEven ? 'z-index: 2;' : '';
+                let shadowStr = isDarkMode ? 'box-shadow: 2px 3px 8px rgba(0,0,0,0.3);' : (isEven ? 'box-shadow: 3px 4px 10px rgba(0,0,0,0.05);' : 'box-shadow: 2px 3px 8px rgba(0,0,0,0.04);');
+                
+                let tapeBg = isEven ? 'rgba(211, 211, 218, 0.5)' : 'rgba(229, 229, 234, 0.6)';
+                if (isDarkMode) tapeBg = isEven ? 'rgba(80, 80, 85, 0.5)' : 'rgba(100, 100, 105, 0.6)';
+                let tapeRot = isEven ? 'rotate(-3deg)' : 'rotate(1deg)';
+                let tapePos = isEven ? 'left: 45%; top: -10px; width: 75px; height: 20px;' : 'left: 50%; top: -12px; width: 70px; height: 22px;';
+
+                htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}">\n    <div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div>\n    <div style="line-height: 1.7; font-size: 14px;">${divContent}</div>\n</div>\n`;
+            }
+            else if (block.type === 'polaroid') {
+                let bgStr = isDarkMode ? '#242424' : '#FFFFFF';
+                let borderStr = isDarkMode ? '#444444' : '#E5E5EA';
+                let imgBgStr = isDarkMode ? '#111111' : '#F2F2F7';
+                let dateColor = isDarkMode ? '#888888' : '#AFAFB4';
+                let capColor = isDarkMode ? '#eeeeee' : '#1C1C1E';
+                let tapeBg = isDarkMode ? 'rgba(80, 80, 85, 0.5)' : 'rgba(235, 235, 240, 0.7)';
+                
+                let imgSrc = block.content || '[https://via.placeholder.com/380x380?text=Polaroid+Image](https://via.placeholder.com/380x380?text=Polaroid+Image)';
+                let pDate = applyTextStyles(block.polaroidDate || '2026. 06. 29');
+                let pCap = applyTextStyles(block.polaroidCaption || '그날의 기억...');
+
+                htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: rotate(1.5deg); position: relative;">\n    <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div>\n    <div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;">\n        <img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo">\n    </div>\n    <div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">\n        <div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>\n        <div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>\n    </div>\n</div>\n`;
+            }
             else if (block.type === 'image') {
                 htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center; box-sizing: border-box;">\n    <img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image">\n</div>\n`;
             }
@@ -1315,6 +1411,8 @@ function importFromHtml() {
         let customTextColor = '#333333';
         let bgmTitle = '';
         let bgmUrl = '';
+        let polaroidDate = '';
+        let polaroidCaption = '';
         
         let outerHtml = child.outerHTML;
         let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
@@ -1330,7 +1428,7 @@ function importFromHtml() {
                 type = 'mint';
             } else if (child.style.color === 'rgb(245, 189, 204)') {
                 type = 'pink';
-            } else if (child.querySelector('img') && !outerHtml.includes('border-radius: 50%')) {
+            } else if (child.querySelector('img') && !outerHtml.includes('border-radius: 50%') && !outerHtml.includes('Polaroid')) {
                 type = 'image';
             } else if (outerHtml.includes('font-weight: bold') && child.style.textAlign === 'left') {
                 type = 'title';
@@ -1338,6 +1436,10 @@ function importFromHtml() {
                 type = 'dday';
             } else if (outerHtml.includes('background-color: #333333') || outerHtml.includes('background-color: #e5e5ea') || outerHtml.includes('rotate(45deg)') || outerHtml.includes('dashed')) {
                 type = 'divider';
+            } else if (outerHtml.includes('data-type="postit"') || outerHtml.includes('max-width: 450px') && outerHtml.includes('rotate(') && !outerHtml.includes('Polaroid')) {
+                type = 'postit';
+            } else if (outerHtml.includes('data-type="polaroid"') || outerHtml.includes('Polaroid')) {
+                type = 'polaroid';
             } else if (innerTextClean === '' && !child.querySelector('img')) {
                 type = 'empty';
             } else {
@@ -1376,6 +1478,24 @@ function importFromHtml() {
             let tDiv = document.createElement('div');
             tDiv.innerHTML = rawHtml;
             content = (tDiv.textContent || tDiv.innerText || "").trim();
+        } else if (type === 'postit') {
+            const txtDiv = child.querySelectorAll('div')[1];
+            if (txtDiv) {
+                let rawHtml = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n');
+                content = rawHtml.replace(/^\n+|\n+$/g, '').replace(/<[^>]*>?/gm, ''); 
+            }
+        } else if (type === 'polaroid') {
+            const img = child.querySelector('img');
+            if (img) content = img.src;
+            
+            const textContainer = child.children[2];
+            if (textContainer) {
+                const txtDivs = textContainer.querySelectorAll('div');
+                if (txtDivs.length >= 2) {
+                    polaroidDate = txtDivs[0].textContent || '';
+                    polaroidCaption = txtDivs[1].textContent || '';
+                }
+            }
         } else if (type === 'narration') {
             let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
             content = rawHtml.replace(/^\n+|\n+$/g, '');
@@ -1419,7 +1539,9 @@ function importFromHtml() {
             content: content || '',
             customTextColor: customTextColor,
             bgmTitle: bgmTitle,
-            bgmUrl: bgmUrl
+            bgmUrl: bgmUrl,
+            polaroidDate: polaroidDate,
+            polaroidCaption: polaroidCaption
         });
     });
 
