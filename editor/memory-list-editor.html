@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>FEARLESS - Memory Editor V3 (Live Preview)</title>
+<title>FEARLESS - Memory Editor V3.1 (Pan & Zoom Fix)</title>
 <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
@@ -66,7 +66,7 @@ label { font-size: 11px; color: var(--sub-text); margin-bottom: 4px; display: bl
 .preview-pane::-webkit-scrollbar { display: none; }
 .preview-title { color: #F9F9F8; font-size: 15px; font-weight: 700; margin-top: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
 
-/* 미리보기 카드 CSS (index.html 기반 완벽 복제) */
+/* 미리보기 카드 CSS */
 .preview-card {
     width: 100%; height: 175px; background: #242424; border-radius: 16px; display: flex; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 20px; cursor: pointer; font-family: 'Noto Serif KR', serif !important; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.1); box-shadow: 0 6px 20px rgba(0,0,0,0.25);
 }
@@ -90,13 +90,13 @@ label { font-size: 11px; color: var(--sub-text); margin-bottom: 4px; display: bl
 .card-date { font-size: 12px; color: #F9F9F8; font-weight: 700; letter-spacing: 0.3px; background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 4px; backdrop-filter: blur(2px); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
 .card-illustration-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
-.card-img { width: 100%; height: 100%; object-fit: cover; } /* Transform & Object-position applied inline */
+.card-img { width: 100%; height: 100%; object-fit: cover; } 
 .card-no-img-placeholder { width: 100%; height: 100%; background: #2B2B2B; display: flex; align-items: center; justify-content: flex-end; padding-right: 40px; font-size: 12px; color: rgba(249,249,248,0.12); font-weight: 900; letter-spacing: 2px; }
 </style>
 </head>
 <body>
 
-<h1><i class="ri-gallery-fill" style="color: #007aff;"></i> FEARLESS Editor V3</h1>
+<h1><i class="ri-gallery-fill" style="color: #007aff;"></i> FEARLESS Editor V3.1</h1>
 
 <div class="main-layout">
     <div class="editor-pane">
@@ -202,15 +202,16 @@ function handleCategoryChange(index, value) {
     renderAll();
 }
 
-// 이미지 전용 실시간 업데이트 (슬라이더 조작 시 렌더링 튀는 현상 방지)
+// 🔥 핵심: X/Y 이동 시 transform-origin을 함께 업데이트하여 줌 패닝(Panning) 효과 완벽 구현!
 function updateImgControl(index, prop, value) {
     memoryItems[index][prop] = value;
     document.getElementById(`val-${prop}-${index}`).innerText = value;
     
-    // 라이브 프리뷰의 해당 이미지 태그만 직접 CSS 수정
     const previewImg = document.querySelector(`#preview-card-${index} .card-img`);
     if(previewImg) {
+        // object-position과 transform-origin을 슬라이더 축에 동기화시켜서 줌 상태에서도 카메라 이동 적용!
         previewImg.style.objectPosition = `${memoryItems[index].imgX}% ${memoryItems[index].imgY}%`;
+        previewImg.style.transformOrigin = `${memoryItems[index].imgX}% ${memoryItems[index].imgY}%`;
         previewImg.style.transform = `scale(${memoryItems[index].imgScale})`;
     }
 }
@@ -226,7 +227,6 @@ function toggleAccordion(index) {
     }, 50);
 }
 
-// 미리보기에서 카드 클릭 시, 에디터의 해당 항목 펴기 및 포커싱 이동
 function focusEditorFromPreview(index) {
     memoryItems.forEach((item, i) => item.isExpanded = (i === index));
     renderAll();
@@ -268,7 +268,6 @@ function addNewItem() {
     renderAll();
 }
 
-// 렌더링 코어
 function renderAll() {
     renderEditor();
     renderPreviewOnly();
@@ -363,7 +362,6 @@ function renderEditor() {
     });
 }
 
-// 라이브 미리보기 전용 렌더링
 function renderPreviewOnly() {
     const previewList = document.getElementById('live-preview-list');
     previewList.innerHTML = '';
@@ -377,7 +375,8 @@ function renderPreviewOnly() {
         const auClass = item.category === 'au' ? 'au-card' : '';
         const focusedClass = item.isExpanded ? 'focused-preview' : '';
         
-        let thumbHtml = item.img ? `<img src="${item.img}" class="card-img" alt="${item.title}" style="object-position: ${item.imgX}% ${item.imgY}%; transform: scale(${item.imgScale});">` : `<div class="card-no-img-placeholder">FEARLESS</div>`;
+        // 🔥 transform-origin을 X/Y와 결합하여 추가
+        let thumbHtml = item.img ? `<img src="${item.img}" class="card-img" alt="${item.title}" style="object-position: ${item.imgX}% ${item.imgY}%; transform-origin: ${item.imgX}% ${item.imgY}%; transform: scale(${item.imgScale});">` : `<div class="card-no-img-placeholder">FEARLESS</div>`;
         let summaryHtml = item.summary ? `<div class="card-summary">${escapeHTML(item.summary)}</div>` : '';
         let auSettingHtml = (item.category === 'au' && item.auSetting) ? `<div class="au-setting-text">[ ${escapeHTML(item.auSetting)} ]</div>` : '';
 
@@ -402,7 +401,6 @@ function generateHTML() {
     memoryItems.forEach(item => {
         const auAttr = (item.category === 'au' && item.auSetting.trim() !== '') ? ` \n     data-au-setting="${escapeHTML(item.auSetting)}"` : '';
         
-        // 이미지 조절 속성을 HTML 코드로 탑재
         finalCode += `<div class="memory-data" \n     data-id="${escapeHTML(item.id)}" \n     data-category="${escapeHTML(item.category)}"${auAttr} \n     data-tag="${escapeHTML(item.tag)}" \n     data-img="${item.img ? escapeHTML(item.img) : ''}" \n     data-img-x="${item.imgX}" data-img-y="${item.imgY}" data-img-scale="${item.imgScale}" \n     data-date="${escapeHTML(item.date)}">\n    <div class="memory-title">${escapeHTML(item.title)}</div>\n    <div class="memory-summary">${escapeHTML(item.summary)}</div>\n</div>\n\n`;
     });
     document.getElementById('export-area').value = finalCode.trim();
