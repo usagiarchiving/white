@@ -4,6 +4,7 @@ let outputVersion = 1;
 let isDarkMode = false;
 let currentFontSize = 14;
 let currentFontFamily = "'Noto Serif KR', serif";
+let currentInlineFontSize = 13; // 툴바 폰트 사이즈 상태값
 
 // == 추가된 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
 let historyStack = [];
@@ -350,45 +351,14 @@ function focusAndScrollBlock(index, preventFocus = false) {
     }, 100);
 }
 
+// 수정됨: 이제 편집창에서 Enter를 치면 오직 단순 줄바꿈만 수행합니다. (블록 분리 로직 삭제)
 function handleTextareaKeydown(e, index) {
     if (e.isComposing || e.keyCode === 229) return;
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const ta = e.target;
-        const cursorPos = ta.selectionStart;
-        const text = ta.value;
-
-        const textBefore = text.substring(0, cursorPos);
-        const textAfter = text.substring(cursorPos);
-
-        blocks[index].content = textBefore;
-
-        const currentBlock = blocks[index];
-        const newBlock = {
-            type: currentBlock.type,
-            content: textAfter,
-            customTextColor: currentBlock.customTextColor || '#333333',
-            bgmTitle: currentBlock.bgmTitle,
-            bgmUrl: currentBlock.bgmUrl,
-            polaroidDate: currentBlock.polaroidDate || '',
-            polaroidCaption: currentBlock.polaroidCaption || ''
-        };
-
-        blocks.splice(index + 1, 0, newBlock);
-        renderEditor();
-        saveState(); // 변경사항 히스토리 저장
-        
-        setTimeout(() => {
-            const newTa = document.getElementById(`textarea-${index + 1}`);
-            if (newTa) {
-                newTa.focus();
-                newTa.setSelectionRange(0, 0);
-                focusAndScrollBlock(index + 1, true);
-            }
-        }, 50);
-    }
+    // 엔터키 블록 분리 기능을 요청에 따라 완전히 삭제했습니다.
+    // 텍스트에리어 기본 동작(줄바꿈)이 자연스럽게 작동합니다.
 }
 
+// 수정됨: 툴바 위치 계산 고도화 (텍스트 가림 방지)
 function handleSelection() {
     const selection = window.getSelection();
     const toolbar = document.getElementById('floatingToolbar');
@@ -412,16 +382,22 @@ function handleSelection() {
     }
     
     toolbar.style.display = 'flex';
-    const toolbarHeight = toolbar.offsetHeight || 38;
+    
+    // 툴바 크기를 유동적으로 가져옴
+    const toolbarHeight = toolbar.offsetHeight || 80; 
     const toolbarWidth = toolbar.offsetWidth || 340;
     
-    let top = rect.top + window.scrollY - toolbarHeight - 10;
+    // 텍스트를 가리지 않도록 텍스트 박스 바로 위(-12px)로 올림
+    let top = rect.top + window.scrollY - toolbarHeight - 12;
     let left = rect.left + window.scrollX + (rect.width / 2) - (toolbarWidth / 2);
     
-    if (top < 0) {
-        top = rect.bottom + window.scrollY + 10;
+    // 화면 맨 위쪽으로 스크롤이 올라가서 툴바가 잘린다면 텍스트 바로 아래로 내림
+    if (top < window.scrollY) {
+        top = rect.bottom + window.scrollY + 12;
     }
-    if (left < 0) left = 10;
+    
+    // 화면 왼쪽으로 잘리지 않도록 안전 여백 추가
+    if (left < window.scrollX + 10) left = window.scrollX + 10;
     
     toolbar.style.top = top + 'px';
     toolbar.style.left = left + 'px';
@@ -489,6 +465,19 @@ function formatPalette(command, value) {
     setTimeout(handleSelection, 10);
 }
 
+// 툴바 인라인 폰트 크기 변경 함수 (새로 추가됨)
+function changeInlineFontSize(delta) {
+    currentInlineFontSize += delta;
+    if(currentInlineFontSize < 10) currentInlineFontSize = 10;
+    if(currentInlineFontSize > 40) currentInlineFontSize = 40;
+    
+    const display = document.getElementById('inlineFontSizeDisplay');
+    if(display) display.innerText = currentInlineFontSize;
+    
+    wrapSelectionWithStyle({ fontSize: currentInlineFontSize + 'px' });
+    setTimeout(handleSelection, 10);
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     saveState(); // 최초 빈 상태 저장
 
@@ -508,6 +497,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('htmlPreview').addEventListener('keydown', function(e) {
         if (e.isComposing || e.keyCode === 229) return;
         
+        // 미리보기 창에서 Enter 쳤을 때만 블록이 나뉩니다.
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             const selection = window.getSelection();
@@ -1249,7 +1239,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 let tapeRot = isEven ? 'rotate(-3deg)' : 'rotate(1deg)';
                 let tapePos = isEven ? 'left: 45%; top: -10px; width: 75px; height: 20px;' : 'left: 50%; top: -12px; width: 70px; height: 22px;';
 
-                htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}">\n    <div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div>\n    <div style="line-height: 1.7; font-size: 14px;">${divContent}</div>\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}">\n    <div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div>\n    <div class="postit-scroll" style="line-height: 1.7; font-size: 14px;">${divContent}</div>\n</div>\n`;
             }
             else if (block.type === 'polaroid') {
                 let bgStr = isDarkMode ? '#242424' : '#FFFFFF';
@@ -1337,6 +1327,16 @@ function stopBGM() {
     margin-bottom: 3px !important;
     word-break: break-all !important;
 }
+/* 포스트잇 내부 내용 길어질 때 스크롤 */
+.postit-scroll {
+    max-height: 350px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+}
+.postit-scroll::-webkit-scrollbar { width: 5px; }
+.postit-scroll::-webkit-scrollbar-track { background: transparent; }
+.postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
 </style>
 `;
 
