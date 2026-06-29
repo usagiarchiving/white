@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>심플 이미지 URL 추출기</title>
+    <style>
+        /* 기본 스타일 및 가독성 설정 (Apple iCloud 스타일) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #1d1d1f;
+            line-height: 1.6;
+            letter-spacing: -0.01em;
+            margin: 0;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 400;
+            font-size: 28px;
+            color: #1d1d1f;
+            margin-bottom: 40px;
+        }
+
+        /* 2단 그리드 레이아웃 설정 */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        /* 모바일 반응형 처리 (992px 이하일 때 1단으로 위아래 배치) */
+        @media (max-width: 992px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #86868b;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 20px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #1d1d1f;
+            box-sizing: border-box;
+            resize: vertical;
+            outline: none;
+            background-color: #fafafa;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        textarea:focus {
+            border-color: #aec6cf; /* 파스텔 블루 포인트 */
+            box-shadow: 0 0 0 3px rgba(174, 198, 207, 0.3);
+            background-color: #ffffff;
+        }
+
+        /* 복사 버튼 설정 (파스텔 톤 포인트) */
+        .copy-btn {
+            margin-top: 15px;
+            padding: 16px;
+            background-color: #aec6cf; /* 파스텔 블루 */
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        .copy-btn:hover {
+            background-color: #9ab4bd;
+        }
+
+        .copy-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 복사 완료 시 적용될 파스텔 그린 클래스 */
+        .copy-btn.success {
+            background-color: #b7e4c7; /* 파스텔 그린 */
+            color: #1d1d1f;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>이미지 URL 추출기</h1>
+        
+        <div class="grid-layout">
+            <!-- 왼쪽: 입력 영역 -->
+            <div class="input-group">
+                <label for="inputHtml">HTML 코드 입력 (여러 개 입력 시 줄바꿈되어 추출됩니다)</label>
+                <textarea id="inputHtml" placeholder='<a href="..."><img src="https://i.ibb.co/..." alt="..."></a>'></textarea>
+            </div>
+
+            <!-- 오른쪽: 출력 영역 -->
+            <div class="input-group">
+                <label for="outputUrl">추출된 이미지 URL</label>
+                <textarea id="outputUrl" readonly placeholder="추출된 URL이 이곳에 나타납니다."></textarea>
+                <button id="copyBtn" class="copy-btn">복사하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputHtml = document.getElementById('inputHtml');
+        const outputUrl = document.getElementById('outputUrl');
+        const copyBtn = document.getElementById('copyBtn');
+
+        // 입력창에 텍스트가 입력될 때마다 자동으로 추출
+        inputHtml.addEventListener('input', function() {
+            const htmlContent = this.value;
+            // img 태그 내의 src 속성 값을 추출하는 정규식
+            const regex = /<img[^>]+src=["']([^"']+)["']/gi;
+            let matches;
+            const extractedUrls = [];
+
+            while ((matches = regex.exec(htmlContent)) !== null) {
+                extractedUrls.push(matches[1]);
+            }
+
+            // 추출된 URL들을 줄바꿈(\n)으로 연결하여 출력창에 표시
+            outputUrl.value = extractedUrls.join('\n');
+        });
+
+        // 복사하기 버튼 클릭 이벤트 (팝업 없음)
+        copyBtn.addEventListener('click', function() {
+            const textToCopy = outputUrl.value.trim();
+            
+            if (!textToCopy) return; // 복사할 내용이 없으면 중단
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                // 팝업 없이 버튼 디자인만 임시 변경
+                const originalText = copyBtn.textContent;
+                
+                copyBtn.textContent = '복사 완료!';
+                copyBtn.classList.add('success');
+                
+                // 2초 후 원래 상태로 복구
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.classList.remove('success');
+                }, 2000);
+            }).catch(err => {
+                console.error('클립보드 복사 실패:', err);
+            });
+        });
+    </script>
+
+</body>
+</html>
