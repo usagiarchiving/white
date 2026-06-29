@@ -49,7 +49,6 @@
                 - 마크다운 이미지 <b>![이미지](링크)</b>는 깔끔하게 이미지 블록으로 빠집니다.<br>
                 - <b>---</b> 또는 <b>***</b> 를 입력하면 회색 실선 구분선이 추가됩니다.<br>
                 - 문장 맨 앞에 <b>이모티콘(🗓️, 💍 등)</b>이 오면 <b>[상태창]</b>이 됩니다.<br>
-                <!-- 👇 사용자 편의를 위해 새롭게 제안 및 추가한 설명 딱 한 줄 👇 -->
                 - <b>포스트잇: 내용</b> 또는 <b>폴라로이드: 링크|날짜|캡션</b> 을 입력하면 감성 블록이 생성됩니다.<br>
             </p>
             <textarea id="bulkInput" rows="5" placeholder="여기에 텍스트를 붙여넣으세요..."></textarea>
@@ -132,7 +131,7 @@
     <div class="grid-2col">
         <div class="panel">
             <h2 class="panel-title">(3) 내용 편집 공간</h2>
-            <p class="help-text">텍스트를 쓰면 우측에 실시간 반영됩니다. 상태창은 미리보기 창에서 직접 편집하세요. <br>💡 <b>팁:</b> (3), (4) 창 어디서든 <b>Enter</b>를 치면 새 블록으로 분리되고, <b>Shift+Enter</b>를 치면 단순 줄바꿈이 됩니다. (<b>Ctrl+Z</b> 로 전체 실행 취소)</p>
+            <p class="help-text">텍스트를 쓰면 우측에 실시간 반영됩니다. 상태창은 미리보기 창에서 직접 편집하세요. <br>💡 <b>팁:</b> 에디터 창에서 <b>Enter</b>를 치면 단순 줄바꿈이 됩니다. (<b>Ctrl+Z</b> 로 전체 실행 취소)</p>
             <div id="editorList"></div>
         </div>
 
@@ -144,7 +143,7 @@
                     <button id="btnV2" onclick="setVersion(2)" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">V2</button>
                 </span>
             </h2>
-            <p class="help-text">박스 안의 글자를 직접 클릭해 수정할 수 있습니다. 마우스를 올리면 <b>[+ 공백 줄 추가]</b> 버튼이 보입니다. 본문 글자를 드래그하면 <b>노션 편집 툴바</b>가 나타납니다.</p>
+            <p class="help-text">박스 안의 글자를 직접 클릭해 수정할 수 있습니다. 본문 글자를 드래그하면 <b>애플 스타일 편집 툴바</b>가 나타나며, 미리보기 창에서 <b>Enter</b>를 치면 블록이 나뉩니다.</p>
             <div class="preview-container" id="htmlPreview" contenteditable="true" oninput="syncPreviewToBlocks()"></div>
         </div>
     </div>
@@ -160,21 +159,42 @@
     </div>
 </div>
 
-<div id="floatingToolbar" style="background: var(--panel-bg); border: 1px solid var(--border); color: var(--text-main); padding: 6px 10px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: none; position: absolute; gap: 6px; align-items: center; z-index: 100000;">
-    <button type="button" onclick="formatText('bold')" style="background:none; border:none; color:var(--text-main); font-weight:bold; padding:4px 6px; cursor:pointer; font-size:13px;">B</button>
-    <button type="button" onclick="formatText('italic')" style="background:none; border:none; color:var(--text-main); font-style:italic; padding:4px 6px; cursor:pointer; font-size:13px;">I</button>
-    <button type="button" onclick="formatText('underline')" style="background:none; border:none; color:var(--text-main); text-decoration:underline; padding:4px 6px; cursor:pointer; font-size:13px;">U</button>
-    <button type="button" onclick="formatText('strikeThrough')" style="background:none; border:none; color:var(--text-main); text-decoration:line-through; padding:4px 6px; cursor:pointer; font-size:13px;">S</button>
-    <span style="width:1px; height:14px; background:var(--border); margin:0 2px;"></span>
-    <button type="button" onclick="applyQuickStyle('mint')" style="background:#E1F9F1; border:none; color:#0E865E; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:600; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">민트</button>
-    <button type="button" onclick="applyQuickStyle('pink')" style="background:#FDEDF4; border:none; color:#D04978; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:600; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">핑크</button>
-    <span style="width:1px; height:14px; background:var(--border); margin:0 2px;"></span>
-    <label style="font-size:11px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px; cursor:pointer; font-weight:500; font-family: -apple-system, BlinkMacSystemFont, sans-serif; user-select: none;">
-        글자색 <input type="color" id="toolbarTextColor" oninput="formatPalette('foreColor', this.value)" value="#000000" style="width:18px; height:18px; border:1px solid var(--border); border-radius:4px; padding:0; background:none; cursor:pointer;">
-    </label>
-    <label style="font-size:11px; color:var(--text-muted); display:inline-flex; align-items:center; gap:3px; cursor:pointer; font-weight:500; font-family: -apple-system, BlinkMacSystemFont, sans-serif; user-select: none;">
-        배경색 <input type="color" id="toolbarBgColor" oninput="formatPalette('hiliteColor', this.value)" value="#ffffff" style="width:18px; height:18px; border:1px solid var(--border); border-radius:4px; padding:0; background:none; cursor:pointer;">
-    </label>
+<!-- 요청하신 이미지를 바탕으로 새롭게 디자인된 애플 스타일 플로팅 툴바 -->
+<div id="floatingToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000;">
+    <div class="tb-row">
+        <button type="button" class="tb-btn" onclick="undo()" title="실행 취소">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        </button>
+        <button type="button" class="tb-btn" onclick="redo()" title="다시 실행">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+        </button>
+        <div class="tb-divider"></div>
+        <button type="button" class="tb-btn" onclick="formatText('bold')" style="font-weight:bold; font-family:serif;">B</button>
+        <button type="button" class="tb-btn" onclick="formatText('italic')" style="font-style:italic; font-family:serif;">I</button>
+        <button type="button" class="tb-btn" onclick="formatText('underline')" style="text-decoration:underline; font-family:serif;">U</button>
+        <button type="button" class="tb-btn" onclick="formatText('strikeThrough')" style="text-decoration:line-through; font-family:serif;">S</button>
+        <div class="tb-divider"></div>
+        <label class="tb-btn color-picker-label" title="글자색">
+            <span style="font-weight:bold; background:var(--text-main); color:var(--bg-color); font-size:10px; padding:1px 4px; border-radius:2px;">A</span>
+            <input type="color" oninput="formatPalette('foreColor', this.value)" value="#000000">
+        </label>
+        <label class="tb-btn color-picker-label" title="배경색">
+            <span style="font-size:14px;">🎨</span>
+            <input type="color" oninput="formatPalette('hiliteColor', this.value)" value="#ffffff">
+        </label>
+    </div>
+    <div class="tb-row" style="margin-left: 56px;">
+        <div class="tb-divider" style="opacity: 0.3;"></div>
+        <button type="button" class="tb-circle mint-bg" onclick="applyQuickStyle('mint')">M</button>
+        <button type="button" class="tb-circle pink-bg" onclick="applyQuickStyle('pink')">P</button>
+        <div class="tb-divider" style="opacity: 0.3;"></div>
+        <div class="tb-font-size">
+            <button type="button" onclick="changeInlineFontSize(-1)">−</button>
+            <div class="val-box"><span id="inlineFontSizeDisplay">13</span></div>
+            <button type="button" onclick="changeInlineFontSize(1)">+</button>
+            <span class="px-label">px</span>
+        </div>
+    </div>
 </div>
 
 <!-- 분리된 JS 파일 연결 -->
