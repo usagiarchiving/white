@@ -351,14 +351,10 @@ function focusAndScrollBlock(index, preventFocus = false) {
     }, 100);
 }
 
-// 수정됨: 이제 편집창에서 Enter를 치면 오직 단순 줄바꿈만 수행합니다. (블록 분리 로직 삭제)
 function handleTextareaKeydown(e, index) {
     if (e.isComposing || e.keyCode === 229) return;
-    // 엔터키 블록 분리 기능을 요청에 따라 완전히 삭제했습니다.
-    // 텍스트에리어 기본 동작(줄바꿈)이 자연스럽게 작동합니다.
 }
 
-// 수정됨: 툴바 위치 계산 고도화 (텍스트 가림 방지)
 function handleSelection() {
     const selection = window.getSelection();
     const toolbar = document.getElementById('floatingToolbar');
@@ -383,20 +379,16 @@ function handleSelection() {
     
     toolbar.style.display = 'flex';
     
-    // 툴바 크기를 유동적으로 가져옴
     const toolbarHeight = toolbar.offsetHeight || 80; 
     const toolbarWidth = toolbar.offsetWidth || 340;
     
-    // 텍스트를 가리지 않도록 텍스트 박스 바로 위(-12px)로 올림
     let top = rect.top + window.scrollY - toolbarHeight - 12;
     let left = rect.left + window.scrollX + (rect.width / 2) - (toolbarWidth / 2);
     
-    // 화면 맨 위쪽으로 스크롤이 올라가서 툴바가 잘린다면 텍스트 바로 아래로 내림
     if (top < window.scrollY) {
         top = rect.bottom + window.scrollY + 12;
     }
     
-    // 화면 왼쪽으로 잘리지 않도록 안전 여백 추가
     if (left < window.scrollX + 10) left = window.scrollX + 10;
     
     toolbar.style.top = top + 'px';
@@ -415,7 +407,6 @@ function wrapSelectionWithStyle(styles) {
     const range = selection.getRangeAt(0);
     if (range.collapsed) return;
 
-    // 브라우저 기본 execCommand를 사용하면 텍스트 노드 분리 버그나 불필요한 여백 발생을 막을 수 있습니다.
     if (Object.keys(styles).length === 1 && styles.color) {
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, styles.color);
@@ -465,7 +456,6 @@ function formatPalette(command, value) {
     setTimeout(handleSelection, 10);
 }
 
-// 툴바 인라인 폰트 크기 변경 함수 (새로 추가됨)
 function changeInlineFontSize(delta) {
     currentInlineFontSize += delta;
     if(currentInlineFontSize < 10) currentInlineFontSize = 10;
@@ -497,7 +487,6 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('htmlPreview').addEventListener('keydown', function(e) {
         if (e.isComposing || e.keyCode === 229) return;
         
-        // 미리보기 창에서 Enter 쳤을 때만 블록이 나뉩니다.
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             const selection = window.getSelection();
@@ -537,11 +526,13 @@ document.addEventListener("DOMContentLoaded", function() {
                         bgmTitle: currentBlock.bgmTitle,
                         bgmUrl: currentBlock.bgmUrl,
                         polaroidDate: currentBlock.polaroidDate || '',
-                        polaroidCaption: currentBlock.polaroidCaption || ''
+                        polaroidCaption: currentBlock.polaroidCaption || '',
+                        foldStyle: currentBlock.foldStyle || 'notion',
+                        foldTitle: currentBlock.foldTitle || '접은글'
                     };
                     blocks.splice(index + 1, 0, newBlock);
                     renderEditor(); 
-                    saveState(); // 변경사항 히스토리 저장
+                    saveState(); 
                     
                     setTimeout(() => {
                         const newBlockEl = document.getElementById(`preview-block-${index + 1}`);
@@ -623,7 +614,6 @@ function parseBulkInput() {
                 return;
             }
 
-            // ** 연이은 별표 무시/제거
             seg = seg.replace(/\*\*/g, '');
 
             const isEmojiStart = /^(🗓|💍|📍|👕|👥|💭|🔔|🚨|💕|❤|🔥|🔫|✏|📰|💘)/.test(seg);
@@ -647,13 +637,15 @@ function parseBulkInput() {
                 if (seg.startsWith('제3자:')) { blocks.push({ type: 'custom', content: stripSymbols(seg.replace(/^제3자:\s*/, '')), customTextColor: '#333333' }); return; }
                 if (seg.startsWith('속마음:')) { blocks.push({ type: 'thought', content: stripSymbols(seg.replace(/^속마음:\s*/, '')) }); return; }
                 
-                // 추가된 포스트잇/폴라로이드 일괄 변환 처리
                 if (seg.startsWith('포스트잇:')) { blocks.push({ type: 'postit', content: stripSymbols(seg.replace(/^포스트잇:\s*/, '')) }); return; }
                 if (seg.startsWith('폴라로이드:')) { 
                     let parts = stripSymbols(seg.replace(/^폴라로이드:\s*/, '')).split('|');
                     blocks.push({ type: 'polaroid', content: parts[0] ? parts[0].trim() : '', polaroidDate: parts[1] ? parts[1].trim() : '', polaroidCaption: parts[2] ? parts[2].trim() : '' });
                     return;
                 }
+                
+                // 접은글 일괄 변환 처리 추가
+                if (seg.startsWith('접은글:')) { blocks.push({ type: 'fold', content: stripSymbols(seg.replace(/^접은글:\s*/, '')), foldStyle: 'notion', foldTitle: '접은글' }); return; }
 
                 if (seg.startsWith('브금:')) {
                     let parts = stripSymbols(seg.replace(/^브금:\s*/, '')).split('|');
@@ -716,7 +708,7 @@ function parseBulkInput() {
         }
 
         renderEditor();
-        saveState(); // 변경사항 히스토리 저장
+        saveState(); 
         bulkInput.value = ''; 
     } catch(e) {
         console.error(e);
@@ -728,7 +720,7 @@ function addBlock(type, index = -1) {
     let defaultContent = '';
     if (type === 'divider') defaultContent = 'solid-gray';
     
-    const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
+    const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '', foldStyle: 'notion', foldTitle: '접은글' };
     let addedIndex = -1;
     if (index === -1) {
         blocks.push(newBlock);
@@ -738,28 +730,28 @@ function addBlock(type, index = -1) {
         addedIndex = index;
     }
     renderEditor();
-    saveState(); // 변경사항 히스토리 저장
+    saveState(); 
     focusAndScrollBlock(addedIndex); 
 }
 
 function insertEmptyLine(index) {
-    const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
+    const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '', foldStyle: 'notion', foldTitle: '접은글' };
     blocks.splice(index + 1, 0, newBlock);
     renderEditor();
-    saveState(); // 변경사항 히스토리 저장
+    saveState(); 
     focusAndScrollBlock(index + 1); 
 }
 
 function deleteBlock(index) {
     blocks.splice(index, 1);
     renderEditor();
-    saveState(); // 변경사항 히스토리 저장
+    saveState(); 
 }
 
 function updateBlockContent(index, value) {
     blocks[index].content = value;
     updateOutput();
-    debounceSaveState(); // 텍스트 수정 시 디바운스 적용 히스토리 저장
+    debounceSaveState(); 
 }
 
 function updateBlockCustom(index, field, value) {
@@ -768,8 +760,10 @@ function updateBlockCustom(index, field, value) {
     if (field === 'bgmUrl') blocks[index].bgmUrl = value;
     if (field === 'polaroidDate') blocks[index].polaroidDate = value;
     if (field === 'polaroidCaption') blocks[index].polaroidCaption = value;
+    if (field === 'foldStyle') blocks[index].foldStyle = value;
+    if (field === 'foldTitle') blocks[index].foldTitle = value;
     updateOutput();
-    debounceSaveState(); // 커스텀 값 수정 시 디바운스 적용 히스토리 저장
+    debounceSaveState(); 
 }
 
 function changeBlockType(index, newType) {
@@ -785,11 +779,15 @@ function changeBlockType(index, newType) {
         blocks[index].polaroidDate = blocks[index].polaroidDate || '';
         blocks[index].polaroidCaption = blocks[index].polaroidCaption || '';
     }
+    if (newType === 'fold') {
+        blocks[index].foldStyle = blocks[index].foldStyle || 'notion';
+        blocks[index].foldTitle = blocks[index].foldTitle || '접은글';
+    }
     if (newType === 'divider' && !['solid-black', 'solid-gray', 'dashed-gray', 'dots', 'diamond'].includes(blocks[index].content)) {
         blocks[index].content = 'solid-gray';
     }
     renderEditor();
-    saveState(); // 변경사항 히스토리 저장
+    saveState(); 
 }
 
 function renderEditor() {
@@ -839,6 +837,18 @@ function renderEditor() {
                     </div>
                 </div>
             `;
+        } else if (block.type === 'fold') {
+            customFields = `
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <select onchange="updateBlockCustom(${index}, 'foldStyle', this.value)" style="flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; background: var(--input-bg); color: var(--text-main);">
+                        <option value="notion" ${block.foldStyle === 'notion' ? 'selected' : ''}>양식 1 (노션 타입)</option>
+                        <option value="panel" ${block.foldStyle === 'panel' ? 'selected' : ''}>양식 2 (패널 타입)</option>
+                        <option value="more" ${block.foldStyle === 'more' ? 'selected' : ''}>양식 3 (더보기 타입)</option>
+                        <option value="border" ${block.foldStyle === 'border' ? 'selected' : ''}>양식 4 (대시 라인 타입)</option>
+                    </select>
+                    <input type="text" placeholder="접은글 제목" value="${escapeHtml(block.foldTitle || '접은글')}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" onchange="updateBlockCustom(${index}, 'foldTitle', this.value)" style="flex: 2; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                </div>
+            `;
         }
 
         let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
@@ -861,6 +871,7 @@ function renderEditor() {
                         <option value="status" ${block.type==='status'?'selected':''}>상태창</option>
                         <option value="postit" ${block.type==='postit'?'selected':''}>포스트잇</option>
                         <option value="polaroid" ${block.type==='polaroid'?'selected':''}>폴라로이드</option>
+                        <option value="fold" ${block.type==='fold'?'selected':''}>접은글</option>
                         <option value="divider" ${block.type==='divider'?'selected':''}>구분선</option>
                         <option value="dday" ${block.type==='dday'?'selected':''}>작은 텍스트</option>
                         <option value="image" ${block.type==='image'?'selected':''}>이미지</option>
@@ -907,9 +918,25 @@ function syncPreviewToBlocks() {
 
         if (block.type === 'status' || block.type === 'html') {
             block.content = el.innerHTML;
-        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid'].includes(block.type)) {
+        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid', 'fold'].includes(block.type)) {
             
-            if (block.type === 'postit') {
+            if (block.type === 'fold') {
+                const summarySpan = el.querySelector('summary span[contenteditable="true"]');
+                if (summarySpan) {
+                    block.foldTitle = (summarySpan.innerText || summarySpan.textContent || '').trim();
+                }
+                const contentDiv = el.querySelector('.toggle-content > div');
+                if (contentDiv) {
+                    let htmlText = contentDiv.innerHTML;
+                    htmlText = htmlText.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+                    block.content = htmlText.replace(/^\n+|\n+$/g, '');
+                    
+                    let ta = document.getElementById(`textarea-${index}`);
+                    if (ta && document.activeElement !== ta && document.activeElement !== el) {
+                        ta.value = block.content;
+                    }
+                }
+            } else if (block.type === 'postit') {
                 const txtDiv = el.querySelectorAll('div')[1]; 
                 if (txtDiv) {
                     let htmlText = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
@@ -957,7 +984,7 @@ function syncPreviewToBlocks() {
     });
     
     updateOutput(true); 
-    debounceSaveState(); // 미리보기 편집 시에도 히스토리 저장
+    debounceSaveState(); 
 }
 
 function updateOutput(skipPreviewUpdate = false) {
@@ -966,7 +993,6 @@ function updateOutput(skipPreviewUpdate = false) {
     const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#2c2c2e');
     const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
 
-    // -- 다크모드 대응 인라인 색상 변수들 --
     const cTitle = isDarkMode ? '#F9F9F8' : '#1c1c1e';
     const cStatusBg = isDarkMode ? '#242424' : '#fdfdfd';
     const cStatusBorder = isDarkMode ? '#444444' : '#eeeeee';
@@ -991,7 +1017,7 @@ function updateOutput(skipPreviewUpdate = false) {
     innerContent += `<div class="preview-gap" onclick="insertEmptyLine(-1)" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>\n`;
 
     blocks.forEach((block, index) => {
-        if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid'].includes(block.type)) return;
+        if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid', 'fold'].includes(block.type)) return;
 
         let curr = block.type;
         let isCurrDiag = ['mint', 'pink', 'mob', 'custom'].includes(curr);
@@ -1052,7 +1078,7 @@ function updateOutput(skipPreviewUpdate = false) {
             
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">\n    ${dividerInner}\n</div>\n`;
         } else {
-            let lines = block.content.split('\n').filter(l => l.trim() !== '');
+            let lines = block.content.split('\n').filter(l => l.trim() !== '' || curr === 'fold');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
@@ -1249,7 +1275,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 let capColor = isDarkMode ? '#eeeeee' : '#1C1C1E';
                 let tapeBg = isDarkMode ? 'rgba(80, 80, 85, 0.5)' : 'rgba(235, 235, 240, 0.7)';
                 
-                let imgSrc = block.content || '[https://via.placeholder.com/380x380?text=Polaroid+Image](https://via.placeholder.com/380x380?text=Polaroid+Image)';
+                let imgSrc = block.content || 'https://via.placeholder.com/380x380?text=Polaroid+Image';
                 let pDate = applyTextStyles(block.polaroidDate || '2026. 06. 29');
                 let pCap = applyTextStyles(block.polaroidCaption || '그날의 기억...');
 
@@ -1257,6 +1283,52 @@ function updateOutput(skipPreviewUpdate = false) {
             }
             else if (block.type === 'image') {
                 htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center; box-sizing: border-box;">\n    <img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image">\n</div>\n`;
+            }
+            else if (block.type === 'fold') {
+                let fStyle = block.foldStyle || 'notion';
+                let fTitle = block.foldTitle || '지문이나 비밀 단서 접어두기 (클릭하여 수정 가능)';
+                let fTitleStyled = applyTextStyles(fTitle);
+                
+                let detailsStyle = '';
+                let summaryHtml = '';
+                let contentWrapStyle = '';
+                let contentInnerStyle = '';
+
+                if (fStyle === 'notion') {
+                    detailsStyle = `width: 100%; margin: 20px 0; padding: 4px 0; box-sizing: border-box; text-align: left;`;
+                    summaryHtml = `<summary style="cursor: pointer; font-size: 14px; font-weight: 600; color: ${isDarkMode?'#F9F9F8':'#1c1c1e'}; display: flex; align-items: center; gap: 6px; user-select: none; outline: none;">
+                        <span class="toggle-arrow" style="font-size: 9px; color: ${isDarkMode?'#aaaaaa':'#8e8e93'}; transition: transform 0.2s ease; display: inline-block;">▶</span>
+                        <span contenteditable="true" style="outline: none; word-break: break-all; flex: 1;">${fTitleStyled}</span>
+                    </summary>`;
+                    contentWrapStyle = `padding: 12px 0 4px 18px; margin-top: 4px; border-left: 1px solid ${isDarkMode?'#444444':'#e5e5ea'}; box-sizing: border-box;`;
+                    contentInnerStyle = `color: ${isDarkMode?'#dddddd':'#444444'}; font-size: 14px; line-height: 1.6;`;
+                } else if (fStyle === 'panel') {
+                    detailsStyle = `width: 100%; margin: 24px 0; padding: 14px 20px; background-color: ${isDarkMode?'#2a2a2a':'#ffffff'}; border: 1px solid ${isDarkMode?'#444444':'#e5e5ea'}; border-radius: 16px; box-sizing: border-box; text-align: left; box-shadow: 0 1px 3px rgba(0,0,0,0.01);`;
+                    summaryHtml = `<summary style="cursor: pointer; font-size: 14px; font-weight: 600; color: ${isDarkMode?'#F9F9F8':'#3a3a3c'}; display: flex; align-items: center; justify-content: space-between; user-select: none; outline: none;">
+                        <span contenteditable="true" style="outline: none; word-break: break-all; color: ${isDarkMode?'#F9F9F8':'#1c1c1e'}; flex: 1;">${fTitleStyled}</span>
+                        <div class="toggle-btn-icon" style="background-color: ${isDarkMode?'#444444':'#f2f2f7'}; padding: 6px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: ${isDarkMode?'#cccccc':'#8e8e93'}; transition: transform 0.2s ease; margin-left: 10px;">▼</div>
+                    </summary>`;
+                    contentWrapStyle = `padding-top: 14px; margin-top: 12px; border-top: 1px dashed ${isDarkMode?'#444444':'#e5e5ea'}; box-sizing: border-box;`;
+                    contentInnerStyle = `color: ${isDarkMode?'#dddddd':'#444444'}; font-size: 14px; line-height: 1.6;`;
+                } else if (fStyle === 'more') {
+                    detailsStyle = `width: 100%; margin: 24px 0; padding: 16px 20px; background-color: ${isDarkMode?'#2a2a2a':'#ffffff'}; border: 1px solid ${isDarkMode?'#444444':'#e5e5ea'}; border-radius: 14px; box-sizing: border-box; text-align: left;`;
+                    summaryHtml = `<summary style="cursor: pointer; font-size: 14px; font-weight: 600; color: ${isDarkMode?'#F9F9F8':'#1c1c1e'}; display: flex; align-items: center; gap: 10px; user-select: none; outline: none;">
+                        <div style="width: 22px; height: 22px; background-color: ${isDarkMode?'#444444':'#e5e5ea'}; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: ${isDarkMode?'#cccccc':'#636366'}; font-weight: bold; line-height: 1; flex-shrink: 0;">+</div>
+                        <span contenteditable="true" style="outline: none; color: ${isDarkMode?'#dddddd':'#636366'}; word-break: break-all; flex: 1;">${fTitleStyled}</span>
+                    </summary>`;
+                    contentWrapStyle = `padding: 14px 4px 2px; box-sizing: border-box;`;
+                    contentInnerStyle = `color: ${isDarkMode?'#dddddd':'#444444'}; font-size: 14px; line-height: 1.6;`;
+                } else if (fStyle === 'border') {
+                    detailsStyle = `width: 100%; margin: 28px 0; padding: 10px 4px; border-top: 1px solid ${isDarkMode?'#555555':'#e5e5ea'}; border-bottom: 1px solid ${isDarkMode?'#555555':'#e5e5ea'}; box-sizing: border-box; text-align: left;`;
+                    summaryHtml = `<summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: ${isDarkMode?'#aaaaaa':'#8e8e93'}; display: flex; align-items: center; gap: 8px; user-select: none; outline: none; letter-spacing: 0.02em;">
+                        <span style="font-size: 9px; color: ${isDarkMode?'#666666':'#aeaeb2'};">◆</span>
+                        <span contenteditable="true" style="outline: none; color: ${isDarkMode?'#dddddd':'#636366'}; word-break: break-all; flex: 1;">${fTitleStyled}</span>
+                    </summary>`;
+                    contentWrapStyle = `padding: 10px 4px 2px; box-sizing: border-box;`;
+                    contentInnerStyle = `color: ${isDarkMode?'#cccccc':'#636366'}; font-size: 13px; line-height: 1.6; font-style: italic;`;
+                }
+
+                htmlStr = `<details id="preview-block-${index}" data-type="fold" data-style="${fStyle}" onclick="focusAndScrollBlock(${index}, true)" style="${detailsStyle}">\n    ${summaryHtml}\n    <div class="toggle-content" style="${contentWrapStyle}">\n        <div style="${contentInnerStyle}">${divContent}</div>\n    </div>\n</details>\n`;
             }
             else if (block.type === 'html') {
                 htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">\n${block.content}\n</div>\n`;
@@ -1274,7 +1346,7 @@ function updateOutput(skipPreviewUpdate = false) {
     
     if (hasBgm) {
         innerContent += `
-<iframe id="bgmPlayerFrame" src="[https://loading-lovebullets.naru.pub/editor/bgm.html](https://loading-lovebullets.naru.pub/editor/bgm.html)" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
+<iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
 <script>
 window.addEventListener('message', function(e) {
     var frame = document.getElementById('bgmPlayerFrame');
@@ -1307,8 +1379,8 @@ function stopBGM() {
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
-@import url('[https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap](https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap)');
-@import url('[https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css](https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css)');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 .tistory-post-wrapper {
     font-family: ${currentFontFamily};
@@ -1337,6 +1409,11 @@ function stopBGM() {
 .postit-scroll::-webkit-scrollbar { width: 5px; }
 .postit-scroll::-webkit-scrollbar-track { background: transparent; }
 .postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+/* 접은글(Details) 기호 회전 및 공통 스타일 설정 */
+details[data-style="notion"][open] .toggle-arrow { transform: rotate(90deg) !important; }
+details[data-style="panel"][open] .toggle-btn-icon { transform: rotate(180deg) !important; }
+details[data-type="fold"] summary::-webkit-details-marker { display: none; }
+details[data-type="fold"] summary { list-style: none; }
 </style>
 `;
 
@@ -1413,6 +1490,8 @@ function importFromHtml() {
         let bgmUrl = '';
         let polaroidDate = '';
         let polaroidCaption = '';
+        let foldStyle = 'notion';
+        let foldTitle = '접은글';
         
         let outerHtml = child.outerHTML;
         let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
@@ -1440,6 +1519,8 @@ function importFromHtml() {
                 type = 'postit';
             } else if (outerHtml.includes('data-type="polaroid"') || outerHtml.includes('Polaroid')) {
                 type = 'polaroid';
+            } else if (outerHtml.includes('data-type="fold"') || child.tagName === 'DETAILS') {
+                type = 'fold';
             } else if (innerTextClean === '' && !child.querySelector('img')) {
                 type = 'empty';
             } else {
@@ -1496,6 +1577,21 @@ function importFromHtml() {
                     polaroidCaption = txtDivs[1].textContent || '';
                 }
             }
+        } else if (type === 'fold') {
+            foldStyle = child.getAttribute('data-style') || 'notion';
+            const summarySpan = child.querySelector('summary span[contenteditable="true"]');
+            if (summarySpan) {
+                let rawHtml = summarySpan.innerHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+                let tDiv = document.createElement('div');
+                tDiv.innerHTML = rawHtml;
+                foldTitle = (tDiv.textContent || tDiv.innerText || "").trim();
+            }
+            
+            const contentDiv = child.querySelector('.toggle-content > div');
+            if (contentDiv) {
+                let rawHtml = contentDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+                content = rawHtml.replace(/^\n+|\n+$/g, '');
+            }
         } else if (type === 'narration') {
             let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
             content = rawHtml.replace(/^\n+|\n+$/g, '');
@@ -1523,7 +1619,7 @@ function importFromHtml() {
             const playDiv = child.querySelector('div[onclick*="playBGM"]');
             if (playDiv) {
                 const match = playDiv.getAttribute('onclick').match(/playBGM\('([^']+)'/);
-                if (match) bgmUrl = '[https://youtu.be/](https://youtu.be/)' + match[1];
+                if (match) bgmUrl = 'https://youtu.be/' + match[1];
             }
         } else if (type === 'image') {
             const img = child.querySelector('img');
@@ -1541,15 +1637,16 @@ function importFromHtml() {
             bgmTitle: bgmTitle,
             bgmUrl: bgmUrl,
             polaroidDate: polaroidDate,
-            polaroidCaption: polaroidCaption
+            polaroidCaption: polaroidCaption,
+            foldStyle: foldStyle,
+            foldTitle: foldTitle
         });
     });
 
     if (newBlocks.length > 0) {
         blocks = newBlocks;
         renderEditor();
-        saveState(); // 변경사항 히스토리 저장
-        // 동기화 완료 후 거슬릴 수 있는 팝업(토스트) 제거 처리
+        saveState(); 
     } else {
         showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
     }
@@ -1559,7 +1656,6 @@ function copyHtml() {
     const code = document.getElementById('finalHtmlCode');
     code.select();
     document.execCommand('copy');
-    // 복사 완료 팝업이 뜨지 않도록 showToast 호출을 삭제했습니다.
 }
 
 document.getElementById('mintTextColor').addEventListener('input', () => updateOutput());
