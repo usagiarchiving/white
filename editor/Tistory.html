@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>티스토리 변환기</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        :root {
+            --bg-color: #f4f6f8;
+            --panel-bg: #ffffff;
+            --border: #e1e4e8;
+            --primary: #4f46e5;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+            letter-spacing: -0.02em;
+        }
+
+        /* 레이아웃 구조 */
+        .layout-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .grid-half {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* 992px 이하 모바일 환경 1단 분기 */
+        @media (max-width: 992px) {
+            .grid-half { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .help-text { font-size: 12px; color: #666; margin: 0; line-height: 1.5; word-break: keep-all; }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 컬러 팔레트 인풋 기본 스타일 초기화 */
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 3px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.2s;
+            word-break: keep-all;
+        }
+        button:hover { background-color: #4338ca; }
+        
+        .btn-small { padding: 4px 8px; font-size: 12px; font-weight: 500; border-radius: 4px; }
+        .btn-secondary { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .btn-secondary:hover { background-color: #e2e8f0; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+
+        .btn-mint { background-color: #F2FCF7; color: #15803d; border: 1px solid #bbf7d0; }
+        .btn-pink { background-color: #FFF6FA; color: #be185d; border: 1px solid #fbcfe8; }
+
+        .tool-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        /* 블록 에디터 스타일 */
+        #editorList {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 700px; /* 미리보기 창과 높이 대칭을 위해 고정 */
+            overflow-y: auto;
+            padding-right: 5px;
+            position: relative;
+            scroll-behavior: smooth;
+        }
+        
+        .block-item {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            background: #fafbfc;
+            transition: box-shadow 0.3s;
+        }
+        .block-item:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+
+        .block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* 미리보기 화면 */
+        .preview-container {
+            width: 100%;
+            height: 700px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 0;
+            background: #fff;
+            overflow-y: auto;
+            position: relative;
+            scroll-behavior: smooth;
+        }
+
+        .preview-container:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* 미리보기 창 강제 표시 (애니메이션 무시) */
+        .preview-container .scroll-msg-box {
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+
+        /* 공백 줄 추가용 호버 영역 */
+        .preview-gap {
+            height: 12px;
+            margin: 2px 0;
+            border: 1px dashed transparent;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            background-color: transparent;
+        }
+        .preview-gap:hover {
+            border-color: #94a3b8;
+            background-color: #f1f5f9;
+            opacity: 1;
+            height: 24px;
+        }
+        .preview-gap span {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        .empty-line-preview {
+            height: 30px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 12px;
+            margin: 5px 15px;
+            background: #f8fafc;
+        }
+
+        /* 로컬스토리지 대화 목록 스타일 */
+        .draft-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .draft-item:hover {
+            border-color: #94a3b8;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .draft-title-input {
+            border: 1px solid transparent;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            flex: 1;
+            margin-right: 15px;
+            transition: 0.2s;
+            background: transparent;
+            font-family: inherit;
+            color: #333;
+        }
+        .draft-title-input:hover { background: #f8fafc; }
+        .draft-title-input:focus {
+            background: #fff;
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+        .draft-date { font-size: 12px; color: #94a3b8; margin-right: 15px; white-space: nowrap; }
+
+        /* 설정 패널 인풋 스타일 */
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+        .setting-color-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout-wrapper">
+    <div class="panel">
+        <h2 class="panel-title">1. 원본 코드 넣기 (자동 파싱)</h2>
+        <textarea id="rawInput" rows="3" placeholder="기존 HTML 코드를 여기에 넣고 변환 버튼을 누르세요..."></textarea>
+        <button onclick="parseAndConvert()">블록 에디터로 불러오기 ⬇️</button>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">2. 수동 블록 추가 및 전체 설정</h2>
+        <div class="grid-half" style="gap: 20px;">
+            <div>
+                <strong style="font-size: 13px; color: #475569; display: block; margin-bottom: 8px;">블록 추가</strong>
+                <div class="tool-buttons" style="margin: 0;">
+                    <button class="btn-secondary" onclick="addBlock('mint')">+ 하시온(민트)</button>
+                    <button class="btn-secondary" onclick="addBlock('pink')">+ 김민정(핑크)</button>
+                    <button class="btn-secondary" onclick="addBlock('mob')">+ 모브(회색)</button>
+                    <button class="btn-secondary" onclick="addBlock('custom')">+ 제3자</button>
+                    <button class="btn-secondary" onclick="addBlock('narration')">+ 나레이션</button>
+                    <button class="btn-secondary" onclick="addBlock('thought')">+ 속마음</button>
+                    <button class="btn-secondary" onclick="addBlock('bgm')">+ BGM 재생바</button>
+                    <button class="btn-secondary" onclick="addBlock('status')">+ 상태창</button>
+                    <button class="btn-secondary" onclick="addBlock('dday')">+ 작은 텍스트</button>
+                    <button class="btn-secondary" onclick="addBlock('html')">+ HTML 블록</button>
+                </div>
+            </div>
+
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="font-size: 13px; color: #475569;">전체 설정 (색상 및 폰트)</strong>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+                        <input type="checkbox" id="setting_narration_italic" checked onchange="updateGlobalSettings()">
+                        <span style="font-weight: 500;">나레이션 이탤릭체(기울임) 적용</span>
+                    </label>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="background: #fafbfc; border: 1px solid var(--border); border-radius: 6px; padding: 10px;">
+                        <strong style="font-size: 13px; color: #15803d; display: block; margin-bottom: 8px;">하시온 (민트)</strong>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <div class="setting-row">
+                                <span style="width: 55px; color: #666;">V1 박스:</span>
+                                <div class="setting-color-wrap">
+                                    <input type="color" id="c_mint_v1Box_picker" value="#F2FCF7" style="width: 20px; height: 20px;" oninput="syncColor('mint', 'v1Box', this.value)">
+                                    <input type="text" id="c_mint_v1Box_text" value="#F2FCF7" style="width: 60px; border: none; padding: 2px; font-size: 11px; outline: none;" oninput="syncColor('mint', 'v1Box', this.value)">
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <span style="width: 55px; color: #666;">V1 폰트:</span>
+                                <div class="setting-color-wrap">
+                                    <input type="color" id="c_mint_v1Text_picker" value="#333333" style="width: 20px; height: 20px;" oninput="syncColor('mint', 'v1Text', this.value)">
+                                    <input type="text" id="c_mint_v1Text_text" value="#333333" style="width: 60px; border: none; padding: 2px; font-size: 11px; outline: none;" oninput="syncColor('mint', 'v1Text', this.value)">
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <span style="width: 55px; color: #666;">V2 폰트:</span>
+                                <div class="setting-color-wrap">
+                                    <input type="color" id="c_mint_v2Text_picker" value="#46A694" style="width: 20px; height: 20px;" oninput="syncColor('mint', 'v2Text', this.value)">
+                                    <input type="text" id="c_mint_v2Text_text" value="#46A694" style="width: 60px; border: none; padding: 2px; font-size: 11px; outline: none;" oninput="syncColor('mint', 'v2Text', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #fafbfc; border: 1px solid var(--border); border-radius: 6px; padding: 10px;">
+                        <strong style="font-size: 13px; color: #be185d; display: block; margin-bottom: 8px;">김민정 (핑크)</strong>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <div class="setting-row">
+                                <span style="width: 55px; color: #666;">V1 박스:</span>
+                                <div class="setting-color-wrap">
+                                    <input type="color" id="c_pink_v1Box_picker" value="#FFF6FA" style="width: 20px; height: 20px;" oninput="syncColor('pink', 'v1Box', this.value)">
+                                    <input type="text" id="c_pink_v1Box_text" value="#FFF6FA" style="width: 60px; border: none; padding: 2px; font-size: 11px; outline: none;" oninput="syncColor('pink', 'v1Box', this.value)">
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <span style="width: 55px; color: #666;">V1 폰트:</span>
+                                <div class="setting-color-wrap">
+                                    <input type="color" id="c_pink_v1Text_picker" value="#333333" style="width: 20px; height: 20px;" oninput="syncColor('pink', 'v1Text', this.value)">
+                                    <input type="text" id="c_pink_v1Text_text" value="#333333" style="width: 60px; border: none; padding: 2px; font-size: 11px; outline: none;" oninput="syncColor('pink', 'v1Text', this.value)">
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <span style="width: 55px; color: #666;">V2 폰트:</span>
+                                <div class="setting-color-wrap">
+                                    <input type="color" id="c_pink_v2Text_picker" value="#F2C4D0" style="width: 20px; height: 20px;" oninput="syncColor('pink', 'v2Text', this.value)">
+                                    <input type="text" id="c_pink_v2Text_text" value="#F2C4D0" style="width: 60px; border: none; padding: 2px; font-size: 11px; outline: none;" oninput="syncColor('pink', 'v2Text', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-half">
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <h2 class="panel-title" style="border: none; margin: 0; padding: 0;">3. 내용 편집 공간 (좌측)</h2>
+            </div>
+            <p class="help-text">
+                텍스트를 클릭/수정하면 우측 미리보기가 자동으로 해당 위치로 이동합니다! 🚀<br>
+                <b>상태창은 우측 미리보기 창에서 직접 편집하세요.</b>
+            </p>
+            <div id="editorList"></div>
+        </div>
+
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 5px;">
+                <h2 class="panel-title" style="border: none; padding: 0; margin: 0;">4. 미리보기 환경 (우측)</h2>
+                <button id="versionToggleBtn" class="btn-secondary btn-small" onclick="toggleVersion()" style="padding: 6px 12px; font-size: 13px; border-radius: 20px; transition: 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🔄 버전 변경 (현재: V1 말풍선)</button>
+            </div>
+            <p class="help-text">
+                대사를 쓰다가 <b>Enter</b>를 누르면 대사 블록이 분리됩니다! (줄바꿈은 Shift+Enter)<br>
+                마우스를 블록 사이에 올리면 <b>[+ 공백 추가]</b> 영역이 나타납니다.
+            </p>
+            <div id="htmlPreview" class="preview-container tistory-post-wrapper" contenteditable="true" oninput="syncPreviewToBlocks()"></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">5. 최종 HTML 확인 및 복사</h2>
+        <textarea id="finalHtmlCode" rows="6" readonly style="background: #f8f9fa; font-size: 12px;"></textarea>
+        <button id="copyBtn" onclick="copyHtml()" style="margin-top: 10px; padding: 12px; font-size: 15px; width: 100%;">최종 HTML 복사하기 📋</button>
+    </div>
+
+    <div class="panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
+            <h2 class="panel-title" style="border: none; padding: 0; margin: 0;">6. 저장된 대화 목록 (로컬 스토리지)</h2>
+            <button class="btn-secondary" onclick="createNewDraft()">+ 새 대화 시작하기</button>
+        </div>
+        <p class="help-text">
+            작성 중인 대화는 자동으로 임시 저장됩니다. 빈 문서는 자연스럽게 삭제됩니다.<br>
+            목록에서 제목을 클릭하여 바로 수정할 수 있습니다.
+        </p>
+        <div id="draftList" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let blocks = [];
+    let currentDraftId = Date.now(); 
+    let currentOutputVersion = 1; // 1: 기존 말풍선 버전, 2: 텍스트 버전
+
+    // 글로벌 설정 객체
+    let globalSettings = {
+        narrationItalic: true,
+        mint: { v1Box: '#F2FCF7', v1Text: '#333333', v2Text: '#46A694' },
+        pink: { v1Box: '#FFF6FA', v1Text: '#333333', v2Text: '#F2C4D0' }
+    };
+
+    function syncColor(character, type, value) {
+        // UI 동기화
+        document.getElementById(`c_${character}_${type}_picker`).value = value;
+        document.getElementById(`c_${character}_${type}_text`).value = value;
+        // 설정 업데이트
+        globalSettings[character][type] = value;
+        updateOutput();
+    }
+
+    function updateGlobalSettings() {
+        globalSettings.narrationItalic = document.getElementById('setting_narration_italic').checked;
+        updateOutput();
+    }
+
+    function syncCustomBlockColor(index, value) {
+        blocks[index].customColor = value;
+        // 인라인 편집기 UI 업데이트 (picker와 text 서로 동기화)
+        let picker = document.getElementById(`editor_custom_picker_${index}`);
+        let text = document.getElementById(`editor_custom_text_${index}`);
+        if(picker) picker.value = value;
+        if(text) text.value = value;
+        updateOutput();
+    }
+
+    function toggleVersion() {
+        currentOutputVersion = currentOutputVersion === 1 ? 2 : 1;
+        const btn = document.getElementById('versionToggleBtn');
+        btn.innerText = currentOutputVersion === 1 ? '🔄 버전 변경 (현재: V1 말풍선)' : '🔄 버전 변경 (현재: V2 완전 글)';
+        if (currentOutputVersion === 2) {
+            btn.style.backgroundColor = '#e2e8f0';
+            btn.style.color = '#333';
+        } else {
+            btn.style.backgroundColor = '';
+            btn.style.color = '';
+        }
+        updateOutput();
+    }
+
+    function processTextForOutput(text) {
+        if (!text) return '';
+        let htmlText = text.replace(/\n/g, '<br>');
+        htmlText = htmlText.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 600;">$1</strong>');
+        htmlText = htmlText.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
+        
+        htmlText = htmlText.replace(/font-size:\s*\d+(\.\d+)?px;?/gi, ''); 
+        htmlText = htmlText.replace(/font-family:[^;"]+;?/gi, ''); 
+        return htmlText;
+    }
+
+    function scrollContainerToElement(containerId, elementId) {
+        const container = document.getElementById(containerId);
+        const element = document.getElementById(elementId);
+        if (!container || !element) return;
+        
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        
+        const targetScrollTop = container.scrollTop + (elementRect.top - containerRect.top) - (container.clientHeight / 2) + (elementRect.height / 2);
+        
+        container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+    }
+
+    function scrollToPreview(index) {
+        scrollContainerToElement('htmlPreview', `preview-block-${index}`);
+        const target = document.getElementById(`preview-block-${index}`);
+        if (target) {
+            target.style.transition = 'outline 0.3s, box-shadow 0.3s';
+            target.style.outline = '2px solid #4f46e5';
+            target.style.outlineOffset = '2px';
+            target.style.borderRadius = '8px';
+            setTimeout(() => { target.style.outline = 'none'; }, 800);
+        }
+    }
+
+    const defaultStatusHtml = `
+<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 10px;">
+    <div>
+        <div style="font-size: 0.9em; color: #444;">🗓️ 2026.MM. DD. X요일. (오전or오후)</div>
+        <div style="font-size: 0.8em; color: #888; margin-top: 2px;">D+두 사람이 함께한 날</div>
+    </div>
+    <div style="text-align: right; font-size: 0.9em; color: #444;">
+        하트 이모지 NPC,PC별 각각1개씩2개.
+    </div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+    <div style="flex: 1; min-width: 180px; background-color: #fff; border: 1px solid #f0f0f0; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">
+        <div style="font-size: 0.75em; color: #999; margin-bottom: 2px;">📍 LOCATION</div>
+        <div style="font-size: 0.85em; color: #444;">현재 위치</div>
+    </div>
+    <div style="flex: 1; min-width: 180px; background-color: #fff; border: 1px solid #f0f0f0; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">
+        <div style="font-size: 0.75em; color: #999; margin-bottom: 2px;">👕 OUTFIT</div>
+        <div style="font-size: 0.85em; color: #444; line-height: 1.4;">NPC 복장, PC 복장</div>
+    </div>
+</div>
+<div style="background-color: #fff; border: 1px solid #f0f0f0; border-radius: 4px; padding: 10px; margin-bottom: 10px; box-sizing: border-box;">
+    <div style="margin-bottom: 8px;">
+        <span style="font-size: 0.75em; background-color: #f6f6f6; color: #666; padding: 2px 4px; border-radius: 2px;">👥 STATE</span>
+        <div style="margin-top: 4px; font-size: 0.85em; color: #444; line-height: 1.5;">현재 인체와 관련된 자세</div>
+    </div>
+    <hr style="border: 0; border-top: 1px dashed #f0f0f0; margin: 8px 0;">
+    <div>
+        <span style="font-size: 0.75em; background-color: #f6f6f6; color: #666; padding: 2px 4px; border-radius: 2px;">💭 INNER THOUGHT</span>
+        <div style="margin-top: 4px; font-size: 0.85em; color: #555; font-style: italic; line-height: 1.5;">NPC의 생각, 속마음, TMI 등</div>
+    </div>
+</div>
+<div style="background-color: #fcfcfc; border-left: 3px solid #ccc; padding: 8px 10px; margin-bottom: 10px; box-sizing: border-box;">
+    <div style="font-size: 0.85em; color: #555; margin-bottom: 6px;">
+        <span class="bell">🔔</span> [상태] 단말기에 떠있는 알림
+    </div>
+    <div style="margin-bottom: 6px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.75em; color: #777; margin-bottom: 3px;">
+            <span>🚨 가이딩 필요 수치</span>
+            <span>0%~100% </span>
+        </div>
+        <div style="background-color: #eee; height: 4px; border-radius: 2px; overflow: hidden;">
+            <div style="width: 15%; height: 100%; background-color: #A8E6CF;"></div>
+        </div>
+    </div>
+    <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75em; color: #777; margin-bottom: 3px;">
+            <span>💕 호감도</span>
+            <span style="color: #E598A6; font-weight: bold;">뱅 → 유이: n/1000 (상태)</span>
+        </div>
+        <div style="background-color: #eee; height: 4px; border-radius: 2px; overflow: hidden;">
+            <div style="width: 100%; height: 100%; background-color: #FFB6C1;"></div>
+        </div>
+    </div>
+</div>
+<div style="display: grid; grid-template-columns: 110px 1fr; gap: 8px;">
+    <div style="background-color: #fff; border: 1px solid #f0f0f0; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">
+        <div style="font-size: 0.75em; color: #999; margin-bottom: 2px;">❤️‍🔥 NSFW COUNT</div>
+        <div style="font-size: 0.85em; color: #444;">0회</div>
+    </div>
+    <div style="background-color: #fff; border: 1px solid #f0f0f0; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">
+        <div style="font-size: 0.75em; color: #999; margin-bottom: 2px;">🔫 TMI</div>
+        <div style="font-size: 0.85em; color: #444; line-height: 1.4;">TMI 내용</div>
+    </div>
+</div>`;
+
+    function addBlock(type, index = -1) {
+        let newContent = type === 'status' ? defaultStatusHtml : '';
+        const newBlock = { type, content: newContent, customImg: '', customColor: '#E2E8F0', bgmTitle: '', bgmUrl: '' };
+        if (index === -1 || index >= blocks.length) blocks.push(newBlock);
+        else blocks.splice(index, 0, newBlock);
+        renderEditor();
+    }
+
+    function insertEmptyLine(index) {
+        blocks.splice(index + 1, 0, { type: 'empty', content: '' });
+        renderEditor();
+    }
+
+    function deleteBlock(index) {
+        blocks.splice(index, 1);
+        renderEditor();
+    }
+
+    function updateBlockContent(index, value) {
+        blocks[index].content = value;
+        updateOutput();
+    }
+
+    function updateBlockField(index, field, value) {
+        blocks[index][field] = value;
+        updateOutput();
+    }
+
+    function changeBlockType(index, newType) {
+        blocks[index].type = newType;
+        if(newType === 'status' && !blocks[index].content.includes('<div')) {
+            blocks[index].content = defaultStatusHtml;
+        }
+        renderEditor();
+    }
+
+    function parseAndConvert() {
+        const rawHtml = document.getElementById('rawInput').value;
+        if (!rawHtml.trim()) return;
+
+        let temp = document.createElement('div');
+        temp.innerHTML = rawHtml;
+        blocks = [];
+
+        let container = temp.querySelector('#content-wrapper') || temp;
+        
+        Array.from(container.children).forEach(block => {
+            if (['STYLE', 'SCRIPT', 'META', 'LINK', 'IFRAME'].includes(block.tagName)) return;
+
+            let text = block.innerText.trim();
+            let dataType = block.getAttribute('data-type'); 
+
+            if (dataType) {
+                if (dataType === 'bgm') {
+                    let title = block.querySelector('span:nth-of-type(2)')?.innerText.trim() || '';
+                    let url = '';
+                    let playBtn = block.querySelector('[onclick*="playBGM"]');
+                    if (playBtn) {
+                        let match = playBtn.getAttribute('onclick').match(/playBGM\('([^']*)'/);
+                        if (match) url = match[1];
+                    }
+                    blocks.push({ type: 'bgm', bgmTitle: title, bgmUrl: url, content: '' });
+                }
+                else if (dataType === 'dday') {
+                    blocks.push({ type: 'dday', content: text });
+                }
+                else if (dataType === 'status') {
+                    blocks.push({ type: 'status', content: block.innerHTML });
+                }
+                else if (dataType === 'html') {
+                    blocks.push({ type: 'html', content: block.innerHTML.trim() });
+                }
+                else if (['mint', 'pink', 'mob', 'custom'].includes(dataType)) {
+                    let textDiv = block.children[1] || block; 
+                    if (currentOutputVersion === 2 && block.children.length === 1) textDiv = block.children[0];
+                    let contentText = textDiv.innerText.trim();
+                    if (dataType === 'custom') {
+                        let img = block.querySelector('img')?.src || '';
+                        let col = block.children[0]?.style?.borderColor || block.style.color || '#e2e8f0';
+                        blocks.push({ type: 'custom', content: contentText, customImg: img, customColor: col });
+                    } else {
+                        blocks.push({ type: dataType, content: contentText });
+                    }
+                }
+                else if (dataType === 'thought') {
+                    let textDiv = block.children[1] || block;
+                    blocks.push({ type: 'thought', content: textDiv.innerText.trim() });
+                }
+                else if (dataType === 'narration') {
+                    blocks.push({ type: 'narration', content: text });
+                }
+                return; 
+            }
+
+            if(!text && !block.querySelector('img') && !block.querySelector('svg') && block.innerHTML !== '&nbsp;' && !block.innerHTML.includes('<br>')) return;
+
+            if (block.querySelector('svg') && text.includes('|')) {
+                let title = block.querySelector('span:nth-of-type(2)')?.innerText.trim() || '';
+                let playBtn = block.querySelector('[onclick*="playBGM"]');
+                let url = '';
+                if (playBtn) {
+                    let match = playBtn.getAttribute('onclick').match(/playBGM\('([^']*)'/);
+                    if (match) url = match[1];
+                }
+                blocks.push({ type: 'bgm', bgmTitle: title, bgmUrl: url, content: '' });
+            }
+            else if ((text.includes('디데이') || text.includes('작은 텍스트')) && !block.querySelector('img')) {
+                blocks.push({ type: 'dday', content: text.replace(/디데이|작은 텍스트/g, '').trim() || '작은 텍스트' });
+            }
+            else if (block.style.display === 'flex' && block.children.length >= 2 && !block.style.backgroundColor) {
+                let avatar = block.children[0];
+                let contentText = block.children[1]?.innerText.trim() || '';
+                let border = avatar.style.border || '';
+                
+                if (border.includes('#F2FCF7') || border.includes('rgb(242, 252, 247)')) blocks.push({ type: 'mint', content: contentText });
+                else if (border.includes('#FFF6FA') || border.includes('rgb(255, 246, 250)')) blocks.push({ type: 'pink', content: contentText });
+                else if (border.includes('#F4F5F7') || border.includes('rgb(244, 245, 247)')) blocks.push({ type: 'mob', content: contentText });
+                else blocks.push({ type: 'custom', content: contentText, customColor: avatar.style.borderColor || '#e2e8f0', customImg: avatar.querySelector('img')?.src || '' });
+            }
+            else if (block.style.backgroundColor && (block.style.backgroundColor.includes('fdfdfd') || block.style.backgroundColor.includes('rgb(253, 253, 253)'))) {
+                blocks.push({ type: 'status', content: block.innerHTML });
+            }
+            else if (block.style.padding.includes('10px') || (block.children[0] && block.children[0].style.backgroundColor && block.children[0].style.backgroundColor.includes('F9F9F9'))) {
+                blocks.push({ type: 'thought', content: text });
+            }
+            else if (block.tagName === 'P' && (block.innerHTML === '&nbsp;' || block.innerHTML.includes('<br>'))) {
+                blocks.push({ type: 'empty', content: '' });
+            }
+            else {
+                blocks.push({ type: 'narration', content: text });
+            }
+        });
+
+        document.getElementById('rawInput').value = '';
+        renderEditor();
+    }
+
+    function renderEditor() {
+        const list = document.getElementById('editorList');
+        list.innerHTML = '';
+
+        blocks.forEach((block, index) => {
+            const item = document.createElement('div');
+            item.className = 'block-item';
+            item.id = `editor-block-${index}`; 
+            
+            let extraFields = '';
+            let textAreaHtml = '';
+
+            if (block.type === 'custom') {
+                const hexColor = block.customColor || '#E2E8F0';
+                extraFields = `
+                <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                    <input type="text" placeholder="이미지 URL (V1 전용)" value="${block.customImg}" onfocus="scrollToPreview(${index})" onclick="scrollToPreview(${index})" onchange="updateBlockField(${index}, 'customImg', this.value)" style="flex:1; font-size:11px;">
+                    <div style="display:flex; align-items:center; gap:4px; flex:1; border: 1px solid var(--border); border-radius:4px; padding: 2px 4px; background:#fff;">
+                        <input type="color" id="editor_custom_picker_${index}" value="${hexColor}" oninput="syncCustomBlockColor(${index}, this.value)" onfocus="scrollToPreview(${index})" onclick="scrollToPreview(${index})" style="width:20px; height:20px;">
+                        <input type="text" id="editor_custom_text_${index}" placeholder="색상 (#E2E8F0)" value="${hexColor}" oninput="syncCustomBlockColor(${index}, this.value)" onfocus="scrollToPreview(${index})" onclick="scrollToPreview(${index})" style="border:none; flex:1; font-size:11px; outline:none; padding: 2px;">
+                    </div>
+                </div>`;
+            } else if (block.type === 'bgm') {
+                extraFields = `
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        <input type="text" placeholder="브금 제목" value="${block.bgmTitle}" onfocus="scrollToPreview(${index})" onclick="scrollToPreview(${index})" onchange="updateBlockField(${index}, 'bgmTitle', this.value)" style="flex:1; font-size:11px;">
+                        <input type="text" placeholder="유튜브 링크" value="${block.bgmUrl}" onfocus="scrollToPreview(${index})" onclick="scrollToPreview(${index})" onchange="updateBlockField(${index}, 'bgmUrl', this.value)" style="flex:2; font-size:11px;">
+                    </div>`;
+            }
+
+            if (block.type === 'empty') {
+                textAreaHtml = `<div style="text-align:center; color:#94a3b8; font-size:12px; padding:10px; cursor:pointer;" onclick="scrollToPreview(${index})">[티스토리 공백 줄]</div>`;
+            } else if (block.type === 'status') {
+                textAreaHtml = `<div style="text-align:center; color:#be185d; font-size:12px; padding:10px; background:#fce7f3; border-radius:4px; font-weight: bold; cursor:pointer;" onclick="scrollToPreview(${index})">상태창 내용은 우측 <b>[미리보기 화면]</b>에서 직접 텍스트를 클릭해 수정하세요! ✨</div>`;
+            } else if (block.type === 'html') {
+                textAreaHtml = `<textarea id="textarea-${index}" rows="4" style="font-family: monospace; background: #f8fafc; font-size: 12px;" onfocus="scrollToPreview(${index})" onclick="scrollToPreview(${index})" onkeyup="updateBlockContent(${index}, this.value)">${block.content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</textarea>
+                <div style="font-size: 11px; color: #ef4444; margin-top: 4px; text-align: left;">* HTML 코드는 태그 보존을 위해 가급적 좌측 에디터에서 직접 수정하세요.</div>`;
+            } else if (block.type !== 'bgm') {
+                textAreaHtml = `<textarea id="textarea-${index}" rows="2" onfocus="scrollToPreview(${index})" onclick="scrollToPreview(${index})" onkeyup="updateBlockContent(${index}, this.value)">${block.content}</textarea>`;
+            }
+
+            item.innerHTML = `
+                <div style="text-align: center; margin-bottom: 5px;"><button class="btn-small btn-secondary" onclick="addBlock('narration', ${index})">⬆ 이 위에 추가</button></div>
+                <div class="block-header">
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <select onchange="changeBlockType(${index}, this.value)" style="padding:4px; border-radius:4px; border:1px solid #cbd5e1;">
+                            <option value="narration" ${block.type==='narration'?'selected':''}>나레이션</option>
+                            <option value="mint" ${block.type==='mint'?'selected':''}>민트 대사</option>
+                            <option value="pink" ${block.type==='pink'?'selected':''}>핑크 대사</option>
+                            <option value="mob" ${block.type==='mob'?'selected':''}>모브 대사</option>
+                            <option value="custom" ${block.type==='custom'?'selected':''}>제3자 대사</option>
+                            <option value="thought" ${block.type==='thought'?'selected':''}>속마음</option>
+                            <option value="status" ${block.type==='status'?'selected':''}>상태창</option>
+                            <option value="bgm" ${block.type==='bgm'?'selected':''}>BGM</option>
+                            <option value="dday" ${block.type==='dday'?'selected':''}>작은 텍스트</option>
+                            <option value="empty" ${block.type==='empty'?'selected':''}>공백 줄</option>
+                            <option value="html" ${block.type==='html'?'selected':''}>HTML 소스코드</option>
+                        </select>
+                        <button class="btn-small btn-mint" onclick="changeBlockType(${index}, 'mint')">민트</button>
+                        <button class="btn-small btn-pink" onclick="changeBlockType(${index}, 'pink')">핑크</button>
+                    </div>
+                    <button class="btn-small btn-danger" onclick="deleteBlock(${index})">삭제</button>
+                </div>
+                ${extraFields}
+                ${textAreaHtml}
+                <div style="text-align: center; margin-top: 5px;"><button class="btn-small btn-secondary" onclick="addBlock('narration', ${index + 1})">⬇ 이 아래에 추가</button></div>
+            `;
+            list.appendChild(item);
+        });
+
+        updateOutput();
+    }
+
+    function updateOutput() {
+        let previewHtml = '';
+        let finalHtml = '';
+        let hasBgm = false;
+        let prevValidType = null;
+        let prevCustomImg = null;
+        let prevCustomColor = null;
+
+        previewHtml += `<div class="preview-gap" onclick="insertEmptyLine(-1)" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>`;
+
+        blocks.forEach((block, index) => {
+            let processedText = processTextForOutput(block.content);
+            let pWrapper = `<div>${processedText}</div>`;
+            let htmlStr = '';
+
+            let mt = '15px'; 
+            let pt = '12px'; 
+            let pb = '12px';
+            let showAvatar = true; 
+            let isCurrDiag = ['mint', 'pink', 'mob', 'custom'].includes(block.type);
+            let isPrevDiag = ['mint', 'pink', 'mob', 'custom'].includes(prevValidType);
+
+            if (isCurrDiag && index < blocks.length - 1) {
+                let nextBlock = blocks[index + 1];
+                if (nextBlock.type === block.type) {
+                    let isSame = true;
+                    if (block.type === 'custom') {
+                        if (block.customImg !== nextBlock.customImg || block.customColor !== nextBlock.customColor) {
+                            isSame = false;
+                        }
+                    }
+                    if (isSame) pb = '0px';
+                }
+            }
+
+            if (prevValidType) {
+                if ((isPrevDiag && block.type === 'narration') || (prevValidType === 'narration' && isCurrDiag)) {
+                    mt = '20px'; 
+                } else if (prevValidType === 'narration' && block.type === 'narration') {
+                    mt = '0px';  
+                } else if (isPrevDiag && isCurrDiag) {
+                    let isSameCharacter = (block.type === prevValidType);
+                    if (block.type === 'custom') {
+                        if (block.customImg !== prevCustomImg || block.customColor !== prevCustomColor) {
+                            isSameCharacter = false;
+                        }
+                    }
+
+                    if (isSameCharacter) {
+                        if (currentOutputVersion === 2) {
+                            // 버전 2일 때: 소설용 줄바꿈 처리 (여백 거의 없음)
+                            mt = '0px';
+                            pt = '0px';
+                        } else {
+                            // 버전 1일 때: 기존 말풍선 간격
+                            mt = '0px';
+                            pt = '10.5px';
+                        }
+                        showAvatar = false; 
+                    } else {
+                        mt = '15px';
+                    }
+                }
+            } else {
+                mt = '20px'; 
+            }
+
+            const getAvatarHtml = (color, imgUrl) => {
+                if (!showAvatar) return `<div style="flex-shrink: 0; width: 36px; height: 0;"></div>`;
+                return `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${color}; box-sizing: border-box;"><img src="${imgUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>`;
+            };
+
+            if (block.type === 'empty') {
+                previewHtml += `<div class="empty-line-preview" id="preview-block-${index}">공백 줄 (Enter)</div>`;
+                finalHtml += `<p style="margin: 0; min-height: 1.5em;">&nbsp;</p>\n`;
+            } 
+            else if (block.type === 'narration') {
+                let italicStyle = globalSettings.narrationItalic ? 'font-style: italic;' : 'font-style: normal;';
+                htmlStr = `<div data-type="narration" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; font-family: inherit; text-align: left; ${italicStyle}">\n    ${pWrapper}\n</div>\n`;
+            } 
+            else if (block.type === 'mint') {
+                if (currentOutputVersion === 1) {
+                    htmlStr = `<div data-type="mint" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${mt} auto 0; padding: ${pt} 10px ${pb} 10px; font-family: inherit; display: flex; align-items: flex-start; gap: 10px; box-sizing: border-box;">\n    ${getAvatarHtml(globalSettings.mint.v1Box, 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg')}\n    <div style="background-color: ${globalSettings.mint.v1Box}; color: ${globalSettings.mint.v1Text}; padding: 14px 18px; border-radius: 14px; font-size: 1em; line-height: 1.6; letter-spacing: -0.02em; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content;">\n        ${pWrapper}\n    </div>\n</div>\n`;
+                } else {
+                    htmlStr = `<div data-type="mint" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; font-family: inherit; text-align: left; color: ${globalSettings.mint.v2Text};">\n    ${pWrapper}\n</div>\n`;
+                }
+            } 
+            else if (block.type === 'pink') {
+                if (currentOutputVersion === 1) {
+                    htmlStr = `<div data-type="pink" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${mt} auto 0; padding: ${pt} 10px ${pb} 10px; font-family: inherit; display: flex; align-items: flex-start; gap: 10px; box-sizing: border-box;">\n    ${getAvatarHtml(globalSettings.pink.v1Box, 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg')}\n    <div style="background-color: ${globalSettings.pink.v1Box}; color: ${globalSettings.pink.v1Text}; padding: 14px 18px; border-radius: 14px; font-size: 1em; line-height: 1.6; letter-spacing: -0.02em; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content;">\n        ${pWrapper}\n    </div>\n</div>\n`;
+                } else {
+                    htmlStr = `<div data-type="pink" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; font-family: inherit; text-align: left; color: ${globalSettings.pink.v2Text};">\n    ${pWrapper}\n</div>\n`;
+                }
+            } 
+            else if (block.type === 'mob') {
+                if (currentOutputVersion === 1) {
+                    htmlStr = `<div data-type="mob" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${mt} auto 0; padding: ${pt} 10px ${pb} 10px; font-family: inherit; display: flex; align-items: flex-start; gap: 10px; box-sizing: border-box;">\n    ${getAvatarHtml('#F4F5F7', 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg')}\n    <div style="background-color: #F4F5F7; color: #333; padding: 14px 18px; border-radius: 14px; font-size: 1em; line-height: 1.6; letter-spacing: -0.02em; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content;">\n        ${pWrapper}\n    </div>\n</div>\n`;
+                } else {
+                    htmlStr = `<div data-type="mob" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; font-family: inherit; text-align: left; color: #737373;">\n    ${pWrapper}\n</div>\n`;
+                }
+            } 
+            else if (block.type === 'custom') {
+                const img = block.customImg || 'https://via.placeholder.com/24';
+                const col = block.customColor || '#e2e8f0';
+                if (currentOutputVersion === 1) {
+                    htmlStr = `<div data-type="custom" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${mt} auto 0; padding: ${pt} 10px ${pb} 10px; font-family: inherit; display: flex; align-items: flex-start; gap: 10px; box-sizing: border-box;">\n    ${getAvatarHtml(col, img)}\n    <div style="background-color: ${col}; color: #333; padding: 14px 18px; border-radius: 14px; font-size: 1em; line-height: 1.6; letter-spacing: -0.02em; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content;">\n        ${pWrapper}\n    </div>\n</div>\n`;
+                } else {
+                    htmlStr = `<div data-type="custom" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; font-family: inherit; text-align: left; color: ${col};">\n    ${pWrapper}\n</div>\n`;
+                }
+            } 
+            else if (block.type === 'thought') {
+                htmlStr = `<div data-type="thought" style="width: 100%; max-width: 600px; margin: 15px auto 0; padding: 12px 10px; font-family: inherit; display: flex; align-items: flex-start; gap: 10px; box-sizing: border-box;">\n    <div style="flex-shrink: 0; width: 36px; height: 0;"></div>\n    <div style="background-color: #F9F9F9; color: #777; padding: 14px 18px; border-radius: 14px; font-size: 0.9em; line-height: 1.6; letter-spacing: -0.02em; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; max-width: 80%; box-sizing: border-box;">\n        ${pWrapper}\n    </div>\n</div>\n`;
+            } 
+            else if (block.type === 'bgm') {
+                hasBgm = true;
+                htmlStr = `<div data-type="bgm" style="width: 100%; max-width: 600px; margin: 20px auto; text-align: center; box-sizing: border-box; font-family: inherit;">\n    <div style="display: inline-flex; align-items: center; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 4px 12px; gap: 8px; font-size: 0.8em; color: #64748b; box-shadow: 0 1px 2px rgba(0,0,0,0.02); line-height: 1;">\n        <span style="display: flex; align-items: center; color: #94a3b8;">\n            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>\n        </span>\n        <span style="max-width: 120px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569;">${block.bgmTitle || '브금'}</span>\n        <span style="color: #cbd5e1;">|</span>\n        <div style="display: flex; align-items: center; gap: 4px;">\n            <div onclick="playBGM('${block.bgmUrl}', '${block.bgmTitle}')" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="재생">\n                <svg width="8" height="8" viewBox="0 0 24 24" fill="#475569"><path d="M8 5v14l11-7z"/></svg>\n            </div>\n            <div onclick="stopBGM()" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="정지">\n                <svg width="7" height="7" viewBox="0 0 24 24" fill="#475569"><path d="M6 6h12v12H6z"/></svg>\n            </div>\n        </div>\n    </div>\n</div>\n`;
+            } 
+            else if (block.type === 'dday') {
+                htmlStr = `<div data-type="dday" style="width: 100%; max-width: 600px; margin: 25px auto; text-align: left; padding: 0 15px; box-sizing: border-box; font-family: inherit;">\n    <span style="font-size: 0.8em; color: #8e8e93; font-style: italic; font-weight: 600;">${processedText || '작은 텍스트'}</span>\n</div>\n`;
+            } 
+            else if (block.type === 'status') {
+                htmlStr = `<div data-type="status" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: #fdfdfd; border: 1px solid #eeeeee; border-radius: 6px; font-family: inherit; box-sizing: border-box; color: #555;">\n${block.content}\n</div>\n`;
+            }
+            else if (block.type === 'html') {
+                htmlStr = `<div data-type="html" style="width: 100%; box-sizing: border-box; overflow-x: hidden;">\n${block.content}\n</div>\n`;
+            }
+
+            finalHtml += htmlStr;
+            if (block.type !== 'empty') {
+                previewHtml += htmlStr.replace(/^<div /, `<div id="preview-block-${index}" `);
+                prevValidType = block.type;
+                prevCustomImg = block.type === 'custom' ? block.customImg : null;
+                prevCustomColor = block.type === 'custom' ? block.customColor : null;
+            }
+
+            previewHtml += `<div class="preview-gap" onclick="insertEmptyLine(${index})" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>`;
+        });
+
+        document.getElementById('htmlPreview').innerHTML = previewHtml;
+        generateFinalCodeOnly(finalHtml, hasBgm);
+        saveCurrentDraft(); 
+    }
+
+    document.getElementById('htmlPreview').addEventListener('click', function(e) {
+        let node = e.target;
+        let blockWrapper = null;
+        
+        while (node && node !== this) {
+            if (node.nodeType === 1 && node.id && node.id.startsWith('preview-block-')) {
+                blockWrapper = node;
+                break;
+            }
+            node = node.parentNode;
+        }
+
+        if (blockWrapper) {
+            let index = parseInt(blockWrapper.id.replace('preview-block-', ''));
+            scrollContainerToElement('editorList', 'editor-block-' + index);
+            
+            let editorBlock = document.getElementById('editor-block-' + index);
+            if (editorBlock) {
+                editorBlock.style.transition = 'box-shadow 0.3s';
+                editorBlock.style.boxShadow = '0 0 0 2px var(--primary)';
+                setTimeout(() => editorBlock.style.boxShadow = 'none', 800);
+            }
+        }
+    });
+
+    function syncPreviewToBlocks() {
+        blocks.forEach((block, index) => {
+            const el = document.getElementById(`preview-block-${index}`);
+            if (!el) return;
+
+            if (block.type === 'status' || block.type === 'html') {
+                block.content = el.innerHTML;
+            } else if (['mint', 'pink', 'mob', 'custom', 'thought', 'dday', 'narration'].includes(block.type)) {
+                let targetEl = el;
+                if (currentOutputVersion === 1 && ['mint', 'pink', 'mob', 'custom'].includes(block.type)) {
+                    targetEl = el.querySelector('[style*="background-color"]') || el;
+                }
+
+                let text = targetEl.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*').replace(/&nbsp;/gi, ' ');
+                let tempDiv = document.createElement('div');
+                tempDiv.innerHTML = text;
+                block.content = tempDiv.textContent || tempDiv.innerText || "";
+                let ta = document.getElementById(`textarea-${index}`);
+                if(ta && document.activeElement !== ta) ta.value = block.content;
+            }
+        });
+        
+        generateFinalCodeOnly(); 
+        saveCurrentDraft(); 
+    }
+
+    function generateFinalCodeOnly(injectedHtml = null, hasBgmFlag = false) {
+        let finalHtml = injectedHtml;
+        let hasBgm = hasBgmFlag;
+
+        if (injectedHtml === null) {
+            finalHtml = '';
+            blocks.forEach(block => {
+                if (block.type === 'empty') finalHtml += `<p style="margin: 0; min-height: 1.5em;">&nbsp;</p>\n`;
+                else if (block.type === 'bgm') hasBgm = true;
+            });
+            let tempDiv = document.createElement('div');
+            tempDiv.innerHTML = document.getElementById('htmlPreview').innerHTML;
+            tempDiv.querySelectorAll('.preview-gap, .empty-line-preview').forEach(e => e.remove());
+            tempDiv.querySelectorAll('[id^="preview-block-"]').forEach(e => e.removeAttribute('id'));
+            
+            let rawStr = tempDiv.innerHTML;
+            finalHtml = rawStr.replace(/<p style="margin: 0; min-height: 1.5em;">&nbsp;<\/p>/g, '') + finalHtml; 
+            updateOutput();
+            return;
+        }
+
+        let styleStr = `
+<style>
+    .tistory-post-wrapper * { box-sizing: border-box; }
+    .tistory-post-wrapper { background-color: #ffffff; padding: 20px 0; overflow-x: hidden; }
+    .scroll-msg-box { 
+        opacity: 0; 
+        transform: translateY(2em); 
+        transition: opacity 1.3s cubic-bezier(0.2, 0.8, 0.2, 1), transform 1.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        will-change: opacity, transform;
+    }
+    .scroll-msg-box.is-visible { opacity: 1; transform: translateY(0); }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    .bell { display: inline-block; transform-origin: top center; animation: ring 4.5s infinite ease-in-out; }
+    @keyframes ring { 0%, 30%, 100% { transform: rotate(0); } 5%, 15%, 25% { transform: rotate(15deg); } 10%, 20% { transform: rotate(-15deg); } }
+</style>\n`;
+        
+        let observerScript = `
+window.addEventListener('DOMContentLoaded', function() { 
+    let visibleBoxes = new Set();
+    let isProcessing = false;
+
+    const observer = new IntersectionObserver(function(entries) { 
+        entries.forEach(function(entry) { 
+            if (entry.isIntersecting) {
+                if (!entry.target.classList.contains('is-visible')) {
+                    visibleBoxes.add(entry.target);
+                }
+            } else {
+                visibleBoxes.delete(entry.target);
+            }
+        }); 
+        
+        if (!isProcessing && visibleBoxes.size > 0) {
+            processNext();
+        }
+    }, { threshold: 0.05 }); 
+
+    function processNext() {
+        if (visibleBoxes.size === 0) {
+            isProcessing = false;
+            return;
+        }
+        isProcessing = true;
+
+        let boxesArray = Array.from(visibleBoxes);
+        boxesArray.sort(function(a, b) {
+            return a.getBoundingClientRect().top - b.getBoundingClientRect().top;
+        });
+
+        let target = boxesArray[0];
+        visibleBoxes.delete(target); 
+
+        let prev = target.previousElementSibling;
+        let isPrevDialog = false;
+        while (prev) {
+            if (prev.classList && prev.classList.contains('scroll-msg-box')) {
+                isPrevDialog = true;
+                break;
+            } else if (prev.getAttribute && prev.getAttribute('data-type')) {
+                isPrevDialog = false;
+                break;
+            } else if (prev.tagName === 'P') {
+                isPrevDialog = false;
+                break;
+            }
+            prev = prev.previousElementSibling;
+        }
+
+        let delay = isPrevDialog ? 100 : 400;
+
+        setTimeout(function() {
+            target.classList.add('is-visible');
+            
+            // 1.3초(애니메이션 시간) 대기 후 다음 요소 처리 시작
+            setTimeout(function() {
+                processNext();
+            }, 1300);
+            
+        }, delay);
+    }
+
+    const msgBoxes = document.querySelectorAll('.scroll-msg-box'); 
+    msgBoxes.forEach(function(box) { observer.observe(box); }); 
+});`;
+        
+        let scriptStr = '';
+        if (hasBgm) {
+            scriptStr = `\n<iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>\n<script>\nwindow.addEventListener('message', function(e) { var frame = document.getElementById('bgmPlayerFrame'); if (!frame) return; if (e.data.action === 'minimize') { frame.style.width = '32px'; frame.style.height = '32px'; } else if (e.data.action === 'expand') { frame.style.width = '240px'; frame.style.height = '140px'; } }); function playBGM(videoId, title) { var frame = document.getElementById('bgmPlayerFrame'); if (frame) { frame.contentWindow.postMessage({ action: 'playBGM', videoId: videoId, title: title }, '*'); } } function stopBGM() { var frame = document.getElementById('bgmPlayerFrame'); if (frame) { frame.src = frame.src; } } ${observerScript}\n<\/script>`;
+        } else {
+            scriptStr = `\n<script>\n${observerScript}\n<\/script>`;
+        }
+
+        const exactFinalHTML = styleStr + `<div id="content-wrapper" class="tistory-post-wrapper">\n` + finalHtml + `</div>` + scriptStr;
+        document.getElementById('finalHtmlCode').value = exactFinalHTML;
+    }
+
+    function copyHtml() {
+        const output = document.getElementById('finalHtmlCode');
+        if (!output.value) return;
+        output.select();
+        document.execCommand('copy');
+        
+        const btn = document.getElementById('copyBtn');
+        const originalText = btn.innerText;
+        btn.innerText = '복사 완료! ✅';
+        btn.style.backgroundColor = '#10b981'; 
+        
+        setTimeout(() => { 
+            btn.innerText = originalText; 
+            btn.style.backgroundColor = '';
+        }, 2000);
+    }
+
+    document.getElementById('htmlPreview').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            let selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            let node = selection.anchorNode;
+            let blockWrapper = null;
+            
+            while (node && node !== this) {
+                if (node.nodeType === 1 && node.id && node.id.startsWith('preview-block-')) {
+                    blockWrapper = node;
+                    break;
+                }
+                node = node.parentNode;
+            }
+
+            if (blockWrapper) {
+                let index = parseInt(blockWrapper.id.replace('preview-block-', ''));
+                let block = blocks[index];
+
+                if (['mint', 'pink', 'mob', 'custom'].includes(block.type)) {
+                    e.preventDefault(); 
+                    
+                    let pTag;
+                    if (currentOutputVersion === 1) {
+                        pTag = blockWrapper.querySelector('[style*="background-color"] div') || blockWrapper.querySelector('[style*="background-color"]');
+                    } else {
+                        pTag = blockWrapper.querySelector('div');
+                    }
+                    if (!pTag) return;
+
+                    let range = selection.getRangeAt(0);
+                    
+                    let preRange = range.cloneRange();
+                    preRange.selectNodeContents(pTag);
+                    preRange.setEnd(range.startContainer, range.startOffset);
+                    let preFragment = preRange.cloneContents();
+                    let tempDiv1 = document.createElement('div');
+                    tempDiv1.appendChild(preFragment);
+                    
+                    let postRange = range.cloneRange();
+                    postRange.selectNodeContents(pTag);
+                    postRange.setStart(range.endContainer, range.endOffset);
+                    let postFragment = postRange.cloneContents();
+                    let tempDiv2 = document.createElement('div');
+                    tempDiv2.appendChild(postFragment);
+
+                    const extractText = (html) => {
+                        let text = html.replace(/<br\s*[\/]?>/gi, '\n')
+                                       .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+                                       .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+                                       .replace(/&nbsp;/gi, ' ');
+                        let t = document.createElement('div');
+                        t.innerHTML = text;
+                        return t.textContent || t.innerText || "";
+                    };
+
+                    blocks[index].content = extractText(tempDiv1.innerHTML);
+                    
+                    let newBlock = { 
+                        type: block.type, 
+                        content: extractText(tempDiv2.innerHTML), 
+                        customImg: block.customImg, 
+                        customColor: block.customColor, 
+                        bgmTitle: '', 
+                        bgmUrl: '' 
+                    };
+                    blocks.splice(index + 1, 0, newBlock);
+                    
+                    renderEditor(); 
+                    
+                    setTimeout(() => {
+                        let newBlockEl = document.getElementById('preview-block-' + (index + 1));
+                        if (newBlockEl) {
+                            let newP;
+                            if (currentOutputVersion === 1) {
+                                newP = newBlockEl.querySelector('[style*="background-color"] div') || newBlockEl.querySelector('[style*="background-color"]');
+                            } else {
+                                newP = newBlockEl.querySelector('div');
+                            }
+                            if (newP) {
+                                let sel = window.getSelection();
+                                let r = document.createRange();
+                                r.selectNodeContents(newP);
+                                r.collapse(true);
+                                sel.removeAllRanges();
+                                sel.addRange(r);
+                                scrollContainerToElement('htmlPreview', 'preview-block-' + (index + 1));
+                            }
+                        }
+                    }, 50);
+                }
+            }
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        currentDraftId = Date.now();
+        blocks = [];
+        renderDraftList();
+    });
+
+    function saveCurrentDraft() {
+        let drafts = JSON.parse(localStorage.getItem('tistory_drafts') || '{}');
+        let isEmpty = blocks.length === 0 || blocks.every(b => b.type === 'empty' || !b.content.trim());
+        let needsListRender = false;
+
+        if (isEmpty) {
+            if (drafts[currentDraftId]) {
+                delete drafts[currentDraftId];
+                needsListRender = true;
+            }
+        } else {
+            let existing = drafts[currentDraftId];
+            if (!existing) needsListRender = true; 
+
+            let title = existing && existing.title ? existing.title : '새 대화록 (' + new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute:'2-digit'}) + ')';
+            
+            drafts[currentDraftId] = {
+                id: currentDraftId,
+                title: title,
+                updatedAt: Date.now(),
+                blocks: JSON.parse(JSON.stringify(blocks))
+            };
+        }
+        
+        localStorage.setItem('tistory_drafts', JSON.stringify(drafts));
+        if (needsListRender) renderDraftList();
+    }
+
+    function renderDraftList() {
+        const listContainer = document.getElementById('draftList');
+        let drafts = JSON.parse(localStorage.getItem('tistory_drafts') || '{}');
+        let draftArray = Object.values(drafts).sort((a, b) => b.updatedAt - a.updatedAt);
+
+        if (draftArray.length === 0) {
+            listContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 13px; background: #f8fafc; border-radius: 6px; border: 1px dashed var(--border);">저장된 대화가 없습니다. 내용을 작성하면 자동으로 임시 저장됩니다.</div>';
+            return;
+        }
+
+        listContainer.innerHTML = '';
+        draftArray.forEach(draft => {
+            let dateStr = new Date(draft.updatedAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            let isCurrent = draft.id === currentDraftId;
+
+            let item = document.createElement('div');
+            item.className = 'draft-item';
+            if (isCurrent) {
+                item.style.borderColor = 'var(--primary)';
+                item.style.backgroundColor = '#f8faff';
+                item.style.boxShadow = '0 0 0 2px rgba(79, 70, 229, 0.1)';
+            }
+
+            item.innerHTML = `
+                <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
+                    <span class="draft-date">${dateStr}</span>
+                    <input type="text" class="draft-title-input" value="${draft.title}" onchange="updateDraftTitle(${draft.id}, this.value)" placeholder="제목을 입력하세요">
+                </div>
+                <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                    ${isCurrent ? 
+                        `<span style="font-size: 12px; color: var(--primary); font-weight: bold; margin-right: 10px; align-self: center;">🟢 현재 작성 중</span>` 
+                        : `<button class="btn-secondary btn-small" onclick="loadDraft(${draft.id})">불러오기</button>`}
+                    <button class="btn-danger btn-small" onclick="deleteDraft(${draft.id})">삭제</button>
+                </div>
+            `;
+            listContainer.appendChild(item);
+        });
+    }
+
+    function updateDraftTitle(id, newTitle) {
+        let drafts = JSON.parse(localStorage.getItem('tistory_drafts') || '{}');
+        if (drafts[id]) {
+            drafts[id].title = newTitle;
+            localStorage.setItem('tistory_drafts', JSON.stringify(drafts));
+        }
+    }
+
+    function loadDraft(id) {
+        let drafts = JSON.parse(localStorage.getItem('tistory_drafts') || '{}');
+        if (drafts[id]) {
+            currentDraftId = id;
+            blocks = JSON.parse(JSON.stringify(drafts[id].blocks));
+            renderEditor();
+            renderDraftList();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function deleteDraft(id) {
+        if (!confirm('이 대화록을 정말 삭제하시겠습니까? (복구할 수 없습니다)')) return;
+        let drafts = JSON.parse(localStorage.getItem('tistory_drafts') || '{}');
+        if (drafts[id]) {
+            delete drafts[id];
+            localStorage.setItem('tistory_drafts', JSON.stringify(drafts));
+            
+            if (id === currentDraftId) {
+                createNewDraft();
+            } else {
+                renderDraftList();
+            }
+        }
+    }
+
+    function createNewDraft() {
+        currentDraftId = Date.now();
+        blocks = [];
+        document.getElementById('rawInput').value = '';
+        renderEditor();
+        renderDraftList();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>
