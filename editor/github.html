@@ -362,7 +362,7 @@
     <div class="grid-2col">
         <div class="panel">
             <h2 class="panel-title">(3) 내용 편집 공간</h2>
-            <p class="help-text">텍스트를 쓰면 우측에 실시간 반영됩니다. 상태창은 미리보기 창에서 직접 편집하세요. <br>💡 <b>팁:</b> (3), (4) 창 어디서든 <b>Enter</b>를 치면 새 블록으로 분리되고, <b>Shift+Enter</b>를 치면 단순 줄바꿈이 됩니다.</p>
+            <p class="help-text">텍스트를 쓰면 우측에 실시간 반영됩니다. 상태창은 미리보기 창에서 직접 편집하세요. <br>💡 <b>팁:</b> (3), (4) 창 어디서든 <b>Enter</b>를 치면 새 블록으로 분리되고, <b>Shift+Enter</b>를 치면 단순 줄바꿈이 됩니다. (<b>Ctrl+Z</b> 로 전체 실행 취소)</p>
             <div id="editorList"></div>
         </div>
 
@@ -408,21 +408,120 @@
 </div>
 
 <script>
-    // == 새롭게 추가된 전역 상태 변수 ==
+    // == 전역 상태 변수 ==
     let blocks = [];
     let outputVersion = 1; 
     let isDarkMode = false;
     let currentFontSize = 14;
     let currentFontFamily = "'Noto Serif KR', serif";
 
-    // == 새롭게 추가된 기능 함수들 ==
+    // == 추가된 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
+    let historyStack = [];
+    let historyIndex = -1;
+    let typingTimer;
+
+    // == 히스토리 관리 함수 ==
+    function saveState() {
+        const currentState = JSON.stringify(blocks);
+        if (historyIndex >= 0 && historyStack[historyIndex] === currentState) {
+            return;
+        }
+        historyStack = historyStack.slice(0, historyIndex + 1);
+        historyStack.push(currentState);
+        historyIndex++;
+    }
+
+    function debounceSaveState() {
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            saveState();
+        }, 500);
+    }
+
+    function restoreFocus(focusInfo) {
+        if (!focusInfo) return;
+        setTimeout(() => {
+            if (focusInfo.type === 'editor') {
+                const ta = document.getElementById(`textarea-${focusInfo.index}`);
+                if (ta) {
+                    ta.focus();
+                    ta.selectionStart = ta.value.length;
+                    ta.selectionEnd = ta.value.length;
+                }
+            } else if (focusInfo.type === 'preview') {
+                const previewEl = document.getElementById('htmlPreview');
+                if (previewEl) previewEl.focus();
+            }
+        }, 50);
+    }
+
+    function undo() {
+        if (historyIndex > 0) {
+            clearTimeout(typingTimer);
+            const activeEl = document.activeElement;
+            let focusInfo = null;
+            if (activeEl) {
+                if (activeEl.id && activeEl.id.startsWith('textarea-')) {
+                    focusInfo = { type: 'editor', index: parseInt(activeEl.id.replace('textarea-', '')) };
+                } else if (activeEl.closest('.preview-container') || activeEl.id === 'htmlPreview') {
+                    focusInfo = { type: 'preview' };
+                }
+            }
+            historyIndex--;
+            blocks = JSON.parse(historyStack[historyIndex]);
+            renderEditor();
+            restoreFocus(focusInfo);
+        }
+    }
+
+    function redo() {
+        if (historyIndex < historyStack.length - 1) {
+            clearTimeout(typingTimer);
+            const activeEl = document.activeElement;
+            let focusInfo = null;
+            if (activeEl) {
+                if (activeEl.id && activeEl.id.startsWith('textarea-')) {
+                    focusInfo = { type: 'editor', index: parseInt(activeEl.id.replace('textarea-', '')) };
+                } else if (activeEl.closest('.preview-container') || activeEl.id === 'htmlPreview') {
+                    focusInfo = { type: 'preview' };
+                }
+            }
+            historyIndex++;
+            blocks = JSON.parse(historyStack[historyIndex]);
+            renderEditor();
+            restoreFocus(focusInfo);
+        }
+    }
+
+    // == 전역 키보드 이벤트 (Ctrl+Z / Cmd+Z, Ctrl+Y) ==
+    document.addEventListener('keydown', function(e) {
+        if (e.isComposing || e.keyCode === 229) return;
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+        
+        if (cmdOrCtrl && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                redo();
+            } else {
+                undo();
+            }
+        } else if (cmdOrCtrl && e.key.toLowerCase() === 'y') {
+            e.preventDefault();
+            redo();
+        }
+    });
+
+    // ===================================
+    // 기존 기능 함수들
+    // ===================================
+
     function toggleDarkMode() {
         isDarkMode = !isDarkMode;
         document.body.classList.toggle('dark-mode', isDarkMode);
         document.getElementById('darkModeBtn').innerText = isDarkMode ? '☀️ 라이트 모드' : '🌙 다크 모드';
         
         if (isDarkMode) {
-            // 요청사항: 민트는 #B2E4D4, 나레이션 화이트 대응, 핑크는 그대로
             document.getElementById('mintTextColor').value = '#B2E4D4';
             document.getElementById('mintTextColorPicker').value = '#B2E4D4';
             document.getElementById('narrColor').value = '#F9F9F8';
@@ -449,7 +548,6 @@
         document.getElementById('fontSizeDisplay').innerText = currentFontSize + 'px';
         updateOutput();
     }
-    // ===================================
 
     function showToast(msg) {
         let toast = document.getElementById('toast-notification');
@@ -566,6 +664,7 @@
         if (count > 0) {
             document.getElementById('customCharacterAutoList').innerHTML = ''; 
             renderEditor(); 
+            saveState(); // 변경사항 히스토리 저장
             showToast(`총 ${count}개의 대사에 색상이 일괄 적용되었습니다! 🚀`);
         } else {
             showToast("해당 캐릭터를 사용하는 대사가 없습니다.");
@@ -685,6 +784,7 @@
 
             blocks.splice(index + 1, 0, newBlock);
             renderEditor();
+            saveState(); // 변경사항 히스토리 저장
             
             setTimeout(() => {
                 const newTa = document.getElementById(`textarea-${index + 1}`);
@@ -747,12 +847,24 @@
         const range = selection.getRangeAt(0);
         if (range.collapsed) return;
 
+        // 브라우저 기본 execCommand를 사용하면 텍스트 노드 분리 버그나 불필요한 여백 발생을 막을 수 있습니다.
+        if (Object.keys(styles).length === 1 && styles.color) {
+            document.execCommand('styleWithCSS', false, true);
+            document.execCommand('foreColor', false, styles.color);
+            syncPreviewToBlocks();
+            return;
+        }
+        if (Object.keys(styles).length === 1 && styles.backgroundColor) {
+            document.execCommand('styleWithCSS', false, true);
+            document.execCommand('hiliteColor', false, styles.backgroundColor);
+            syncPreviewToBlocks();
+            return;
+        }
+
         const span = document.createElement('span');
         for (let key in styles) {
             span.style[key] = styles[key];
         }
-        span.style.borderRadius = '3px';
-        span.style.padding = '0 2px';
         
         try {
             span.appendChild(range.extractContents());
@@ -769,9 +881,9 @@
 
     function applyQuickStyle(styleName) {
         if (styleName === 'mint') {
-            wrapSelectionWithStyle({ color: '#0E865E', backgroundColor: '#E1F9F1' });
+            wrapSelectionWithStyle({ color: '#0E865E', backgroundColor: '#E1F9F1', padding: '0 2px', borderRadius: '3px' });
         } else if (styleName === 'pink') {
-            wrapSelectionWithStyle({ color: '#D04978', backgroundColor: '#FDEDF4' });
+            wrapSelectionWithStyle({ color: '#D04978', backgroundColor: '#FDEDF4', padding: '0 2px', borderRadius: '3px' });
         }
         setTimeout(handleSelection, 10);
     }
@@ -786,6 +898,8 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
+        saveState(); // 최초 빈 상태 저장
+
         const previewEl = document.getElementById('htmlPreview');
         previewEl.addEventListener('mouseup', handleSelection);
         previewEl.addEventListener('keyup', handleSelection);
@@ -843,6 +957,7 @@
                         };
                         blocks.splice(index + 1, 0, newBlock);
                         renderEditor(); 
+                        saveState(); // 변경사항 히스토리 저장
                         
                         setTimeout(() => {
                             const newBlockEl = document.getElementById(`preview-block-${index + 1}`);
@@ -1008,6 +1123,7 @@
             }
 
             renderEditor();
+            saveState(); // 변경사항 히스토리 저장
             bulkInput.value = ''; 
         } catch(e) {
             console.error(e);
@@ -1029,6 +1145,7 @@
             addedIndex = index;
         }
         renderEditor();
+        saveState(); // 변경사항 히스토리 저장
         focusAndScrollBlock(addedIndex); 
     }
 
@@ -1036,17 +1153,20 @@
         const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '' };
         blocks.splice(index + 1, 0, newBlock);
         renderEditor();
+        saveState(); // 변경사항 히스토리 저장
         focusAndScrollBlock(index + 1); 
     }
 
     function deleteBlock(index) {
         blocks.splice(index, 1);
         renderEditor();
+        saveState(); // 변경사항 히스토리 저장
     }
 
     function updateBlockContent(index, value) {
         blocks[index].content = value;
         updateOutput();
+        debounceSaveState(); // 텍스트 수정 시 디바운스 적용 히스토리 저장
     }
     
     function updateBlockCustom(index, field, value) {
@@ -1054,6 +1174,7 @@
         if (field === 'bgmTitle') blocks[index].bgmTitle = value;
         if (field === 'bgmUrl') blocks[index].bgmUrl = value;
         updateOutput();
+        debounceSaveState(); // 커스텀 값 수정 시 디바운스 적용 히스토리 저장
     }
 
     function changeBlockType(index, newType) {
@@ -1069,6 +1190,7 @@
             blocks[index].content = 'solid-gray';
         }
         renderEditor();
+        saveState(); // 변경사항 히스토리 저장
     }
 
     function renderEditor() {
@@ -1151,7 +1273,7 @@
                                 <option value="diamond" ${block.content === 'diamond' ? 'selected' : ''}>다이아몬드 (─ ◇ ─)</option>
                             </select>
                           `
-                          : `<textarea id="textarea-${index}" rows="2" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockContent(${index}, this.value)" onchange="updateBlockContent(${index}, this.value)" onkeydown="handleTextareaKeydown(event, ${index})">${escapeHtml(block.content)}</textarea>`}
+                          : `<textarea id="textarea-${index}" rows="2" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockContent(${index}, this.value)" onchange="updateBlockContent(${index}, this.value); saveState();" onkeydown="handleTextareaKeydown(event, ${index})">${escapeHtml(block.content)}</textarea>`}
                 <div style="text-align: center; margin-top: 5px;">
                     <button class="btn-small btn-secondary" onclick="addBlock('narration', ${index + 1})">⬇ 이 아래에 추가</button>
                 </div>
@@ -1197,6 +1319,7 @@
         });
         
         updateOutput(true); 
+        debounceSaveState(); // 미리보기 편집 시에도 히스토리 저장
     }
 
     function updateOutput(skipPreviewUpdate = false) {
@@ -1505,7 +1628,6 @@
 <\/script>\n`;
         }
 
-        // == 사용자 요청: 폰트 및 폰트 크기 일괄 적용 ==
         let globalStyle = `
 <style>
     /* 폰트 및 전체 스타일 일괄 설정 */
@@ -1714,6 +1836,7 @@ ${cleanInnerContent}
         if (newBlocks.length > 0) {
             blocks = newBlocks;
             renderEditor();
+            saveState(); // 변경사항 히스토리 저장
             // 동기화 완료 후 거슬릴 수 있는 팝업(토스트) 제거 처리
         } else {
             showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
