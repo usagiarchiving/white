@@ -184,10 +184,10 @@ NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.
 
                 // 2. 고정 삭제 파트 추가 (턴 숫자, 특정 키워드, #, **)
                 if (/\[턴\s*\d+\]/.test(trimmed)) continue;
-                trimmed = trimmed.replace(/⟦OTAKU_TURN⟧/g, ''); // 요구사항 2 추가
-                trimmed = trimmed.replace(/#/g, ''); // 요구사항 2 추가
+                trimmed = trimmed.replace(/⟦OTAKU_TURN⟧/g, ''); 
+                trimmed = trimmed.replace(/#/g, ''); 
                 
-                // 요구사항 3: ** 모두 삭제 (이후 나레이션 판별로 자연스럽게 넘어가도록)
+                // 요구사항 3: ** 모두 삭제
                 trimmed = trimmed.replace(/\*\*/g, ''); 
                 trimmed = trimmed.trim();
                 
@@ -235,15 +235,17 @@ NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.
                     let hasQuotes = /["“”]/.test(trimmed);
 
                     // 요구사항 4: 기호가 첫 번째로 나오는지 확인 (나레이션 강제 조건)
-                    // 영문, 숫자, 한글, 공백, 따옴표가 아닌 문자로 시작하면 기호로 간주
                     let isSymbolStart = /^[^\sa-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ"“'‘]/.test(trimmed);
+                    
+                    // 신규 요구사항: 숫자로 시작하는지 확인 (나레이션 강제 조건)
+                    let isNumberStart = /^[0-9]/.test(trimmed);
 
                     // 기호 정리
                     if (applyV1 && !applyV2) {
                         // 역극 폼 단독 켜짐: 기존 기호 전부 제거
                         trimmed = trimmed.replace(/[*'\[\]\-]/g, '').trim();
                     } else if (applyV2) {
-                        // 소설 폼 켜짐: * 만 삭제 (#는 위에서 이미 삭제됨)
+                        // 소설 폼 켜짐: * 만 삭제
                         trimmed = trimmed.replace(/[*]/g, '').trim();
                     }
                     
@@ -252,8 +254,8 @@ NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.
                     // 대사/서술 판별 로직 수정
                     let isDialogue = false;
                     
-                    // 기호로 시작하지 않을 때만 대사 어미 판별 진행 (요구사항 4)
-                    if (!isSymbolStart) {
+                    // 기호로 시작하지 않고, 숫자로 시작하지 않을 때만 대사 어미 판별 진행
+                    if (!isSymbolStart && !isNumberStart) {
                         if (trimmed.length <= 5 || dialogueRegex.test(trimmed)) {
                             isDialogue = true;
                         }
@@ -268,7 +270,7 @@ NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.
                         if (applyV1 && !applyV2) {
                             // 역극 폼 단독 적용
                             if (hasQuotes) {
-                                // 요구사항 1: 큰따옴표가 포함된 문장은 대사가 섞인 것이므로 *를 씌우지 않음
+                                // 큰따옴표가 포함된 문장은 대사가 섞인 것이므로 *를 씌우지 않음
                                 result.push(trimmed);
                             } else {
                                 // 쌍따옴표가 없는 순수 서술에만 양쪽 * 적용
