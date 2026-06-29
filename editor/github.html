@@ -598,7 +598,7 @@
 
     function applyTextStyles(text) {
         if (!text) return text;
-        let styledText = text.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 600;">$1</strong>');
+        let styledText = text.replace(/\*\*/g, ''); // 연이은 별표(**) 무시/제거
         styledText = styledText.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
         return styledText;
     }
@@ -875,7 +875,7 @@
     function parseBulkInput() {
         try {
             const bulkInput = document.getElementById('bulkInput');
-            const text = bulkInput.value;
+            let text = bulkInput.value;
             
             if (!text.trim()) {
                 showToast('변환할 텍스트를 입력해주세요.');
@@ -923,6 +923,9 @@
                     blocks.push({ type: 'divider', content: 'solid-gray' });
                     return;
                 }
+
+                // ** 연이은 별표 무시/제거
+                seg = seg.replace(/\*\*/g, '');
 
                 const isEmojiStart = /^(🗓|💍|📍|👕|👥|💭|🔔|🚨|💕|❤|🔥|🔫|✏|📰|💘)/.test(seg);
 
@@ -1711,7 +1714,7 @@ ${cleanInnerContent}
         if (newBlocks.length > 0) {
             blocks = newBlocks;
             renderEditor();
-            showToast('과거 코드가 동기화되었습니다! 🚀');
+            // 동기화 완료 후 거슬릴 수 있는 팝업(토스트) 제거 처리
         } else {
             showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
         }
@@ -1721,7 +1724,7 @@ ${cleanInnerContent}
         const code = document.getElementById('finalHtmlCode');
         code.select();
         document.execCommand('copy');
-        showToast('최종 HTML 복사가 완료되었습니다! 📋');
+        // 복사 완료 팝업이 뜨지 않도록 showToast 호출을 삭제했습니다.
     }
 
     document.getElementById('mintTextColor').addEventListener('input', () => updateOutput());
