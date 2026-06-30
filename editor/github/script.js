@@ -1,6 +1,242 @@
+// == 전역 상태 변수 ==
+let blocks = [];
+let outputVersion = 1; 
+let isDarkMode = false;
+let currentFontSize = 14;
+let currentFontFamily = "'Noto Serif KR', serif";
+let currentInlineFontSize = 13; // 툴바 폰트 사이즈 상태값
+
+// == 추가된 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
+let historyStack = [];
+let historyIndex = -1;
+let typingTimer;
+
+// == 히스토리 관리 함수 ==
+function saveState() {
+    const currentState = JSON.stringify(blocks);
+    if (historyIndex >= 0 && historyStack[historyIndex] === currentState) {
+        return;
+    }
+    historyStack = historyStack.slice(0, historyIndex + 1);
+    historyStack.push(currentState);
+    historyIndex++;
+}
+
+function debounceSaveState() {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+        saveState();
+    }, 500);
+}
+
+function restoreFocus(focusInfo) {
+    if (!focusInfo) return;
+    setTimeout(() => {
+        if (focusInfo.type === 'editor') {
+            const ta = document.getElementById(`textarea-${focusInfo.index}`);
+            if (ta) {
+                ta.focus();
+                ta.selectionStart = ta.value.length;
+                ta.selectionEnd = ta.value.length;
+            }
+        } else if (focusInfo.type === 'preview') {
+            const previewEl = document.getElementById('htmlPreview');
+            if (previewEl) previewEl.focus();
+        }
+    }, 50);
+}
+
+function undo() {
+    if (historyIndex > 0) {
+        clearTimeout(typingTimer);
+        const activeEl = document.activeElement;
+        let focusInfo = null;
+        if (activeEl) {
+            if (activeEl.id && activeEl.id.startsWith('textarea-')) {
+                focusInfo = { type: 'editor', index: parseInt(activeEl.id.replace('textarea-', '')) };
+            } else if (activeEl.closest('.preview-container') || activeEl.id === 'htmlPreview') {
+                focusInfo = { type: 'preview' };
+            }
+        }
+        historyIndex--;
+        blocks = JSON.parse(historyStack[historyIndex]);
+        renderEditor();
+        restoreFocus(focusInfo);
+    }
+}
+
+function redo() {
+    if (historyIndex < historyStack.length - 1) {
+        clearTimeout(typingTimer);
+        const activeEl = document.activeElement;
+        let focusInfo = null;
+        if (activeEl) {
+            if (activeEl.id && activeEl.id.startsWith('textarea-')) {
+                focusInfo = { type: 'editor', index: parseInt(activeEl.id.replace('textarea-', '')) };
+            } else if (activeEl.closest('.preview-container') || activeEl.id === 'htmlPreview') {
+                focusInfo = { type: 'preview' };
+            }
+        }
+        historyIndex++;
+        blocks = JSON.parse(historyStack[historyIndex]);
+        renderEditor();
+        restoreFocus(focusInfo);
+    }
+}
+
+// == 전역 키보드 이벤트 (Ctrl+Z / Cmd+Z, Ctrl+Y) ==
+document.addEventListener('keydown', function(e) {
+    if (e.isComposing || e.keyCode === 229) return;
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+    
+    if (cmdOrCtrl && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+            redo();
+        } else {
+            undo();
+        }
+    } else if (cmdOrCtrl && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+    }
+});
+
+// ===================================
+// 기존 및 신규 기능 함수들
+// ===================================
+
+// 새롭게 추가된 블록 이동 기능 (위/아래/특정 숫자)
+function moveBlockUp(index) {
+    if (index <= 0) return;
+    const temp = blocks[index - 1];
+    blocks[index - 1] = blocks[index];
+    blocks[index] = temp;
+    renderEditor();
+    saveState();
+    focusAndScrollBlock(index - 1);
+}
+
+function moveBlockDown(index) {
+    if (index >= blocks.length - 1) return;
+    const temp = blocks[index + 1];
+    blocks[index + 1] = blocks[index];
+    blocks[index] = temp;
+    renderEditor();
+    saveState();
+    focusAndScrollBlock(index + 1);
+}
+
+function moveBlockTo(oldIndex, targetInputId) {
+    const el = document.getElementById(targetInputId);
+    if(!el) return;
+    let newIndex = parseInt(el.value) - 1; // 사용자는 1부터 입력하므로 -1 처리
+    if (isNaN(newIndex) || newIndex < 0 || newIndex >= blocks.length) {
+        showToast('유효한 순서를 입력해주세요. (1 ~ ' + blocks.length + ')');
+        return;
+    }
+    if (oldIndex === newIndex) return;
+    
+    const block = blocks.splice(oldIndex, 1)[0];
+    blocks.splice(newIndex, 0, block);
+    renderEditor();
+    saveState();
+    focusAndScrollBlock(newIndex);
+}
+
+function toggleDarkMode() {
+    isDarkMode = !isDarkMode;
+    document.body.classList.toggle('dark-mode', isDarkMode);
+    document.getElementById('darkModeBtn').innerText = isDarkMode ? '☀️ 라이트 모드' : '🌙 다크 모드';
+    
+    if (isDarkMode) {
+        document.getElementById('mintTextColor').value = '#B2E4D4';
+        document.getElementById('mintTextColorPicker').value = '#B2E4D4';
+        document.getElementById('narrColor').value = '#F9F9F8';
+        document.getElementById('narrColorPicker').value = '#F9F9F8';
+    } else {
+        document.getElementById('mintTextColor').value = '#459fa5';
+        document.getElementById('mintTextColorPicker').value = '#459fa5';
+        document.getElementById('narrColor').value = '#2c2c2e';
+        document.getElementById('narrColorPicker').value = '#2c2c2e';
+    }
+    updateOutput();
+}
+
+function changeGlobalFont(font) {
+    currentFontFamily = font;
+    document.body.style.fontFamily = font;
+    updateOutput();
+}
+
+function changeFontSize(delta) {
+    currentFontSize += delta;
+    if(currentFontSize < 10) currentFontSize = 10;
+    if(currentFontSize > 30) currentFontSize = 30;
+    document.getElementById('fontSizeDisplay').innerText = currentFontSize + 'px';
+    updateOutput();
+}
+
+function showToast(msg) {
+    let toast = document.getElementById('toast-notification');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-notification';
+        toast.style.cssText = 'position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 10000; transition: opacity 0.3s ease; opacity: 0; pointer-events: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: "Noto Serif KR", serif; word-break: keep-all; text-align: center;';
+        document.body.appendChild(toast);
+    }
+    toast.innerText = msg;
+    toast.style.opacity = '1';
+    
+    if (toast.hideTimeout) clearTimeout(toast.hideTimeout);
+    toast.hideTimeout = setTimeout(() => {
+        toast.style.opacity = '0';
+    }, 2500);
+}
+
+function escapeHtml(unsafe) {
+    return (unsafe || '').toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+function setupColorPicker(pickerId, textId) {
+    const picker = document.getElementById(pickerId);
+    const text = document.getElementById(textId);
+    if (!picker || !text) return;
+    
+    picker.addEventListener('input', (e) => {
+        text.value = e.target.value.toUpperCase();
+        if(!pickerId.includes('auto-bg') && !pickerId.includes('auto-text')) updateOutput();
+    });
+    
+    text.addEventListener('input', (e) => {
+        let val = e.target.value.trim();
+        if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+            picker.value = val;
+        }
+        if(!pickerId.includes('auto-bg') && !pickerId.includes('auto-text')) updateOutput();
+    });
+}
+
 setupColorPicker('mintTextColorPicker', 'mintTextColor');
 setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
 setupColorPicker('narrColorPicker', 'narrColor');
+
+function getSafeId(str) {
+    let hash = 0;
+    if (!str || str.length === 0) return 'empty';
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return 'id' + Math.abs(hash);
+}
 
 function updateCustomCharacterPanel() {
     const list = document.getElementById('customCharacterAutoList');
@@ -57,11 +293,48 @@ function applyAutoCustomColor(safeKey) {
     if (count > 0) {
         document.getElementById('customCharacterAutoList').innerHTML = ''; 
         renderEditor(); 
-        saveState(); 
+        saveState(); // 변경사항 히스토리 저장
         showToast(`총 ${count}개의 대사에 색상이 일괄 적용되었습니다! 🚀`);
     } else {
         showToast("해당 캐릭터를 사용하는 대사가 없습니다.");
     }
+}
+
+function setVersion(v) {
+    outputVersion = v;
+    const btnV1 = document.getElementById('btnV1');
+    const btnV2 = document.getElementById('btnV2');
+    
+    if (v === 1) {
+        btnV1.style.background = 'var(--primary)';
+        btnV1.style.color = 'white';
+        btnV2.style.background = 'transparent';
+        btnV2.style.color = 'var(--text-muted)';
+    } else {
+        btnV2.style.background = 'var(--primary)';
+        btnV2.style.color = 'white';
+        btnV1.style.background = 'transparent';
+        btnV1.style.color = 'var(--text-muted)';
+    }
+    updateOutput(); 
+}
+
+function stripSymbols(str) {
+    str = (str || '').replace(/^["“"]|["”"]$/g, '');
+    return str.trim();
+}
+
+function applyTextStyles(text) {
+    if (!text) return text;
+    let styledText = text.replace(/\*\*/g, ''); // 연이은 별표(**) 무시/제거
+    styledText = styledText.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
+    return styledText;
+}
+
+function extractVideoId(url) {
+    if (!url) return '';
+    let match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    return match ? match[1] : url.trim(); 
 }
 
 function scrollToPreview(index) {
@@ -116,12 +389,135 @@ function focusAndScrollBlock(index, preventFocus = false) {
     }, 100);
 }
 
+// 수정됨: 이제 편집창에서 Enter를 치면 오직 단순 줄바꿈만 수행합니다. (블록 분리 로직 삭제)
 function handleTextareaKeydown(e, index) {
     if (e.isComposing || e.keyCode === 229) return;
+    // 엔터키 블록 분리 기능을 요청에 따라 완전히 삭제했습니다.
+    // 텍스트에리어 기본 동작(줄바꿈)이 자연스럽게 작동합니다.
+}
+
+// 수정됨: 툴바 위치 계산 고도화 (텍스트 가림 방지)
+function handleSelection() {
+    const selection = window.getSelection();
+    const toolbar = document.getElementById('floatingToolbar');
+    
+    if (!selection.rangeCount || selection.isCollapsed) {
+        toolbar.style.display = 'none';
+        return;
+    }
+    
+    const range = selection.getRangeAt(0);
+    const previewContainer = document.getElementById('htmlPreview');
+    if (!previewContainer.contains(range.commonAncestorContainer)) {
+        toolbar.style.display = 'none';
+        return;
+    }
+    
+    const rect = range.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+        toolbar.style.display = 'none';
+        return;
+    }
+    
+    toolbar.style.display = 'flex';
+    
+    // 툴바 크기를 유동적으로 가져옴
+    const toolbarHeight = toolbar.offsetHeight || 80; 
+    const toolbarWidth = toolbar.offsetWidth || 340;
+    
+    // 텍스트를 가리지 않도록 텍스트 박스 바로 위(-12px)로 올림
+    let top = rect.top + window.scrollY - toolbarHeight - 12;
+    let left = rect.left + window.scrollX + (rect.width / 2) - (toolbarWidth / 2);
+    
+    // 화면 맨 위쪽으로 스크롤이 올라가서 툴바가 잘린다면 텍스트 바로 아래로 내림
+    if (top < window.scrollY) {
+        top = rect.bottom + window.scrollY + 12;
+    }
+    
+    // 화면 왼쪽으로 잘리지 않도록 안전 여백 추가
+    if (left < window.scrollX + 10) left = window.scrollX + 10;
+    
+    toolbar.style.top = top + 'px';
+    toolbar.style.left = left + 'px';
+}
+
+function formatText(command) {
+    document.execCommand(command, false, null);
+    syncPreviewToBlocks();
+    setTimeout(handleSelection, 10);
+}
+
+function wrapSelectionWithStyle(styles) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) return;
+
+    // 브라우저 기본 execCommand를 사용하면 텍스트 노드 분리 버그나 불필요한 여백 발생을 막을 수 있습니다.
+    if (Object.keys(styles).length === 1 && styles.color) {
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('foreColor', false, styles.color);
+        syncPreviewToBlocks();
+        return;
+    }
+    if (Object.keys(styles).length === 1 && styles.backgroundColor) {
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('hiliteColor', false, styles.backgroundColor);
+        syncPreviewToBlocks();
+        return;
+    }
+
+    const span = document.createElement('span');
+    for (let key in styles) {
+        span.style[key] = styles[key];
+    }
+    
+    try {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        selection.addRange(newRange);
+    } catch(e) {
+        console.error(e);
+    }
+    syncPreviewToBlocks();
+}
+
+function applyQuickStyle(styleName) {
+    if (styleName === 'mint') {
+        wrapSelectionWithStyle({ color: '#0E865E', backgroundColor: '#E1F9F1', padding: '0 2px', borderRadius: '3px' });
+    } else if (styleName === 'pink') {
+        wrapSelectionWithStyle({ color: '#D04978', backgroundColor: '#FDEDF4', padding: '0 2px', borderRadius: '3px' });
+    }
+    setTimeout(handleSelection, 10);
+}
+
+function formatPalette(command, value) {
+    if (command === 'foreColor') {
+        wrapSelectionWithStyle({ color: value });
+    } else if (command === 'hiliteColor') {
+        wrapSelectionWithStyle({ backgroundColor: value });
+    }
+    setTimeout(handleSelection, 10);
+}
+
+// 툴바 인라인 폰트 크기 변경 함수
+function changeInlineFontSize(delta) {
+    currentInlineFontSize += delta;
+    if(currentInlineFontSize < 10) currentInlineFontSize = 10;
+    if(currentInlineFontSize > 40) currentInlineFontSize = 40;
+    
+    const display = document.getElementById('inlineFontSizeDisplay');
+    if(display) display.innerText = currentInlineFontSize;
+    
+    wrapSelectionWithStyle({ fontSize: currentInlineFontSize + 'px' });
+    setTimeout(handleSelection, 10);
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    saveState(); 
+    saveState(); // 최초 빈 상태 저장
 
     const previewEl = document.getElementById('htmlPreview');
     previewEl.addEventListener('mouseup', handleSelection);
@@ -139,6 +535,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('htmlPreview').addEventListener('keydown', function(e) {
         if (e.isComposing || e.keyCode === 229) return;
         
+        // 미리보기 창에서 Enter 쳤을 때만 블록이 나뉩니다.
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             const selection = window.getSelection();
@@ -178,13 +575,11 @@ document.addEventListener("DOMContentLoaded", function() {
                         bgmTitle: currentBlock.bgmTitle,
                         bgmUrl: currentBlock.bgmUrl,
                         polaroidDate: currentBlock.polaroidDate || '',
-                        polaroidCaption: currentBlock.polaroidCaption || '',
-                        foldStyle: currentBlock.foldStyle || 'notion',
-                        foldTitle: currentBlock.foldTitle || '접은글'
+                        polaroidCaption: currentBlock.polaroidCaption || ''
                     };
                     blocks.splice(index + 1, 0, newBlock);
                     renderEditor(); 
-                    saveState(); 
+                    saveState(); // 변경사항 히스토리 저장
                     
                     setTimeout(() => {
                         const newBlockEl = document.getElementById(`preview-block-${index + 1}`);
@@ -266,6 +661,7 @@ function parseBulkInput() {
                 return;
             }
 
+            // ** 연이은 별표 무시/제거
             seg = seg.replace(/\*\*/g, '');
 
             const isEmojiStart = /^(🗓|💍|📍|👕|👥|💭|🔔|🚨|💕|❤|🔥|🔫|✏|📰|💘)/.test(seg);
@@ -289,18 +685,12 @@ function parseBulkInput() {
                 if (seg.startsWith('제3자:')) { blocks.push({ type: 'custom', content: stripSymbols(seg.replace(/^제3자:\s*/, '')), customTextColor: '#333333' }); return; }
                 if (seg.startsWith('속마음:')) { blocks.push({ type: 'thought', content: stripSymbols(seg.replace(/^속마음:\s*/, '')) }); return; }
                 
-                // 내 메시지, 상대 메시지 일괄 변환 처리 추가
-                if (seg.startsWith('내메시지:')) { blocks.push({ type: 'myMsg', content: stripSymbols(seg.replace(/^내메시지:\s*/, '')) }); return; }
-                if (seg.startsWith('상대메시지:')) { blocks.push({ type: 'opMsg', content: stripSymbols(seg.replace(/^상대메시지:\s*/, '')) }); return; }
-
                 if (seg.startsWith('포스트잇:')) { blocks.push({ type: 'postit', content: stripSymbols(seg.replace(/^포스트잇:\s*/, '')) }); return; }
                 if (seg.startsWith('폴라로이드:')) { 
                     let parts = stripSymbols(seg.replace(/^폴라로이드:\s*/, '')).split('|');
                     blocks.push({ type: 'polaroid', content: parts[0] ? parts[0].trim() : '', polaroidDate: parts[1] ? parts[1].trim() : '', polaroidCaption: parts[2] ? parts[2].trim() : '' });
                     return;
                 }
-                
-                if (seg.startsWith('접은글:')) { blocks.push({ type: 'fold', content: stripSymbols(seg.replace(/^접은글:\s*/, '')), foldStyle: 'notion', foldTitle: '접은글' }); return; }
 
                 if (seg.startsWith('브금:')) {
                     let parts = stripSymbols(seg.replace(/^브금:\s*/, '')).split('|');
@@ -317,7 +707,7 @@ function parseBulkInput() {
 
                 if (seg.startsWith('(') && seg.endsWith(')')) {
                     let lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
-                    if (lastBlock && ['mint', 'pink', 'mob', 'custom', 'myMsg', 'opMsg'].includes(lastBlock.type)) {
+                    if (lastBlock && ['mint', 'pink', 'mob', 'custom'].includes(lastBlock.type)) {
                         lastBlock.content += '\n' + seg;
                         return;
                     }
@@ -337,7 +727,7 @@ function parseBulkInput() {
                         } else { 
                            if (/^\(.*\)$/.test(part)) {
                               let lastBlock = blocks[blocks.length - 1];
-                               if (lastBlock && ['mint', 'pink', 'mob', 'custom', 'myMsg', 'opMsg'].includes(lastBlock.type)) {
+                               if (lastBlock && ['mint', 'pink', 'mob', 'custom'].includes(lastBlock.type)) {
                                   lastBlock.content += '\n' + part;
                                  return;
                                 }
@@ -363,7 +753,7 @@ function parseBulkInput() {
         }
 
         renderEditor();
-        saveState(); 
+        saveState(); // 변경사항 히스토리 저장
         bulkInput.value = ''; 
     } catch(e) {
         console.error(e);
@@ -375,7 +765,8 @@ function addBlock(type, index = -1) {
     let defaultContent = '';
     if (type === 'divider') defaultContent = 'solid-gray';
     
-    const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '', foldStyle: 'notion', foldTitle: '접은글' };
+    // 폴라로이드 기본값 없음(빈칸)으로 생성되도록 수정
+    const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     let addedIndex = -1;
     if (index === -1) {
         blocks.push(newBlock);
@@ -385,28 +776,28 @@ function addBlock(type, index = -1) {
         addedIndex = index;
     }
     renderEditor();
-    saveState(); 
+    saveState(); // 변경사항 히스토리 저장
     focusAndScrollBlock(addedIndex); 
 }
 
 function insertEmptyLine(index) {
-    const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '', foldStyle: 'notion', foldTitle: '접은글' };
+    const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     blocks.splice(index + 1, 0, newBlock);
     renderEditor();
-    saveState(); 
+    saveState(); // 변경사항 히스토리 저장
     focusAndScrollBlock(index + 1); 
 }
 
 function deleteBlock(index) {
     blocks.splice(index, 1);
     renderEditor();
-    saveState(); 
+    saveState(); // 변경사항 히스토리 저장
 }
 
 function updateBlockContent(index, value) {
     blocks[index].content = value;
     updateOutput();
-    debounceSaveState(); 
+    debounceSaveState(); // 텍스트 수정 시 디바운스 적용 히스토리 저장
 }
 
 function updateBlockCustom(index, field, value) {
@@ -415,10 +806,8 @@ function updateBlockCustom(index, field, value) {
     if (field === 'bgmUrl') blocks[index].bgmUrl = value;
     if (field === 'polaroidDate') blocks[index].polaroidDate = value;
     if (field === 'polaroidCaption') blocks[index].polaroidCaption = value;
-    if (field === 'foldStyle') blocks[index].foldStyle = value;
-    if (field === 'foldTitle') blocks[index].foldTitle = value;
     updateOutput();
-    debounceSaveState(); 
+    debounceSaveState(); // 커스텀 값 수정 시 디바운스 적용 히스토리 저장
 }
 
 function changeBlockType(index, newType) {
@@ -434,15 +823,11 @@ function changeBlockType(index, newType) {
         blocks[index].polaroidDate = blocks[index].polaroidDate || '';
         blocks[index].polaroidCaption = blocks[index].polaroidCaption || '';
     }
-    if (newType === 'fold') {
-        blocks[index].foldStyle = blocks[index].foldStyle || 'notion';
-        blocks[index].foldTitle = blocks[index].foldTitle || '접은글';
-    }
     if (newType === 'divider' && !['solid-black', 'solid-gray', 'dashed-gray', 'dots', 'diamond'].includes(blocks[index].content)) {
         blocks[index].content = 'solid-gray';
     }
     renderEditor();
-    saveState(); 
+    saveState(); // 변경사항 히스토리 저장
 }
 
 function renderEditor() {
@@ -483,79 +868,57 @@ function renderEditor() {
                 </div>
             `;
         } else if (block.type === 'polaroid') {
+            // Placeholder도 비워두도록 수정
             customFields = `
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
                     <input type="text" placeholder="이미지 URL" value="${escapeHtml(block.content)}" onchange="updateBlockContent(${index}, this.value)" style="font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" placeholder="날짜 (예: 2026. 06. 29)" value="${escapeHtml(block.polaroidDate || '')}" onchange="updateBlockCustom(${index}, 'polaroidDate', this.value)" style="flex: 1; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                        <input type="text" placeholder="캡션 (예: 그날의 기억...)" value="${escapeHtml(block.polaroidCaption || '')}" onchange="updateBlockCustom(${index}, 'polaroidCaption', this.value)" style="flex: 2; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                        <input type="text" placeholder="날짜 입력 (선택)" value="${escapeHtml(block.polaroidDate || '')}" onchange="updateBlockCustom(${index}, 'polaroidDate', this.value)" style="flex: 1; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                        <input type="text" placeholder="캡션 입력 (선택)" value="${escapeHtml(block.polaroidCaption || '')}" onchange="updateBlockCustom(${index}, 'polaroidCaption', this.value)" style="flex: 2; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                     </div>
-                </div>
-            `;
-        } else if (block.type === 'fold') {
-            customFields = `
-                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <select onchange="updateBlockCustom(${index}, 'foldStyle', this.value)" style="flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; background: var(--input-bg); color: var(--text-main);">
-                        <option value="notion" ${block.foldStyle === 'notion' ? 'selected' : ''}>양식 1 (노션 타입)</option>
-                        <option value="panel" ${block.foldStyle === 'panel' ? 'selected' : ''}>양식 2 (패널 타입)</option>
-                        <option value="more" ${block.foldStyle === 'more' ? 'selected' : ''}>양식 3 (더보기 타입)</option>
-                        <option value="border" ${block.foldStyle === 'border' ? 'selected' : ''}>양식 4 (대시 라인 타입)</option>
-                    </select>
-                    <input type="text" placeholder="접은글 제목" value="${escapeHtml(block.foldTitle || '접은글')}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" onchange="updateBlockCustom(${index}, 'foldTitle', this.value)" style="flex: 2; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                 </div>
             `;
         }
 
         let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
 
-        // 💡 드롭다운 3개로 분리한 핵심 영역
+        // 변경점: 블록 위치 조절 컨트롤(숫자 포함) UI 추가
         item.innerHTML = `
-            <div style="text-align: center; margin-bottom: 5px;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 5px;">
+                <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">#${index + 1}</span>
                 <button class="btn-small btn-secondary" onclick="addBlock('narration', ${index})">⬆ 이 위에 추가</button>
+                <div style="display:flex; gap:2px; background:var(--input-bg); border:1px solid var(--border); border-radius:4px; overflow:hidden;">
+                    <button class="btn-secondary" style="border:none; border-radius:0; padding:2px 6px;" onclick="moveBlockUp(${index})" title="위로 이동">▲</button>
+                    <button class="btn-secondary" style="border:none; border-radius:0; padding:2px 6px; border-left:1px solid var(--border); border-right:1px solid var(--border);" onclick="moveBlockDown(${index})" title="아래로 이동">▼</button>
+                    <input type="number" id="move-input-${index}" style="width:36px; padding:2px; font-size:11px; border:none; text-align:center; background:transparent; color:var(--text-main);" placeholder="${index + 1}">
+                    <button class="btn-secondary" style="border:none; border-radius:0; padding:2px 6px; border-left:1px solid var(--border);" onclick="moveBlockTo(${index}, 'move-input-${index}')">이동</button>
+                </div>
             </div>
-            <div class="block-header" style="display: block;">
-                <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; width: 100%;">
-                    <!-- 1. 대사/지문 드롭다운 -->
-                    <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px; max-width: 120px;">
-                        <option value="" disabled ${['narration','mint','pink','mob','custom','thought','myMsg','opMsg','fold'].includes(block.type)?'':'selected'} hidden>대사/지문</option>
+            <div class="block-header">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px;">
+                        <option value="title" ${block.type==='title'?'selected':''}>제목</option>
                         <option value="narration" ${block.type==='narration'?'selected':''}>나레이션</option>
                         <option value="mint" ${block.type==='mint'?'selected':''}>민트 대사</option>
                         <option value="pink" ${block.type==='pink'?'selected':''}>핑크 대사</option>
                         <option value="mob" ${block.type==='mob'?'selected':''}>모브 대사</option>
                         <option value="custom" ${block.type==='custom'?'selected':''}>제3자 대사</option>
-                        <option value="thought" ${block.type==='thought'?'selected':''}>속마음</option>
-                        <option value="myMsg" ${block.type==='myMsg'?'selected':''}>내 메시지</option>
-                        <option value="opMsg" ${block.type==='opMsg'?'selected':''}>상대 메시지</option>
-                        <option value="fold" ${block.type==='fold'?'selected':''}>접은글</option>
-                    </select>
-
-                    <!-- 2. 텍스트 드롭다운 -->
-                    <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px; max-width: 100px;">
-                        <option value="" disabled ${['title','dday','empty'].includes(block.type)?'':'selected'} hidden>텍스트</option>
-                        <option value="title" ${block.type==='title'?'selected':''}>제목</option>
-                        <option value="dday" ${block.type==='dday'?'selected':''}>작은 텍스트</option>
-                        <option value="empty" ${block.type==='empty'?'selected':''}>공백 줄</option>
-                    </select>
-
-                    <!-- 3. 미디어/꾸미기 드롭다운 -->
-                    <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px; max-width: 120px;">
-                        <option value="" disabled ${['bgm','status','divider','postit','polaroid','image','html'].includes(block.type)?'':'selected'} hidden>미디어/꾸미기</option>
                         <option value="bgm" ${block.type==='bgm'?'selected':''}>BGM 재생</option>
+                        <option value="thought" ${block.type==='thought'?'selected':''}>속마음</option>
                         <option value="status" ${block.type==='status'?'selected':''}>상태창</option>
-                        <option value="divider" ${block.type==='divider'?'selected':''}>구분선</option>
                         <option value="postit" ${block.type==='postit'?'selected':''}>포스트잇</option>
                         <option value="polaroid" ${block.type==='polaroid'?'selected':''}>폴라로이드</option>
+                        <option value="divider" ${block.type==='divider'?'selected':''}>구분선</option>
+                        <option value="dday" ${block.type==='dday'?'selected':''}>작은 텍스트</option>
                         <option value="image" ${block.type==='image'?'selected':''}>이미지</option>
-                        <option value="html" ${block.type==='html'?'selected':''}>HTML 코드</option>
+                        <option value="html" ${block.type==='html'?'selected':''}>HTML</option>
+                        <option value="empty" ${block.type==='empty'?'selected':''}>공백 줄</option>
                     </select>
+                    <button class="btn-small btn-quick-mint" onclick="changeBlockType(${index}, 'mint')">민트</button>
+                    <button class="btn-small btn-quick-pink" onclick="changeBlockType(${index}, 'pink')">핑크</button>
+                    <button class="btn-small btn-quick-status" onclick="changeBlockType(${index}, 'narration')">나레이션</button>
                 </div>
-                
-                <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; gap: 4px;">
-                        <button class="btn-small btn-quick-mint" onclick="changeBlockType(${index}, 'mint')">민트</button>
-                        <button class="btn-small btn-quick-pink" onclick="changeBlockType(${index}, 'pink')">핑크</button>
-                        <button class="btn-small btn-quick-status" onclick="changeBlockType(${index}, 'narration')">나레이션</button>
-                    </div>
+                <div class="block-actions">
                     <button class="btn-small btn-danger" onclick="deleteBlock(${index})">삭제</button>
                 </div>
             </div>
@@ -591,33 +954,9 @@ function syncPreviewToBlocks() {
 
         if (block.type === 'status' || block.type === 'html') {
             block.content = el.innerHTML;
-        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid', 'fold', 'myMsg', 'opMsg'].includes(block.type)) {
+        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid'].includes(block.type)) {
             
-            if (['myMsg', 'opMsg'].includes(block.type)) {
-                const txtDiv = el.querySelector('div > div > div'); // 안쪽 텍스트 div 타겟팅
-                if (txtDiv) {
-                    let htmlText = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
-                    block.content = htmlText.replace(/^\n+|\n+$/g, '');
-                    let ta = document.getElementById(`textarea-${index}`);
-                    if (ta && document.activeElement !== ta && document.activeElement !== el) { ta.value = block.content; }
-                }
-            } else if (block.type === 'fold') {
-                const summarySpan = el.querySelector('summary span[contenteditable="true"]');
-                if (summarySpan) {
-                    block.foldTitle = (summarySpan.innerText || summarySpan.textContent || '').trim();
-                }
-                const contentDiv = el.querySelector('.toggle-content > div');
-                if (contentDiv) {
-                    let htmlText = contentDiv.innerHTML;
-                    htmlText = htmlText.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
-                    block.content = htmlText.replace(/^\n+|\n+$/g, '');
-                    
-                    let ta = document.getElementById(`textarea-${index}`);
-                    if (ta && document.activeElement !== ta && document.activeElement !== el) {
-                        ta.value = block.content;
-                    }
-                }
-            } else if (block.type === 'postit') {
+            if (block.type === 'postit') {
                 const txtDiv = el.querySelectorAll('div')[1]; 
                 if (txtDiv) {
                     let htmlText = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
@@ -665,7 +1004,7 @@ function syncPreviewToBlocks() {
     });
     
     updateOutput(true); 
-    debounceSaveState(); 
+    debounceSaveState(); // 미리보기 편집 시에도 히스토리 저장
 }
 
 function updateOutput(skipPreviewUpdate = false) {
@@ -674,6 +1013,7 @@ function updateOutput(skipPreviewUpdate = false) {
     const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#2c2c2e');
     const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
 
+    // -- 다크모드 대응 인라인 색상 변수들 --
     const cTitle = isDarkMode ? '#F9F9F8' : '#1c1c1e';
     const cStatusBg = isDarkMode ? '#242424' : '#fdfdfd';
     const cStatusBorder = isDarkMode ? '#444444' : '#eeeeee';
@@ -694,11 +1034,12 @@ function updateOutput(skipPreviewUpdate = false) {
     let prevValidType = null;
     let lastCustomTextColor = null;
     let consecutivePostitCount = 0;
+    let consecutivePolaroidCount = 0; // 폴라로이드 연속 렌더링을 위한 카운터 추가
 
     innerContent += `<div class="preview-gap" onclick="insertEmptyLine(-1)" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>\n`;
 
     blocks.forEach((block, index) => {
-        if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid', 'fold'].includes(block.type)) return;
+        if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid'].includes(block.type)) return;
 
         let curr = block.type;
         let isCurrDiag = ['mint', 'pink', 'mob', 'custom'].includes(curr);
@@ -720,6 +1061,12 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePostitCount++;
         } else {
             consecutivePostitCount = 0;
+        }
+
+        if (curr === 'polaroid') {
+            consecutivePolaroidCount++;
+        } else {
+            consecutivePolaroidCount = 0;
         }
 
         let mt = '0px';
@@ -759,7 +1106,7 @@ function updateOutput(skipPreviewUpdate = false) {
             
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">\n    ${dividerInner}\n</div>\n`;
         } else {
-            let lines = block.content.split('\n').filter(l => l.trim() !== '' || curr === 'fold' || curr === 'postit' || curr === 'myMsg' || curr === 'opMsg');
+            let lines = block.content.split('\n').filter(l => l.trim() !== '');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
@@ -773,14 +1120,6 @@ function updateOutput(skipPreviewUpdate = false) {
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
                 htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? '10px' : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${divContent}\n</div>\n`;
-            }
-            else if (curr === 'myMsg') {
-                htmlStr = `<div id="preview-block-${index}" data-type="myMsg" onclick="focusAndScrollBlock(${index}, true)" style="display: flex; flex-direction: column; padding: 0 5px; width: 100%; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;">\n    <div class="msg-bubble" style="display: flex; justify-content: flex-end; align-items: flex-end; margin: 10px 0;">\n        <div style="position: relative; max-width: 80%; margin-right:8px;">\n            <div style="padding: 8px 14px; background-color: #007aff; border-radius: 18px 18px 6px 18px; color: #fff; line-height: 1.5; letter-spacing: -0.01em; outline: none; position: relative; z-index: 1; word-break: break-word;">${divContent}</div>\n            <svg width="18" height="18" viewBox="0 0 18 18" style="position: absolute; right: -7px; bottom: 0; z-index: -1;"><path d="M0 18H18C12 18 9 11 0 0V18Z" fill="#007aff"></path></svg>\n        </div>\n    </div>\n</div>\n`;
-            }
-            else if (curr === 'opMsg') {
-                let opBg = isDarkMode ? '#262628' : '#e9e9eb';
-                let opTxt = isDarkMode ? '#F9F9F8' : '#000000';
-                htmlStr = `<div id="preview-block-${index}" data-type="opMsg" onclick="focusAndScrollBlock(${index}, true)" style="display: flex; flex-direction: column; padding: 0 5px; width: 100%; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;">\n    <div class="msg-bubble" style="display: flex; justify-content: flex-start; align-items: flex-end; margin: 10px 0;">\n        <div style="position: relative; max-width: 80%; margin-left:8px;">\n            <div style="padding: 8px 14px; background-color: ${opBg}; border-radius: 18px 18px 18px 6px; color: ${opTxt}; line-height: 1.5; letter-spacing: -0.01em; outline: none; position: relative; z-index: 1; word-break: break-word;">${divContent}</div>\n            <svg width="18" height="18" viewBox="0 0 18 18" style="position: absolute; left: -7px; bottom: 0; z-index: -1;"><path d="M18 18H0C6 18 9 11 18 0V18Z" fill="${opBg}"></path></svg>\n        </div>\n    </div>\n</div>\n`;
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
@@ -957,6 +1296,9 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}">\n    <div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div>\n    <div class="postit-scroll" style="line-height: 1.7; font-size: 14px;">${divContent}</div>\n</div>\n`;
             }
             else if (block.type === 'polaroid') {
+                // 추가됨: 폴라로이드 연속 렌더링 애니메이션 변수 설정
+                let isEvenPol = consecutivePolaroidCount % 2 === 0;
+
                 let bgStr = isDarkMode ? '#242424' : '#FFFFFF';
                 let borderStr = isDarkMode ? '#444444' : '#E5E5EA';
                 let imgBgStr = isDarkMode ? '#111111' : '#F2F2F7';
@@ -964,60 +1306,25 @@ function updateOutput(skipPreviewUpdate = false) {
                 let capColor = isDarkMode ? '#eeeeee' : '#1C1C1E';
                 let tapeBg = isDarkMode ? 'rgba(80, 80, 85, 0.5)' : 'rgba(235, 235, 240, 0.7)';
                 
-                let imgSrc = block.content || '[https://via.placeholder.com/380x380?text=Polaroid+Image](https://via.placeholder.com/380x380?text=Polaroid+Image)';
-                let pDate = applyTextStyles(block.polaroidDate || '2026. 06. 29');
-                let pCap = applyTextStyles(block.polaroidCaption || '그날의 기억...');
+                let rotStr = isEvenPol ? 'rotate(-1.8deg)' : 'rotate(1.5deg)';
+                let tapeRot = isEvenPol ? 'rotate(2deg)' : 'rotate(-2deg)';
+                let tapePos = isEvenPol ? 'left: 48%;' : 'left: 50%;';
 
-                htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: rotate(1.5deg); position: relative;">\n    <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div>\n    <div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;">\n        <img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo">\n    </div>\n    <div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">\n        <div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>\n        <div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>\n    </div>\n</div>\n`;
+                let imgSrc = block.content || 'https://via.placeholder.com/380x380?text=Polaroid+Image';
+                
+                // 추가됨: 예시 텍스트 모두 제거 후 비어있으면 렌더링 안 함
+                let pDate = applyTextStyles(block.polaroidDate || '');
+                let pCap = applyTextStyles(block.polaroidCaption || '');
+
+                let captionHtml = '';
+                if (pDate || pCap) {
+                    captionHtml = `\n    <div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">\n        ${pDate ? `<div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}\n        ${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}\n    </div>`;
+                }
+
+                htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;">\n    <div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div>\n    <div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;">\n        <img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo">\n    </div>${captionHtml}\n</div>\n`;
             }
             else if (block.type === 'image') {
                 htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center; box-sizing: border-box;">\n    <img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image">\n</div>\n`;
-            }
-            else if (block.type === 'fold') {
-                let fStyle = block.foldStyle || 'notion';
-                let fTitle = block.foldTitle || '지문이나 비밀 단서 접어두기 (클릭하여 수정 가능)';
-                let fTitleStyled = applyTextStyles(fTitle);
-                
-                let detailsStyle = '';
-                let summaryHtml = '';
-                let contentWrapStyle = '';
-                let contentInnerStyle = '';
-
-                if (fStyle === 'notion') {
-                    detailsStyle = `width: 100%; margin: 20px 0; padding: 4px 0; box-sizing: border-box; text-align: left;`;
-                    summaryHtml = `<summary style="cursor: pointer; font-size: 14px; font-weight: 600; color: ${isDarkMode?'#F9F9F8':'#1c1c1e'}; display: flex; align-items: center; gap: 6px; user-select: none; outline: none;">
-                        <span class="toggle-arrow" style="font-size: 9px; color: ${isDarkMode?'#aaaaaa':'#8e8e93'}; transition: transform 0.2s ease; display: inline-block;">▶</span>
-                        <span contenteditable="true" style="outline: none; word-break: break-all; flex: 1;">${fTitleStyled}</span>
-                    </summary>`;
-                    contentWrapStyle = `padding: 12px 0 4px 18px; margin-top: 4px; border-left: 1px solid ${isDarkMode?'#444444':'#e5e5ea'}; box-sizing: border-box;`;
-                    contentInnerStyle = `color: ${isDarkMode?'#dddddd':'#444444'}; font-size: 14px; line-height: 1.6;`;
-                } else if (fStyle === 'panel') {
-                    detailsStyle = `width: 100%; margin: 24px 0; padding: 14px 20px; background-color: ${isDarkMode?'#2a2a2a':'#ffffff'}; border: 1px solid ${isDarkMode?'#444444':'#e5e5ea'}; border-radius: 16px; box-sizing: border-box; text-align: left; box-shadow: 0 1px 3px rgba(0,0,0,0.01);`;
-                    summaryHtml = `<summary style="cursor: pointer; font-size: 14px; font-weight: 600; color: ${isDarkMode?'#F9F9F8':'#3a3a3c'}; display: flex; align-items: center; justify-content: space-between; user-select: none; outline: none;">
-                        <span contenteditable="true" style="outline: none; word-break: break-all; color: ${isDarkMode?'#F9F9F8':'#1c1c1e'}; flex: 1;">${fTitleStyled}</span>
-                        <div class="toggle-btn-icon" style="background-color: ${isDarkMode?'#444444':'#f2f2f7'}; padding: 6px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: ${isDarkMode?'#cccccc':'#8e8e93'}; transition: transform 0.2s ease; margin-left: 10px;">▼</div>
-                    </summary>`;
-                    contentWrapStyle = `padding-top: 14px; margin-top: 12px; border-top: 1px dashed ${isDarkMode?'#444444':'#e5e5ea'}; box-sizing: border-box;`;
-                    contentInnerStyle = `color: ${isDarkMode?'#dddddd':'#444444'}; font-size: 14px; line-height: 1.6;`;
-                } else if (fStyle === 'more') {
-                    detailsStyle = `width: 100%; margin: 24px 0; padding: 16px 20px; background-color: ${isDarkMode?'#2a2a2a':'#ffffff'}; border: 1px solid ${isDarkMode?'#444444':'#e5e5ea'}; border-radius: 14px; box-sizing: border-box; text-align: left;`;
-                    summaryHtml = `<summary style="cursor: pointer; font-size: 14px; font-weight: 600; color: ${isDarkMode?'#F9F9F8':'#1c1c1e'}; display: flex; align-items: center; gap: 10px; user-select: none; outline: none;">
-                        <div style="width: 22px; height: 22px; background-color: ${isDarkMode?'#444444':'#e5e5ea'}; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: ${isDarkMode?'#cccccc':'#636366'}; font-weight: bold; line-height: 1; flex-shrink: 0;">+</div>
-                        <span contenteditable="true" style="outline: none; color: ${isDarkMode?'#dddddd':'#636366'}; word-break: break-all; flex: 1;">${fTitleStyled}</span>
-                    </summary>`;
-                    contentWrapStyle = `padding: 14px 4px 2px; box-sizing: border-box;`;
-                    contentInnerStyle = `color: ${isDarkMode?'#dddddd':'#444444'}; font-size: 14px; line-height: 1.6;`;
-                } else if (fStyle === 'border') {
-                    detailsStyle = `width: 100%; margin: 28px 0; padding: 10px 4px; border-top: 1px solid ${isDarkMode?'#555555':'#e5e5ea'}; border-bottom: 1px solid ${isDarkMode?'#555555':'#e5e5ea'}; box-sizing: border-box; text-align: left;`;
-                    summaryHtml = `<summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: ${isDarkMode?'#aaaaaa':'#8e8e93'}; display: flex; align-items: center; gap: 8px; user-select: none; outline: none; letter-spacing: 0.02em;">
-                        <span style="font-size: 9px; color: ${isDarkMode?'#666666':'#aeaeb2'};">◆</span>
-                        <span contenteditable="true" style="outline: none; color: ${isDarkMode?'#dddddd':'#636366'}; word-break: break-all; flex: 1;">${fTitleStyled}</span>
-                    </summary>`;
-                    contentWrapStyle = `padding: 10px 4px 2px; box-sizing: border-box;`;
-                    contentInnerStyle = `color: ${isDarkMode?'#cccccc':'#636366'}; font-size: 13px; line-height: 1.6; font-style: italic;`;
-                }
-
-                htmlStr = `<details id="preview-block-${index}" data-type="fold" data-style="${fStyle}" onclick="focusAndScrollBlock(${index}, true)" style="${detailsStyle}">\n    ${summaryHtml}\n    <div class="toggle-content" style="${contentWrapStyle}">\n        <div style="${contentInnerStyle}">${divContent}</div>\n    </div>\n</details>\n`;
             }
             else if (block.type === 'html') {
                 htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">\n${block.content}\n</div>\n`;
@@ -1035,7 +1342,7 @@ function updateOutput(skipPreviewUpdate = false) {
     
     if (hasBgm) {
         innerContent += `
-<iframe id="bgmPlayerFrame" src="[https://loading-lovebullets.naru.pub/editor/bgm.html](https://loading-lovebullets.naru.pub/editor/bgm.html)" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
+<iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
 <script>
 window.addEventListener('message', function(e) {
     var frame = document.getElementById('bgmPlayerFrame');
@@ -1068,8 +1375,8 @@ function stopBGM() {
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
-@import url('[https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap](https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap)');
-@import url('[https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css](https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css)');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 .tistory-post-wrapper {
     font-family: ${currentFontFamily};
@@ -1098,11 +1405,6 @@ function stopBGM() {
 .postit-scroll::-webkit-scrollbar { width: 5px; }
 .postit-scroll::-webkit-scrollbar-track { background: transparent; }
 .postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
-/* 접은글(Details) 기호 회전 및 공통 스타일 설정 */
-details[data-style="notion"][open] .toggle-arrow { transform: rotate(90deg) !important; }
-details[data-style="panel"][open] .toggle-btn-icon { transform: rotate(180deg) !important; }
-details[data-type="fold"] summary::-webkit-details-marker { display: none; }
-details[data-type="fold"] summary { list-style: none; }
 </style>
 `;
 
@@ -1179,8 +1481,6 @@ function importFromHtml() {
         let bgmUrl = '';
         let polaroidDate = '';
         let polaroidCaption = '';
-        let foldStyle = 'notion';
-        let foldTitle = '접은글';
         
         let outerHtml = child.outerHTML;
         let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
@@ -1208,12 +1508,6 @@ function importFromHtml() {
                 type = 'postit';
             } else if (outerHtml.includes('data-type="polaroid"') || outerHtml.includes('Polaroid')) {
                 type = 'polaroid';
-            } else if (outerHtml.includes('data-type="fold"') || child.tagName === 'DETAILS') {
-                type = 'fold';
-            } else if (outerHtml.includes('data-type="myMsg"') || (outerHtml.includes('#007aff') && outerHtml.includes('border-radius: 18px 18px 6px 18px'))) {
-                type = 'myMsg';
-            } else if (outerHtml.includes('data-type="opMsg"') || (outerHtml.includes('border-radius: 18px 18px 18px 6px') && (outerHtml.includes('#e9e9eb') || outerHtml.includes('#262628')))) {
-                type = 'opMsg';
             } else if (innerTextClean === '' && !child.querySelector('img')) {
                 type = 'empty';
             } else {
@@ -1270,27 +1564,6 @@ function importFromHtml() {
                     polaroidCaption = txtDivs[1].textContent || '';
                 }
             }
-        } else if (type === 'fold') {
-            foldStyle = child.getAttribute('data-style') || 'notion';
-            const summarySpan = child.querySelector('summary span[contenteditable="true"]');
-            if (summarySpan) {
-                let rawHtml = summarySpan.innerHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
-                let tDiv = document.createElement('div');
-                tDiv.innerHTML = rawHtml;
-                foldTitle = (tDiv.textContent || tDiv.innerText || "").trim();
-            }
-            
-            const contentDiv = child.querySelector('.toggle-content > div');
-            if (contentDiv) {
-                let rawHtml = contentDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
-                content = rawHtml.replace(/^\n+|\n+$/g, '');
-            }
-        } else if (type === 'myMsg' || type === 'opMsg') {
-            const txtDiv = child.querySelector('div > div > div');
-            if (txtDiv) {
-                let rawHtml = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n');
-                content = rawHtml.replace(/^\n+|\n+$/g, '').replace(/<[^>]*>?/gm, ''); 
-            }
         } else if (type === 'narration') {
             let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
             content = rawHtml.replace(/^\n+|\n+$/g, '');
@@ -1318,7 +1591,7 @@ function importFromHtml() {
             const playDiv = child.querySelector('div[onclick*="playBGM"]');
             if (playDiv) {
                 const match = playDiv.getAttribute('onclick').match(/playBGM\('([^']+)'/);
-                if (match) bgmUrl = '[https://youtu.be/](https://youtu.be/)' + match[1];
+                if (match) bgmUrl = 'https://youtu.be/' + match[1];
             }
         } else if (type === 'image') {
             const img = child.querySelector('img');
@@ -1336,16 +1609,15 @@ function importFromHtml() {
             bgmTitle: bgmTitle,
             bgmUrl: bgmUrl,
             polaroidDate: polaroidDate,
-            polaroidCaption: polaroidCaption,
-            foldStyle: foldStyle,
-            foldTitle: foldTitle
+            polaroidCaption: polaroidCaption
         });
     });
 
     if (newBlocks.length > 0) {
         blocks = newBlocks;
         renderEditor();
-        saveState(); 
+        saveState(); // 변경사항 히스토리 저장
+        // 동기화 완료 후 거슬릴 수 있는 팝업(토스트) 제거 처리
     } else {
         showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
     }
@@ -1355,4 +1627,10 @@ function copyHtml() {
     const code = document.getElementById('finalHtmlCode');
     code.select();
     document.execCommand('copy');
+    // 복사 완료 팝업이 뜨지 않도록 showToast 호출을 삭제했습니다.
 }
+
+document.getElementById('mintTextColor').addEventListener('input', () => updateOutput());
+document.getElementById('pinkTextColor').addEventListener('input', () => updateOutput());
+document.getElementById('narrColor').addEventListener('input', () => updateOutput());
+document.getElementById('narrItalic').addEventListener('change', () => updateOutput());
