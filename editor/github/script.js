@@ -1427,7 +1427,7 @@ function stopBGM() {
 <title>🐇</title>
 <style>
     body { margin: 0; padding: 0; background-color: transparent; overflow-x: hidden; }
-    #content-wrapper { padding-top: 30px; padding-bottom: 50px; }
+    #content-wrapper { padding-top: 15px; padding-bottom: 50px; }
 
 </style>
 </head>
