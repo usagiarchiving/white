@@ -109,3 +109,16 @@ function toggleTheme() {
     setTheme(localStorage.getItem('theme') === 'theme-dark' ? 'theme-dark' : 'theme-light');
 })();
 /* 🚨 맨 마지막에 있던 불필요한 닫는 괄호 } 제거됨 (스크립트 오류 원인) */
+
+// ==========================================================================
+// [추가] 모바일 환경 입력창 터치 시 강제 줌인 방지 & 수동 줌 허용
+// ==========================================================================
+$(document).on('touchstart', 'input, textarea, [contenteditable="true"]', function() {
+    // 입력창에 손가락이 닿는 순간(타이핑 직전)에만 줌을 1.0으로 꽉 잠급니다.
+    $('meta[name="viewport"]').attr('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+});
+
+$(document).on('blur', 'input, textarea, [contenteditable="true"]', function() {
+    // 키보드가 내려가고 포커스가 빠지면, 다시 손가락으로 화면을 확대할 수 있도록 풀어줍니다.
+    $('meta[name="viewport"]').attr('content', 'width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes');
+});
