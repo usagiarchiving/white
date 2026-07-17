@@ -42,8 +42,13 @@
         .btn-blue:hover { background-color: #0062cc; }
         .btn-gray { background-color: #e5e5ea; color: #000; }
         .btn-gray:hover { background-color: #d1d1d6; }
-        .btn-red { background-color: #ff3b30; color: white; padding: 6px 12px; font-size: 12px; }
-        .btn-edit { background-color: #34c759; color: white; padding: 6px 12px; font-size: 12px; }
+        
+        /* [수정됨] 편집/삭제 버튼 색상 변경 (파스텔 톤, Apple 스타일) */
+        .btn-red { background-color: #ffeceb; color: #ff3b30; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 8px; transition: 0.2s; }
+        .btn-red:hover { background-color: #ffd6d4; }
+        .btn-edit { background-color: #eaf9ed; color: #34c759; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 8px; transition: 0.2s; }
+        .btn-edit:hover { background-color: #d1f2d8; }
+        
         .btn-insert { background-color: #e9e9eb; color: #007aff; padding: 4px 10px; font-size: 11px; margin: 2px 0; width: 100%; border: 1px dashed #d1d1d6; }
 
         .color-swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #e5e5ea; cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
@@ -105,7 +110,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        /* 미리보기 화면 전용 텍스트 축소 모드 (HTML 복사/이미지 저장 시 출력 코드엔 영향을 주지 않음) */
+        /* 미리보기 화면 전용 텍스트 축소 모드 */
         .preview-scale-mode .msg-bubble div[contenteditable="true"] { font-size: 13px !important; }
         .preview-scale-mode .msg-date-container span { font-size: 9px !important; }
         .preview-scale-mode .read-status span { font-size: 9px !important; }
@@ -444,7 +449,6 @@
     function openGenLightbox(src) { document.getElementById('gen-lightbox-img').src = src; document.getElementById('gen-lightbox').style.display = 'flex'; }
     function closeGenLightbox() { document.getElementById('gen-lightbox').style.display = 'none'; }
 
-    // [수정] 대본 파싱 로직: 여러 줄 지원 및 새로운 트리거 대응
     function parseAndAddMessages() {
         const raw = document.getElementById('bulk-input').value.trim();
         const me = document.getElementById('trigger-me').value.trim();
@@ -490,7 +494,6 @@
             let originalLine = line.trim();
             if (!originalLine) continue;
 
-            // 0. 날짜/시간 우선 처리
             let dateMatch = originalLine.match(strictDateRegex);
             if (dateMatch) {
                 tempDate = normalizeDate(dateMatch[1]);
@@ -527,7 +530,6 @@
                 continue;
             }
 
-            // 1. [이름: 내용] 형태 (멀티라인 시작 가능성)
             let match1 = originalLine.match(/^\[([^:\]]+):\s*(.*)$/);
             if (match1) {
                 let speakerName = match1[1].trim();
@@ -549,7 +551,6 @@
                 continue;
             }
 
-            // 2. [이름] 내용
             let match2 = originalLine.match(/^\[([^\]]+)\]\s+(.*)$/);
             if (match2) {
                 let speakerName = match2[1].trim();
@@ -566,7 +567,6 @@
                 continue;
             }
 
-            // 3. ✉️내용
             let match3 = originalLine.match(/^✉️\s*(.*)$/);
             if (match3) {
                 let content = match3[1].trim();
@@ -578,7 +578,6 @@
                 continue;
             }
 
-            // 4. [내용]
             let match4 = originalLine.match(/^\[(.*)\]$/);
             if (match4) {
                 let content = match4[1].trim();
@@ -590,7 +589,6 @@
                 continue;
             }
 
-            // 5. 멀티라인 진행 중 (여러 줄 텍스트가 들어올 때 개별 메시지로 분리)
             if (currentSpeaker) {
                 let content = originalLine;
                 let endsWithBracket = content.endsWith(']');
@@ -604,8 +602,6 @@
                 if (endsWithBracket) currentSpeaker = null;
                 continue;
             }
-
-            // 6. 이외의 기본 텍스트는 전부 무시 (요청사항 반영)
         }
 
         if (tempDate) {
@@ -638,7 +634,6 @@
         renderSavedList(); 
     }
 
-    // [추가] 리스트에서 직접 화자를 전환하는 함수
     window.changeSender = function(index, newSender) {
         if (messages[index]) {
             messages[index].sender = newSender;
@@ -649,7 +644,8 @@
     function deleteMessage(i) { messages.splice(i, 1); updateUI(); }
     function startEdit(i) { editIndex = i; renderMessageList(); }
     
-    function saveEdit(i, s, t) {
+    // [수정됨] 실시간 동기화 함수
+    function syncEdit(i, s, t) {
         if (t !== 'header' && t !== 'footer') {
             if (s !== 'date') messages[i].delayValue = parseFloat(document.getElementById(`edit-delay-${i}`).value);
             
@@ -666,7 +662,13 @@
                 messages[i].text = document.getElementById(`edit-text-${i}`).value;
             }
         }
-        editIndex = -1; updateUI();
+        generateResult(); // 미리보기와 코드 즉시 업데이트
+    }
+
+    // [수정됨] 편집 완료(닫기) 함수
+    function finishEdit() {
+        editIndex = -1; 
+        updateUI(); 
     }
 
     function renderMessageList() {
@@ -676,23 +678,24 @@
             if (editIndex === i && msg.type !== 'header' && msg.type !== 'footer') {
                 let f = '';
                 let senderSelect = '';
+                // [수정됨] 값 변경 시 즉시 syncEdit()이 실행되도록 이벤트(onchange/oninput) 추가
                 if (msg.sender !== 'date' && msg.type !== 'read') {
-                    senderSelect = `<select id="edit-sender-${i}"><option value="me" ${msg.sender==='me'?'selected':''}>나</option><option value="partner" ${msg.sender==='partner'?'selected':''}>상대</option></select>`;
+                    senderSelect = `<select id="edit-sender-${i}" onchange="syncEdit(${i}, '${msg.sender}', '${msg.type}')"><option value="me" ${msg.sender==='me'?'selected':''}>나</option><option value="partner" ${msg.sender==='partner'?'selected':''}>상대</option></select>`;
                 }
                 
                 if (msg.sender === 'date') {
-                    f = `<input type="text" id="edit-date-${i}" value="${msg.dateText}"><input type="text" id="edit-time-${i}" value="${msg.timeText}">`;
+                    f = `<input type="text" id="edit-date-${i}" value="${msg.dateText}" oninput="syncEdit(${i}, '${msg.sender}', '${msg.type}')"><input type="text" id="edit-time-${i}" value="${msg.timeText}" oninput="syncEdit(${i}, '${msg.sender}', '${msg.type}')">`;
                 } else if (msg.type === 'image') {
-                    f = `<input type="text" id="edit-img-${i}" value="${msg.imgUrl}">`;
+                    f = `<input type="text" id="edit-img-${i}" value="${msg.imgUrl}" oninput="syncEdit(${i}, '${msg.sender}', '${msg.type}')">`;
                 } else if (msg.type === 'read') {
-                    f = `<span>딜레이:</span>`;
+                    f = `<span style="font-size:12px; font-weight:600; color:#888;">딜레이:</span>`;
                 } else {
-                    f = `<textarea id="edit-text-${i}" rows="1" style="resize:vertical; min-height:42px;">${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>`;
+                    f = `<textarea id="edit-text-${i}" rows="1" style="resize:vertical; min-height:42px;" oninput="syncEdit(${i}, '${msg.sender}', '${msg.type}')">${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>`;
                 }
                 
                 let d = '';
                 if (msg.sender !== 'date') {
-                    d = `<select id="edit-delay-${i}">
+                    d = `<select id="edit-delay-${i}" onchange="syncEdit(${i}, '${msg.sender}', '${msg.type}')">
                         <option value="0.7" ${msg.delayValue==0.7?'selected':''}>0.7s</option>
                         <option value="1.0" ${msg.delayValue==1.0?'selected':''}>1.0s</option>
                         <option value="1.3" ${msg.delayValue==1.3?'selected':''}>1.3s</option>
@@ -700,7 +703,8 @@
                         <option value="2.0" ${msg.delayValue==2.0?'selected':''}>2.0s</option>
                     </select>`;
                 }
-                li.innerHTML = `<div class="edit-form">${senderSelect}${f}${d}<button class="btn-blue" onclick="saveEdit(${i}, '${msg.sender}', '${msg.type}')">저장</button></div>`;
+                // [수정됨] 실시간 동기화가 되므로 저장 버튼을 가벼운 '완료(닫기)' 용도로 변경
+                li.innerHTML = `<div class="edit-form">${senderSelect}${f}${d}<button class="btn-gray" onclick="finishEdit()">완료</button></div>`;
             } else {
                 let c = '';
                 if (msg.type === 'header') c = `<span class="msg-type type-header">[헤더]</span> 프로필`;
@@ -713,7 +717,6 @@
                 else if (msg.type === 'image') c = `${msg.sender==='me'?'[나]':'[상대]'} <img src="${msg.imgUrl}" style="height:30px; vertical-align:middle;">`;
                 else c = `${msg.sender==='me'?'[나]':'[상대]'} ${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}`;
                 
-                // [수정] 나/상대 원클릭 변경 버튼 추가 적용
                 let b = '';
                 if (msg.type === 'header' || msg.type === 'footer') {
                     b = `<button class="btn-red" onclick="deleteMessage(${i})">삭제</button>`;
@@ -759,7 +762,7 @@
         s.sort((a, b) => b.timestamp - a.timestamp);
         s.forEach(i => {
             const d = document.createElement('div'); d.className = 'saved-item';
-            d.innerHTML = `<input type="text" class="saved-title-input" value="${i.title}" onchange="updateTitle('${i.id}',this.value)"><button class="btn-load" onclick="loadFromLocalStorage('${i.id}')">로드</button><button class="btn-delete-list" onclick="deleteFromLocalStorage('${i.id}')">삭제</button>`;
+            d.innerHTML = `<input type="text" class="saved-title-input" value="${i.title}" onchange="updateTitle('${i.id}',this.value)"><button class="btn-load" onclick="loadFromLocalStorage('${i.id}')" style="background:#e5e5ea; border:none; padding:6px 12px; border-radius:8px; font-weight:600; font-size:12px; margin-right:6px; cursor:pointer;">로드</button><button class="btn-delete-list" onclick="deleteFromLocalStorage('${i.id}')" style="background:#ffeceb; color:#ff3b30; border:none; padding:6px 12px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer;">삭제</button>`;
             c.appendChild(d);
         });
     }
