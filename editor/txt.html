@@ -92,8 +92,7 @@
 </head>
 <body style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #fafafa; color: #333; padding: 20px; text-align: center; line-height: 1.7; letter-spacing: 0.3px; margin: 0;">
 
-    <h2 style="color: #88b0ac; font-weight: bold; margin-bottom: 5px; font-size: 22px;">🤍 텍스트 자동 변환기 🤍</h2>
-    <p style="margin-bottom: 25px; font-size: 14px; color: #666; padding: 0 10px;">2만 자도 거뜬해요! 원본을 넣고 변환 버튼을 누르세요.</p>
+    <h2 style="color: #88b0ac; font-weight: bold; margin-bottom: 25px; font-size: 22px;">🤍 텍스트 자동 변환기 🤍</h2>
 
     <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
         <h3 style="color: #88b0ac; font-weight: bold; margin-top: 0; margin-bottom: 12px; font-size: 15px;">⚙️ 반복 지시문 설정</h3>
@@ -148,7 +147,7 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; width: 100%;">
-            <textarea id="outputText" style="width: 100%; height: 400px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 12px; resize: none; font-size: 14px; line-height: 1.7; letter-spacing: 0.3px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); box-sizing: border-box; font-family: inherit; margin: 0;" placeholder="변환된 결과"></textarea>
+            <textarea id="outputText" style="width: 100%; height: 400px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 12px; resize: none; font-size: 14px; line-height: 1.7; letter-spacing: 0.3px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); box-sizing: border-box; font-family: inherit; margin: 0;" placeholder="마법처럼 변환된 결과가 여기에 나옵니다 ✨"></textarea>
             <button id="copyBtn" onclick="copyResult()" style="background-color: #f0f0f0; color: #555; border: 1px solid #ddd; padding: 14px 20px; border-radius: 25px; font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; -webkit-tap-highlight-color: transparent;">결과 복사하기 📋</button>
         </div>
     </div>
@@ -157,6 +156,19 @@
         const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 숫자 제거된 완벽한 원본 9가지 규칙
+        const defaultExclusions = [
+            `유이는 뱅을 시온 씨/여보, 존댓말 사용. 뱅은 유이를 유이 씨/여보, 존댓말 사용.`,
+            `답변은 이전의 대화와 로어북, 캐릭터 정보, 세계관을 참고하여 다채롭고 다양한 표현 방법으로 서술한다.`,
+            `모든 나래이션과 대화는 3000자 이상의 대화로 서술하시오.`,
+            `반복적인 내레이션은 피하고 창의력을 발휘하십시오.`,
+            `\n모든 지문 맨 아래에 반드시 아래 양식을 출력한다. 상태창지문 본문은 상태창의 수치, 기류(하트), 관계 역학을 철저히 반영하여 묘사한다.\n🗓️ 달력 | 2026.MM. DD. X요일. (오전or오후) / D+두 사람이 함께한 날\n💍 | 하트 이모지 NPC,PC별 각각1개씩2개. 현재 기류에 가장 적합한 것을 하나 이상 선택하여 표시. 표정 이모티콘 삽입\n💍 | 하트 이모지 NPC,PC별 각각1개씩2개. 현재 기류에 가장 적합한 것을 하나 이상 선택하여 표시.\n📍 위치 | 현재 위치\n👕 복장 | NPC의 복장, PC의 복장\n👥️ 상태 | 현재 인체와 관련된 자세\n💭 뱅의 내면 | NPC의 생각, 속마음, TMI 등\n🔔 알림 | 단말기에 떠있는 알림\n🚨 뱅의 가이딩 필요 수치 | 0%~100%\n❤️‍🔥 NSFW | 총 횟수\n✏️ 뱅의 한줄 낙서(텍스트콘, 이모티콘 등 적극활용) |\n✏️ 뱅의 한줄 낙서(텍스트콘 등 적극활용) |\n🔫 뱅의 오늘의 TMI |\n💕 호감도| 뱅 → 유이: n/1000 (상태)`,
+            `NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.\nNPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.`,
+            `*OOC:  npc의 대사는제작자가 만든 설정으로 출력한다. 큰 따옴표 안에 영어 또는 모국어를 넣고, 괄호 안에 한국어 번역을 한다*`,
+            `OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.`,
+            `*OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.*`
+        ];
 
         const defaultEndings = "요, 네, 데, 야, 까, 어, 지, 고, 걸, 나, 래, 대, 가, 도, 큼, 거, 면, 죠, 일, 든, 워, 려, 히, 라, 게, 아, 에, 고, 워, 둬, 아, 봐, 발, 님, 서, 는, 을, ♡, 니, 봐, 려, 보, 딸";
 
@@ -175,12 +187,14 @@
             btn.innerText = isHidden ? '닫기' : '펼치기';
         }
 
+        // 🟢 제목 동기화 적용
         function createBlockHTML(id, text) {
             const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const titleText = text.trim() ? text.trim().substring(0, 20) + (text.trim().length > 20 ? '...' : '') : '(내용 없음)';
             return `
             <div data-id="${id}" class="exclusion-wrapper">
                 <div class="summary-view">
-                    <span style="font-size:13px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">지시문 ${text ? text.substring(0, 20) + '...' : '(내용 없음)'}</span>
+                    <span class="block-title" style="font-size:13px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">${titleText}</span>
                     <button class="toggle-btn" onclick="toggleDetails(this)">펼치기</button>
                 </div>
                 <div class="edit-view" style="display:none; margin-top:10px;">
@@ -202,6 +216,9 @@
             }]).select();
             if (data) {
                 document.getElementById('exclusionContainer').insertAdjacentHTML('beforeend', createBlockHTML(data[0].id, ''));
+                // 방금 추가된 블록 자동으로 열어주기
+                const newBlockBtn = document.getElementById('exclusionContainer').lastElementChild.querySelector('.toggle-btn');
+                toggleDetails(newBlockBtn);
             }
         }
 
@@ -213,7 +230,14 @@
         }
 
         async function updateBlockInDb(textarea) {
-            const id = parseInt(textarea.closest('.exclusion-wrapper').getAttribute('data-id'), 10);
+            const wrapper = textarea.closest('.exclusion-wrapper');
+            const id = parseInt(wrapper.getAttribute('data-id'), 10);
+            
+            // 🟢 입력 즉시 제목(span) 실시간 동기화
+            const titleSpan = wrapper.querySelector('.block-title');
+            const newText = textarea.value.trim();
+            titleSpan.innerText = newText ? newText.substring(0, 20) + (newText.length > 20 ? '...' : '') : '(내용 없음)';
+            
             clearTimeout(blockTimers[id]);
             blockTimers[id] = setTimeout(async () => {
                 await supabaseClient.from('posts').update({ content: formatDbContent(textarea.value) }).eq('id', id);
@@ -324,20 +348,29 @@
         }
 
         window.onload = async function() {
-            // 1. 기존 데이터 초기화 (요청에 따라 삭제 후 다시 로드)
-            await supabaseClient.from('posts').delete().eq('category', 'txt').eq('title', '반복지시문');
-
-            // 2. 전체 데이터 불러오기
+            // 전체 데이터 불러오기
             const { data } = await supabaseClient.from('posts').select('*').eq('category', 'txt').order('id', { ascending: true });
             
-            // 3. UI 렌더링
-            const exclusions = data.filter(d => d.title === '반복지시문');
+            let exclusions = data ? data.filter(d => d.title === '반복지시문') : [];
+            
+            // 🟢 DB가 비어있다면 숫자 빠진 원본 데이터들로 다시 생성 (이전에 날아간 데이터 복구용)
+            if (exclusions.length === 0) {
+                const inserts = defaultExclusions.map(text => ({
+                    category: 'txt', title: '반복지시문', content: formatDbContent(text), created_at: new Date().toISOString()
+                }));
+                const { data: newBlocks } = await supabaseClient.from('posts').insert(inserts).select();
+                if (newBlocks) {
+                    exclusions = newBlocks;
+                }
+            }
+            
+            // UI 렌더링
             renderExclusionBlocks(exclusions.map(d => ({ id: d.id, text: parseDbContent(d.content) })));
             
-            const endingRow = data.find(d => d.title === '대사어미');
+            const endingRow = data ? data.find(d => d.title === '대사어미') : null;
             if (endingRow) { endingsDbId = endingRow.id; document.getElementById('dialogueEndingInput').value = parseDbContent(endingRow.content); }
             
-            const settingsRow = data.find(d => d.title === '토글설정');
+            const settingsRow = data ? data.find(d => d.title === '토글설정') : null;
             if (settingsRow) {
                 settingsDbId = settingsRow.id;
                 const s = JSON.parse(parseDbContent(settingsRow.content));
