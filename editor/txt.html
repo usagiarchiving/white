@@ -3,73 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-    <title>✨ 텍스트 자동 변환기 ✨</title>
+    <title>텍스트 자동 변환기</title>
     <style>
-        /* PC 환경 2단, 모바일 환경 1단 반응형 그리드 */
-        .grid-container {
+        /* 기본 리셋 및 폰트 설정 (Apple 스타일) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            padding: 30px 20px;
+            margin: 0;
+            line-height: 1.6;
+            letter-spacing: -0.01em;
+        }
+
+        /* 컨테이너 중앙 정렬 및 최대 너비 설정 */
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 공통 카드 스타일 */
+        .card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            box-sizing: border-box;
+            transition: box-shadow 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #88b0ac;
+            margin: 0 0 16px 0;
+        }
+
+        /* PC 환경 설정 영역 2단 그리드 */
+        .settings-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-            width: 100%;
-            margin: 0 auto;
-            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        /* PC 환경 입출력 영역 2단 그리드 */
+        .io-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
         @media (max-width: 992px) {
-            .grid-container {
+            .settings-grid, .io-grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        /* 토글 스위치용 CSS */
-        input[type="checkbox"]:checked + .slider-bg {
-            background-color: #1a1a1a !important;
+        /* 공통 입력창 스타일 */
+        textarea {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            line-height: 1.6;
+            background-color: #fcfcfc;
+            color: #1d1d1f;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            resize: none;
         }
-        input[type="checkbox"]:checked ~ .slider-dot {
+        textarea:focus {
+            outline: none;
+            border-color: #88b0ac;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(136, 176, 172, 0.15);
+        }
+
+        /* 토글 스위치용 CSS (Apple 스타일) */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+        .toggle-row span {
+            font-size: 15px;
+            color: #424245;
+            cursor: pointer;
+            user-select: none;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            margin: 0;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider-bg {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #d2d2d7;
+            transition: .3s ease;
+            border-radius: 24px;
+        }
+        .slider-dot {
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s ease;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input:checked + .slider-bg {
+            background-color: #88b0ac !important;
+        }
+        input:checked ~ .slider-dot {
             transform: translateX(20px);
         }
 
         /* 버튼식 포맷 설정 CSS */
+        .format-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+            gap: 10px;
+        }
         .format-btn {
-            flex: 1;
-            min-width: calc(50% - 5px); 
             background-color: #f5f5f7;
             border: 1px solid #d2d2d7;
-            color: #555;
-            padding: 12px;
-            border-radius: 8px;
+            color: #424245;
+            padding: 14px 10px;
+            border-radius: 12px;
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: inherit;
             text-align: center;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
             line-height: 1.4;
+            -webkit-tap-highlight-color: transparent;
         }
-        @media (min-width: 600px) {
-            .format-btn {
-                min-width: calc(20% - 8px);
-            }
+        .format-btn:hover {
+            background-color: #ebebeb;
         }
         .format-btn.active {
             background-color: #88b0ac;
             border-color: #88b0ac;
             color: #fff;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(136, 176, 172, 0.3);
+            box-shadow: 0 4px 10px rgba(136, 176, 172, 0.3);
         }
 
         /* 새 지시문 블록 스타일 */
         .exclusion-wrapper {
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 50px;
-            padding: 10px 20px;
-            margin-bottom: 8px;
+            background: #fafafa;
+            border: 1px solid #ebebeb;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
             display: flex;
             flex-direction: column;
+            transition: all 0.2s ease;
+        }
+        .exclusion-wrapper:hover {
+            border-color: #d2d2d7;
         }
         .summary-view {
             display: flex;
@@ -77,78 +190,155 @@
             align-items: center;
         }
         .toggle-btn {
-            background: #f5f5f7;
+            background: transparent;
             border: 1px solid #d2d2d7;
-            border-radius: 20px;
-            padding: 5px 12px;
-            font-size: 12px;
+            color: #555;
+            border-radius: 16px;
+            padding: 6px 14px;
+            font-size: 13px;
             cursor: pointer;
             white-space: nowrap;
             margin-left: 10px;
+            transition: all 0.2s;
+        }
+        .toggle-btn:hover {
+            background: #e8e8ed;
+        }
+        .add-block-btn {
+            margin-top: 8px;
+            background-color: transparent;
+            border: 1px dashed #d2d2d7;
+            color: #86868b;
+            padding: 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .add-block-btn:hover {
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            border-color: #a1a1a6;
+        }
+
+        /* 하단 메인 액션 버튼 */
+        .action-btn {
+            border: none;
+            padding: 16px 20px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 10px;
+            font-family: inherit;
+        }
+        .btn-primary {
+            background-color: #88b0ac;
+            color: white;
+            box-shadow: 0 4px 12px rgba(136, 176, 172, 0.3);
+        }
+        .btn-primary:hover {
+            background-color: #799d99;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #e8e8ed;
+            color: #1d1d1f;
+        }
+        .btn-secondary:hover {
+            background-color: #d2d2d7;
+        }
+        
+        /* 타이틀 */
+        .main-header {
+            text-align: center;
+            color: #1d1d1f;
+            font-weight: 700;
+            margin-bottom: 30px;
+            font-size: 24px;
+            letter-spacing: -0.02em;
         }
     </style>
     <!-- 🟢 Supabase CDN 추가 -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
-<body style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #fafafa; color: #333; padding: 20px; text-align: center; line-height: 1.7; letter-spacing: 0.3px; margin: 0;">
+<body>
+    <div class="app-container">
+        <h2 class="main-header">텍스트 변환기</h2>
 
-    <h2 style="color: #88b0ac; font-weight: bold; margin-bottom: 25px; font-size: 22px;">🤍 텍스트 자동 변환기 🤍</h2>
-
-    <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
-        <h3 style="color: #88b0ac; font-weight: bold; margin-top: 0; margin-bottom: 12px; font-size: 15px;">⚙️ 반복 지시문 설정</h3>
+        <!-- [1단] 지시문 설정 -->
+        <div class="card">
+            <h3 class="section-title">반복 지시문 설정</h3>
+            <div id="exclusionContainer" style="display: flex; flex-direction: column; gap: 4px;">
+                <div id="loadingBlocks" style="font-size: 14px; color: #86868b; text-align: center; padding: 20px;">
+                    데이터를 불러오는 중입니다...
+                </div>
+            </div>
+            <button id="addBlockBtn" onclick="addExclusionBlock()" class="add-block-btn">
+                + 새로운 지시문 추가하기
+            </button>
+        </div>
         
-        <div id="exclusionContainer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-            <div id="loadingBlocks" style="font-size: 12px; color: #999; text-align: center; padding: 20px;">서버에서 데이터를 불러오는 중입니다... ⏳</div>
+        <!-- [1단] 대사 판별 어미 -->
+        <div class="card">
+            <h3 class="section-title" style="color: #6e6e73;">대사 판별 어미 (쉼표 구분)</h3>
+            <textarea id="dialogueEndingInput" style="height: 60px;" placeholder="데이터를 불러오는 중입니다..."></textarea>
         </div>
 
-        <button id="addBlockBtn" onclick="addExclusionBlock()" style="margin-top: 8px; background-color: #f8f9fa; border: 1px dashed #ccc; color: #666; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; width: 100%; transition: all 0.2s; -webkit-tap-highlight-color: transparent;">
-            + 새로운 지시문 추가하기
-        </button>
-    </div>
-    
-    <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
-        <label style="font-weight: bold; font-size: 13px; color: #555;">💬 대사 판별 끝 단어/어미 (쉼표 구분)</label>
-        <textarea id="dialogueEndingInput" style="width: 100%; height: 50px; margin-top: 4px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; resize: vertical; font-size: 12px; font-family: inherit; line-height: 1.5; box-sizing: border-box; background-color: #fafafa;" placeholder="서버에서 데이터를 불러오는 중입니다..."></textarea>
-    </div>
+        <!-- [2단] 정리 설정 / 포맷 설정 -->
+        <div class="settings-grid">
+            <!-- 정리 설정 -->
+            <div class="card" style="margin-bottom: 0;">
+                <h3 class="section-title" style="color: #6e6e73;">정리 설정</h3>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label class="toggle-row">
+                        <div class="switch">
+                            <input type="checkbox" id="toggleOoc" checked>
+                            <span class="slider-bg"></span>
+                            <span class="slider-dot"></span>
+                        </div>
+                        <span onclick="document.getElementById('toggleOoc').click()">OOC 제거</span>
+                    </label>
+                    <label class="toggle-row">
+                        <div class="switch">
+                            <input type="checkbox" id="toggleEmojiPrefix" checked>
+                            <span class="slider-bg"></span>
+                            <span class="slider-dot"></span>
+                        </div>
+                        <span onclick="document.getElementById('toggleEmojiPrefix').click()">이모티콘 앞 텍스트 삭제</span>
+                    </label>
+                </div>
+            </div>
 
-    <!-- 이미지 UI 기반의 토글 설정 영역 -->
-    <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #f0eee6; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e0ddd3; padding-bottom: 10px;">
-            <div style="font-size: 15px; font-weight: bold; color: #222;">정리 설정 (제거)</div>
+            <!-- 포맷 설정 -->
+            <div class="card" style="margin-bottom: 0;">
+                <h3 class="section-title" style="color: #6e6e73;">출력 포맷</h3>
+                <div class="format-container">
+                    <button id="btnV1" class="format-btn" onclick="setFormat('V1')">버전 1<br><span style="font-size: 12px; font-weight: normal; color: #86868b;">역극 폼</span></button>
+                    <button id="btnV2" class="format-btn" onclick="setFormat('V2')">버전 2<br><span style="font-size: 12px; font-weight: normal; color: #86868b;">소설 폼</span></button>
+                    <button id="btnV3" class="format-btn active" onclick="setFormat('V3')">버전 3<br><span style="font-size: 12px; font-weight: normal; color: #86868b;">*나*, "대사"</span></button>
+                    <button id="btnV4" class="format-btn" onclick="setFormat('V4')">버전 4<br><span style="font-size: 12px; font-weight: normal; color: #86868b;">나, "대사"</span></button>
+                    <button id="btnOFF" class="format-btn" onclick="setFormat('OFF')" style="display: flex; align-items: center; justify-content: center;">끄기</button>
+                </div>
+            </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-            <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;"><input type="checkbox" id="toggleOoc" checked style="opacity: 0; width: 0; height: 0; position: absolute;"><span class="slider-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span><span class="slider-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; pointer-events: none;"></span></label>
-            <span style="font-size: 15px; color: #333; cursor: pointer; user-select: none;" onclick="document.getElementById('toggleOoc').click()">OOC 제거</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;"><input type="checkbox" id="toggleEmojiPrefix" checked style="opacity: 0; width: 0; height: 0; position: absolute;"><span class="slider-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span><span class="slider-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; pointer-events: none;"></span></label>
-            <span style="font-size: 15px; color: #333; cursor: pointer; user-select: none;" onclick="document.getElementById('toggleEmojiPrefix').click()">이모티콘 앞 텍스트 삭제</span>
-        </div>
-    </div>
+        
+        <!-- [2단] 텍스트 입/출력 -->
+        <div class="io-grid">
+            <div style="display: flex; flex-direction: column;">
+                <textarea id="inputText" style="height: 450px;" placeholder="여기에 텍스트를 붙여넣어 주세요..."></textarea>
+                <button onclick="convertText()" class="action-btn btn-primary">자동 변환하기</button>
+            </div>
 
-    <!-- 🟢 버튼식 포맷 설정 영역 -->
-    <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #f0eee6; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e0ddd3; padding-bottom: 10px;">
-            <div style="font-size: 15px; font-weight: bold; color: #222;">포맷 설정 (FORMAT)</div>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <button id="btnV1" class="format-btn" onclick="setFormat('V1')">버전 1<br><span style="font-size: 11px; font-weight: normal; color: inherit;">역극 폼</span></button>
-            <button id="btnV2" class="format-btn" onclick="setFormat('V2')">버전 2<br><span style="font-size: 11px; font-weight: normal; color: inherit;">소설 폼</span></button>
-            <button id="btnV3" class="format-btn active" onclick="setFormat('V3')">버전 3<br><span style="font-size: 11px; font-weight: normal; color: inherit;">*나*, "대사"</span></button>
-            <button id="btnV4" class="format-btn" onclick="setFormat('V4')">버전 4<br><span style="font-size: 11px; font-weight: normal; color: inherit;">나, "대사"</span></button>
-            <button id="btnOFF" class="format-btn" onclick="setFormat('OFF')">끄기</button>
-        </div>
-    </div>
-    
-    <div class="grid-container">
-        <div style="display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; width: 100%;">
-            <textarea id="inputText" style="width: 100%; height: 400px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 12px; resize: none; font-size: 14px; line-height: 1.7; letter-spacing: 0.3px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); box-sizing: border-box; font-family: inherit; margin: 0;" placeholder="여기에 복사한 텍스트를 붙여넣어 주세요..."></textarea>
-            <button onclick="convertText()" style="background-color: #88b0ac; color: white; border: none; padding: 14px 20px; border-radius: 25px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box; -webkit-tap-highlight-color: transparent;">자동 변환하기 🪄</button>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; width: 100%;">
-            <textarea id="outputText" style="width: 100%; height: 400px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 12px; resize: none; font-size: 14px; line-height: 1.7; letter-spacing: 0.3px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); box-sizing: border-box; font-family: inherit; margin: 0;" placeholder="마법처럼 변환된 결과가 여기에 나옵니다 ✨"></textarea>
-            <button id="copyBtn" onclick="copyResult()" style="background-color: #f0f0f0; color: #555; border: 1px solid #ddd; padding: 14px 20px; border-radius: 25px; font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; -webkit-tap-highlight-color: transparent;">결과 복사하기 📋</button>
+            <div style="display: flex; flex-direction: column;">
+                <textarea id="outputText" style="height: 450px;" placeholder="변환된 결과가 여기에 표시됩니다."></textarea>
+                <button id="copyBtn" onclick="copyResult()" class="action-btn btn-secondary">결과 복사하기</button>
+            </div>
         </div>
     </div>
 
@@ -165,7 +355,7 @@
             `반복적인 내레이션은 피하고 창의력을 발휘하십시오.`,
             `\n모든 지문 맨 아래에 반드시 아래 양식을 출력한다. 상태창지문 본문은 상태창의 수치, 기류(하트), 관계 역학을 철저히 반영하여 묘사한다.\n🗓️ 달력 | 2026.MM. DD. X요일. (오전or오후) / D+두 사람이 함께한 날\n💍 | 하트 이모지 NPC,PC별 각각1개씩2개. 현재 기류에 가장 적합한 것을 하나 이상 선택하여 표시. 표정 이모티콘 삽입\n💍 | 하트 이모지 NPC,PC별 각각1개씩2개. 현재 기류에 가장 적합한 것을 하나 이상 선택하여 표시.\n📍 위치 | 현재 위치\n👕 복장 | NPC의 복장, PC의 복장\n👥️ 상태 | 현재 인체와 관련된 자세\n💭 뱅의 내면 | NPC의 생각, 속마음, TMI 등\n🔔 알림 | 단말기에 떠있는 알림\n🚨 뱅의 가이딩 필요 수치 | 0%~100%\n❤️‍🔥 NSFW | 총 횟수\n✏️ 뱅의 한줄 낙서(텍스트콘, 이모티콘 등 적극활용) |\n✏️ 뱅의 한줄 낙서(텍스트콘 등 적극활용) |\n🔫 뱅의 오늘의 TMI |\n💕 호감도| 뱅 → 유이: n/1000 (상태)`,
             `NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.\nNPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.`,
-            `*OOC:  npc의 대사는제작자가 만든 설정으로 출력한다. 큰 따옴표 안에 영어 또는 모국어를 넣고, 괄호 안에 한국어 번역을 한다*`,
+            `*OOC: npc의 대사는제작자가 만든 설정으로 출력한다. 큰 따옴표 안에 영어 또는 모국어를 넣고, 괄호 안에 한국어 번역을 한다*`,
             `OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.`,
             `*OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.*`
         ];
@@ -178,28 +368,27 @@
         let endingsDbId = null, settingsDbId = null;
         let blockTimers = {}, endingsTimer = null, currentFormatMode = 'V3';
 
-        // 🟢 UI 토글 함수
         function toggleDetails(btn) {
             const wrapper = btn.closest('.exclusion-wrapper');
             const editView = wrapper.querySelector('.edit-view');
             const isHidden = editView.style.display === 'none';
             editView.style.display = isHidden ? 'block' : 'none';
-            btn.innerText = isHidden ? '닫기' : '펼치기';
+            btn.innerText = isHidden ? '닫기' : '수정하기';
         }
 
-        // 🟢 제목 동기화 적용
+        // 디자인이 다듬어진 블록 HTML 생성 함수
         function createBlockHTML(id, text) {
             const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            const titleText = text.trim() ? text.trim().substring(0, 20) + (text.trim().length > 20 ? '...' : '') : '(내용 없음)';
+            const titleText = text.trim() ? text.trim().substring(0, 25) + (text.trim().length > 25 ? '...' : '') : '(내용 없음)';
             return `
             <div data-id="${id}" class="exclusion-wrapper">
                 <div class="summary-view">
-                    <span class="block-title" style="font-size:13px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">${titleText}</span>
-                    <button class="toggle-btn" onclick="toggleDetails(this)">펼치기</button>
+                    <span class="block-title" style="font-size:14px; color:#1d1d1f; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:75%;">${titleText}</span>
+                    <button class="toggle-btn" onclick="toggleDetails(this)">수정하기</button>
                 </div>
-                <div class="edit-view" style="display:none; margin-top:10px;">
-                    <textarea class="exclusion-block-input" oninput="updateBlockInDb(this)" style="width:100%; height:80px; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:12px; box-sizing:border-box;">${safeText}</textarea>
-                    <button onclick="removeExclusionBlock(this, event)" style="margin-top:5px; background:none; border:none; color:#ff6b6b; font-size:11px; cursor:pointer;">삭제</button>
+                <div class="edit-view" style="display:none; margin-top:12px;">
+                    <textarea class="exclusion-block-input" oninput="updateBlockInDb(this)" style="width:100%; height:100px; padding:12px; border:1px solid #d2d2d7; border-radius:10px; font-size:14px; box-sizing:border-box;">${safeText}</textarea>
+                    <button onclick="removeExclusionBlock(this, event)" style="margin-top:8px; background:none; border:none; color:#ff3b30; font-size:13px; font-weight:500; cursor:pointer; padding:4px 0;">이 항목 삭제하기</button>
                 </div>
             </div>`;
         }
@@ -216,7 +405,6 @@
             }]).select();
             if (data) {
                 document.getElementById('exclusionContainer').insertAdjacentHTML('beforeend', createBlockHTML(data[0].id, ''));
-                // 방금 추가된 블록 자동으로 열어주기
                 const newBlockBtn = document.getElementById('exclusionContainer').lastElementChild.querySelector('.toggle-btn');
                 toggleDetails(newBlockBtn);
             }
@@ -233,10 +421,9 @@
             const wrapper = textarea.closest('.exclusion-wrapper');
             const id = parseInt(wrapper.getAttribute('data-id'), 10);
             
-            // 🟢 입력 즉시 제목(span) 실시간 동기화
             const titleSpan = wrapper.querySelector('.block-title');
             const newText = textarea.value.trim();
-            titleSpan.innerText = newText ? newText.substring(0, 20) + (newText.length > 20 ? '...' : '') : '(내용 없음)';
+            titleSpan.innerText = newText ? newText.substring(0, 25) + (newText.length > 25 ? '...' : '') : '(내용 없음)';
             
             clearTimeout(blockTimers[id]);
             blockTimers[id] = setTimeout(async () => {
@@ -255,6 +442,14 @@
             currentFormatMode = mode;
             document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btn' + mode).classList.add('active');
+            
+            // 버튼 활성화 시 설명 텍스트 색상 변경 처리
+            document.querySelectorAll('.format-btn span').forEach(span => {
+                span.style.color = '#86868b';
+            });
+            const activeSpan = document.querySelector('#btn' + mode + ' span');
+            if(activeSpan) activeSpan.style.color = 'inherit';
+
             saveSettingsToDb();
         }
 
@@ -271,7 +466,6 @@
             document.getElementById(id).addEventListener('change', saveSettingsToDb);
         });
 
-        // 원본 변환 로직 (V3, V4 포함)
         function convertText() {
             let text = document.getElementById('inputText').value;
             const lines = text.split('\n');
@@ -306,7 +500,6 @@
                     if (!trimmed) continue;
                 }
 
-                // 포맷 변환
                 if (currentFormatMode !== 'OFF') {
                     if (!/^[* \t]*(🗓️|💍|📍|👕|👥️|💭|🔔|🚨|❤️‍🔥|✏️|🔫|💕|📰|💘)/.test(trimmed)) {
                         let isDialogue = (!/^[^\sa-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ"“'‘0-9]/.test(trimmed) && (trimmed.length <= 5 || new RegExp(`[?!~…]+$|(${endings})[. ]*$|["']$|[.…]{4,}`).test(trimmed)));
@@ -343,17 +536,15 @@
             if (!outputText.value) return;
             outputText.select();
             document.execCommand('copy');
-            copyBtn.innerText = "복사 완료! ✨";
-            setTimeout(() => { copyBtn.innerText = "결과 복사하기 📋"; }, 2000);
+            copyBtn.innerText = "복사 완료!";
+            setTimeout(() => { copyBtn.innerText = "결과 복사하기"; }, 2000);
         }
 
         window.onload = async function() {
-            // 전체 데이터 불러오기
             const { data } = await supabaseClient.from('posts').select('*').eq('category', 'txt').order('id', { ascending: true });
             
             let exclusions = data ? data.filter(d => d.title === '반복지시문') : [];
             
-            // 🟢 DB가 비어있다면 숫자 빠진 원본 데이터들로 다시 생성 (이전에 날아간 데이터 복구용)
             if (exclusions.length === 0) {
                 const inserts = defaultExclusions.map(text => ({
                     category: 'txt', title: '반복지시문', content: formatDbContent(text), created_at: new Date().toISOString()
@@ -364,7 +555,6 @@
                 }
             }
             
-            // UI 렌더링
             renderExclusionBlocks(exclusions.map(d => ({ id: d.id, text: parseDbContent(d.content) })));
             
             const endingRow = data ? data.find(d => d.title === '대사어미') : null;
