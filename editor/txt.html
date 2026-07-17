@@ -29,6 +29,63 @@
         input[type="checkbox"]:checked ~ .slider-dot {
             transform: translateX(20px);
         }
+
+        /* 버튼식 포맷 설정 CSS */
+        .format-btn {
+            flex: 1;
+            min-width: calc(50% - 5px); 
+            background-color: #f5f5f7;
+            border: 1px solid #d2d2d7;
+            color: #555;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            text-align: center;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            line-height: 1.4;
+        }
+        @media (min-width: 600px) {
+            .format-btn {
+                min-width: calc(20% - 8px);
+            }
+        }
+        .format-btn.active {
+            background-color: #88b0ac;
+            border-color: #88b0ac;
+            color: #fff;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(136, 176, 172, 0.3);
+        }
+
+        /* 새 지시문 블록 스타일 */
+        .exclusion-wrapper {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 50px;
+            padding: 10px 20px;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+        .summary-view {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .toggle-btn {
+            background: #f5f5f7;
+            border: 1px solid #d2d2d7;
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
     </style>
     <!-- 🟢 Supabase CDN 추가 -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -39,82 +96,48 @@
     <p style="margin-bottom: 25px; font-size: 14px; color: #666; padding: 0 10px;">2만 자도 거뜬해요! 원본을 넣고 변환 버튼을 누르세요.</p>
 
     <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
-        <h3 style="color: #88b0ac; font-weight: bold; margin-top: 0; margin-bottom: 12px; font-size: 15px;">⚙️ 변환 규칙 편집 (자유롭게 추가/수정하세요)</h3>
+        <h3 style="color: #88b0ac; font-weight: bold; margin-top: 0; margin-bottom: 12px; font-size: 15px;">⚙️ 반복 지시문 설정</h3>
         
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div>
-                <label style="font-weight: bold; font-size: 13px; color: #555;">🚫 반복 지시문 삭제 목록 (블록별 지정, 줄바꿈 구분, 띄어쓰기 무시)</label>
-                
-                <div id="exclusionContainer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                    <!-- JS로 접은글(details) 블록들이 여기에 렌더링 됩니다 (Supabase 연동) -->
-                    <div id="loadingBlocks" style="font-size: 12px; color: #999; text-align: center; padding: 20px;">서버에서 데이터를 불러오는 중입니다... ⏳</div>
-                </div>
-
-                <button id="addBlockBtn" onclick="addExclusionBlock()" style="margin-top: 8px; background-color: #f8f9fa; border: 1px dashed #ccc; color: #666; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; width: 100%; transition: all 0.2s; -webkit-tap-highlight-color: transparent;">
-                    + 새로운 지시문 블록 추가하기
-                </button>
-            </div>
-
-            <div>
-                <label style="font-weight: bold; font-size: 13px; color: #555;">💬 대사 판별 끝 단어/어미 (쉼표 구분)</label>
-                <textarea id="dialogueEndingInput" style="width: 100%; height: 50px; margin-top: 4px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; resize: vertical; font-size: 12px; font-family: inherit; line-height: 1.5; box-sizing: border-box; background-color: #fafafa;" placeholder="서버에서 데이터를 불러오는 중입니다..."></textarea>
-            </div>
+        <div id="exclusionContainer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            <div id="loadingBlocks" style="font-size: 12px; color: #999; text-align: center; padding: 20px;">서버에서 데이터를 불러오는 중입니다... ⏳</div>
         </div>
+
+        <button id="addBlockBtn" onclick="addExclusionBlock()" style="margin-top: 8px; background-color: #f8f9fa; border: 1px dashed #ccc; color: #666; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; width: 100%; transition: all 0.2s; -webkit-tap-highlight-color: transparent;">
+            + 새로운 지시문 추가하기
+        </button>
     </div>
     
+    <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
+        <label style="font-weight: bold; font-size: 13px; color: #555;">💬 대사 판별 끝 단어/어미 (쉼표 구분)</label>
+        <textarea id="dialogueEndingInput" style="width: 100%; height: 50px; margin-top: 4px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; resize: vertical; font-size: 12px; font-family: inherit; line-height: 1.5; box-sizing: border-box; background-color: #fafafa;" placeholder="서버에서 데이터를 불러오는 중입니다..."></textarea>
+    </div>
+
     <!-- 이미지 UI 기반의 토글 설정 영역 -->
     <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #f0eee6; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
-        
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e0ddd3; padding-bottom: 10px;">
-            <div style="font-size: 15px; font-weight: bold; color: #222;">
-                정리 설정
-            </div>
+            <div style="font-size: 15px; font-weight: bold; color: #222;">정리 설정 (제거)</div>
         </div>
-
-        <div style="font-size: 14px; font-weight: bold; color: #333; margin-bottom: 15px; display: flex; align-items: center; gap: 6px;">
-            제거 <span style="font-size: 11px; font-weight: normal; color: #888; letter-spacing: 1px;">REMOVE</span>
-        </div>
-        
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-            <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;">
-                <input type="checkbox" id="toggleOoc" checked style="opacity: 0; width: 0; height: 0; position: absolute;">
-                <span class="slider-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
-                <span class="slider-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; pointer-events: none;"></span>
-            </label>
+            <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;"><input type="checkbox" id="toggleOoc" checked style="opacity: 0; width: 0; height: 0; position: absolute;"><span class="slider-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span><span class="slider-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; pointer-events: none;"></span></label>
             <span style="font-size: 15px; color: #333; cursor: pointer; user-select: none;" onclick="document.getElementById('toggleOoc').click()">OOC 제거</span>
-            <span style="font-size: 12px; color: #999; border: 1px solid #999; border-radius: 50%; width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; cursor: help;" title="ooc:내용 또는 [OOC:내용] 한 문단을 삭제합니다.">i</span>
         </div>
-
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
-            <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;">
-                <input type="checkbox" id="toggleEmojiPrefix" checked style="opacity: 0; width: 0; height: 0; position: absolute;">
-                <span class="slider-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
-                <span class="slider-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; pointer-events: none;"></span>
-            </label>
-            <span style="font-size: 15px; color: #333; cursor: pointer; user-select: none;" onclick="document.getElementById('toggleEmojiPrefix').click()">이모티콘 앞 텍스트 삭제</span>
-            <span style="font-size: 12px; color: #999; border: 1px solid #999; border-radius: 50%; width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; cursor: help;" title="줄 앞부분에 있는 캐릭터 이름 등 이모티콘 앞의 텍스트를 삭제합니다.">i</span>
-        </div>
-
-        <div style="font-size: 14px; font-weight: bold; color: #333; margin-bottom: 15px; display: flex; align-items: center; gap: 6px;">
-            포맷 <span style="font-size: 11px; font-weight: normal; color: #888; letter-spacing: 1px;">FORMAT</span>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-            <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;">
-                <input type="checkbox" id="toggleV1" checked style="opacity: 0; width: 0; height: 0; position: absolute;">
-                <span class="slider-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
-                <span class="slider-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; pointer-events: none;"></span>
-            </label>
-            <span style="font-size: 15px; color: #333; cursor: pointer; user-select: none;" onclick="document.getElementById('toggleV1').click()">역극 폼 (*나레이션*, "대사")</span>
-        </div>
-
         <div style="display: flex; align-items: center; gap: 12px;">
-            <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;">
-                <input type="checkbox" id="toggleV2" style="opacity: 0; width: 0; height: 0; position: absolute;">
-                <span class="slider-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span>
-                <span class="slider-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; pointer-events: none;"></span>
-            </label>
-            <span style="font-size: 15px; color: #333; cursor: pointer; user-select: none;" onclick="document.getElementById('toggleV2').click()">소설 폼 (기호 삭제, 대사만 " ")</span>
+            <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;"><input type="checkbox" id="toggleEmojiPrefix" checked style="opacity: 0; width: 0; height: 0; position: absolute;"><span class="slider-bg" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px;"></span><span class="slider-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; pointer-events: none;"></span></label>
+            <span style="font-size: 15px; color: #333; cursor: pointer; user-select: none;" onclick="document.getElementById('toggleEmojiPrefix').click()">이모티콘 앞 텍스트 삭제</span>
+        </div>
+    </div>
+
+    <!-- 🟢 버튼식 포맷 설정 영역 -->
+    <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #f0eee6; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e0ddd3; padding-bottom: 10px;">
+            <div style="font-size: 15px; font-weight: bold; color: #222;">포맷 설정 (FORMAT)</div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <button id="btnV1" class="format-btn" onclick="setFormat('V1')">버전 1<br><span style="font-size: 11px; font-weight: normal; color: inherit;">역극 폼</span></button>
+            <button id="btnV2" class="format-btn" onclick="setFormat('V2')">버전 2<br><span style="font-size: 11px; font-weight: normal; color: inherit;">소설 폼</span></button>
+            <button id="btnV3" class="format-btn active" onclick="setFormat('V3')">버전 3<br><span style="font-size: 11px; font-weight: normal; color: inherit;">*나*, "대사"</span></button>
+            <button id="btnV4" class="format-btn" onclick="setFormat('V4')">버전 4<br><span style="font-size: 11px; font-weight: normal; color: inherit;">나, "대사"</span></button>
+            <button id="btnOFF" class="format-btn" onclick="setFormat('OFF')">끄기</button>
         </div>
     </div>
     
@@ -131,376 +154,198 @@
     </div>
 
     <script>
-        // --- 🟢 Supabase 설정 영역 ---
         const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-        
-        // 🚨 이름 충돌 방지: 변수명을 supabaseClient로 변경 🚨
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- 💾 완벽 보존된 원본 기본 데이터 ---
-        const defaultExclusions = [
-            `1.유이는 뱅을 시온 씨/여보, 존댓말 사용. 뱅은 유이를 유이 씨/여보, 존댓말 사용.`,
-            `2.답변은 이전의 대화와 로어북, 캐릭터 정보, 세계관을 참고하여 다채롭고 다양한 표현 방법으로 서술한다.`,
-            `3.모든 나래이션과 대화는 3000자 이상의 대화로 서술하시오.`,
-            `4.반복적인 내레이션은 피하고 창의력을 발휘하십시오.`,
-            `5.\n모든 지문 맨 아래에 반드시 아래 양식을 출력한다. 상태창지문 본문은 상태창의 수치, 기류(하트), 관계 역학을 철저히 반영하여 묘사한다.\n🗓️ 달력 | 2026.MM. DD. X요일. (오전or오후) / D+두 사람이 함께한 날\n💍 | 하트 이모지 NPC,PC별 각각1개씩2개. 현재 기류에 가장 적합한 것을 하나 이상 선택하여 표시. 표정 이모티콘 삽입\n💍 | 하트 이모지 NPC,PC별 각각1개씩2개. 현재 기류에 가장 적합한 것을 하나 이상 선택하여 표시.\n📍 위치 | 현재 위치\n👕 복장 | NPC의 복장, PC의 복장\n👥️ 상태 | 현재 인체와 관련된 자세\n💭 뱅의 내면 | NPC의 생각, 속마음, TMI 등\n🔔 알림 | 단말기에 떠있는 알림\n🚨 뱅의 가이딩 필요 수치 | 0%~100%\n❤️‍🔥 NSFW | 총 횟수\n✏️ 뱅의 한줄 낙서(텍스트콘, 이모티콘 등 적극활용) |\n✏️ 뱅의 한줄 낙서(텍스트콘 등 적극활용) |\n🔫 뱅의 오늘의 TMI |\n💕 호감도| 뱅 → 유이: n/1000 (상태)`,
-            `6.NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.\nNPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.`,
-            `7.*OOC:  npc의 대사는제작자가 만든 설정으로 출력한다. 큰 따옴표 안에 영어 또는 모국어를 넣고, 괄호 안에 한국어 번역을 한다*`,
-            `8.OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.`,
-            `9.*OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.*`
-        ];
-        
         const defaultEndings = "요, 네, 데, 야, 까, 어, 지, 고, 걸, 나, 래, 대, 가, 도, 큼, 거, 면, 죠, 일, 든, 워, 려, 히, 라, 게, 아, 에, 고, 워, 둬, 아, 봐, 발, 님, 서, 는, 을, ♡, 니, 봐, 려, 보, 딸";
 
-        function parseDbContent(rawContent) {
-            return rawContent ? rawContent.split('|||')[0] : '';
-        }
-        function formatDbContent(text) {
-            return text + '|||#텍스트변환기';
+        function parseDbContent(rawContent) { return rawContent ? rawContent.split('|||')[0] : ''; }
+        function formatDbContent(text) { return text + '|||#텍스트변환기'; }
+
+        let endingsDbId = null, settingsDbId = null;
+        let blockTimers = {}, endingsTimer = null, currentFormatMode = 'V3';
+
+        // 🟢 UI 토글 함수
+        function toggleDetails(btn) {
+            const wrapper = btn.closest('.exclusion-wrapper');
+            const editView = wrapper.querySelector('.edit-view');
+            const isHidden = editView.style.display === 'none';
+            editView.style.display = isHidden ? 'block' : 'none';
+            btn.innerText = isHidden ? '닫기' : '펼치기';
         }
 
-        let endingsDbId = null;
-        let settingsDbId = null;
-        const blockTimers = {};
-        let endingsTimer = null;
+        function createBlockHTML(id, text) {
+            const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            return `
+            <div data-id="${id}" class="exclusion-wrapper">
+                <div class="summary-view">
+                    <span style="font-size:13px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">지시문 ${text ? text.substring(0, 20) + '...' : '(내용 없음)'}</span>
+                    <button class="toggle-btn" onclick="toggleDetails(this)">펼치기</button>
+                </div>
+                <div class="edit-view" style="display:none; margin-top:10px;">
+                    <textarea class="exclusion-block-input" oninput="updateBlockInDb(this)" style="width:100%; height:80px; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:12px; box-sizing:border-box;">${safeText}</textarea>
+                    <button onclick="removeExclusionBlock(this, event)" style="margin-top:5px; background:none; border:none; color:#ff6b6b; font-size:11px; cursor:pointer;">삭제</button>
+                </div>
+            </div>`;
+        }
 
         function renderExclusionBlocks(dataArray) {
             const container = document.getElementById('exclusionContainer');
             container.innerHTML = '';
-            dataArray.forEach((item, index) => {
-                container.insertAdjacentHTML('beforeend', createBlockHTML(item.id, item.text, index + 1));
-            });
-        }
-
-        function createBlockHTML(id, text, index) {
-            const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            const isOpen = index <= 2 ? 'open' : '';
-            return `
-            <details data-id="${id}" class="exclusion-block" style="background-color: #fafafa; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;" ${isOpen}>
-                <summary style="padding: 10px 12px; font-size: 13px; font-weight: bold; cursor: pointer; user-select: none; outline: none; border-bottom: 1px solid transparent;">
-                    <div style="display: inline-flex; justify-content: space-between; align-items: center; width: calc(100% - 20px); vertical-align: middle;">
-                        <span style="color: #555;">📁 지시문 블록 <span class="block-number">${index}</span></span>
-                        <button type="button" onclick="removeExclusionBlock(this, event)" style="background: none; border: none; color: #ff6b6b; cursor: pointer; font-size: 12px; padding: 0; margin: 0;">삭제 🗑️</button>
-                    </div>
-                </summary>
-                <div style="padding: 0 10px 10px 10px;">
-                    <textarea class="exclusion-block-input" oninput="updateBlockInDb(this)" style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; resize: vertical; font-size: 12px; font-family: inherit; line-height: 1.5; box-sizing: border-box; background-color: #fff;" placeholder="삭제하고 싶은 대용량 텍스트를 붙여넣으세요...">${safeText}</textarea>
-                </div>
-            </details>
-            `;
+            dataArray.forEach(item => container.insertAdjacentHTML('beforeend', createBlockHTML(item.id, item.text)));
         }
 
         async function addExclusionBlock() {
-            const btn = document.getElementById('addBlockBtn');
-            btn.innerText = "서버에 생성 중... ⏳";
-            btn.disabled = true;
-
-            const { data, error } = await supabaseClient.from('posts').insert([{
-                category: 'txt',
-                title: '반복지시문',
-                content: formatDbContent(''),
-                created_at: new Date().toISOString()
+            const { data } = await supabaseClient.from('posts').insert([{
+                category: 'txt', title: '반복지시문', content: formatDbContent(''), created_at: new Date().toISOString()
             }]).select();
-            
-            btn.innerText = "+ 새로운 지시문 블록 추가하기";
-            btn.disabled = false;
-
-            if (error) {
-                alert('DB 저장 실패! 권한(RLS) 문제나 연결 오류일 수 있습니다.\n에러 내용: ' + error.message);
-                console.error(error);
-                return;
+            if (data) {
+                document.getElementById('exclusionContainer').insertAdjacentHTML('beforeend', createBlockHTML(data[0].id, ''));
             }
-
-            if (data && data.length > 0) {
-                const container = document.getElementById('exclusionContainer');
-                const count = container.querySelectorAll('.exclusion-block').length + 1;
-                container.insertAdjacentHTML('beforeend', createBlockHTML(data[0].id, '', count));
-                container.lastElementChild.open = true;
-            } 
         }
 
         async function removeExclusionBlock(btn, event) {
-            event.preventDefault(); 
-            const block = btn.closest('details');
-            const id = parseInt(block.getAttribute('data-id'), 10);
-            const originalText = btn.innerText;
-
-            btn.innerText = "삭제중..";
-            const { error } = await supabaseClient.from('posts').delete().eq('id', id);
-            
-            if (!error) {
-                block.remove();
-                updateBlockNumbers();
-            } else {
-                btn.innerText = originalText;
-                alert('DB 삭제 실패! 에러: ' + error.message);
-            }
+            const wrapper = btn.closest('.exclusion-wrapper');
+            const id = parseInt(wrapper.getAttribute('data-id'), 10);
+            await supabaseClient.from('posts').delete().eq('id', id);
+            wrapper.remove();
         }
 
-        function updateBlockNumbers() {
-            const blocks = document.querySelectorAll('.exclusion-block');
-            blocks.forEach((block, index) => {
-                const numSpan = block.querySelector('.block-number');
-                if (numSpan) numSpan.innerText = index + 1;
-            });
-        }
-
-        function updateBlockInDb(textarea) {
-            const id = parseInt(textarea.closest('details').getAttribute('data-id'), 10);
-            const newText = textarea.value;
-            
+        async function updateBlockInDb(textarea) {
+            const id = parseInt(textarea.closest('.exclusion-wrapper').getAttribute('data-id'), 10);
             clearTimeout(blockTimers[id]);
             blockTimers[id] = setTimeout(async () => {
-                const { error } = await supabaseClient.from('posts').update({ content: formatDbContent(newText) }).eq('id', id);
-                if(error) console.error("업데이트 실패:", error);
+                await supabaseClient.from('posts').update({ content: formatDbContent(textarea.value) }).eq('id', id);
             }, 300);
         }
 
         document.getElementById('dialogueEndingInput').addEventListener('input', function() {
-            const newText = this.value;
             clearTimeout(endingsTimer);
             endingsTimer = setTimeout(async () => {
-                if (endingsDbId) {
-                    const { error } = await supabaseClient.from('posts').update({ content: formatDbContent(newText) }).eq('id', endingsDbId);
-                    if(error) console.error("어미 업데이트 실패:", error);
-                }
+                await supabaseClient.from('posts').update({ content: formatDbContent(this.value) }).eq('id', endingsDbId);
             }, 300);
         });
 
+        function setFormat(mode) {
+            currentFormatMode = mode;
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn' + mode).classList.add('active');
+            saveSettingsToDb();
+        }
+
         async function saveSettingsToDb() {
-            if (!settingsDbId) return;
             const settings = {
                 toggleOoc: document.getElementById('toggleOoc').checked,
                 toggleEmojiPrefix: document.getElementById('toggleEmojiPrefix').checked,
-                toggleV1: document.getElementById('toggleV1').checked,
-                toggleV2: document.getElementById('toggleV2').checked
+                formatMode: currentFormatMode
             };
             await supabaseClient.from('posts').update({ content: formatDbContent(JSON.stringify(settings)) }).eq('id', settingsDbId);
         }
 
-        ['toggleOoc', 'toggleEmojiPrefix', 'toggleV1', 'toggleV2'].forEach(id => {
+        ['toggleOoc', 'toggleEmojiPrefix'].forEach(id => {
             document.getElementById(id).addEventListener('change', saveSettingsToDb);
         });
 
-        // 원본 변환 로직 유지
+        // 원본 변환 로직 (V3, V4 포함)
         function convertText() {
             let text = document.getElementById('inputText').value;
             const lines = text.split('\n');
             let result = [];
-
+            
             const exclusionInputs = document.querySelectorAll('.exclusion-block-input');
             let exclusionRaw = [];
-            exclusionInputs.forEach(input => {
-                if (input.value.trim()) {
-                    exclusionRaw = exclusionRaw.concat(input.value.split('\n'));
-                }
-            });
-            const exactExclusions = exclusionRaw
-                .map(s => s.replace(/\s+/g, ''))
-                .filter(s => s.length > 0);
+            exclusionInputs.forEach(input => { if (input.value.trim()) exclusionRaw.push(input.value); });
+            const exactExclusions = exclusionRaw.map(s => s.replace(/\s+/g, ''));
 
             const endingRaw = document.getElementById('dialogueEndingInput').value.split(',');
             const endings = endingRaw.map(s => s.trim()).filter(s => s.length > 0).join('|');
 
-            const toggleOoc = document.getElementById('toggleOoc').checked;
-            const toggleEmojiPrefix = document.getElementById('toggleEmojiPrefix').checked;
-            const applyV1 = document.getElementById('toggleV1').checked;
-            const applyV2 = document.getElementById('toggleV2').checked;
-
-            const dialogueRegex = new RegExp(`[?!~…]+$|(${endings})[. ]*$|["']$|[.…]{4,}`);
-            const statusEmojis = /^[* \t]*(🗓️|💍|📍|👕|👥️|💭|🔔|🚨|❤️‍🔥|✏️|🔫|💕|📰|💘)/;
-
             for (let line of lines) {
                 let trimmed = line.trim();
-                
-                if (!trimmed) {
-                    result.push('');
-                    continue;
-                }
+                if (!trimmed) { result.push(''); continue; }
 
-                if (/\[턴\s*\d+\]/.test(trimmed)) continue;
-                trimmed = trimmed.replace(/⟦OTAKU_TURN⟧/g, ''); 
-                trimmed = trimmed.replace(/#/g, ''); 
-                trimmed = trimmed.replace(/\*\*/g, ''); 
-                trimmed = trimmed.trim();
-                
+                trimmed = trimmed.replace(/⟦OTAKU_TURN⟧|#|\*\*|\[턴\s*\d+\]/g, '').replace(/-/g, '').trim();
                 if (!trimmed) continue;
+                if (exactExclusions.includes(trimmed.replace(/\s+/g, ''))) continue;
 
-                let normLine = trimmed.replace(/\s+/g, '');
-                if (exactExclusions.includes(normLine)) continue; 
-
-                if (toggleOoc) {
-                    trimmed = trimmed.replace(/\[\*?(OOC|OCC).*?\]/gi, '');
-                    trimmed = trimmed.replace(/\*?(OOC|OCC).*$/gi, '');
-                    trimmed = trimmed.trim();
+                if (document.getElementById('toggleOoc').checked) {
+                    trimmed = trimmed.replace(/\[\*?(OOC|OCC).*?\]|\*?(OOC|OCC).*$/gi, '').trim();
                     if (!trimmed) continue;
                 }
 
-                trimmed = trimmed.replace(/\[CHAR\]/gi, '');
-                trimmed = trimmed.replace(/\[USER\]/gi, '');
+                trimmed = trimmed.replace(/\[CHAR\]|\[USER\]/gi, '');
 
-                if (toggleEmojiPrefix) {
+                if (document.getElementById('toggleEmojiPrefix').checked) {
                     const emojiMatch = trimmed.match(/[\p{Extended_Pictographic}🗓️💍📍👕👥️💭🔔🚨❤️‍🔥✏️🔫💕📰💘]/u);
-                    if (emojiMatch && emojiMatch.index > 0 && emojiMatch.index <= 20) {
-                        trimmed = trimmed.substring(emojiMatch.index).trim();
-                        if (!trimmed) continue;
-                    }
+                    if (emojiMatch && emojiMatch.index > 0 && emojiMatch.index <= 20) trimmed = trimmed.substring(emojiMatch.index).trim();
+                    if (!trimmed) continue;
                 }
 
-                if (applyV1 || applyV2) {
-                    if (statusEmojis.test(trimmed) || /^(🗓️|💍|📍|👕|👥️|💭|🔔|🚨|❤️‍🔥|✏️|🔫|💕|📰|💘)/.test(trimmed)) {
-                        result.push(trimmed);
-                        continue;
-                    }
-
-                    let hasQuotes = /["“”]/.test(trimmed);
-                    let isSymbolStart = /^[^\sa-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ"“'‘]/.test(trimmed);
-                    let isNumberStart = /^[0-9]/.test(trimmed);
-
-                    if (applyV1 && !applyV2) {
-                        trimmed = trimmed.replace(/[*'\[\]\-]/g, '').trim();
-                    } else if (applyV2) {
-                        trimmed = trimmed.replace(/[*]/g, '').trim();
-                    }
-                    
-                    if (!trimmed) continue;
-
-                    let isDialogue = false;
-                    
-                    if (!isSymbolStart && !isNumberStart) {
-                        if (trimmed.length <= 5 || dialogueRegex.test(trimmed)) {
-                            isDialogue = true;
+                // 포맷 변환
+                if (currentFormatMode !== 'OFF') {
+                    if (!/^[* \t]*(🗓️|💍|📍|👕|👥️|💭|🔔|🚨|❤️‍🔥|✏️|🔫|💕|📰|💘)/.test(trimmed)) {
+                        let isDialogue = (!/^[^\sa-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ"“'‘0-9]/.test(trimmed) && (trimmed.length <= 5 || new RegExp(`[?!~…]+$|(${endings})[. ]*$|["']$|[.…]{4,}`).test(trimmed)));
+                        
+                        if (currentFormatMode === 'V1') {
+                            trimmed = trimmed.replace(/[*'\[\]]/g, '').trim();
+                            if (isDialogue) result.push(`"${trimmed.replace(/^[“"']|[”"']$/g, '')}"`);
+                            else result.push(trimmed.includes('"') ? trimmed : `*${trimmed}*`);
+                        } else if (currentFormatMode === 'V2') {
+                            trimmed = trimmed.replace(/[*]/g, '').trim();
+                            if (isDialogue) result.push(`"${trimmed.replace(/^[“"']|[”"']$/g, '')}"`);
+                            else result.push(trimmed);
+                        } else if (currentFormatMode === 'V3') {
+                            if (isDialogue) result.push(`"${trimmed.replace(/[*]/g, '').replace(/^[“"']|[”"']$/g, '')}"`);
+                            else result.push(trimmed);
+                        } else if (currentFormatMode === 'V4') {
+                            trimmed = trimmed.replace(/[*]/g, '').trim();
+                            if (isDialogue) result.push(`"${trimmed.replace(/^[“"']|[”"']$/g, '')}"`);
+                            else result.push(trimmed);
                         }
-                    }
-
-                    if (isDialogue) {
-                        trimmed = trimmed.replace(/^[“"']|[”"']$/g, '').trim();
-                        result.push(`"${trimmed}"`);
                     } else {
-                        if (applyV1 && !applyV2) {
-                            if (hasQuotes) {
-                                result.push(trimmed);
-                            } else {
-                                result.push(`*${trimmed}*`);
-                            }
-                        } else {
-                            result.push(trimmed);
-                        }
+                        result.push(trimmed);
                     }
                 } else {
                     result.push(trimmed);
                 }
             }
-
-            let finalResult = result.join('\n').replace(/\n{3,}/g, '\n\n');
-            document.getElementById('outputText').value = finalResult.trim();
+            document.getElementById('outputText').value = result.join('\n').replace(/\n{3,}/g, '\n\n').trim();
         }
 
         function copyResult() {
             let outputText = document.getElementById('outputText');
             let copyBtn = document.getElementById('copyBtn');
-
-            if (!outputText.value) {
-                copyBtn.innerText = "텍스트가 없어요 💦";
-                setTimeout(() => { copyBtn.innerText = "결과 복사하기 📋"; }, 2000);
-                return;
-            }
-
+            if (!outputText.value) return;
             outputText.select();
             document.execCommand('copy');
-            
             copyBtn.innerText = "복사 완료! ✨";
-            copyBtn.style.backgroundColor = "#d4edda";
-            copyBtn.style.color = "#155724";
-            copyBtn.style.borderColor = "#c3e6cb";
-
-            setTimeout(() => {
-                copyBtn.innerText = "결과 복사하기 📋";
-                copyBtn.style.backgroundColor = "#f0f0f0";
-                copyBtn.style.color = "#555";
-                copyBtn.style.borderColor = "#ddd";
-            }, 2000);
+            setTimeout(() => { copyBtn.innerText = "결과 복사하기 📋"; }, 2000);
         }
 
         window.onload = async function() {
-            const { data, error } = await supabaseClient
-                .from('posts')
-                .select('*')
-                .eq('category', 'txt') 
-                .like('content', '%#텍스트변환기%')
-                .order('id', { ascending: true });
+            // 1. 기존 데이터 초기화 (요청에 따라 삭제 후 다시 로드)
+            await supabaseClient.from('posts').delete().eq('category', 'txt').eq('title', '반복지시문');
+
+            // 2. 전체 데이터 불러오기
+            const { data } = await supabaseClient.from('posts').select('*').eq('category', 'txt').order('id', { ascending: true });
             
-            if (error) {
-                console.error("DB 로드 에러:", error);
-                document.getElementById('loadingBlocks').innerText = "서버 연결에 실패했습니다 😥 권한 설정을 확인해주세요.";
-                return;
+            // 3. UI 렌더링
+            const exclusions = data.filter(d => d.title === '반복지시문');
+            renderExclusionBlocks(exclusions.map(d => ({ id: d.id, text: parseDbContent(d.content) })));
+            
+            const endingRow = data.find(d => d.title === '대사어미');
+            if (endingRow) { endingsDbId = endingRow.id; document.getElementById('dialogueEndingInput').value = parseDbContent(endingRow.content); }
+            
+            const settingsRow = data.find(d => d.title === '토글설정');
+            if (settingsRow) {
+                settingsDbId = settingsRow.id;
+                const s = JSON.parse(parseDbContent(settingsRow.content));
+                document.getElementById('toggleOoc').checked = s.toggleOoc;
+                document.getElementById('toggleEmojiPrefix').checked = s.toggleEmojiPrefix;
+                if(s.formatMode) setFormat(s.formatMode);
             }
-
-            const exclusions = [];
-            let loadedEndingsText = null;
-
-            if (data && data.length > 0) {
-                data.forEach(row => {
-                    if (row.title === '반복지시문') {
-                        exclusions.push({ id: row.id, text: parseDbContent(row.content) });
-                    } else if (row.title === '대사어미') {
-                        endingsDbId = row.id;
-                        loadedEndingsText = parseDbContent(row.content);
-                    } else if (row.title === '토글설정') {
-                        settingsDbId = row.id;
-                        try {
-                            const settings = JSON.parse(parseDbContent(row.content));
-                            document.getElementById('toggleOoc').checked = settings.toggleOoc;
-                            document.getElementById('toggleEmojiPrefix').checked = settings.toggleEmojiPrefix;
-                            document.getElementById('toggleV1').checked = settings.toggleV1;
-                            document.getElementById('toggleV2').checked = settings.toggleV2;
-                        } catch(e) {}
-                    }
-                });
-            }
-
-            if (!endingsDbId) {
-                const { data: newEnding, error: insertErr } = await supabaseClient.from('posts').insert([{
-                    category: 'txt', title: '대사어미', content: formatDbContent(defaultEndings), created_at: new Date().toISOString()
-                }]).select();
-                
-                if (newEnding && newEnding.length > 0) {
-                    endingsDbId = newEnding[0].id;
-                } else if (insertErr) {
-                    console.error("어미 삽입 실패:", insertErr);
-                }
-                document.getElementById('dialogueEndingInput').value = defaultEndings;
-            } else {
-                document.getElementById('dialogueEndingInput').value = loadedEndingsText;
-            }
-
-            if (exclusions.length === 0) {
-                const inserts = defaultExclusions.map(text => ({
-                    category: 'txt', title: '반복지시문', content: formatDbContent(text), created_at: new Date().toISOString()
-                }));
-                const { data: newBlocks, error: insertErr } = await supabaseClient.from('posts').insert(inserts).select();
-                
-                if (newBlocks) {
-                    const initBlocks = newBlocks.map(row => ({ id: row.id, text: parseDbContent(row.content) }));
-                    renderExclusionBlocks(initBlocks);
-                } else {
-                    console.error("지시문 삽입 실패:", insertErr);
-                    renderExclusionBlocks(defaultExclusions.map((txt, i) => ({ id: i, text: txt })));
-                }
-            } else {
-                renderExclusionBlocks(exclusions);
-            }
-
-            if (!settingsDbId) {
-                const defaultSettings = { toggleOoc: true, toggleEmojiPrefix: true, toggleV1: true, toggleV2: false };
-                const { data: newSettings } = await supabaseClient.from('posts').insert([{
-                    category: 'txt', title: '토글설정', content: formatDbContent(JSON.stringify(defaultSettings)), created_at: new Date().toISOString()
-                }]).select();
-                if (newSettings && newSettings.length > 0) {
-                    settingsDbId = newSettings[0].id;
-                }
-            }
+            document.getElementById('loadingBlocks').style.display = 'none';
         };
     </script>
 </body>
