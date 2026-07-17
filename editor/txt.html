@@ -30,6 +30,7 @@
             transform: translateX(20px);
         }
     </style>
+    <!-- 🟢 Supabase CDN 추가 -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #fafafa; color: #333; padding: 20px; text-align: center; line-height: 1.7; letter-spacing: 0.3px; margin: 0;">
@@ -45,6 +46,7 @@
                 <label style="font-weight: bold; font-size: 13px; color: #555;">🚫 반복 지시문 삭제 목록 (블록별 지정, 줄바꿈 구분, 띄어쓰기 무시)</label>
                 
                 <div id="exclusionContainer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                    <!-- JS로 접은글(details) 블록들이 여기에 렌더링 됩니다 (Supabase 연동) -->
                     <div id="loadingBlocks" style="font-size: 12px; color: #999; text-align: center; padding: 20px;">서버에서 데이터를 불러오는 중입니다... ⏳</div>
                 </div>
 
@@ -60,6 +62,7 @@
         </div>
     </div>
     
+    <!-- 이미지 UI 기반의 토글 설정 영역 -->
     <div style="margin: 0 auto 20px auto; max-width: 100%; width: 100%; background-color: #f0eee6; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left; box-sizing: border-box;">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e0ddd3; padding-bottom: 10px;">
@@ -131,7 +134,9 @@
         // --- 🟢 Supabase 설정 영역 ---
         const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // 🚨 이름 충돌 방지: 변수명을 supabaseClient로 변경 🚨
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- 💾 완벽 보존된 원본 기본 데이터 ---
         const defaultExclusions = [
@@ -146,10 +151,8 @@
             `9.*OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.*`
         ];
         
-        // 원본과 토시 하나 안 틀린 단어 판별 어미
         const defaultEndings = "요, 네, 데, 야, 까, 어, 지, 고, 걸, 나, 래, 대, 가, 도, 큼, 거, 면, 죠, 일, 든, 워, 려, 히, 라, 게, 아, 에, 고, 워, 둬, 아, 봐, 발, 님, 서, 는, 을, ♡, 니, 봐, 려, 보, 딸";
 
-        // DB <-> 화면 데이터 변환 유틸
         function parseDbContent(rawContent) {
             return rawContent ? rawContent.split('|||')[0] : '';
         }
@@ -157,13 +160,11 @@
             return text + '|||#텍스트변환기';
         }
 
-        // 상태 변수
         let endingsDbId = null;
         let settingsDbId = null;
         const blockTimers = {};
         let endingsTimer = null;
 
-        // --- ⚙️ UI 및 Supabase 동기화 로직 ---
         function renderExclusionBlocks(dataArray) {
             const container = document.getElementById('exclusionContainer');
             container.innerHTML = '';
@@ -190,14 +191,13 @@
             `;
         }
 
-        // 새 블록 추가 (category: txt로 고정)
         async function addExclusionBlock() {
             const btn = document.getElementById('addBlockBtn');
             btn.innerText = "서버에 생성 중... ⏳";
             btn.disabled = true;
 
-            const { data, error } = await supabase.from('posts').insert([{
-                category: 'txt', // txt로 정확히 타겟팅
+            const { data, error } = await supabaseClient.from('posts').insert([{
+                category: 'txt',
                 title: '반복지시문',
                 content: formatDbContent(''),
                 created_at: new Date().toISOString()
@@ -220,7 +220,6 @@
             } 
         }
 
-        // 블록 삭제
         async function removeExclusionBlock(btn, event) {
             event.preventDefault(); 
             const block = btn.closest('details');
@@ -228,7 +227,7 @@
             const originalText = btn.innerText;
 
             btn.innerText = "삭제중..";
-            const { error } = await supabase.from('posts').delete().eq('id', id);
+            const { error } = await supabaseClient.from('posts').delete().eq('id', id);
             
             if (!error) {
                 block.remove();
@@ -247,31 +246,28 @@
             });
         }
 
-        // 텍스트 수정 시 DB 업데이트 (데이터 꼬임 방지용 0.3초 처리)
         function updateBlockInDb(textarea) {
             const id = parseInt(textarea.closest('details').getAttribute('data-id'), 10);
             const newText = textarea.value;
             
             clearTimeout(blockTimers[id]);
             blockTimers[id] = setTimeout(async () => {
-                const { error } = await supabase.from('posts').update({ content: formatDbContent(newText) }).eq('id', id);
+                const { error } = await supabaseClient.from('posts').update({ content: formatDbContent(newText) }).eq('id', id);
                 if(error) console.error("업데이트 실패:", error);
-            }, 300); // 사용자가 느끼기엔 즉시 저장되지만 서버 꼬임을 막는 최소한의 딜레이
+            }, 300);
         }
 
-        // 대사 어미 수정 시 DB 업데이트
         document.getElementById('dialogueEndingInput').addEventListener('input', function() {
             const newText = this.value;
             clearTimeout(endingsTimer);
             endingsTimer = setTimeout(async () => {
                 if (endingsDbId) {
-                    const { error } = await supabase.from('posts').update({ content: formatDbContent(newText) }).eq('id', endingsDbId);
+                    const { error } = await supabaseClient.from('posts').update({ content: formatDbContent(newText) }).eq('id', endingsDbId);
                     if(error) console.error("어미 업데이트 실패:", error);
                 }
             }, 300);
         });
 
-        // 토글 버튼 설정 DB 즉시 업데이트 (클릭 즉시 딜레이 없이 작동)
         async function saveSettingsToDb() {
             if (!settingsDbId) return;
             const settings = {
@@ -280,14 +276,14 @@
                 toggleV1: document.getElementById('toggleV1').checked,
                 toggleV2: document.getElementById('toggleV2').checked
             };
-            await supabase.from('posts').update({ content: formatDbContent(JSON.stringify(settings)) }).eq('id', settingsDbId);
+            await supabaseClient.from('posts').update({ content: formatDbContent(JSON.stringify(settings)) }).eq('id', settingsDbId);
         }
 
         ['toggleOoc', 'toggleEmojiPrefix', 'toggleV1', 'toggleV2'].forEach(id => {
             document.getElementById(id).addEventListener('change', saveSettingsToDb);
         });
 
-        // --- 🪄 원본 텍스트 변환 메인 로직 (기존 그대로 유지) ---
+        // 원본 변환 로직 유지
         function convertText() {
             let text = document.getElementById('inputText').value;
             const lines = text.split('\n');
@@ -401,7 +397,6 @@
             document.getElementById('outputText').value = finalResult.trim();
         }
 
-        // 팝업 없는 복사하기 기능
         function copyResult() {
             let outputText = document.getElementById('outputText');
             let copyBtn = document.getElementById('copyBtn');
@@ -428,13 +423,11 @@
             }, 2000);
         }
 
-        // --- 🚀 앱 시작 시 DB에서 전체 세팅 불러오기 ---
         window.onload = async function() {
-            // 1. Supabase에서 데이터 불러오기 (category: txt로 필터링)
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('posts')
                 .select('*')
-                .eq('category', 'txt') // txt 반영 완료
+                .eq('category', 'txt') 
                 .like('content', '%#텍스트변환기%')
                 .order('id', { ascending: true });
             
@@ -467,9 +460,8 @@
                 });
             }
 
-            // 2. 대사 어미 초기화 (DB에 없으면 원본 데이터 생성)
             if (!endingsDbId) {
-                const { data: newEnding, error: insertErr } = await supabase.from('posts').insert([{
+                const { data: newEnding, error: insertErr } = await supabaseClient.from('posts').insert([{
                     category: 'txt', title: '대사어미', content: formatDbContent(defaultEndings), created_at: new Date().toISOString()
                 }]).select();
                 
@@ -483,29 +475,26 @@
                 document.getElementById('dialogueEndingInput').value = loadedEndingsText;
             }
 
-            // 3. 지시문 블록 초기화 (DB에 없으면 원본 9개 데이터 몽땅 생성)
             if (exclusions.length === 0) {
                 const inserts = defaultExclusions.map(text => ({
                     category: 'txt', title: '반복지시문', content: formatDbContent(text), created_at: new Date().toISOString()
                 }));
-                const { data: newBlocks, error: insertErr } = await supabase.from('posts').insert(inserts).select();
+                const { data: newBlocks, error: insertErr } = await supabaseClient.from('posts').insert(inserts).select();
                 
                 if (newBlocks) {
                     const initBlocks = newBlocks.map(row => ({ id: row.id, text: parseDbContent(row.content) }));
                     renderExclusionBlocks(initBlocks);
                 } else {
                     console.error("지시문 삽입 실패:", insertErr);
-                    // DB 삽입 실패 시에도 화면에는 보이도록 로컬 데이터로 임시 렌더링
                     renderExclusionBlocks(defaultExclusions.map((txt, i) => ({ id: i, text: txt })));
                 }
             } else {
                 renderExclusionBlocks(exclusions);
             }
 
-            // 4. 토글 설정 초기화 (DB에 없으면 기본값으로 생성)
             if (!settingsDbId) {
                 const defaultSettings = { toggleOoc: true, toggleEmojiPrefix: true, toggleV1: true, toggleV2: false };
-                const { data: newSettings } = await supabase.from('posts').insert([{
+                const { data: newSettings } = await supabaseClient.from('posts').insert([{
                     category: 'txt', title: '토글설정', content: formatDbContent(JSON.stringify(defaultSettings)), created_at: new Date().toISOString()
                 }]).select();
                 if (newSettings && newSettings.length > 0) {
