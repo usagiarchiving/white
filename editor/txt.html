@@ -41,7 +41,7 @@
             font-size: 16px;
             font-weight: 600;
             color: #88b0ac;
-            margin: 0 0 16px 0;
+            margin: 0;
         }
 
         /* PC 환경 설정 영역 2단 그리드 */
@@ -184,11 +184,23 @@
         .exclusion-wrapper:hover {
             border-color: #d2d2d7;
         }
+        
+        /* 🔥 요점 1: 유동적 텍스트 길이를 위한 CSS 적용 🔥 */
         .summary-view {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px; /* 텍스트와 버튼 사이 간격 */
         }
+        .block-title {
+            font-size: 14px;
+            color: #1d1d1f;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1; /* 남은 공간을 모두 차지하여 모바일/PC 해상도에 맞게 꽉 차게 조절됨 */
+        }
+        
         .toggle-btn {
             background: transparent;
             border: 1px solid #d2d2d7;
@@ -198,7 +210,6 @@
             font-size: 13px;
             cursor: pointer;
             white-space: nowrap;
-            margin-left: 10px;
             transition: all 0.2s;
         }
         .toggle-btn:hover {
@@ -223,35 +234,19 @@
             border-color: #a1a1a6;
         }
 
-        /* 하단 메인 액션 버튼 */
-        .action-btn {
-            border: none;
-            padding: 16px 20px;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-            box-sizing: border-box;
-            margin-top: 10px;
-            font-family: inherit;
+        /* 🔥 요점 2: 섹션 접기/펼치기 애니메이션 용 CSS 🔥 */
+        .section-collapsible {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
         }
-        .btn-primary {
-            background-color: #88b0ac;
-            color: white;
-            box-shadow: 0 4px 12px rgba(136, 176, 172, 0.3);
+        .section-collapsible.collapsed {
+            grid-template-rows: 0fr;
+            opacity: 0.5; /* 완전히 접히기 전 부드럽게 흐려지는 효과 */
         }
-        .btn-primary:hover {
-            background-color: #799d99;
-            transform: translateY(-1px);
-        }
-        .btn-secondary {
-            background-color: #e8e8ed;
-            color: #1d1d1f;
-        }
-        .btn-secondary:hover {
-            background-color: #d2d2d7;
+        .section-inner {
+            overflow: hidden;
         }
         
         /* 타이틀 */
@@ -273,20 +268,32 @@
 
         <!-- [1단] 지시문 설정 -->
         <div class="card">
-            <h3 class="section-title">반복 지시문 설정</h3>
-            <div id="exclusionContainer" style="display: flex; flex-direction: column; gap: 4px;">
-                <div id="loadingBlocks" style="font-size: 14px; color: #86868b; text-align: center; padding: 20px;">
-                    데이터를 불러오는 중입니다...
+            <!-- 🔥 섹션 접기 토글 헤더 영역 🔥 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 class="section-title">반복 지시문 설정</h3>
+                <button onclick="toggleSection('exclusionSection', this)" style="background: none; border: none; color: #88b0ac; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px; transition: opacity 0.2s;">
+                    접어두기 <span style="font-size: 10px;">▲</span>
+                </button>
+            </div>
+            
+            <!-- 🔥 애니메이션을 위한 래퍼 🔥 -->
+            <div id="exclusionSection" class="section-collapsible">
+                <div class="section-inner">
+                    <div id="exclusionContainer" style="display: flex; flex-direction: column; gap: 4px;">
+                        <div id="loadingBlocks" style="font-size: 14px; color: #86868b; text-align: center; padding: 20px;">
+                            데이터를 불러오는 중입니다...
+                        </div>
+                    </div>
+                    <button id="addBlockBtn" onclick="addExclusionBlock()" class="add-block-btn">
+                        + 새로운 지시문 추가하기
+                    </button>
                 </div>
             </div>
-            <button id="addBlockBtn" onclick="addExclusionBlock()" class="add-block-btn">
-                + 새로운 지시문 추가하기
-            </button>
         </div>
         
         <!-- [1단] 대사 판별 어미 -->
         <div class="card">
-            <h3 class="section-title" style="color: #6e6e73;">대사 판별 어미 (쉼표 구분)</h3>
+            <h3 class="section-title" style="color: #6e6e73; margin-bottom: 16px;">대사 판별 어미 (쉼표 구분)</h3>
             <textarea id="dialogueEndingInput" style="height: 60px;" placeholder="데이터를 불러오는 중입니다..."></textarea>
         </div>
 
@@ -294,7 +301,7 @@
         <div class="settings-grid">
             <!-- 정리 설정 -->
             <div class="card" style="margin-bottom: 0;">
-                <h3 class="section-title" style="color: #6e6e73;">정리 설정</h3>
+                <h3 class="section-title" style="color: #6e6e73; margin-bottom: 16px;">정리 설정</h3>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <label class="toggle-row">
                         <div class="switch">
@@ -317,7 +324,7 @@
 
             <!-- 포맷 설정 -->
             <div class="card" style="margin-bottom: 0;">
-                <h3 class="section-title" style="color: #6e6e73;">출력 포맷</h3>
+                <h3 class="section-title" style="color: #6e6e73; margin-bottom: 16px;">출력 포맷</h3>
                 <div class="format-container">
                     <button id="btnV1" class="format-btn" onclick="setFormat('V1')">버전 1<br><span style="font-size: 12px; font-weight: normal; color: #86868b;">역극 폼</span></button>
                     <button id="btnV2" class="format-btn" onclick="setFormat('V2')">버전 2<br><span style="font-size: 12px; font-weight: normal; color: #86868b;">소설 폼</span></button>
@@ -331,13 +338,13 @@
         <!-- [2단] 텍스트 입/출력 -->
         <div class="io-grid">
             <div style="display: flex; flex-direction: column;">
-                <textarea id="inputText" style="height: 450px;" placeholder="여기에 텍스트를 붙여넣어 주세요..."></textarea>
-                <button onclick="convertText()" class="action-btn btn-primary">자동 변환하기</button>
+                <textarea id="inputText" style="height: 450px; margin-bottom: 10px;" placeholder="여기에 텍스트를 붙여넣어 주세요..."></textarea>
+                <button onclick="convertText()" style="background-color: #88b0ac; color: white; border: none; padding: 16px 20px; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(136, 176, 172, 0.3); font-family: inherit;">자동 변환하기</button>
             </div>
 
             <div style="display: flex; flex-direction: column;">
-                <textarea id="outputText" style="height: 450px;" placeholder="변환된 결과가 여기에 표시됩니다."></textarea>
-                <button id="copyBtn" onclick="copyResult()" class="action-btn btn-secondary">결과 복사하기</button>
+                <textarea id="outputText" style="height: 450px; margin-bottom: 10px;" placeholder="변환된 결과가 여기에 표시됩니다."></textarea>
+                <button id="copyBtn" onclick="copyResult()" style="background-color: #e8e8ed; color: #1d1d1f; border: none; padding: 16px 20px; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-family: inherit;">결과 복사하기</button>
             </div>
         </div>
     </div>
@@ -347,7 +354,6 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 숫자 제거된 완벽한 원본 9가지 규칙
         const defaultExclusions = [
             `유이는 뱅을 시온 씨/여보, 존댓말 사용. 뱅은 유이를 유이 씨/여보, 존댓말 사용.`,
             `답변은 이전의 대화와 로어북, 캐릭터 정보, 세계관을 참고하여 다채롭고 다양한 표현 방법으로 서술한다.`,
@@ -368,6 +374,18 @@
         let endingsDbId = null, settingsDbId = null;
         let blockTimers = {}, endingsTimer = null, currentFormatMode = 'V3';
 
+        // 🔥 요점 2: 섹션 접기/펼치기 제어 JS 🔥
+        function toggleSection(sectionId, btn) {
+            const section = document.getElementById(sectionId);
+            section.classList.toggle('collapsed');
+            
+            if (section.classList.contains('collapsed')) {
+                btn.innerHTML = '펼쳐보기 <span style="font-size: 10px;">▼</span>';
+            } else {
+                btn.innerHTML = '접어두기 <span style="font-size: 10px;">▲</span>';
+            }
+        }
+
         function toggleDetails(btn) {
             const wrapper = btn.closest('.exclusion-wrapper');
             const editView = wrapper.querySelector('.edit-view');
@@ -376,14 +394,14 @@
             btn.innerText = isHidden ? '닫기' : '수정하기';
         }
 
-        // 디자인이 다듬어진 블록 HTML 생성 함수
         function createBlockHTML(id, text) {
             const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            const titleText = text.trim() ? text.trim().substring(0, 25) + (text.trim().length > 25 ? '...' : '') : '(내용 없음)';
+            // 🔥 요점 1: JS에서 강제로 자르던 로직(.substring) 제거 🔥
+            const titleText = text.trim() ? safeText : '(내용 없음)';
             return `
             <div data-id="${id}" class="exclusion-wrapper">
                 <div class="summary-view">
-                    <span class="block-title" style="font-size:14px; color:#1d1d1f; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:75%;">${titleText}</span>
+                    <span class="block-title">${titleText}</span>
                     <button class="toggle-btn" onclick="toggleDetails(this)">수정하기</button>
                 </div>
                 <div class="edit-view" style="display:none; margin-top:12px;">
@@ -423,7 +441,8 @@
             
             const titleSpan = wrapper.querySelector('.block-title');
             const newText = textarea.value.trim();
-            titleSpan.innerText = newText ? newText.substring(0, 25) + (newText.length > 25 ? '...' : '') : '(내용 없음)';
+            // 🔥 요점 1: JS에서 강제로 자르던 로직(.substring) 제거 🔥
+            titleSpan.innerText = newText ? newText : '(내용 없음)';
             
             clearTimeout(blockTimers[id]);
             blockTimers[id] = setTimeout(async () => {
@@ -443,7 +462,6 @@
             document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btn' + mode).classList.add('active');
             
-            // 버튼 활성화 시 설명 텍스트 색상 변경 처리
             document.querySelectorAll('.format-btn span').forEach(span => {
                 span.style.color = '#86868b';
             });
