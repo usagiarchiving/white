@@ -135,15 +135,16 @@
             `;
 
             if (isExpanded) {
-                let subHtml = `<div class="expanded-subtasks">`;
+                // 🚨 [수정 3] 하위 항목 크기 축소 및 위계 구분
+                let subHtml = `<div class="expanded-subtasks" style="margin-top: 4px; padding-left: 2px;">`;
                 todo.subtasks.forEach((st, idx) => {
                     const stBoxBg = st.is_completed ? colorHex : 'transparent';
                     const stCheckBox = `<div class="custom-checkbox" style="border: 1.2px solid ${colorHex}; background-color: ${stBoxBg}; width: 8px; height: 8px; margin-top: 1px;" onclick="toggleSubtaskInline(${todo.id}, ${idx}, event)"></div>`;
                     const stCompClass = st.is_completed ? 'completed' : '';
                     subHtml += `
-                        <div class="exp-subtask-item ${stCompClass}">
+                        <div class="exp-subtask-item ${stCompClass}" style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 3px;">
                             ${stCheckBox}
-                            <span style="flex:1;" onclick="toggleSubtaskInline(${todo.id}, ${idx}, event)">${st.content}</span>
+                            <span style="flex:1; font-size: 0.9em; color: var(--sub-color); line-height: 1.4; opacity: 0.9;" onclick="toggleSubtaskInline(${todo.id}, ${idx}, event)">${st.content}</span>
                         </div>
                     `;
                 });
@@ -287,7 +288,12 @@
         list.empty();
         const targetStr = getFormatDate(selectedDate);
         
-        let filtered = todosData.filter(t => t.target_date === targetStr);
+        // 🚨 [수정 1] 완료된 항목은 완료일을 기준, 미완료는 계획일(target_date)을 기준으로 리스트 분류
+        let filtered = todosData.filter(t => {
+            const baseDate = t.is_completed ? (t.completed_date || t.target_date) : t.target_date;
+            return baseDate === targetStr;
+        });
+
         if (filtered.length === 0) {
             list.append('<div style="width: 100%; text-align:center; color:var(--sub-color); padding: 20px 0; font-size: 8px;">할 일이 없습니다.</div>');
             return;
@@ -494,14 +500,16 @@
             let classes = "cal-day-cell";
             if (dStr === statsSelectedDateStr) classes += " is-selected";
 
-            let inlineStyle = "";
+            // 🚨 [수정 2] 달성한 날짜에 노란색 파스텔 원형 뱃지 및 볼드 처리로 하이라이트
             let extraHtml = "";
+            let dayNumHtml = i;
 
             if (dayTodos.length > 0) {
-                inlineStyle = `font-weight: bold;`;
+                // 부드러운 파스텔 옐로우(#FFF2CC)로 날짜 텍스트를 둥글게 감쌈
+                dayNumHtml = `<span style="display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; background-color: #FFF2CC; border-radius: 50%; margin: 0 auto; color: #B28900; font-weight: bold;">${i}</span>`;
                 extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7.5px; color:var(--cat-${color}); font-weight:bold;">${dayTodos.length}개</div>`;
             }
-            grid.append(`<div class="${classes}" style="${inlineStyle}" onclick="selectStatsDate('${dStr}')">${i}${extraHtml}</div>`);
+            grid.append(`<div class="${classes}" onclick="selectStatsDate('${dStr}')">${dayNumHtml}${extraHtml}</div>`);
         }
 
         const chart = $('#sd-chart');
