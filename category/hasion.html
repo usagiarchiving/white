@@ -30,13 +30,14 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* 🚨 [수정 완료] 태그 패널 배경: 고정 흰색 -> 투명 */
+    /* 🚨 [수정 1] 배경 흰색 -> 투명(transparent) */
     #tags-panel {
         display: none; flex-wrap: wrap; margin-bottom: 25px; 
         padding: 11px; background: transparent; border-radius: 6px; 
         border: 1px solid var(--divider-bg);
     }
-    /* 🚨 [수정 완료] 개별 태그(알약) 배경: 고정 흰색 -> 투명 */
+    
+    /* 🚨 [수정 2] 배경 흰색 -> 투명(transparent) */
     .tag-pill {
         display: inline-block;
         font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color);
@@ -57,7 +58,7 @@
     }
     .hasion-title-input:focus { border-bottom-color: var(--point-color); }
 
-    /* 🚨 [수정 완료] 메인 입력 캔버스 배경: 고정 흰색 -> 투명 */
+    /* 🚨 [수정 3] 배경 흰색 -> 투명(transparent) */
     .hasion-paper-input {
         background: transparent; padding: 25px 25px 15px 25px; margin-bottom: 12px;
         border-radius: 6px; border: 1px solid var(--divider-bg);
@@ -176,7 +177,7 @@
        ========================================================================== */
     .format-toolbar {
         position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
-        border: 1px solid var(--point-color); border-radius: 8px; padding: 6px 8px; 
+        border: 1px solid var(--point-color); border-radius: 8px; padding: 6px 8px; /* 위아래 패딩 약간 증가 */
         box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 9999;
         align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
         flex-wrap: wrap; justify-content: center; max-width: 290px;
@@ -306,7 +307,7 @@
     var HASION_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YWx4cXVqY2V1aGZzaGF0aWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzg3MTksImV4cCI6MjA5NzIxNDcxOX0.6ZabNquhVkOnboWyQPSybP6S5S5iGjjYcpspcLM0vr0';
     var hasionSupabase = window.supabase.createClient(HASION_URL, HASION_KEY);
 
-    /* 🚨 업로드 후 작성 완료되지 않은 이미지들을 임시 보관하는 추적 배열 */
+    /* 🚨 업로드 후 작성 완료되지 풀 이미지들을 임시 보관하는 추적 배열 */
     var pendingUploads = [];
 
     /* --- [텍스트 에디터 로직] --- */
@@ -527,7 +528,7 @@
             
             feedContainer.empty();
             if (!data || data.length === 0) {
-                feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; font-family:\\'Noto Serif KR\\', serif;">작성된 기록이 없습니다.</p>');
+                feedContainer.html('<p style="text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">작성된 기록이 없습니다.</p>');
                 return;
             }
 
@@ -557,33 +558,34 @@
                     tagsText = parts[1] || "";
                 }
 
-                var displayContent = contentHtml.replace(/```([\\s\\S]*?)```/g, function(match, innerHtml) {
+                var displayContent = contentHtml.replace(/```([\s\S]*?)```/g, function(match, innerHtml) {
                     var temp = document.createElement('div');
-                    var formattedHtml = innerHtml.replace(/<br\\s*\\/?>/gi, '\\n')
-                                                 .replace(/<\\/div>/gi, '\\n')
-                                                 .replace(/<\\/p>/gi, '\\n');
+                    var formattedHtml = innerHtml.replace(/<br\s*\/?>/gi, '\n')
+                                                 .replace(/<\/div>/gi, '\n')
+                                                 .replace(/<\/p>/gi, '\n');
                     temp.innerHTML = formattedHtml;
                     var rawCode = temp.textContent || temp.innerText || "";
                     
-                    rawCode = rawCode.replace(/\\u00A0/g, ' ')
-                                     .replace(/>\\s+</g, '><')
+                    rawCode = rawCode.replace(/\u00A0/g, ' ')
+                                     .replace(/>\s+</g, '><')
                                      .trim();
                     
                     return `<div class="custom-html-box" contenteditable="false">${rawCode}</div>`;
                 });
 
-                displayContent = displayContent.replace(/(<\\/span>)(?:\\s|&nbsp;|<br\\s*\\/?>|<\\/?div>|<\\/?p>)*(<span class="editor-img-wrap)/gi, '$1$2');
+                displayContent = displayContent.replace(/(<\/span>)(?:\s|&nbsp;|<br\s*\/?>|<\/?div>|<\/?p>)*(<span class="editor-img-wrap)/gi, '$1$2');
 
-                var matches = tagsText.match(/#[^\\s#]+/g);
+                var matches = tagsText.match(/#[^\s#]+/g);
                 if(matches) matches.forEach(m => allTags.add(m));
 
                 var safeTitle = (post.title || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
                 var safeTags = tagsText.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-                var jsSafeTags = tagsText ? tagsText.replace(/\\\\/g, "\\\\\\\\").replace(/'/g, "\\\\'").replace(/"/g, "&quot;").replace(/\\n/g, "\\\\n").replace(/\\r/g, "") : '';
+                var jsSafeTags = tagsText ? tagsText.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n").replace(/\r/g, "") : '';
                 
                 var plainSearchText = `${post.title || ''} ${tagsText} ${displayDate}`.replace(/"/g, "");
                 var tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${jsSafeTags}')">${tagsText}</div>` : "";
 
+                // 🚨 목록 제목의 볼드 처리(font-weight) 삭제 적용 완료
                 var postHtml = `
                     <div class="feed-item fade-in-element" id="post-${post.id}" data-search="${plainSearchText}">
                         <div class="hasion-accordion-header" id="accordion-header-${post.id}" onclick="toggleHasionAccordion(${post.id})">
@@ -633,7 +635,7 @@
 
             if (allTags.size > 0) {
                 let tagsHtml = Array.from(allTags).map(tag => {
-                    let safeT = tag.replace(/'/g, "\\\\'");
+                    let safeT = tag.replace(/'/g, "\\'");
                     return `<span class="tag-pill" onclick="triggerTagSearch('${safeT}')">${tag}</span>`;
                 }).join('');
                 $('#tags-panel').html(tagsHtml);
@@ -821,7 +823,7 @@
 
     window.triggerTagSearch = function(tagText) {
         if(!tagText) return;
-        var pureTag = tagText.match(/#[^\\s#]+/)[0] || tagText;
+        var pureTag = tagText.match(/#[^\s#]+/)[0] || tagText;
         $('#hasion-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(pureTag);
         $('#search-icon').css('opacity', '0.7');
         $('#hasion-search').trigger('input'); 
