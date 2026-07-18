@@ -30,19 +30,19 @@
     }
     #search-icon:hover { opacity: 0.7; }
 
-    /* 🚨 [수정 1] 배경 흰색 -> 투명(transparent) */
+    /* 🚨 [완벽 수정 1] 태그 패널에 다크모드 테마 변수 적용 */
     #tags-panel {
         display: none; flex-wrap: wrap; margin-bottom: 25px; 
-        padding: 11px; background: transparent; border-radius: 6px; 
+        padding: 11px; background: var(--dropdown-bg); border-radius: 6px; 
         border: 1px solid var(--divider-bg);
     }
     
-    /* 🚨 [수정 2] 배경 흰색 -> 투명(transparent) */
+    /* 🚨 [완벽 수정 2] 개별 태그(알약)에 다크모드 테마 변수 적용 */
     .tag-pill {
         display: inline-block;
         font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color);
         cursor: pointer; padding: 4px 10px; border-radius: 12px; 
-        background: transparent; border: 1px solid var(--divider-bg); transition: all 0.2s;
+        background: var(--dropdown-bg); border: 1px solid var(--divider-bg); transition: all 0.2s;
         margin: 4px; 
     }
     .tag-pill:hover { color: var(--point-color); border-color: var(--point-color); }
@@ -58,9 +58,9 @@
     }
     .hasion-title-input:focus { border-bottom-color: var(--point-color); }
 
-    /* 🚨 [수정 3] 배경 흰색 -> 투명(transparent) */
+    /* 🚨 [완벽 수정 3] 메인 입력 캔버스에 다크모드 테마 변수 적용 */
     .hasion-paper-input {
-        background: transparent; padding: 25px 25px 15px 25px; margin-bottom: 12px;
+        background: var(--dropdown-bg); padding: 25px 25px 15px 25px; margin-bottom: 12px;
         border-radius: 6px; border: 1px solid var(--divider-bg);
         width: 100%; max-width: 100%; box-sizing: border-box;
     }
@@ -175,9 +175,10 @@
     /* ==========================================================================
        [🚨 드래그 텍스트 툴바 (2단 접힘 및 높이 계산 최적화)]
        ========================================================================== */
+    /* 🚨 [완벽 수정 4] 텍스트 툴바에 다크모드 모달 테마 변수 적용 */
     .format-toolbar {
-        position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
-        border: 1px solid var(--point-color); border-radius: 8px; padding: 6px 8px; /* 위아래 패딩 약간 증가 */
+        position: absolute; display: none; background: var(--modal-card-bg);
+        border: 1px solid var(--point-color); border-radius: 8px; padding: 6px 8px; 
         box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 9999;
         align-items: center; gap: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); user-select: none; 
         flex-wrap: wrap; justify-content: center; max-width: 290px;
@@ -197,8 +198,9 @@
     /* ==========================================================================
        [작고 미니멀한 1줄짜리 사진 조율 툴바]
        ========================================================================== */
+    /* 🚨 [완벽 수정 5] 이미지 툴바에 다크모드 모달 테마 변수 적용 */
     .img-format-toolbar {
-        position: absolute; display: none; background: rgba(250, 250, 248, 0.95);
+        position: absolute; display: none; background: var(--modal-card-bg);
         border: 1px solid var(--point-color); border-radius: 8px; padding: 4px 6px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 9999;
         align-items: center; gap: 2px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -307,7 +309,7 @@
     var HASION_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YWx4cXVqY2V1aGZzaGF0aWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzg3MTksImV4cCI6MjA5NzIxNDcxOX0.6ZabNquhVkOnboWyQPSybP6S5S5iGjjYcpspcLM0vr0';
     var hasionSupabase = window.supabase.createClient(HASION_URL, HASION_KEY);
 
-    /* 🚨 업로드 후 작성 완료되지 풀 이미지들을 임시 보관하는 추적 배열 */
+    /* 🚨 업로드 후 작성 완료되지 않은 이미지들을 임시 보관하는 추적 배열 */
     var pendingUploads = [];
 
     /* --- [텍스트 에디터 로직] --- */
@@ -585,7 +587,6 @@
                 var plainSearchText = `${post.title || ''} ${tagsText} ${displayDate}`.replace(/"/g, "");
                 var tagsDisplayHtml = tagsText ? `<div style="font-size: 11.5px; color: var(--point-color); margin-top: 15px; cursor: pointer; opacity:0.8;" onclick="triggerTagSearch('${jsSafeTags}')">${tagsText}</div>` : "";
 
-                // 🚨 목록 제목의 볼드 처리(font-weight) 삭제 적용 완료
                 var postHtml = `
                     <div class="feed-item fade-in-element" id="post-${post.id}" data-search="${plainSearchText}">
                         <div class="hasion-accordion-header" id="accordion-header-${post.id}" onclick="toggleHasionAccordion(${post.id})">
