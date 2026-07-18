@@ -296,31 +296,38 @@ window.saveRecordPost = async function() {
     btn.css('opacity', '0.3').prop('disabled', true);
     
     try {
-        // 🚨 [핀셋 수정 완료] 연도와 별점이 비어있을 때 발생하는 400 에러 원천 차단
-        // 빈칸("")일 경우 데이터베이스가 허용하는 대수적 형태인 null로 묶어서 포장합니다.
-        var rawYear = $('#modal-release-year').val().trim();
-        var safeYear = rawYear === "" ? null : parseInt(rawYear, 10);
+        // 🚨 [절대 방어막 1] 연도 필드 (어떤 텍스트나 오류가 와도 NaN을 원천 차단)
+        // HTML ID가 modal-year 이든 modal-release-year 이든 모두 알아서 찾아냅니다.
+        var yearInput = $('#modal-release-year').length ? $('#modal-release-year').val() : $('#modal-year').val();
+        var rawYear = yearInput ? yearInput.toString().trim() : "";
+        var parsedYear = parseInt(rawYear, 10);
+        var safeYear = isNaN(parsedYear) ? null : parsedYear; // 숫자가 아니면 무조건 null
         
+        // 🚨 [절대 방어막 2] 별점 필드
         var rawRating = parseFloat($('#modal-rating').val());
-        var safeRating = (isNaN(rawRating) || rawRating === 0) ? null : rawRating;
+        var safeRating = isNaN(rawRating) || rawRating === 0 ? null : rawRating;
 
-        // 🚨 [핀셋 수정 완료] 이제 제목(title)만 적어도 나머지 선택 항목들은 null 처리되어 완벽히 저장됩니다.
+        // 제목만 적어도 나머지는 안전하게 null 처리되어 완벽히 전송됩니다.
         var dataObj = {
             category: $('#modal-category').val(),
-            title: $('#modal-title').val().trim(),
+            title: $('#modal-title').val() ? $('#modal-title').val().trim() : "",
             release_year: safeYear, 
-            creator: $('#modal-creator').val().trim() || null,
-            tags: $('#modal-tags').val().trim() || null,
-            author: $('#modal-author').val().trim() || null,
-            content: $('#modal-content').html().trim() || null,
+            creator: $('#modal-creator').val() ? $('#modal-creator').val().trim() : null,
+            tags: $('#modal-tags').val() ? $('#modal-tags').val().trim() : null,
+            author: $('#modal-author').val() ? $('#modal-author').val().trim() : null,
+            content: $('#modal-content').html() ? $('#modal-content').html().trim() : null,
             rating: safeRating, 
             is_main: $('#modal-is-main').is(':checked'),
             created_at: $('#modal-date-picker').val() ? $('#modal-date-picker').val() + 'T12:00:00+09:00' : new Date().toISOString(), 
-            cover_url: $('#record-cover-url').val().trim() || null
+            cover_url: $('#record-cover-url').val() ? $('#record-cover-url').val().trim() : null
         };
 
-        if (!dataObj.title) { alert("Title을 입력해주세요."); throw new Error("Title is empty"); }
+        if (!dataObj.title) { 
+            alert("Title을 입력해주세요."); 
+            throw new Error("Title is empty"); 
+        }
 
+        // 이미지 업로드 로직
         if (window.recordSelectedFile) {
             var file = window.recordSelectedFile;
             var fileExt = file.name.split('.').pop();
@@ -331,6 +338,7 @@ window.saveRecordPost = async function() {
             dataObj.cover_url = publicUrlData.publicUrl;
         }
 
+        // DB 최종 전송
         var { error } = await window.recordSupabase.from('record').insert([dataObj]);
         if (error) throw error;
         
