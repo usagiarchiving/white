@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 Javascript 엔진 (실제 완료일 기반 통계/캘린더 뱃지 픽스)
+   토끼굴 Todo 전용 Javascript 엔진 (통계 캘린더 뱃지 카테고리 컬러 반영 및 폰트 통일)
    ========================================================================== */
 
 (function() {
@@ -135,7 +135,6 @@
             `;
 
             if (isExpanded) {
-                // 🚨 [수정 3] 하위 항목 크기 축소 및 위계 구분
                 let subHtml = `<div class="expanded-subtasks" style="margin-top: 4px; padding-left: 2px;">`;
                 todo.subtasks.forEach((st, idx) => {
                     const stBoxBg = st.is_completed ? colorHex : 'transparent';
@@ -167,7 +166,6 @@
         `;
     }
 
-    // 🚨 외부 뷰에서 직접 하위 항목 체크하기
     window.toggleSubtaskInline = async function(todoId, subIdx, event) {
         if(event) event.stopPropagation();
         const todo = todosData.find(t => t.id == todoId);
@@ -178,10 +176,10 @@
         
         if (allCompleted && todo.subtasks.length > 0) {
             todo.is_completed = true; 
-            todo.completed_date = getFormatDate(new Date()); // 🚨 하위 항목 전부 완료 시 오늘 날짜 도장 쾅!
+            todo.completed_date = getFormatDate(new Date()); 
         } else if (!allCompleted && todo.is_completed) {
             todo.is_completed = false; 
-            todo.completed_date = null; // 🚨 하나라도 풀리면 도장 삭제
+            todo.completed_date = null; 
         }
 
         refreshAllViews();
@@ -288,7 +286,6 @@
         list.empty();
         const targetStr = getFormatDate(selectedDate);
         
-        // 🚨 [수정 1] 완료된 항목은 완료일을 기준, 미완료는 계획일(target_date)을 기준으로 리스트 분류
         let filtered = todosData.filter(t => {
             const baseDate = t.is_completed ? (t.completed_date || t.target_date) : t.target_date;
             return baseDate === targetStr;
@@ -332,11 +329,9 @@
             const isToday = dStr === getFormatDate(new Date());
             const isSelected = dStr === getFormatDate(selectedDate);
             
-            // 🚨 해당 날짜가 '계획일(target)'이면서 안 한 일이 있는가? (파란 점 표시용)
             const targetTodos = todosData.filter(t => t.target_date === dStr);
             let hasUncompleted = targetTodos.some(t => !t.is_completed);
             
-            // 🚨 그날 실제로 '완료'한 할 일 추출 (completed_date 최우선, 없으면 과거 기록용으로 target_date 폴백)
             const actualCompletedToday = todosData.filter(t => t.is_completed && (t.completed_date || t.target_date) === dStr);
             
             let badgeHtml = '';
@@ -405,7 +400,6 @@
         const monthPrefix = `${y}-${String(m).padStart(2, '0')}`;
 
         colors.forEach(color => {
-            // 🚨 통계 메인화면: 완료된 할 일 중 '실제 완료일(completed_date)'이 이번 달인 것들만 긁어옴
             const completedTodosForCat = todosData.filter(t => {
                 if (!t.is_completed || t.category !== color) return false;
                 const cDate = t.completed_date || t.target_date;
@@ -419,14 +413,12 @@
             let completedCount = 0;
             for (let i = 1; i <= daysInMonth; i++) {
                 const dStr = `${monthPrefix}-${String(i).padStart(2, '0')}`;
-                // 그날 완료한 개수 파악
                 const dayTodos = completedTodosForCat.filter(t => (t.completed_date || t.target_date) === dStr);
                 const completed = dayTodos.length;
 
                 let bgStyle = ``;
                 let dayHtml = ``; 
                 if (completed > 0) {
-                    // 미니 달력에서는 최대 투명도를 1로 잡고 많이 할수록 진해지게
                     const ratio = Math.max(0.3, Math.min(1, completed / 3)); 
                     bgStyle = `background: var(--cat-${color}); opacity: ${ratio};`;
                     completedCount += completed;
@@ -470,7 +462,6 @@
 
         const monthPrefix = `${y}-${String(m).padStart(2, '0')}`;
         
-        // 🚨 통계 상세화면: '실제 완료일(completed_date)' 기반 필터링
         const completedTodos = todosData.filter(t => {
             if (!t.is_completed || t.category !== color) return false;
             const cDate = t.completed_date || t.target_date;
@@ -500,13 +491,13 @@
             let classes = "cal-day-cell";
             if (dStr === statsSelectedDateStr) classes += " is-selected";
 
-            // 🚨 [수정 2] 달성한 날짜에 노란색 파스텔 원형 뱃지 및 볼드 처리로 하이라이트
+            // 🚨 [수정 2] 완료한 날짜에 '카테고리 색상'을 입히고 폰트 속성은 기본으로 리셋
             let extraHtml = "";
             let dayNumHtml = i;
 
             if (dayTodos.length > 0) {
-                // 부드러운 파스텔 옐로우(#FFF2CC)로 날짜 텍스트를 둥글게 감쌈
-                dayNumHtml = `<span style="display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; background-color: #FFF2CC; border-radius: 50%; margin: 0 auto; color: #B28900; font-weight: bold;">${i}</span>`;
+                // 🚨 font-weight 제거 (정상 굵기), 폰트 사이즈 상속, 카테고리 컬러 배경, 글자색 화이트
+                dayNumHtml = `<span style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; background-color: var(--cat-${color}); border-radius: 50%; margin: 0 auto; color: #fff; font-size: inherit; font-weight: normal;">${i}</span>`;
                 extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7.5px; color:var(--cat-${color}); font-weight:bold;">${dayTodos.length}개</div>`;
             }
             grid.append(`<div class="${classes}" onclick="selectStatsDate('${dStr}')">${dayNumHtml}${extraHtml}</div>`);
@@ -526,7 +517,6 @@
         const sdList = $('#sd-list');
         sdList.empty();
         
-        // 하단 리스트도 실제 완료일 기준으로 불러오기
         let targetTodos = completedTodos.filter(t => (t.completed_date || t.target_date) === statsSelectedDateStr);
         
         if (targetTodos.length === 0) {
@@ -542,7 +532,6 @@
         }
     }
 
-    // 🚨 완료 상태 토글 (완료된 시점의 오늘 날짜를 DB에 저장)
     window.toggleComplete = async function(id, el, event) {
         if(event) event.stopPropagation();
         const todo = todosData.find(t => t.id == id);
@@ -555,11 +544,11 @@
         if (newVal) {
             $(el).css('background-color', colorHex);
             item.addClass('completed').css('transform', 'scale(0.98)');
-            todo.completed_date = getFormatDate(new Date()); // 🚨 추가: 완료된 순간의 날짜 쾅!
+            todo.completed_date = getFormatDate(new Date()); 
         } else {
             $(el).css('background-color', 'transparent');
             item.removeClass('completed').css('transform', 'scale(1)');
-            todo.completed_date = null; // 🚨 추가: 미완료 시 완료일 삭제
+            todo.completed_date = null; 
         }
 
         setTimeout(async () => {
@@ -582,7 +571,7 @@
             matrix_quadrant: parseInt($('#qa-quad').val()),
             is_completed: false,
             target_date: getFormatDate(new Date()),
-            completed_date: null, // 🚨 기본값 추가
+            completed_date: null,
             subtasks: [],
             sort_order: Date.now() 
         };
@@ -704,7 +693,6 @@
         });
     }
 
-    // 🚨 저장 시 부모-하위 자동 연동 로직 (완료일 저장 포함)
     window.saveDetailedTodo = async function() {
         const id = $('#dm-id').val();
         const content = $('#dm-input').val().trim();
