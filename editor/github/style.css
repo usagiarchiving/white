@@ -160,11 +160,11 @@ body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-c
     margin-bottom: 8px;
 }
 
-/* 💡 수정된 부분: (4) 미리보기 컨테이너 점선 제거 및 애니메이션 추가 */
+/* PC 환경: 점선 스타일을 완전히 제거하고 깔끔하게 떨어지는 실선형 큰 카드 형태 유지 */
 .preview-container {
     width: 100%;
     height: 700px;
-    border: 1px solid var(--border); /* 점선을 1px 실선 카드로 변경 */
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 10px 0;
     background: var(--preview-bg);
@@ -177,7 +177,7 @@ body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-c
 .preview-container:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); /* 빛번짐 효과 부드럽게 조정 */
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
 }
 
 .preview-gap {
@@ -341,16 +341,24 @@ body.dark-mode .postit-scroll::-webkit-scrollbar-thumb { background: rgba(255,25
     .grid-2col { grid-template-columns: 1fr; }
     .settings-grid { grid-template-columns: 1fr; }
     
-    /* 💡 수정된 부분: 모바일에서 미리보기 창을 화면 꽉 차게 구현 */
+    /* 💡 지시사항 반영: 1단 구조(모바일)일 때 테두리 전면 삭제 및 와이드 100% 꽉 차게 변경 */
     .preview-container {
         margin-left: -20px;
         margin-right: -20px;
         width: calc(100% + 40px);
-        border-radius: 0; /* 테두리 둥글기 제거 */
-        border-left: none; /* 좌우 테두리 제거 */
-        border-right: none;
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        height: 75vh; /* 모바일 에디터 환경에 최적화된 높이 */
+        
+        border: none !important; /* 테두리 흔적조차 없이 완전 제거 */
+        border-radius: 0 !important; /* 둥근 모서리 해제 */
+        box-shadow: none !important; /* 카드 형태 그림자 제거 */
+        background: var(--preview-bg);
+        height: 75vh;
+        padding: 0;
+    }
+
+    /* 💡 핵심: 진짜 렌더링되어 보이는 HTML 본문의 600px 제한(px제한 ㄴㄴ)을 완벽히 해제 */
+    #htmlPreview .tistory-post-wrapper {
+        max-width: none !important; /* 픽셀 너비 제한 완전 타파 */
+        width: 100% !important; /* 화면 가로폭을 가득 채우는 와이드 스크린 */
+        padding: 0 25px !important; /* 실제 글을 올렸을 때 나타나는 좌우 여백을 정확하게 시뮬레이션 */
     }
 }
