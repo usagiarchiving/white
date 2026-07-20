@@ -1,207 +1,438 @@
-<link rel="stylesheet" href="category/todo/todo.css">
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>토끼굴 Todo</title>
+    
+    <!-- 아이콘 폰트 (XeIcon) -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
+    <!-- Supabase 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<div class="todo-wrapper">
+    <style>
+        /* =========================================
+           iOS / iCloud 감성의 기본 CSS 변수 설정
+           ========================================= */
+        :root {
+            --cat-gray: #8E8E93;
+            --cat-red: #FF3B30;
+            --cat-orange: #FF9500;
+            --cat-yellow: #FFCC00;
+            --cat-green: #34C759;
+            --cat-mint: #00C7BE;
+            --cat-blue: #007AFF;
+            --cat-navy: #5856D6;
+            --cat-purple: #AF52DE;
+            --cat-pink: #FF2D55;
+            
+            --main-color: #333333;
+            --sub-color: #888888;
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --border-color: #E5E5EA;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--main-color);
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 네비게이션 탭 */
+        .nav-tabs {
+            display: flex;
+            justify-content: space-around;
+            background: var(--card-bg);
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .nav-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--sub-color);
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav-btn.active { color: var(--cat-blue); background: #f0f8ff; }
+
+        /* 탭 컨텐츠 영역 */
+        .todo-tab-content { display: none; padding: 20px; flex: 1; }
+        .todo-tab-content.active { display: block; }
+
+        /* 빠른 추가 (Quick Add) */
+        .quick-add-container {
+            padding: 15px 20px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        .qa-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .qa-input-row input[type="text"] {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+        .qa-options-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .qa-btn {
+            background: var(--cat-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* 할 일 리스트 스타일 */
+        .todo-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .todo-item.completed { opacity: 0.6; }
+        .todo-item-top { display: flex; align-items: center; gap: 10px; }
+        .custom-checkbox {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.2s;
+        }
+        .todo-text { flex: 1; font-size: 15px; line-height: 1.4; word-break: break-all; }
+        .todo-item.completed .todo-text { text-decoration: line-through; color: var(--sub-color); }
+        .todo-meta { font-size: 10px; color: var(--sub-color); text-align: right; }
+        .todo-meta.overdue { color: var(--cat-red); font-weight: bold; }
+
+        /* 매트릭스 뷰 */
+        .matrix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .matrix-quadrant {
+            background: #FAFAFA;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+            min-height: 150px;
+        }
+        .quad-title { font-size: 12px; font-weight: bold; margin-bottom: 8px; color: var(--main-color); }
+
+        /* 주간/달력 뷰 공통 헤더 */
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        /* 모달 공통 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-card {
+            background: var(--card-bg);
+            width: 90%; max-width: 400px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .modal-input-group { margin-bottom: 15px; }
+        .modal-input-group label { display: block; font-size: 12px; color: var(--sub-color); margin-bottom: 5px; }
+        .modal-input-group input[type="text"], 
+        .modal-input-group input[type="date"], 
+        .modal-input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-cancel { background: #f0f0f0; color: var(--main-color); border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
+        .btn-save { background: var(--cat-blue); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
+        .btn-delete { background: var(--cat-red); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; margin-right: auto; }
+
+        /* 색상 팔레트 */
+        .color-palette {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            gap: 5px;
+            z-index: 50;
+        }
+        .color-palette button {
+            background: none; border: none; font-size: 18px; cursor: pointer; padding: 5px;
+        }
+
+        /* 캘린더 그리드 */
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .cal-day-name { font-size: 12px; color: var(--sub-color); margin-bottom: 5px; }
+        .cal-day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+        }
+        .cal-day-cell.is-selected { background-color: var(--border-color); }
+        .cal-day-cell.is-today { font-weight: bold; color: var(--cat-blue); }
+        
+        /* 검색창 */
+        .search-container { position: relative; margin-bottom: 15px; }
+        .search-container input { width: 100%; padding: 8px 30px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .search-container i { position: absolute; left: 10px; top: 10px; color: var(--sub-color); }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- 네비게이션 탭 -->
+    <div class="nav-tabs">
+        <button class="nav-btn active" onclick="switchTab('matrix', this)"><i class="xi-apps"></i></button>
+        <button class="nav-btn" onclick="switchTab('weekly', this)"><i class="xi-calendar"></i></button>
+        <button class="nav-btn" onclick="switchTab('cal', this)"><i class="xi-calendar-check"></i></button>
+        <button class="nav-btn" onclick="switchTab('stats', this)"><i class="xi-chart-pie"></i></button>
+    </div>
+
+    <!-- 1. 매트릭스 탭 -->
     <div id="todo-tab-matrix" class="todo-tab-content active">
-        <div class="quick-add-bar">
-            <button class="btn-icon" id="qa-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('qa')">
-                <i class="xi-heart-o"></i>
-            </button>
-            <input type="hidden" id="qa-color-val" value="gray">
-            <div id="qa-color-palette" class="color-palette"></div>
-            
-            <input type="text" id="qa-input" class="quick-add-input" placeholder="" autocomplete="off">
-            
-            <select id="qa-quad" class="quick-add-select">
-                <option value="0">미지정</option>
-                <option value="1">실행</option>
-                <option value="2">계획</option>
-                <option value="3">위임</option>
-                <option value="4">제거</option>
-            </select>
-            
-            <button class="btn-icon" onclick="openDetailedModal()"><i class="xi-expand"></i></button>
-            <button class="btn-icon" onclick="quickAddTodo()" style="font-size: 14px; font-weight: bold;">+</button>
-        </div>
-
         <div class="matrix-grid">
-            <div class="m-header-empty"></div>
-            <div class="m-header-top">긴급함</div>
-            <div class="m-header-top">긴급하지않음</div>
-
-            <div class="m-header-left">중요함</div>
-            <div class="quadrant-box" id="quad-1"></div>
-            <div class="quadrant-box" id="quad-2"></div>
-
-            <div class="m-header-left">중요하지않음</div>
-            <div class="quadrant-box" id="quad-3"></div>
-            <div class="quadrant-box" id="quad-4"></div>
+            <div class="matrix-quadrant"><div class="quad-title">중요 & 긴급 (1)</div><div id="quad-1"></div></div>
+            <div class="matrix-quadrant"><div class="quad-title">중요 & 안긴급 (2)</div><div id="quad-2"></div></div>
+            <div class="matrix-quadrant"><div class="quad-title">안중요 & 긴급 (3)</div><div id="quad-3"></div></div>
+            <div class="matrix-quadrant"><div class="quad-title">안중요 & 안긴급 (4)</div><div id="quad-4"></div></div>
         </div>
-
-        <div class="inbox-area" id="quad-0"></div>
-        <div class="inbox-area" id="upcoming-timeline" style="display: none; margin-top: 15px; margin-bottom: 10px;"></div>
+        <div class="matrix-quadrant" style="margin-bottom: 20px;"><div class="quad-title">미분류 (0)</div><div id="quad-0"></div></div>
+        <div id="upcoming-timeline"></div>
     </div>
 
+    <!-- 2. 주간 탭 -->
     <div id="todo-tab-weekly" class="todo-tab-content">
-        <div class="weekly-header">
-            <i class="xi-angle-left btn-icon" onclick="changeWeek(-1)"></i>
-            <div class="ym-selector-container">
-                <span id="weekly-month-display" class="todo-ym-display" onclick="showTodoYMPicker('weekly')"></span>
-                <input type="month" id="weekly-ym-picker" class="todo-ym-picker" style="display: none;" onchange="handleTodoYMChange('weekly')" onblur="handleTodoYMChange('weekly')">
-            </div>
-            <i class="xi-angle-right btn-icon" onclick="changeWeek(1)"></i>
+        <div class="view-header">
+            <button class="nav-btn" onclick="changeWeek(-1)"><i class="xi-angle-left"></i></button>
+            <div id="weekly-month-display" onclick="showTodoYMPicker('weekly')">2026년 07월</div>
+            <input type="month" id="weekly-ym-picker" style="display:none;" onchange="handleTodoYMChange('weekly')">
+            <button class="nav-btn" onclick="changeWeek(1)"><i class="xi-angle-right"></i></button>
         </div>
-        <div class="weekly-strip" id="weekly-strip"></div>
-        
-        <div class="todo-action-bar">
-            <div class="search-inner">
-                <input type="text" id="weekly-search" class="todo-search-input" autocomplete="off" placeholder="검색">
-                <i class="xi-search todo-search-icon"></i>
-            </div>
-            <i class="xi-pen-o btn-icon todo-action-btn" onclick="openDetailedModal(null, true)"></i>
-        </div>
-        
-        <div class="inbox-area" style="flex: 1;" id="weekly-list"></div>
-    </div>
-
-    <div id="todo-tab-calendar" class="todo-tab-content">
-        <div class="cal-header">
-            <i class="xi-angle-left btn-icon" onclick="changeMonth(-1)"></i>
-            <div class="ym-selector-container">
-                <span id="cal-month-display" class="todo-ym-display" onclick="showTodoYMPicker('cal')"></span>
-                <input type="month" id="cal-ym-picker" class="todo-ym-picker" style="display: none;" onchange="handleTodoYMChange('cal')" onblur="handleTodoYMChange('cal')">
-            </div>
-            <i class="xi-angle-right btn-icon" onclick="changeMonth(1)"></i>
-        </div>
-        <div class="cal-grid" id="cal-grid"></div>
-        
-        <div class="todo-action-bar" style="margin-top: 10px;">
-            <div class="search-inner">
-                <input type="text" id="cal-search" class="todo-search-input" autocomplete="off" placeholder="검색">
-                <i class="xi-search todo-search-icon"></i>
-            </div>
-            <i class="xi-pen-o btn-icon todo-action-btn" onclick="openDetailedModal(null, true)"></i>
-        </div>
-        
-        <div class="inbox-area" style="flex: 1;" id="cal-list"></div>
-    </div>
-
-    <div id="todo-tab-stats" class="todo-tab-content">
-        <div class="stats-header">
-            <i class="xi-angle-left btn-icon" onclick="changeStatsMonth(-1)"></i>
-            <div class="ym-selector-container">
-                <span id="stats-month-display" class="todo-ym-display" onclick="showTodoYMPicker('stats')"></span>
-                <input type="month" id="stats-ym-picker" class="todo-ym-picker" style="display: none;" onchange="handleTodoYMChange('stats')" onblur="handleTodoYMChange('stats')">
-            </div>
-            <i class="xi-angle-right btn-icon" onclick="changeStatsMonth(1)"></i>
-        </div>
-        <div class="stats-grid" id="stats-grid"></div>
-    </div>
-
-    <div class="todo-bottom-nav">
-        <button class="nav-btn active" onclick="switchTab('matrix', this)"><i class="xi-border-all"></i></button>
-        <button class="nav-btn" onclick="switchTab('weekly', this)"><i class="xi-view-day"></i></button>
-        <button class="nav-btn" onclick="switchTab('calendar', this)"><i class="xi-calendar"></i></button>
-        <button class="nav-btn" onclick="switchTab('stats', this)"><i class="xi-chart-bar"></i></button>
-    </div>
-
-</div>
-
-<div id="detail-modal-overlay" class="todo-modal-overlay" onclick="closeDetailedModal()">
-    <div class="detail-modal-card">
-        <input type="hidden" id="dm-id">
-        
-        <div class="modal-input-row" style="padding-bottom: 10px; border-bottom: 1px solid var(--divider-bg); justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                <button class="btn-icon" id="dm-color-btn" style="color: var(--cat-gray);" onclick="togglePalette('dm')">
-                    <i class="xi-heart-o"></i>
-                </button>
-                <input type="hidden" id="dm-color-val" value="gray">
-                <div id="dm-color-palette" class="color-palette" style="top: 100%; left: 0;"></div>
-                <input type="text" id="dm-input" class="modal-input" placeholder="할 일 입력" autocomplete="off" style="font-weight: 600;">
-            </div>
-            <div style="display: flex; gap: 4px;">
-                <button class="btn-icon" onclick="moveOrder('up')" title="위로"><i class="xi-arrow-up"></i></button>
-                <button class="btn-icon" onclick="moveOrder('down')" title="아래로"><i class="xi-arrow-down"></i></button>
-            </div>
-        </div>
-        
-        <div class="modal-input-row" style="flex-direction: column; align-items: flex-start; gap: 6px; border-bottom: 1px solid var(--divider-bg); padding-bottom: 10px;">
-            <div id="dm-subtasks-list" style="width: 100%; display: flex; flex-direction: column; gap: 4px;"></div>
-            <div style="display: flex; width: 100%; gap: 6px; align-items: center;">
-                <i class="xi-plus-square-o" style="color: var(--sub-color); font-size: 10px;"></i>
-                <input type="text" id="dm-new-subtask" class="modal-input" placeholder="하위 할 일" autocomplete="off">
-                <button class="btn-icon" onclick="addSubtaskFromUI()"><i class="xi-arrow-right"></i></button>
-            </div>
-        </div>
-        
-        <div class="modal-input-row">
-            <span class="modal-label">영역</span>
-            <select id="dm-quad" class="modal-input">
-                <option value="0">미지정</option>
-                <option value="1">실행 (중요/긴급)</option>
-                <option value="2">계획 (중요/안긴급)</option>
-                <option value="3">위임 (안중요/긴급)</option>
-                <option value="4">제거 (안중요/안긴급)</option>
-            </select>
-        </div>
-
-        <div class="modal-input-row">
-            <span class="modal-label">날짜</span>
-            <input type="date" id="dm-date" class="modal-input date-left">
-        </div>
-
-        <div class="modal-input-row">
-            <span class="modal-label">반복</span>
-            <select id="dm-repeat" class="modal-input">
-                <option value="none">반복 안함</option>
-                <option value="daily">매일</option>
-                <option value="weekly">매주</option>
-                <option value="monthly">매월</option>
-            </select>
-        </div>
-
-        <div class="modal-footer" style="justify-content: space-between; margin-top: 15px;">
-            <button class="modal-btn" id="dm-delete-btn" style="color: #ff3b30; display: none;" onclick="deleteTodoFromModal()">삭제</button>
-            <div style="display: flex; gap: 15px; flex: 1; justify-content: flex-end;">
-                <button class="modal-btn" style="color: var(--sub-color);" onclick="closeDetailedModal()">취소</button>
-                <button class="modal-btn" style="color: var(--point-color);" onclick="saveDetailedTodo()">저장</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="stats-detail-overlay" class="todo-modal-overlay stats-detail-overlay">
-    <div class="stats-detail-header">
-        <i class="xi-angle-left btn-icon" style="font-size: 16px;" onclick="closeStatsDetail()"></i>
-        <div style="flex:1; text-align:center;" id="sd-header-title"><i class="xi-heart"></i></div>
-        <div class="search-inner">
-            <input type="text" id="sd-search" class="todo-search-input" autocomplete="off" placeholder="검색">
+        <div id="weekly-strip" style="display: flex; justify-content: space-between; margin-bottom: 20px; text-align: center;"></div>
+        <div class="search-container">
             <i class="xi-search todo-search-icon"></i>
+            <input type="text" id="weekly-search" class="todo-search-input" placeholder="검색...">
         </div>
+        <div id="weekly-list"></div>
     </div>
-    <div class="stats-detail-content">
-        <div class="stats-header" style="justify-content: center; gap: 20px;">
-            <i class="xi-angle-left btn-icon" onclick="changeStatsMonth(-1)"></i>
-            <div class="ym-selector-container">
-                <span id="sd-month-display" class="todo-ym-display" onclick="showTodoYMPicker('sd')" style="font-size: 10px;"></span>
-                <input type="month" id="sd-ym-picker" class="todo-ym-picker" style="display: none;" onchange="handleTodoYMChange('sd')" onblur="handleTodoYMChange('sd')">
+
+    <!-- 3. 캘린더 탭 -->
+    <div id="todo-tab-cal" class="todo-tab-content">
+        <div class="view-header">
+            <button class="nav-btn" onclick="changeMonth(-1)"><i class="xi-angle-left"></i></button>
+            <div id="cal-month-display" onclick="showTodoYMPicker('cal')">2026년 07월</div>
+            <input type="month" id="cal-ym-picker" style="display:none;" onchange="handleTodoYMChange('cal')">
+            <button class="nav-btn" onclick="changeMonth(1)"><i class="xi-angle-right"></i></button>
+        </div>
+        <div id="cal-grid" class="cal-grid"></div>
+        <div class="search-container">
+            <i class="xi-search todo-search-icon"></i>
+            <input type="text" id="cal-search" class="todo-search-input" placeholder="검색...">
+        </div>
+        <div id="cal-list"></div>
+    </div>
+
+    <!-- 4. 통계 탭 -->
+    <div id="todo-tab-stats" class="todo-tab-content">
+        <div class="view-header">
+            <button class="nav-btn" onclick="changeStatsMonth(-1)"><i class="xi-angle-left"></i></button>
+            <div id="stats-month-display" onclick="showTodoYMPicker('stats')">2026년 07월</div>
+            <input type="month" id="stats-ym-picker" style="display:none;" onchange="handleTodoYMChange('stats')">
+            <button class="nav-btn" onclick="changeStatsMonth(1)"><i class="xi-angle-right"></i></button>
+        </div>
+        <div id="stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
+    </div>
+
+    <!-- 통계 상세 오버레이 -->
+    <div id="stats-detail-overlay" class="modal-overlay" style="align-items: flex-end; padding-bottom: 20px;">
+        <div class="modal-card" style="width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; min-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div id="sd-header-title"></div>
+                <button onclick="closeStatsDetail()" style="background:none; border:none; font-size:24px; color:var(--sub-color);"><i class="xi-close"></i></button>
             </div>
-            <i class="xi-angle-right btn-icon" onclick="changeStatsMonth(1)"></i>
-        </div>
-        <div class="sd-summary-row">
-            <div class="sd-summary-box"><div class="sd-summary-val" id="sd-val-days"><i class="xi-check-circle" style="color:var(--cat-green);"></i> <span>0일</span></div><div class="sd-summary-label">실천</div></div>
-            <div class="sd-summary-box"><div class="sd-summary-val" id="sd-val-total"><i class="xi-fire" style="color:var(--cat-red);"></i> <span>0</span></div><div class="sd-summary-label">누적</div></div>
-        </div>
-        <div class="cal-grid" id="sd-cal-grid" style="margin-bottom: 15px;"></div>
-        
-        <div class="inbox-area" style="width: 100%; box-sizing: border-box; margin-bottom: 25px; min-height: 50px;" id="sd-list"></div>
-        
-        <div class="sd-chart-container">
-            <div class="sd-chart-title">최근 추이 (주차별 실천 완료수)</div>
-            <div class="sd-chart" id="sd-chart"></div>
+            <div class="view-header" style="justify-content: center; gap: 10px;">
+                <span id="sd-month-display"></span>
+            </div>
+            <div style="display:flex; justify-content: space-around; margin-bottom: 20px; font-size: 14px;">
+                <div id="sd-val-days">달성일수: <b><span></span></b></div>
+                <div id="sd-val-total">총 달성: <b><span></span></b></div>
+            </div>
+            <div id="sd-cal-grid" class="cal-grid"></div>
+            <div id="sd-chart" style="display:flex; justify-content: space-around; align-items: flex-end; height: 100px; margin: 20px 0; border-bottom: 1px solid var(--border-color);"></div>
+            <div class="search-container">
+                <i class="xi-search todo-search-icon"></i>
+                <input type="text" id="sd-search" class="todo-search-input" placeholder="검색...">
+            </div>
+            <div id="sd-list"></div>
         </div>
     </div>
+
+    <!-- 🚨 세부사항 모달 (계획일/완료일 분리 반영) -->
+    <div id="detail-modal-overlay" class="modal-overlay">
+        <div class="modal-card detail-modal-card">
+            <input type="hidden" id="dm-id">
+            
+            <div class="modal-input-group">
+                <input type="text" id="dm-input" placeholder="할 일 내용">
+            </div>
+
+            <!-- 색상 및 매트릭스 설정 -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; position: relative;">
+                <input type="hidden" id="dm-color-val" value="gray">
+                <button id="dm-color-btn" onclick="togglePalette('dm', event)" style="background:none; border:1px solid var(--border-color); border-radius:8px; padding:10px; cursor:pointer;"><i class="xi-heart-o"></i></button>
+                <div id="dm-color-palette" class="color-palette" style="top: 100%; left: 0;"></div>
+                
+                <select id="dm-quad" style="flex:1; border: 1px solid var(--border-color); border-radius: 8px; padding: 0 10px;">
+                    <option value="0">매트릭스 미분류</option>
+                    <option value="1">1사분면 (중요+긴급)</option>
+                    <option value="2">2사분면 (중요)</option>
+                    <option value="3">3사분면 (긴급)</option>
+                    <option value="4">4사분면 (안중요+안긴급)</option>
+                </select>
+            </div>
+
+            <!-- 🚨 수정된 날짜 입력 칸: 계획일과 완료일 분리 -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <label style="flex: 1; font-size: 12px; color: var(--sub-color);">
+                    계획일
+                    <input type="date" id="dm-target-date" style="width: 100%; margin-top: 4px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px;">
+                </label>
+                <label style="flex: 1; font-size: 12px; color: var(--sub-color);">
+                    완료일
+                    <input type="date" id="dm-completed-date" style="width: 100%; margin-top: 4px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px;">
+                </label>
+            </div>
+
+            <div class="modal-input-group">
+                <label>반복 설정</label>
+                <select id="dm-repeat">
+                    <option value="none">반복 없음</option>
+                    <option value="daily">매일</option>
+                    <option value="weekly">매주</option>
+                    <option value="monthly">매월</option>
+                </select>
+            </div>
+
+            <div class="modal-input-group">
+                <label>하위 항목 (Subtasks)</label>
+                <div id="dm-subtasks-list" style="margin-bottom: 10px; max-height: 120px; overflow-y: auto;"></div>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="dm-new-subtask" placeholder="하위 항목 입력" style="flex: 1; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 12px;">
+                    <button onclick="addSubtaskFromUI()" style="background: var(--border-color); border: none; border-radius: 6px; padding: 0 10px; cursor: pointer;"><i class="xi-plus"></i></button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 10px; color: var(--sub-color);">
+                <button onclick="moveOrder('up')" style="background:none; border:none; cursor:pointer;"><i class="xi-arrow-up"></i> 위로</button>
+                <button onclick="moveOrder('down')" style="background:none; border:none; cursor:pointer;"><i class="xi-arrow-down"></i> 아래로</button>
+            </div>
+
+            <div class="modal-actions">
+                <button id="dm-delete-btn" class="btn-delete" onclick="deleteTodoFromModal()">삭제</button>
+                <button class="btn-cancel" onclick="closeDetailedModal()">취소</button>
+                <button class="btn-save" onclick="saveDetailedTodo()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🚨 빠른 추가 컨테이너 (즉시완료 체크박스 추가) -->
+    <div class="quick-add-container">
+        <div class="qa-input-row">
+            <input type="text" id="qa-input" placeholder="새로운 할 일을 입력하세요...">
+            <button class="qa-btn" onclick="quickAddTodo()">추가</button>
+        </div>
+        <div class="qa-options-row" style="position: relative;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="hidden" id="qa-color-val" value="gray">
+                <button id="qa-color-btn" onclick="togglePalette('qa', event)" style="background:none; border:none; font-size:20px; cursor:pointer; color: var(--cat-gray);"><i class="xi-heart-o"></i></button>
+                <div id="qa-color-palette" class="color-palette" style="bottom: 100%; left: 0;"></div>
+                
+                <select id="qa-quad" style="border: none; background: none; color: var(--sub-color); font-size: 12px; outline: none;">
+                    <option value="0">미분류 (0)</option>
+                    <option value="1">1사분면 (중요+긴급)</option>
+                    <option value="2">2사분면 (중요)</option>
+                    <option value="3">3사분면 (긴급)</option>
+                    <option value="4">4사분면 (안중요+안긴급)</option>
+                </select>
+            </div>
+            
+            <!-- 🚨 즉시완료 체크박스 -->
+            <label style="font-size: 12px; color: var(--sub-color); display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="qa-instant-complete" style="accent-color: var(--cat-blue);"> 즉시완료
+            </label>
+        </div>
+    </div>
+
 </div>
 
-<script src="category/todo/todo.js"></script>
+<!-- Todo JS 엔진 연동 -->
+<script src="todo.js"></script>
+
+</body>
+</html>
