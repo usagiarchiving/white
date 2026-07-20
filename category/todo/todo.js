@@ -1,5 +1,5 @@
 /* ==========================================================================
-   토끼굴 Todo 전용 Javascript 엔진 (통계 캘린더 뱃지 카테고리 컬러 반영 및 폰트 통일)
+   토끼굴 Todo 전용 Javascript 엔진 (계획일/완료일 분리 및 즉시완료 기능 추가)
    ========================================================================== */
 
 (function() {
@@ -491,12 +491,10 @@
             let classes = "cal-day-cell";
             if (dStr === statsSelectedDateStr) classes += " is-selected";
 
-            // 🚨 [수정 2] 완료한 날짜에 '카테고리 색상'을 입히고 폰트 속성은 기본으로 리셋
             let extraHtml = "";
             let dayNumHtml = i;
 
             if (dayTodos.length > 0) {
-                // 🚨 font-weight 제거 (정상 굵기), 폰트 사이즈 상속, 카테고리 컬러 배경, 글자색 화이트
                 dayNumHtml = `<span style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; background-color: var(--cat-${color}); border-radius: 50%; margin: 0 auto; color: #fff; font-size: inherit; font-weight: normal;">${i}</span>`;
                 extraHtml = `<div style="position:absolute; bottom:-12px; font-size:7.5px; color:var(--cat-${color}); font-weight:bold;">${dayTodos.length}개</div>`;
             }
@@ -561,17 +559,21 @@
         }, 300); 
     };
 
+    // 🚨 빠른 추가: 즉시완료 체크 시 완료된 상태로 바로 저장됨
     window.quickAddTodo = async function() {
         const content = $('#qa-input').val().trim();
         if (!content) return;
         
+        const targetStr = getFormatDate(new Date());
+        const isInstant = $('#qa-instant-complete').is(':checked'); 
+
         const newTodo = {
             content: content,
             category: $('#qa-color-val').val(),
             matrix_quadrant: parseInt($('#qa-quad').val()),
-            is_completed: false,
-            target_date: getFormatDate(new Date()),
-            completed_date: null,
+            is_completed: isInstant,
+            target_date: targetStr,
+            completed_date: isInstant ? targetStr : null,
             subtasks: [],
             sort_order: Date.now() 
         };
@@ -582,11 +584,13 @@
         if (data) {
             todosData.push(data[0]);
             $('#qa-input').val('');
+            $('#qa-instant-complete').prop('checked', false); // 체크박스 리셋
             selectColor('gray', 'qa');
             refreshAllViews();
         }
     };
 
+    // 🚨 모달 열기: 계획일/완료일 분리 렌더링
     window.openDetailedModal = function(id = null, useSelectedDate = false) {
         currentSubtasks = []; 
         
@@ -596,7 +600,10 @@
                 $('#dm-id').val(todo.id);
                 $('#dm-input').val(todo.content);
                 $('#dm-quad').val(todo.matrix_quadrant);
-                $('#dm-date').val(todo.target_date || '');
+                
+                $('#dm-target-date').val(todo.target_date || '');
+                $('#dm-completed-date').val(todo.completed_date || '');
+
                 $('#dm-repeat').val(todo.repeat_type || 'none');
                 selectColor(todo.category, 'dm'); 
                 
@@ -610,7 +617,8 @@
             $('#dm-input').val('');
             
             const defaultDateStr = useSelectedDate ? getFormatDate(selectedDate) : getFormatDate(new Date());
-            $('#dm-date').val(defaultDateStr);
+            $('#dm-target-date').val(defaultDateStr);
+            $('#dm-completed-date').val('');
             
             $('#dm-quad').val($('#qa-quad').val() || 0);
             $('#dm-repeat').val('none');
@@ -693,35 +701,38 @@
         });
     }
 
+    // 🚨 모달 저장: 계획일, 완료일 수동 조정 가능하도록 로직 변경
     window.saveDetailedTodo = async function() {
         const id = $('#dm-id').val();
         const content = $('#dm-input').val().trim();
         if (!content) return;
 
+        const targetDateVal = $('#dm-target-date').val() || null;
+        const compDateVal = $('#dm-completed-date').val() || null;
+
         let isParentCompleted = false;
-        let compDate = null;
+        let autoCompDate = null;
         if (currentSubtasks.length > 0 && currentSubtasks.every(st => st.is_completed)) {
             isParentCompleted = true;
-            compDate = getFormatDate(new Date());
+            autoCompDate = getFormatDate(new Date());
         }
+
+        // 사용자가 완료일을 입력했다면 그게 1순위, 아니라면 하위항목 전부 완료 여부를 체크
+        const finalIsCompleted = compDateVal ? true : (currentSubtasks.length > 0 ? isParentCompleted : false);
+        const finalCompDate = compDateVal ? compDateVal : (isParentCompleted ? autoCompDate : null);
 
         const todoData = {
             content: content,
             category: $('#dm-color-val').val(),
             matrix_quadrant: parseInt($('#dm-quad').val()),
-            target_date: $('#dm-date').val() || null,
+            target_date: targetDateVal,
+            completed_date: finalCompDate,
+            is_completed: finalIsCompleted,
             repeat_type: $('#dm-repeat').val(),
             subtasks: currentSubtasks 
         };
 
         if (id) {
-            const existingTodo = todosData.find(t => t.id == id);
-            todoData.is_completed = (currentSubtasks.length > 0) ? isParentCompleted : existingTodo.is_completed;
-            
-            if (currentSubtasks.length > 0) {
-                todoData.completed_date = isParentCompleted ? compDate : null;
-            }
-
             const { data, error } = await supabase.from('todos').update(todoData).eq('id', id).select();
             if(error) { alert("🚨 수정 저장 실패: " + error.message); return; }
             if(data) {
@@ -729,8 +740,6 @@
                 if(index > -1) todosData[index] = data[0];
             }
         } else {
-            todoData.is_completed = isParentCompleted;
-            todoData.completed_date = isParentCompleted ? compDate : null;
             todoData.sort_order = Date.now();
             const { data, error } = await supabase.from('todos').insert([todoData]).select();
             if(error) { alert("🚨 새로 저장 실패: " + error.message); return; }
