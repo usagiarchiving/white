@@ -1036,6 +1036,16 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePostitCount = 0;
     let consecutivePolaroidCount = 0; // 폴라로이드 연속 렌더링을 위한 카운터 추가
 
+    // 💡 [수정됨] 가독성을 위한 동적 여백 비율 계산 로직 추가
+    // 현재 폰트가 14px 이하일 때는 줄어들고, 초과할 때는 1(100%)로 고정하여 간격이 더 커지지 않게 함
+    let marginRatio = Math.min(currentFontSize / 14, 1);
+    
+    // 비율이 적용된 동적 마진(Margin) 값들 생성
+    let mt_20 = Math.round(20 * marginRatio) + 'px';
+    let mt_15 = Math.round(15 * marginRatio) + 'px';
+    let mt_10 = Math.round(10 * marginRatio) + 'px';
+    let mt_4 = Math.round(4 * marginRatio) + 'px';
+
     innerContent += `<div class="preview-gap" onclick="insertEmptyLine(-1)" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>\n`;
 
     blocks.forEach((block, index) => {
@@ -1072,14 +1082,15 @@ function updateOutput(skipPreviewUpdate = false) {
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
+                // 💡 [수정됨] 고정된 픽셀값 대신 계산된 동적 비율 변수(mt_20, mt_15 등)를 대입합니다.
                 if ((isPrevDiag && isCurrNarration) || (isPrevNarration && isCurrDiag)) {
-                    mt = '20px'; 
+                    mt = mt_20; 
                 } else if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? '4px' : '15px'; 
+                    mt = isSameAsPrev ? mt_4 : mt_15; 
                 } else if (isPrevNarration && isCurrNarration) {
-                    mt = '4px';  
+                    mt = mt_4;  
                 } else {
-                    mt = '15px'; 
+                    mt = mt_15; 
                 }
             }
         }
@@ -1109,8 +1120,9 @@ function updateOutput(skipPreviewUpdate = false) {
             let lines = block.content.split('\n').filter(l => l.trim() !== '');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
+            // 💡 [수정됨] 맨 첫 줄(mt === '0px')일 때 적용되는 기본 여백들도 동적 비율 변수로 교체했습니다.
             if (block.type === 'title') {
-                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? '15px' : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: keep-all;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: keep-all;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
             }
             else if (isCurrDiag) {
                 let textColor;
@@ -1119,7 +1131,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : '#666666'; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? '10px' : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${divContent}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${divContent}\n</div>\n`;
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
@@ -1270,10 +1282,10 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
             }
             else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? '4px' : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${lines.join('<br>')}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${lines.join('<br>')}\n</div>\n`;
             }
             else if (block.type === 'thought') {
-                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? '4px' : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${lines.join('<br>')}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${lines.join('<br>')}\n</div>\n`;
             }
             else if (block.type === 'dday') {
                 htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;">\n    <span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span>\n</div>\n`;
@@ -1296,7 +1308,6 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}">\n    <div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div>\n    <div class="postit-scroll" style="line-height: 1.7; font-size: 14px;">${divContent}</div>\n</div>\n`;
             }
             else if (block.type === 'polaroid') {
-                // 추가됨: 폴라로이드 연속 렌더링 애니메이션 변수 설정
                 let isEvenPol = consecutivePolaroidCount % 2 === 0;
 
                 let bgStr = isDarkMode ? '#242424' : '#FFFFFF';
@@ -1310,9 +1321,8 @@ function updateOutput(skipPreviewUpdate = false) {
                 let tapeRot = isEvenPol ? 'rotate(2deg)' : 'rotate(-2deg)';
                 let tapePos = isEvenPol ? 'left: 48%;' : 'left: 50%;';
 
-                let imgSrc = block.content || 'https://via.placeholder.com/380x380?text=Polaroid+Image';
+                let imgSrc = block.content || '[https://via.placeholder.com/380x380?text=Polaroid+Image](https://via.placeholder.com/380x380?text=Polaroid+Image)';
                 
-                // 추가됨: 예시 텍스트 모두 제거 후 비어있으면 렌더링 안 함
                 let pDate = applyTextStyles(block.polaroidDate || '');
                 let pCap = applyTextStyles(block.polaroidCaption || '');
 
@@ -1342,7 +1352,7 @@ function updateOutput(skipPreviewUpdate = false) {
     
     if (hasBgm) {
         innerContent += `
-<iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
+<iframe id="bgmPlayerFrame" src="[https://loading-lovebullets.naru.pub/editor/bgm.html](https://loading-lovebullets.naru.pub/editor/bgm.html)" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
 <script>
 window.addEventListener('message', function(e) {
     var frame = document.getElementById('bgmPlayerFrame');
@@ -1375,8 +1385,8 @@ function stopBGM() {
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap');
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import url('[https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap](https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap)');
+@import url('[https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css](https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css)');
 
 .tistory-post-wrapper {
     font-family: ${currentFontFamily};
@@ -1593,7 +1603,7 @@ function importFromHtml() {
             const playDiv = child.querySelector('div[onclick*="playBGM"]');
             if (playDiv) {
                 const match = playDiv.getAttribute('onclick').match(/playBGM\('([^']+)'/);
-                if (match) bgmUrl = 'https://youtu.be/' + match[1];
+                if (match) bgmUrl = '[https://youtu.be/](https://youtu.be/)' + match[1];
             }
         } else if (type === 'image') {
             const img = child.querySelector('img');
