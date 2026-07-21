@@ -374,7 +374,6 @@
         let endingsDbId = null, settingsDbId = null;
         let blockTimers = {}, endingsTimer = null, currentFormatMode = 'V3';
 
-        // 섹션 접기/펼치기 제어 JS
         function toggleSection(sectionId, btn) {
             const section = document.getElementById(sectionId);
             section.classList.toggle('collapsed');
@@ -482,13 +481,11 @@
             document.getElementById(id).addEventListener('change', saveSettingsToDb);
         });
 
-        // 원본 변환 로직 - 문단 계산 및 대사 판별 로직 고도화 적용
         function convertText() {
             let text = document.getElementById('inputText').value;
             const lines = text.split('\n');
             let result = [];
             
-            // 🔥 요점 1: 빈 줄(엔터) 기준으로 각 문단의 줄 수를 사전 계산하여 저장
             let lineCountMap = new Array(lines.length).fill(0);
             let currentLen = 0;
             let startIdx = 0;
@@ -501,7 +498,6 @@
                     currentLen++;
                 }
             }
-            // 마지막 묶음 처리
             for (let j = startIdx; j < lines.length; j++) lineCountMap[j] = currentLen;
             
             const exclusionInputs = document.querySelectorAll('.exclusion-block-input');
@@ -512,7 +508,6 @@
             const endingRaw = document.getElementById('dialogueEndingInput').value.split(',');
             const endings = endingRaw.map(s => s.trim()).filter(s => s.length > 0).join('|');
 
-            // for...of 문 대신 인덱스(i)를 활용하여 각 줄이 속한 문단의 길이를 확인합니다.
             for (let i = 0; i < lines.length; i++) {
                 let line = lines[i];
                 let trimmed = line.trim();
@@ -531,21 +526,26 @@
 
                 if (document.getElementById('toggleEmojiPrefix').checked) {
                     const emojiMatch = trimmed.match(/[\p{Extended_Pictographic}🗓️💍📍👕👥️💭🔔🚨❤️‍🔥✏️🔫💕📰💘]/u);
-                    if (emojiMatch && emojiMatch.index > 0 && emojiMatch.index <= 20) trimmed = trimmed.substring(emojiMatch.index).trim();
+                    // 앞 텍스트가 유독 길 경우를 대비해 20 -> 50으로 제한 완화
+                    if (emojiMatch && emojiMatch.index > 0 && emojiMatch.index <= 50) trimmed = trimmed.substring(emojiMatch.index).trim();
                     if (!trimmed) continue;
                 }
 
                 if (currentFormatMode !== 'OFF') {
-                    if (!/^[* \t]*(🗓️|💍|📍|👕|👥️|💭|🔔|🚨|❤️‍🔥|✏️|🔫|💕|📰|💘)/.test(trimmed)) {
+                    // 이모티콘을 감지하는 정규식에 \p{Extended_Pictographic} 추가하여, 예외 없이 포맷팅을 통과(Bypass)하도록 수정
+                    if (!/^[* \t]*([\p{Extended_Pictographic}🗓️💍📍👕👥️💭🔔🚨❤️‍🔥✏️🔫💕📰💘])/u.test(trimmed)) {
                         
-                        // 🔥 요점 2: 해당 문단이 총 4줄 이하인지 판별
+                        // 🔥 1. 명시적인 지문 기호(*, [)로 시작하면 대사 처리에서 무조건 방어
+                        let startsWithNarrationMark = /^[*\[]/.test(trimmed);
+                        
+                        // 2. 해당 문단이 총 4줄 이하인지 판별
                         let isShortParagraph = lineCountMap[i] <= 4;
                         
-                        // 🔥 요점 3: 특수문자 시작 방어로직 제거. 끝맺음 조건(특수기호 혹은 설정된 어미)만 맞으면 통과
+                        // 3. 어미가 대사 조건에 맞는지 판별
                         let hasDialogueEnding = (trimmed.length <= 5 || new RegExp(`[?!~…]+$|(${endings})[. ]*$|["']$|[.…]{2,}`).test(trimmed));
                         
-                        // 4줄 이하의 문단이면서, 끝맺음 조건이 성립할 때만 대사 처리
-                        let isDialogue = isShortParagraph && hasDialogueEnding;
+                        // 🔥 4. 세 가지 조건이 모두 완벽하게 들어맞을 때만 대사로 판별
+                        let isDialogue = !startsWithNarrationMark && isShortParagraph && hasDialogueEnding;
                         
                         if (currentFormatMode === 'V1') {
                             trimmed = trimmed.replace(/[*'\[\]]/g, '').trim();
