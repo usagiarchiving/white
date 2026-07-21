@@ -185,12 +185,12 @@
             border-color: #d2d2d7;
         }
         
-        /* 🔥 요점 1: 유동적 텍스트 길이를 위한 CSS 적용 🔥 */
+        /* 유동적 텍스트 길이를 위한 CSS 적용 */
         .summary-view {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 12px; /* 텍스트와 버튼 사이 간격 */
+            gap: 12px;
         }
         .block-title {
             font-size: 14px;
@@ -198,7 +198,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            flex: 1; /* 남은 공간을 모두 차지하여 모바일/PC 해상도에 맞게 꽉 차게 조절됨 */
+            flex: 1; 
         }
         
         .toggle-btn {
@@ -234,7 +234,7 @@
             border-color: #a1a1a6;
         }
 
-        /* 🔥 요점 2: 섹션 접기/펼치기 애니메이션 용 CSS 🔥 */
+        /* 섹션 접기/펼치기 애니메이션 용 CSS */
         .section-collapsible {
             display: grid;
             grid-template-rows: 1fr;
@@ -243,7 +243,7 @@
         }
         .section-collapsible.collapsed {
             grid-template-rows: 0fr;
-            opacity: 0.5; /* 완전히 접히기 전 부드럽게 흐려지는 효과 */
+            opacity: 0.5;
         }
         .section-inner {
             overflow: hidden;
@@ -268,7 +268,7 @@
 
         <!-- [1단] 지시문 설정 -->
         <div class="card">
-            <!-- 🔥 섹션 접기 토글 헤더 영역 🔥 -->
+            <!-- 섹션 접기 토글 헤더 영역 -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h3 class="section-title">반복 지시문 설정</h3>
                 <button onclick="toggleSection('exclusionSection', this)" style="background: none; border: none; color: #88b0ac; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px; transition: opacity 0.2s;">
@@ -276,7 +276,7 @@
                 </button>
             </div>
             
-            <!-- 🔥 애니메이션을 위한 래퍼 🔥 -->
+            <!-- 애니메이션을 위한 래퍼 -->
             <div id="exclusionSection" class="section-collapsible">
                 <div class="section-inner">
                     <div id="exclusionContainer" style="display: flex; flex-direction: column; gap: 4px;">
@@ -361,7 +361,7 @@
             `반복적인 내레이션은 피하고 창의력을 발휘하십시오.`,
             `\n모든 지문 맨 아래에 반드시 아래 양식을 출력한다. 상태창지문 본문은 상태창의 수치, 기류(하트), 관계 역학을 철저히 반영하여 묘사한다.\n🗓️ 달력 | 2026.MM. DD. X요일. (오전or오후) / D+두 사람이 함께한 날\n💍 | 하트 이모지 NPC,PC별 각각1개씩2개. 현재 기류에 가장 적합한 것을 하나 이상 선택하여 표시. 표정 이모티콘 삽입\n💍 | 하트 이모지 NPC,PC별 각각1개씩2개. 현재 기류에 가장 적합한 것을 하나 이상 선택하여 표시.\n📍 위치 | 현재 위치\n👕 복장 | NPC의 복장, PC의 복장\n👥️ 상태 | 현재 인체와 관련된 자세\n💭 뱅의 내면 | NPC의 생각, 속마음, TMI 등\n🔔 알림 | 단말기에 떠있는 알림\n🚨 뱅의 가이딩 필요 수치 | 0%~100%\n❤️‍🔥 NSFW | 총 횟수\n✏️ 뱅의 한줄 낙서(텍스트콘, 이모티콘 등 적극활용) |\n✏️ 뱅의 한줄 낙서(텍스트콘 등 적극활용) |\n🔫 뱅의 오늘의 TMI |\n💕 호감도| 뱅 → 유이: n/1000 (상태)`,
             `NPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.\nNPC와 PC는 부부이다. 서로를 소유물로 여기지 않는다.`,
-            `*OOC: npc의 대사는제작자가 만든 설정으로 출력한다. 큰 따옴표 안에 영어 또는 모국어를 넣고, 괄호 안에 한국어 번역을 한다*`,
+            `*OOC: npc의 대사는제작자가 만든 설정으로 출력한다. 큰 따옴표 안에 영어 또는 모국어를 넣고, 괄호 안에 한국어 번역을 연출한다*`,
             `OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.`,
             `*OOC: npc의 말투를 점검하라. 제작자가 설정한 언어와 말투를 사용하라. 왜 반말쓰냐. 해요체 사용.기본내장된문체지침,캐릭터설정복구할 것.*`
         ];
@@ -374,7 +374,7 @@
         let endingsDbId = null, settingsDbId = null;
         let blockTimers = {}, endingsTimer = null, currentFormatMode = 'V3';
 
-        // 🔥 요점 2: 섹션 접기/펼치기 제어 JS 🔥
+        // 섹션 접기/펼치기 제어 JS
         function toggleSection(sectionId, btn) {
             const section = document.getElementById(sectionId);
             section.classList.toggle('collapsed');
@@ -396,7 +396,6 @@
 
         function createBlockHTML(id, text) {
             const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            // 🔥 요점 1: JS에서 강제로 자르던 로직(.substring) 제거 🔥
             const titleText = text.trim() ? safeText : '(내용 없음)';
             return `
             <div data-id="${id}" class="exclusion-wrapper">
@@ -441,7 +440,6 @@
             
             const titleSpan = wrapper.querySelector('.block-title');
             const newText = textarea.value.trim();
-            // 🔥 요점 1: JS에서 강제로 자르던 로직(.substring) 제거 🔥
             titleSpan.innerText = newText ? newText : '(내용 없음)';
             
             clearTimeout(blockTimers[id]);
@@ -484,10 +482,27 @@
             document.getElementById(id).addEventListener('change', saveSettingsToDb);
         });
 
+        // 원본 변환 로직 - 문단 계산 및 대사 판별 로직 고도화 적용
         function convertText() {
             let text = document.getElementById('inputText').value;
             const lines = text.split('\n');
             let result = [];
+            
+            // 🔥 요점 1: 빈 줄(엔터) 기준으로 각 문단의 줄 수를 사전 계산하여 저장
+            let lineCountMap = new Array(lines.length).fill(0);
+            let currentLen = 0;
+            let startIdx = 0;
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].trim() === '') {
+                    for (let j = startIdx; j < i; j++) lineCountMap[j] = currentLen;
+                    currentLen = 0;
+                    startIdx = i + 1;
+                } else {
+                    currentLen++;
+                }
+            }
+            // 마지막 묶음 처리
+            for (let j = startIdx; j < lines.length; j++) lineCountMap[j] = currentLen;
             
             const exclusionInputs = document.querySelectorAll('.exclusion-block-input');
             let exclusionRaw = [];
@@ -497,7 +512,9 @@
             const endingRaw = document.getElementById('dialogueEndingInput').value.split(',');
             const endings = endingRaw.map(s => s.trim()).filter(s => s.length > 0).join('|');
 
-            for (let line of lines) {
+            // for...of 문 대신 인덱스(i)를 활용하여 각 줄이 속한 문단의 길이를 확인합니다.
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
                 let trimmed = line.trim();
                 if (!trimmed) { result.push(''); continue; }
 
@@ -520,7 +537,15 @@
 
                 if (currentFormatMode !== 'OFF') {
                     if (!/^[* \t]*(🗓️|💍|📍|👕|👥️|💭|🔔|🚨|❤️‍🔥|✏️|🔫|💕|📰|💘)/.test(trimmed)) {
-                        let isDialogue = (!/^[^\sa-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ"“'‘0-9]/.test(trimmed) && (trimmed.length <= 5 || new RegExp(`[?!~…]+$|(${endings})[. ]*$|["']$|[.…]{4,}`).test(trimmed)));
+                        
+                        // 🔥 요점 2: 해당 문단이 총 4줄 이하인지 판별
+                        let isShortParagraph = lineCountMap[i] <= 4;
+                        
+                        // 🔥 요점 3: 특수문자 시작 방어로직 제거. 끝맺음 조건(특수기호 혹은 설정된 어미)만 맞으면 통과
+                        let hasDialogueEnding = (trimmed.length <= 5 || new RegExp(`[?!~…]+$|(${endings})[. ]*$|["']$|[.…]{2,}`).test(trimmed));
+                        
+                        // 4줄 이하의 문단이면서, 끝맺음 조건이 성립할 때만 대사 처리
+                        let isDialogue = isShortParagraph && hasDialogueEnding;
                         
                         if (currentFormatMode === 'V1') {
                             trimmed = trimmed.replace(/[*'\[\]]/g, '').trim();
