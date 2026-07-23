@@ -44,12 +44,12 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
-        /* 📱 모바일 여백 수정 (좌우 텀 대폭 축소) */
+        /* 📱 모바일 여백 4px로 최종 축소 */
         @media (max-width: 768px) {
-            body { padding: 8px; } /* 기존 15px에서 8px로 줄여 좌우 여백을 시원하게 확보 */
+            body { padding: 4px; } /* 요청하신 대로 8px -> 4px로 확 줄임 */
             .layout-row { gap: 16px; margin-bottom: 20px; }
             .main-title { font-size: 20px; margin-bottom: 25px; }
-            .edit-card { padding: 14px; border-radius: 16px; }
+            .edit-card { padding: 12px; border-radius: 16px; } /* 내부 여백도 살짝 타이트하게 */
         }
 
         .control-row { display: flex; gap: 20px; margin-bottom: 20px; }
@@ -920,7 +920,7 @@ function closeLb(e) { document.getElementById('lb-'+e).style.display='none'; }
                 let col = msg.sender === 'partner' ? '#000' : '#fff';
                 let animDelay = currentVersion === 1 ? ` animation-delay: ${delay.toFixed(1)}s;` : "";
                 
-                // [변경 구역] 님의 완벽한 꼬리 코드(CSS 마스크) 이식 및 꼬리 여백(10px) 적용
+                // [변경 구역] 사용자님 원본 꼬리(CSS 마스크) 이식
                 let tail = "";
                 let bRadius = "18px"; 
                 let rad = msg.sender === 'partner' ? 'margin-left:10px;' : 'margin-right:10px;';
@@ -940,7 +940,8 @@ function closeLb(e) { document.getElementById('lb-'+e).style.display='none'; }
                     html += `<div style="max-width: 80%; ${rad} position: relative; cursor: pointer; z-index: 0;" onclick="openLb('${id}')"><img src="${msg.imgUrl}" style="width: 240px; max-width: 100%; border-radius: 16px; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
 <div id="lb-${id}" class="lb-overlay" onclick="closeLb('${id}')"><img src="${msg.imgUrl}" class="lb-img" onclick="event.stopPropagation()"><div class="lb-close">닫기</div></div>`; 
                 } else {
-                    html += `<div style="position: relative; max-width: 80%; ${rad}">
+                    // [변경 구역] V2 버그 수정: z-index: 0을 relative 요소에 추가하여 꼬리(z-index: -1)가 배경 밖으로 넘어가지 못하게 레이어를 가둠
+                    html += `<div style="position: relative; max-width: 80%; ${rad} z-index: 0;">
                         <div id="bubble-text-${i}" contenteditable="true" onkeydown="handleBubbleKeydown(event, ${i})" oninput="handleBubbleInput(event, ${i})" style="padding: 8px 14px; background-color: ${bg}; border-radius: ${bRadius}; color: ${col}; line-height: 1.5; letter-spacing: -0.01em; white-space: pre-wrap; outline: none; position: relative; z-index: 1;">${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
                         ${tail}
                     </div>`;
