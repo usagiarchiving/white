@@ -105,7 +105,7 @@
         .saved-title-input { flex-grow: 1; border: none; background: transparent; font-size: 15px; font-weight: 600; outline: none; }
         .saved-date { font-size: 12px; color: #8e8e93; margin-right: 15px; min-width: 80px; text-align: right; }
         
-        .parsing-area { background-color: #fcfcfc; padding: 20px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #f2f2f7; }
+        .parsing-area { background-color: #fcfcfc; padding: 20px; border-radius: 16px; border: 1px solid #f2f2f7; }
         
         /* [모달 공통 스타일] */
         .modal-overlay {
@@ -157,34 +157,37 @@
     <!-- 1구역: 설정 및 파싱 (좌우 2단) -->
     <div class="layout-row">
         
-        <!-- 왼쪽 단: 대본 파싱 / 상대방 정보 (카드 적용) -->
-        <div class="layout-col edit-card">
-            <div class="parsing-area">
+        <!-- 왼쪽 단: 대본 파싱 (우측 높이에 맞게 UI 조정 적용) -->
+        <div class="layout-col edit-card" style="display: flex; flex-direction: column;">
+            <div class="parsing-area" style="flex: 1; display: flex; flex-direction: column; margin-bottom: 0;">
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <div style="flex: 1;"> <label style="font-size: 11px;">'나' 트리거</label> <input type="text" id="trigger-me" value="김민정" style="padding: 10px;"> </div>
                     <div style="flex: 1;"> <label style="font-size: 11px;">'상대' 트리거</label> <input type="text" id="trigger-partner" value="하시온" style="padding: 10px;"> </div>
                 </div>
-                <textarea id="bulk-input" rows="4" placeholder="메시지 인식: [이름] 내용 or [이름: 내용] or [내용] or ✉️ 내용 " style="margin-bottom: 10px;"></textarea>
-                <button class="btn-blue" style="width: 100%;" onclick="parseAndAddMessages()">변환하여 추가하기</button>
-            </div>
-
-            <div class="form-group" style="display: flex; gap: 10px;">
-                <div style="flex: 1;"> <label>상대방 이름</label> <input type="text" id="partner-name" value="내 여보♡" oninput="updateUI()"> </div>
-                <div style="flex: 2;"> <label>프로필 URL</label> <input type="text" id="partner-image" value="https://i.ibb.co/VYrHdHd8/IMG-6825.jpg" oninput="updateUI()"> </div>
-            </div>
-            
-            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-                <button class="btn-gray" style="flex: 1; background-color: #f0f0f5; color: #5856d6;" onclick="addMessage('system', 'header')">👆 프로필 헤더 추가</button>
-                <button class="btn-gray" style="flex: 1; background-color: #f2f2f7; color: #007aff;" onclick="addMessage('system', 'footer')">👇 채팅 입력창 추가</button>
+                <!-- 우측 길이에 맞춰 입력창이 꽉 차도록 flex 속성 및 min-height 추가 -->
+                <textarea id="bulk-input" placeholder="메시지 인식: [이름] 내용 or [이름: 내용] or [내용] or ✉️ 내용 " style="margin-bottom: 10px; flex: 1; min-height: 120px; resize: none;"></textarea>
+                <button class="btn-blue" style="width: 100%; margin-top: 10px;" onclick="parseAndAddMessages()">변환하여 추가하기</button>
             </div>
         </div>
 
-        <!-- 오른쪽 단: 세부 설정 및 컨트롤 (카드 적용) -->
+        <!-- 오른쪽 단: 세부 설정 및 컨트롤 (프로필 설정 이동 적용) -->
         <div class="layout-col edit-card">
             <div style="display:flex; justify-content:flex-end; margin-bottom:15px;">
                 <button class="btn-gray" onclick="initNewSession()" style="font-size:12px;">📄 새 문서</button>
             </div>
             
+            <!-- [이동된 영역] 상대방 프로필 설정 및 기능 추가 버튼 (1안: 상단 배치) -->
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;"> <label>상대방 이름</label> <input type="text" id="partner-name" value="내 여보♡" oninput="updateUI()"> </div>
+                <div style="flex: 2;"> <label>프로필 URL</label> <input type="text" id="partner-image" value="https://i.ibb.co/VYrHdHd8/IMG-6825.jpg" oninput="updateUI()"> </div>
+            </div>
+            
+            <div style="margin-bottom: 25px; display: flex; gap: 10px; padding-bottom: 25px; border-bottom: 1px solid #f2f2f7;">
+                <button class="btn-gray" style="flex: 1; background-color: #f0f0f5; color: #5856d6;" onclick="addMessage('system', 'header')">👆 프로필 헤더 추가</button>
+                <button class="btn-gray" style="flex: 1; background-color: #f2f2f7; color: #007aff;" onclick="addMessage('system', 'footer')">👇 채팅 입력창 추가</button>
+            </div>
+            <!-- // [이동된 영역] 끝 -->
+
             <div class="control-row">
                 <div style="flex: 1;">
                     <label>🎨 말풍선 색상</label>
