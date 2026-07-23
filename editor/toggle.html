@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>접은글 생성기 (Toggle Generator)</title>
+    <!-- 생성기 자체의 디자인 (Apple iCloud 스타일 기반, 가독성 최우선) -->
+    <style>
+        :root {
+            --bg-color: #fbfbfd;
+            --panel-bg: #ffffff;
+            --border-color: #e5e5ea;
+            --text-main: #1d1d1f;
+            --text-sub: #86868b;
+            --pastel-blue-bg: #e8f2ff;
+            --pastel-blue-text: #007aff;
+            --pastel-green-bg: #e8f8ec;
+            --pastel-green-text: #34c759;
+            --pastel-gray-bg: #f2f2f7;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            letter-spacing: -0.01em;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 상단 헤더 영역 */
+        header {
+            background-color: var(--panel-bg);
+            padding: 16px 30px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            z-index: 10;
+        }
+
+        h1 { margin: 0; font-size: 18px; font-weight: 600; color: var(--text-main); }
+        
+        .header-btns { display: flex; gap: 10px; }
+
+        /* 부드러운 애니메이션의 버튼들 */
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        .btn-new { background-color: var(--pastel-gray-bg); color: var(--text-main); }
+        .btn-new:hover { background-color: #e5e5ea; }
+        
+        .btn-load { background-color: var(--pastel-blue-bg); color: var(--pastel-blue-text); }
+        .btn-load:hover { background-color: #d0e5ff; }
+        
+        .btn-save { background-color: var(--pastel-green-bg); color: var(--pastel-green-text); }
+        .btn-save:hover { background-color: #d1f0d9; }
+
+        /* 좌우 스플릿 레이아웃 */
+        .split-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        @media (min-width: 800px) {
+            .split-container { flex-direction: row; }
+        }
+
+        /* 패널 공통 */
+        .panel {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        
+        /* 좌측: 입력 패널 */
+        .left-panel { background-color: var(--bg-color); }
+        
+        /* 우측: 결과 패널 */
+        .right-panel {
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+        }
+
+        /* 입력 폼 요소 */
+        .input-group { margin-bottom: 24px; }
+        .input-group label {
+            display: block; font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 8px;
+        }
+        
+        /* 스타일 선택 라디오 버튼 (세련된 세그먼트 컨트롤 스타일) */
+        .style-selector { display: flex; gap: 8px; flex-wrap: wrap; }
+        .style-selector label {
+            padding: 10px 16px; background: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 10px; cursor: pointer; font-size: 14px; color: var(--text-sub);
+            font-weight: 500; transition: all 0.2s ease; margin: 0;
+        }
+        .style-selector input[type="radio"] { display: none; }
+        .style-selector input[type="radio"]:checked + label {
+            background: var(--text-main); color: #fff; border-color: var(--text-main);
+        }
+
+        /* 텍스트 입력창 */
+        input[type="text"], textarea {
+            width: 100%; padding: 14px; border: 1px solid var(--border-color);
+            border-radius: 10px; font-size: 15px; font-family: inherit; box-sizing: border-box;
+            background-color: var(--panel-bg); transition: border-color 0.2s ease; line-height: 1.6;
+        }
+        input[type="text"]:focus, textarea:focus { border-color: var(--pastel-blue-text); outline: none; }
+        textarea { height: 250px; resize: vertical; }
+
+        /* 결과창 영역 */
+        .preview-section { margin-bottom: 30px; }
+        .code-section textarea { height: 200px; font-family: monospace; font-size: 13px; background-color: #f4f4f5; color: #52525b; }
+        
+        .section-title {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 15px; font-weight: 600; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed var(--border-color);
+        }
+
+        /* 알림 토스트 (애니메이션 포함) */
+        #toast {
+            position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.8); color: white; padding: 12px 24px;
+            border-radius: 30px; font-size: 14px; transition: bottom 0.4s ease; z-index: 1000;
+        }
+        #toast.show { bottom: 30px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>접은글 생성기</h1>
+        <div class="header-btns">
+            <button class="btn-new" onclick="createNew()">새 문서</button>
+            <button class="btn-load" onclick="loadFromLocal()">불러오기</button>
+            <button class="btn-save" onclick="saveToLocal()">저장</button>
+        </div>
+    </header>
+
+    <div class="split-container">
+        <!-- 좌측: 내용 입력 -->
+        <div class="panel left-panel">
+            <div class="input-group">
+                <label>디자인 양식 선택</label>
+                <div class="style-selector">
+                    <input type="radio" id="v1" name="toggleStyle" value="1" checked onchange="updateGenerator()">
+                    <label for="v1">V1. 노션 타입</label>
+                    
+                    <input type="radio" id="v2" name="toggleStyle" value="2" onchange="updateGenerator()">
+                    <label for="v2">V2. 패널 타입</label>
+                    
+                    <input type="radio" id="v3" name="toggleStyle" value="3" onchange="updateGenerator()">
+                    <label for="v3">V3. 더보기(+)</label>
+                    
+                    <input type="radio" id="v4" name="toggleStyle" value="4" onchange="updateGenerator()">
+                    <label for="v4">V4. 대시 라인</label>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>제목 (클릭하는 부분)</label>
+                <input type="text" id="toggleTitle" value="미리보기" placeholder="예: 시나리오 배경 읽기" oninput="updateGenerator()">
+            </div>
+
+            <div class="input-group">
+                <label>내용 (숨겨진 본문)</label>
+                <textarea id="toggleContent" placeholder="여기에 내용을 입력하세요..." oninput="updateGenerator()">접은글이 열렸을 때 나타나는 본문 공간입니다.</textarea>
+            </div>
+        </div>
+
+        <!-- 우측: 결과 확인 및 코드 복사 -->
+        <div class="panel right-panel">
+            <div class="preview-section">
+                <div class="section-title">
+                    <span>👀 실시간 미리보기</span>
+                </div>
+                <!-- 생성된 결과물이 렌더링 되는 곳 -->
+                <div id="previewArea"></div>
+            </div>
+
+            <div class="code-section">
+                <div class="section-title">
+                    <span>💻 완성된 HTML 코드</span>
+                    <button class="btn-save" onclick="copyFinalCode()" style="padding: 6px 12px; font-size: 12px;">전체 복사하기</button>
+                </div>
+                <textarea id="outputCode" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">알림 메시지</div>
+
+    <!-- 기능 구현 자바스크립트 -->
+    <script>
+        // 이전에 확정된 4가지 양식의 원본 템플릿 (단 한 글자도 수정하지 않음)
+        // {{TITLE}} 과 {{CONTENT}} 부분만 치환하여 코드를 생성합니다.
+        const templates = {
+            1: `<!-- [양식 1] 심플 노션 타입 (유동적 폰트/크기 적용) -->
+<div style="font-size: 100%; line-height: 1.6; word-break: keep-all; width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
+    
+    <style>
+        details[data-style="notion"][open] .toggle-arrow { transform: rotate(90deg); }
+        details[data-type="toggle"] summary::-webkit-details-marker { display: none; }
+        details[data-type="toggle"] summary { list-style: none; }
+        .copy-btn:hover { background-color: #f2f2f7 !important; color: #1c1c1e !important; }
+    </style>
+    <script>
+        window.copyToggleText = window.copyToggleText || function(button) {
+            const targetDiv = button.parentElement.querySelector('.copy-target');
+            if(!targetDiv) return;
+            const textToCopy = targetDiv.innerText || targetDiv.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '✓ 복사완료';
+                button.style.color = '#34c759'; button.style.borderColor = '#34c759';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.style.color = '#8e8e93'; button.style.borderColor = '#e5e5ea';
+                }, 2000);
+            }).catch(err => console.error('복사 실패', err));
+        };
+    <\/script>
+
+    <details data-type="toggle" data-style="notion" style="width: 100%; margin: 20px 0; padding: 4px 0; box-sizing: border-box; text-align: left;">
+        <summary style="cursor: pointer; font-size: 100%; font-weight: 600; color: #1c1c1e; display: flex; align-items: center; gap: 6px; user-select: none; outline: none;">
+            <span class="toggle-arrow" style="font-size: 65%; color: #8e8e93; transition: transform 0.2s ease; display: inline-block;">▶</span>
+            <span style="outline: none; word-break: break-all;">{{TITLE}}</span>
+        </summary>
+        <div class="toggle-content" style="position: relative; padding: 12px 0 4px 18px; margin-top: 4px; border-left: 1px solid #e5e5ea; box-sizing: border-box;">
+            <button class="copy-btn" onclick="window.copyToggleText(this)" style="position: absolute; top: 10px; right: 0px; background-color: #ffffff; border: 1px solid #e5e5ea; border-radius: 6px; padding: 4px 8px; font-size: 80%; color: #8e8e93; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                복사
+            </button>
+            <div class="copy-target" style="color: #444444; font-size: 100%; line-height: 1.6; padding-right: 50px;">
+                {{CONTENT}}
+            </div>
+        </div>
+    </details>
+</div>`,
+            2: `<!-- [양식 2] 패널 타입 (유동적 폰트/크기 적용) -->
+<div style="font-size: 100%; line-height: 1.6; word-break: keep-all; width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
+    
+    <style>
+        details[data-style="panel"][open] .toggle-btn-icon { transform: rotate(180deg); }
+        details[data-type="toggle"] summary::-webkit-details-marker { display: none; }
+        details[data-type="toggle"] summary { list-style: none; }
+        .copy-btn:hover { background-color: #f2f2f7 !important; color: #1c1c1e !important; }
+    </style>
+    <script>
+        window.copyToggleText = window.copyToggleText || function(button) {
+            const targetDiv = button.parentElement.querySelector('.copy-target');
+            if(!targetDiv) return;
+            const textToCopy = targetDiv.innerText || targetDiv.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '✓ 복사완료';
+                button.style.color = '#34c759'; button.style.borderColor = '#34c759';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.style.color = '#8e8e93'; button.style.borderColor = '#e5e5ea';
+                }, 2000);
+            }).catch(err => console.error('복사 실패', err));
+        };
+    <\/script>
+
+    <details data-type="toggle" data-style="panel" style="width: 100%; margin: 24px 0; padding: 14px 20px; background-color: #ffffff; border: 1px solid #e5e5ea; border-radius: 16px; box-sizing: border-box; text-align: left; box-shadow: 0 1px 3px rgba(0,0,0,0.01);">
+        <summary style="cursor: pointer; font-size: 100%; font-weight: 600; color: #3a3a3c; display: flex; align-items: center; justify-content: space-between; user-select: none; outline: none;">
+            <span style="outline: none; word-break: break-all; color: #1c1c1e;">{{TITLE}}</span>
+            <div class="toggle-btn-icon" style="background-color: #f2f2f7; padding: 6px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 70%; color: #8e8e93; transition: transform 0.2s ease;">▼</div>
+        </summary>
+        <div class="toggle-content" style="position: relative; padding-top: 14px; margin-top: 12px; border-top: 1px dashed #e5e5ea; box-sizing: border-box;">
+            <button class="copy-btn" onclick="window.copyToggleText(this)" style="position: absolute; top: 12px; right: 0; background-color: #ffffff; border: 1px solid #e5e5ea; border-radius: 6px; padding: 4px 8px; font-size: 80%; color: #8e8e93; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                복사
+            </button>
+            <div class="copy-target" style="color: #444444; font-size: 100%; line-height: 1.6; padding-right: 50px;">
+                {{CONTENT}}
+            </div>
+        </div>
+    </details>
+</div>`,
+            3: `<!-- [양식 3] 더보기 타입 (유동적 폰트/크기 적용) -->
+<div style="font-size: 100%; line-height: 1.6; word-break: keep-all; width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
+    
+    <style>
+        details[data-type="toggle"] summary::-webkit-details-marker { display: none; }
+        details[data-type="toggle"] summary { list-style: none; }
+        .copy-btn:hover { background-color: #f2f2f7 !important; color: #1c1c1e !important; }
+    </style>
+    <script>
+        window.copyToggleText = window.copyToggleText || function(button) {
+            const targetDiv = button.parentElement.querySelector('.copy-target');
+            if(!targetDiv) return;
+            const textToCopy = targetDiv.innerText || targetDiv.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '✓ 복사완료';
+                button.style.color = '#34c759'; button.style.borderColor = '#34c759';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.style.color = '#8e8e93'; button.style.borderColor = '#e5e5ea';
+                }, 2000);
+            }).catch(err => console.error('복사 실패', err));
+        };
+    <\/script>
+
+    <details data-type="toggle" data-style="more" style="width: 100%; margin: 24px 0; padding: 16px 20px; background-color: #ffffff; border: 1px solid #e5e5ea; border-radius: 14px; box-sizing: border-box; text-align: left;">
+        <summary style="cursor: pointer; font-size: 100%; font-weight: 600; color: #1c1c1e; display: flex; align-items: center; gap: 10px; user-select: none; outline: none;">
+            <div style="width: 22px; height: 22px; background-color: #e5e5ea; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 95%; color: #636366; font-weight: bold; line-height: 1;">+</div>
+            <span style="outline: none; color: #636366; word-break: break-all;">{{TITLE}}</span>
+        </summary>
+        <div class="toggle-content" style="position: relative; padding: 14px 4px 2px; box-sizing: border-box;">
+            <button class="copy-btn" onclick="window.copyToggleText(this)" style="position: absolute; top: 12px; right: 0; background-color: #ffffff; border: 1px solid #e5e5ea; border-radius: 6px; padding: 4px 8px; font-size: 80%; color: #8e8e93; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                복사
+            </button>
+            <div class="copy-target" style="color: #444444; font-size: 100%; line-height: 1.6; padding-right: 50px;">
+                {{CONTENT}}
+            </div>
+        </div>
+    </details>
+</div>`,
+            4: `<!-- [양식 4] 미니멀 대시 라인 타입 (유동적 폰트/크기 적용) -->
+<div style="font-size: 100%; line-height: 1.6; word-break: keep-all; width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
+    
+    <style>
+        details[data-type="toggle"] summary::-webkit-details-marker { display: none; }
+        details[data-type="toggle"] summary { list-style: none; }
+        .copy-btn:hover { background-color: #f2f2f7 !important; color: #1c1c1e !important; }
+    </style>
+    <script>
+        window.copyToggleText = window.copyToggleText || function(button) {
+            const targetDiv = button.parentElement.querySelector('.copy-target');
+            if(!targetDiv) return;
+            const textToCopy = targetDiv.innerText || targetDiv.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '✓ 복사완료';
+                button.style.color = '#34c759'; button.style.borderColor = '#34c759';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.style.color = '#8e8e93'; button.style.borderColor = '#e5e5ea';
+                }, 2000);
+            }).catch(err => console.error('복사 실패', err));
+        };
+    <\/script>
+
+    <details data-type="toggle" data-style="border" style="width: 100%; margin: 28px 0; padding: 10px 4px; border-top: 1px solid #e5e5ea; border-bottom: 1px solid #e5e5ea; box-sizing: border-box; text-align: left;">
+        <summary style="cursor: pointer; font-size: 95%; font-weight: 600; color: #8e8e93; display: flex; align-items: center; gap: 8px; user-select: none; outline: none; letter-spacing: 0.02em;">
+            <span style="font-size: 65%; color: #aeaeb2;">◆</span>
+            <span style="outline: none; color: #636366; word-break: break-all;">{{TITLE}}</span>
+        </summary>
+        <div class="toggle-content" style="position: relative; padding: 10px 4px 2px; box-sizing: border-box;">
+            <button class="copy-btn" onclick="window.copyToggleText(this)" style="position: absolute; top: 8px; right: 0; background-color: #ffffff; border: 1px solid #e5e5ea; border-radius: 6px; padding: 4px 8px; font-size: 80%; color: #8e8e93; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                복사
+            </button>
+            <div class="copy-target" style="color: #636366; font-size: 95%; line-height: 1.6; font-style: italic; padding-right: 50px;">
+                {{CONTENT}}
+            </div>
+        </div>
+    </details>
+</div>`
+        };
+
+        // 토스트 알림 함수
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.classList.add("show");
+            setTimeout(() => { toast.classList.remove("show"); }, 2000);
+        }
+
+        // 입력창 내용이 바뀔 때마다 실시간으로 미리보기와 코드를 생성
+        function updateGenerator() {
+            // 선택된 스타일, 제목, 내용을 가져옵니다.
+            const styleId = document.querySelector('input[name="toggleStyle"]:checked').value;
+            const title = document.getElementById('toggleTitle').value || "미리보기";
+            
+            // 엔터(줄바꿈)를 웹상에서 보이도록 <br> 태그로 변환합니다.
+            let contentRaw = document.getElementById('toggleContent').value;
+            if(!contentRaw) contentRaw = "내용을 입력해주세요.";
+            const content = contentRaw.replace(/\n/g, "<br>");
+
+            // 원본 템플릿 코드에 사용자의 입력을 씌웁니다.
+            let finalCode = templates[styleId]
+                            .replace(/\{\{TITLE\}\}/g, title)
+                            .replace(/\{\{CONTENT\}\}/g, content);
+
+            // 미리보기 영역 갱신
+            document.getElementById('previewArea').innerHTML = finalCode;
+            
+            // 텍스트 영역에 완성된 소스코드 출력
+            document.getElementById('outputCode').value = finalCode;
+        }
+
+        // 전체 코드 복사 버튼 기능
+        function copyFinalCode() {
+            const codeOutput = document.getElementById("outputCode");
+            codeOutput.select();
+            document.execCommand('copy');
+            showToast("완성된 코드가 복사되었습니다! 🎉");
+        }
+
+        // 로컬 저장소 기능 (새 문서, 저장, 불러오기)
+        function createNew() {
+            if(confirm("작성 중인 내용이 지워집니다. 새 문서를 만드시겠습니까?")) {
+                document.getElementById('toggleTitle').value = "";
+                document.getElementById('toggleContent').value = "";
+                document.getElementById('v1').checked = true;
+                updateGenerator();
+                showToast("새 문서가 준비되었습니다.");
+            }
+        }
+
+        function saveToLocal() {
+            const data = {
+                style: document.querySelector('input[name="toggleStyle"]:checked').value,
+                title: document.getElementById('toggleTitle').value,
+                content: document.getElementById('toggleContent').value
+            };
+            localStorage.setItem('toggleGeneratorData', JSON.stringify(data));
+            showToast("현재 내용이 브라우저에 저장되었습니다. 💾");
+        }
+
+        function loadFromLocal() {
+            const savedData = localStorage.getItem('toggleGeneratorData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                document.getElementById(`v${data.style}`).checked = true;
+                document.getElementById('toggleTitle').value = data.title;
+                document.getElementById('toggleContent').value = data.content;
+                updateGenerator();
+                showToast("저장된 문서를 불러왔습니다. 📂");
+            } else {
+                showToast("저장된 문서가 없습니다.");
+            }
+        }
+
+        // 페이지가 처음 로드될 때 한 번 실행하여 초기화면 구성
+        updateGenerator();
+    </script>
+</body>
+</html>
