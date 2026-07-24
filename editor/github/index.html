@@ -60,6 +60,7 @@
         <div class="panel">
             <h2 class="panel-title">(2) 캐릭터 설정 & 수동 블록 추가</h2>
             <div class="settings-grid">
+                <!-- 민트 설정 -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #459fa5;">민트 (Mint)</label>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
@@ -70,8 +71,15 @@
                                 <input type="text" id="mintTextColor" value="#459fa5" style="flex: 1; min-width: 0;">
                             </div>
                         </div>
+                        <!-- 💡 [신규] 프사 URL -->
+                        <div style="flex: 2;">
+                            <label style="font-size: 10px; color: #459fa5;">프로필 이미지 URL</label>
+                            <input type="text" id="mintProfileUrl" value="[https://i.ibb.co/VYrHdHd8/IMG-6825.jpg](https://i.ibb.co/VYrHdHd8/IMG-6825.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                        </div>
                     </div>
                 </div>
+                
+                <!-- 핑크 설정 -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #f5bdcc;">핑크 (Pink)</label>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
@@ -82,8 +90,30 @@
                                 <input type="text" id="pinkTextColor" value="#f5bdcc" style="flex: 1; min-width: 0;">
                             </div>
                         </div>
+                        <!-- 💡 [신규] 프사 URL -->
+                        <div style="flex: 2;">
+                            <label style="font-size: 10px; color: #f5bdcc;">프로필 이미지 URL</label>
+                            <input type="text" id="pinkProfileUrl" value="[https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg](https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                        </div>
                     </div>
                 </div>
+
+                <!-- 💡 [신규] 모브 설정 추가 -->
+                <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
+                    <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">모브 (Mob)</label>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 10px; color: var(--text-muted);">글자색 (고정)</label>
+                            <input type="text" value="#333333" disabled style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-muted); width: 100%; box-sizing: border-box;">
+                        </div>
+                        <!-- 💡 [신규] 프사 URL -->
+                        <div style="flex: 3;">
+                            <label style="font-size: 10px; color: var(--text-muted);">프로필 이미지 URL</label>
+                            <input type="text" id="mobProfileUrl" value="[https://i.ibb.co/jP5RR5gx/IMG-6832.jpg](https://i.ibb.co/jP5RR5gx/IMG-6832.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                        </div>
+                    </div>
+                </div>
+
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
                     <label style="font-size: 12px; font-weight: bold; color: var(--text-main);">나레이션 (Narration)</label>
                     <div style="display: flex; gap: 15px; margin-top: 8px; align-items: center;">
@@ -107,7 +137,7 @@
                     </summary>
                     <div style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px;">
                         <p style="font-size: 10px; color: var(--text-muted); margin: 0 0 10px 0; line-height: 1.3;">
-                            에디터에 추가된 제3자 캐릭터가 <b>글자색</b>을 기준으로 자동 분류됩니다. 색상을 변경하고 <b>[일괄 적용]</b>을 누르세요.
+                            에디터에 추가된 제3자 캐릭터가 <b>글자색</b>을 기준으로 자동 분류됩니다. 색상 및 프로필 이미지를 변경하고 <b>[일괄 적용]</b>을 누르세요.
                         </p>
                         <div id="customCharacterAutoList" style="display: flex; flex-direction: column; gap: 10px;"></div>
                     </div>
@@ -179,12 +209,20 @@
         </div>
 
         <div class="panel">
-            <h2 class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="panel-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <span>(4) 미리보기 확인 및 직접 수정</span>
-                <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
-                    <button id="btnV1" onclick="setVersion(1)" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">V1</button>
-                    <button id="btnV2" onclick="setVersion(2)" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">V2</button>
-                </span>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <!-- 💡 [신규] 소설 / 말풍선 모드 토글 -->
+                    <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
+                        <button id="btnModeNovel" onclick="setOutputMode('novel')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">📝 소설</button>
+                        <button id="btnModeBubble" onclick="setOutputMode('bubble')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💬 말풍선</button>
+                    </span>
+                    <!-- 기존 V1 / V2 토글 -->
+                    <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
+                        <button id="btnV1" onclick="setVersion(1)" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">V1</button>
+                        <button id="btnV2" onclick="setVersion(2)" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">V2</button>
+                    </span>
+                </div>
             </h2>
             <p class="help-text">박스 안의 글자를 직접 클릭해 수정할 수 있습니다. 본문 글자를 드래그하면 <b>애플 스타일 편집 툴바</b>가 나타나며, 미리보기 창에서 <b>Enter</b>를 치면 블록이 나뉩니다.</p>
             <div class="preview-container" id="htmlPreview" contenteditable="true" oninput="syncPreviewToBlocks()"></div>
