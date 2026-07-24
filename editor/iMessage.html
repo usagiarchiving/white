@@ -273,8 +273,12 @@
     <!-- 4구역: 내보내기 및 저장 목록 (좌우 2단) -->
     <div class="layout-row" style="border-top: 1px solid #f2f2f7; padding-top: 30px;">
         <div class="layout-col">
-            <button class="btn-blue" style="margin-bottom: 10px;" onclick="copyCode()">코드 복사하기</button>
-            <textarea id="final-code" readonly></textarea>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button id="copy-btn" class="btn-blue" style="flex: 1;" onclick="copyCode()">코드 복사하기</button>
+                <button id="import-btn" class="btn-gray" style="flex: 1;" onclick="importHTML()">HTML 동기화 (불러오기)</button>
+            </div>
+            <!-- readonly 속성 제거하여 코드를 직접 붙여넣고 동기화 가능하도록 변경 -->
+            <textarea id="final-code" placeholder="여기에 생성된 코드가 출력됩니다.&#10;다른 곳에 저장해둔 HTML 코드를 여기에 붙여넣고 'HTML 동기화'를 누르면 다시 편집기로 불러옵니다."></textarea>
         </div>
         
         <div class="layout-col">
@@ -969,9 +973,138 @@ function closeLb(e) { document.getElementById('lb-'+e).style.display='none'; }
         saveToLocalStorage(name);
     }
     
+    // [수정된 구역]: 팝업(alert) 대신 버튼 텍스트와 색상이 자연스럽게 전환되도록 변경
     function copyCode() { 
         document.getElementById('final-code').select(); 
         document.execCommand('copy'); 
+        
+        const btn = document.getElementById('copy-btn');
+        const originalText = "코드 복사하기";
+        btn.innerText = "복사 완료!";
+        btn.style.backgroundColor = "#eaf9ed";
+        btn.style.color = "#34c759";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.backgroundColor = "#007aff";
+            btn.style.color = "white";
+        }, 2000);
+    }
+
+    // [새로 추가된 구역]: HTML 코드를 역으로 파싱하여 편집기에 다시 렌더링하는 동기화 함수
+    function importHTML() {
+        const rawHTML = document.getElementById('final-code').value;
+        if (!rawHTML.trim()) return;
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawHTML, 'text/html');
+
+        let newMessages = [];
+        let pName = document.getElementById('partner-name').value;
+        let pImg = document.getElementById('partner-image').value;
+
+        // 1. 프로필 정보 추출
+        const profileImgNode = doc.querySelector('img[alt="Profile"]');
+        if (profileImgNode) {
+            pImg = profileImgNode.src;
+            const nameSpan = profileImgNode.parentElement?.nextElementSibling?.querySelector('span');
+            if (nameSpan) pName = nameSpan.innerText.trim();
+        }
+
+        // 2. 메시지 요소 추출 (형식이 약간 달라도 호환되도록 유연하게 검색)
+        const mainContainer = doc.querySelector('div[style*="max-width: 500px"]') || doc.body;
+        const colContainer = mainContainer.querySelector('div[style*="flex-direction: column"]') || mainContainer;
+
+        Array.from(colContainer.children).forEach(el => {
+            const htmlStr = el.innerHTML || "";
+            
+            // 헤더
+            if (el.querySelector('img[alt="Profile"]') || htmlStr.includes('alt="Profile"')) {
+                newMessages.push({ sender: 'system', type: 'header', delayValue: 0 });
+                return;
+            }
+            // 푸터
+            if (htmlStr.includes('iMessage') && htmlStr.includes('<svg')) {
+                newMessages.push({ sender: 'system', type: 'footer', delayValue: 0 });
+                return;
+            }
+            // 날짜
+            if (el.className && el.className.includes('msg-date') || htmlStr.includes('msg-date')) {
+                const span = el.querySelector('span');
+                if (span) {
+                    let bTag = span.querySelector('b');
+                    if (bTag) {
+                        let dateText = bTag.innerText.trim();
+                        let timeText = span.innerText.replace(dateText, '').trim();
+                        newMessages.push({ sender: 'date', type: 'text', dateText: dateText, timeText: timeText, delayValue: 0 });
+                    } else {
+                        newMessages.push({ sender: 'date', type: 'text', dateText: "", timeText: span.innerText.trim(), delayValue: 0 });
+                    }
+                }
+                return;
+            }
+            // 읽음 표시
+            if (el.className && el.className.includes('read-status') || htmlStr.includes('읽음')) {
+                newMessages.push({ sender: 'status', type: 'read', delayValue: 1.0 });
+                return;
+            }
+            // 메시지 말풍선
+            if (el.className && el.className.includes('msg-bubble')) {
+                let sender = 'me';
+                if (el.style.justifyContent === 'flex-start' || htmlStr.includes('flex-start')) sender = 'partner';
+
+                let imgNode = el.querySelector('img:not(.lb-img)');
+                if (imgNode) {
+                    newMessages.push({ sender: sender, type: 'image', imgUrl: imgNode.src, delayValue: 1.0 });
+                    return;
+                }
+                
+                let textDiv = el.querySelector('div[style*="white-space: pre-wrap"]') || el.querySelector('div[style*="padding: 8px"]');
+                if (textDiv) {
+                    let extractedText = textDiv.innerText;
+                    if(extractedText.trim()) {
+                        newMessages.push({ sender: sender, type: 'text', text: extractedText, delayValue: 1.0 });
+                    }
+                } else {
+                    let clone = el.cloneNode(true);
+                    let tails = clone.querySelectorAll('div[style*="position: absolute"]');
+                    tails.forEach(t => t.remove());
+                    let txt = clone.innerText.trim();
+                    if (txt) {
+                         newMessages.push({ sender: sender, type: 'text', text: txt, delayValue: 1.0 });
+                    }
+                }
+                return;
+            }
+        });
+
+        // 3. UI 동기화 반영
+        const btn = document.getElementById('import-btn');
+        if (newMessages.length > 0) {
+            messages = newMessages;
+            document.getElementById('partner-name').value = pName;
+            document.getElementById('partner-image').value = pImg;
+            
+            // 팝업 없이 버튼 애니메이션으로 알림
+            const originalText = "HTML 동기화 (불러오기)";
+            btn.innerText = "동기화 완료!";
+            btn.classList.replace('btn-gray', 'btn-edit');
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.replace('btn-edit', 'btn-gray');
+            }, 2000);
+
+            updateUI(); // 현재 세팅값으로 HTML 싹 재구성
+        } else {
+            const originalText = "HTML 동기화 (불러오기)";
+            btn.innerText = "인식 불가";
+            btn.style.backgroundColor = "#ffeceb";
+            btn.style.color = "#ff3b30";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "#f2f2f7";
+                btn.style.color = "#1c1c1e";
+            }, 2000);
+        }
     }
 
     function updateUI() { renderMessageList(); generateResult(); }
