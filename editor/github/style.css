@@ -93,6 +93,33 @@ input[type="text"] {
     background-color: var(--input-bg);
     color: var(--text-main);
 }
+
+/* 💡 [신규 추가] 애플 스타일 range(슬라이더) UI CSS */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    transition: background 0.3s ease;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.1s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
 button {
     background-color: var(--primary);
     color: white;
@@ -160,7 +187,6 @@ body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-c
     margin-bottom: 8px;
 }
 
-/* PC 환경: 내부 박스의 점선만 1px 실선 카드로 변경하여 큰 틀 유지 */
 .preview-container {
     width: 100%;
     height: 700px;
@@ -227,8 +253,6 @@ body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-c
     margin-bottom: 5px;
 }
 
-
-/* --- 애플 스타일 툴바 CSS --- */
 .apple-toolbar {
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(10px);
@@ -323,7 +347,6 @@ body.dark-mode .tb-btn:hover { background-color: rgba(255,255,255,0.1); }
     cursor: pointer;
 }
 
-/* 포스트잇 내부 내용 길어질 때 스크롤 CSS */
 .postit-scroll {
     max-height: 350px;
     overflow-y: auto;
@@ -335,13 +358,11 @@ body.dark-mode .tb-btn:hover { background-color: rgba(255,255,255,0.1); }
 .postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
 body.dark-mode .postit-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
 
-
 /* 모바일 반응형 규칙 */
 @media (max-width: 992px) {
     .grid-2col { grid-template-columns: 1fr; }
     .settings-grid { grid-template-columns: 1fr; }
     
-    /* 💡 수정 및 고도화 완료: (4)번 구역 전체를 가둬두던 외곽 큰 네모 선과 카드 디자인을 모바일에서 완전히 삭제 */
     .grid-2col > .panel:last-child {
         border: none;
         background: transparent;
@@ -350,21 +371,15 @@ body.dark-mode .postit-scroll::-webkit-scrollbar-thumb { background: rgba(255,25
         border-radius: 0;
     }
     
-    /* 💡 미리보기 칸이 외곽 제한선 없이 스마트폰 가로 화면 전체(0px 끝까지)를 채우도록 구현 */
     .grid-2col > .panel:last-child .preview-container {
-        margin-left: -20px; /* 전체화면 body 패딩인 20px을 완벽하게 상쇄하여 화면 좌측 끝에 맞춤 */
-        margin-right: -20px; /* 화면 우측 끝에 맞춤 */
+        margin-left: -20px;
+        margin-right: -20px;
         width: calc(100% + 40px);
         border-radius: 0;
         border-left: none;
         border-right: none;
-        border-top: 1px solid var(--border); /* 상하 구분용 실선만 얇게 남김 */
+        border-top: 1px solid var(--border);
         border-bottom: 1px solid var(--border);
         height: 75vh;
-        
-        /* 💡 이렇게 바깥 제한선들을 다 뚫고 컨테이너를 100% 꽉 채워주면,
-           내부에 있는 실시간 본문(.tistory-post-wrapper)의 좌우 패딩 25px이 
-           모바일에서 글을 배포했을 때의 실제 본문 여백과 1:1로 정확하게 일치하게 되어 
-           글꼴 크기나 줄바꿈을 완벽하게 모니터링할 수 있습니다! */
     }
 }
