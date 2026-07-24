@@ -94,7 +94,7 @@ input[type="text"] {
     color: var(--text-main);
 }
 
-/* 애플 스타일 range(슬라이더) UI CSS */
+/* 💡 애플 스타일 range(슬라이더) UI CSS (신규 추가) */
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -253,6 +253,7 @@ body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-c
     margin-bottom: 5px;
 }
 
+/* 애플 스타일 툴바 CSS */
 .apple-toolbar {
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(10px);
@@ -347,6 +348,7 @@ body.dark-mode .tb-btn:hover { background-color: rgba(255,255,255,0.1); }
     cursor: pointer;
 }
 
+/* 포스트잇 내부 내용 길어질 때 스크롤 CSS */
 .postit-scroll {
     max-height: 350px;
     overflow-y: auto;
