@@ -1,16 +1,17 @@
 // == 전역 상태 변수 ==
 let blocks = [];
 let outputVersion = 1; 
+let outputMode = 'novel'; // 💡 [신규] 기본 출력 모드 (novel / bubble)
 let isDarkMode = false;
 let currentFontSize = 14;
 let currentFontFamily = "'Noto Serif KR', serif";
-let currentInlineFontSize = 13; // 툴바 폰트 사이즈 상태값
+let currentInlineFontSize = 13; 
 
 // == 텍스트·간격 설정을 위한 전역 변수 ==
 let currentLineHeight = 1.6;
 let currentLetterSpacing = -0.02; // em
 let currentBlockGap = 15; // 기본 문단 간격 (px)
-let currentWordBreak = 'break-all'; // 💡 [수정] 줄바꿈 방식 기본값을 글자 단위로 설정
+let currentWordBreak = 'break-all'; // 줄바꿈 방식 기본값을 글자 단위로 설정
 
 // == 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
 let historyStack = [];
@@ -174,7 +175,6 @@ function changeGlobalFont(font) {
     updateOutput();
 }
 
-// 💡 [수정] 폰트 크기 변경 시, 문단 간격(currentBlockGap)도 비율에 맞춰 유동적으로 연동
 function changeFontSize(delta) {
     let oldSize = currentFontSize;
     currentFontSize += delta;
@@ -344,12 +344,31 @@ function setVersion(v) {
     updateOutput(); 
 }
 
+// 💡 [신규] 출력 모드 (소설 / 말풍선) 전환 함수
+function setOutputMode(mode) {
+    outputMode = mode;
+    const btnNovel = document.getElementById('btnModeNovel');
+    const btnBubble = document.getElementById('btnModeBubble');
+    
+    if (mode === 'novel') {
+        btnNovel.style.background = 'var(--primary)';
+        btnNovel.style.color = 'white';
+        btnBubble.style.background = 'transparent';
+        btnBubble.style.color = 'var(--text-muted)';
+    } else {
+        btnBubble.style.background = 'var(--primary)';
+        btnBubble.style.color = 'white';
+        btnNovel.style.background = 'transparent';
+        btnNovel.style.color = 'var(--text-muted)';
+    }
+    updateOutput(); 
+}
+
 function stripSymbols(str) {
     str = (str || '').replace(/^["“"]|["”"]$/g, '');
     return str.trim();
 }
 
-// 💡 [수정] 마크다운 변환기를 정밀하게 업데이트 (굵게, 기울임, 취소선, 밑줄, 형광펜, 인용구 완벽 지원)
 function applyTextStyles(text) {
     if (!text) return text;
     let styledText = text;
@@ -362,7 +381,6 @@ function applyTextStyles(text) {
     return styledText;
 }
 
-// 💡 [추가] 텍스트 입력창에서 서식 버튼을 눌렀을 때 기호를 삽입해주는 헬퍼 함수
 function insertFmt(index, mark) {
     const ta = document.getElementById(`textarea-${index}`);
     if (!ta) return;
@@ -642,7 +660,6 @@ function renderEditor() {
 
         let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
 
-        // 💡 [추가] 나레이션 전용 애플 스타일 미니 툴바
         let narrationToolbar = '';
         if (isNarration) {
             narrationToolbar = `
@@ -785,6 +802,17 @@ function syncPreviewToBlocks() {
     debounceSaveState(); 
 }
 
+// 💡 [신규] 말풍선 전용 포매팅 헬퍼 함수
+function formatBubbleText(text) {
+    if (!text) return '';
+    let lines = text.split('\n');
+    return lines.map(l => {
+        let t = l.replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 600;">$1</strong>');
+        t = t.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
+        return t;
+    }).join('<br>');
+}
+
 function updateOutput(skipPreviewUpdate = false) {
     const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#B2E4D4' : '#459fa5');
     const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
@@ -891,14 +919,55 @@ function updateOutput(skipPreviewUpdate = false) {
             
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">\n    ${dividerInner}\n</div>\n`;
         } else {
-            // 💡 [수정] 빈 줄을 필터링하지 않고 남겨, Enter 입력 시 <br> 로 변환하여 행간 간격 적용
             let lines = block.content.split('\n');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
             }
-            else if (isCurrDiag) {
+            else if (outputMode === 'bubble' && isCurrDiag) {
+                // 💡 [신규] 말풍선 모드 렌더링
+                let bgColor = '';
+                let textColor = '';
+                let imageUrl = '';
+
+                let mintUrlEl = document.getElementById('mintProfileUrl');
+                let pinkUrlEl = document.getElementById('pinkProfileUrl');
+                let mobUrlEl = document.getElementById('mobProfileUrl');
+
+                if (curr === 'mint') {
+                    bgColor = '#F2FCF7';
+                    textColor = '#333333';
+                    imageUrl = (mintUrlEl && mintUrlEl.value.trim()) ? mintUrlEl.value : 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
+                } else if (curr === 'pink') {
+                    bgColor = '#FFF6FA';
+                    textColor = '#333333';
+                    imageUrl = (pinkUrlEl && pinkUrlEl.value.trim()) ? pinkUrlEl.value : 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
+                } else if (curr === 'mob') {
+                    bgColor = '#F4F5F7';
+                    textColor = '#333333';
+                    imageUrl = (mobUrlEl && mobUrlEl.value.trim()) ? mobUrlEl.value : 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
+                } else {
+                    bgColor = '#E2E8F0';
+                    textColor = block.customTextColor || '#333333';
+                    // 제3자는 기본 프로필 대신, 배경색을 채운 동그라미로 대체하여 유동적으로 표시
+                    imageUrl = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
+                }
+
+                let bubMarginTop = isSameAsPrev ? '0px' : '15px';
+                let bubPaddingTop = isSameAsPrev ? '10.5px' : '12px';
+                let bubPaddingBottom = isSameAsPrev ? '0px' : '12px';
+
+                let avatarHtml = '';
+                if (isSameAsPrev) {
+                    avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 0;"></div>`;
+                } else {
+                    avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                }
+
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} auto 0; padding: ${bubPaddingTop} 20px ${bubPaddingBottom} 20px; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
+            }
+            else if (isCurrDiag) { // 소설 모드
                 let textColor;
                 if (curr === 'mint') { textColor = mintTextColor; }
                 else if (curr === 'pink') { textColor = pinkTextColor; }
