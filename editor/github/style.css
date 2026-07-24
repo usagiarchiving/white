@@ -94,7 +94,7 @@ input[type="text"] {
     color: var(--text-main);
 }
 
-/* 💡 [신규 추가] 애플 스타일 range(슬라이더) UI CSS */
+/* 애플 스타일 range(슬라이더) UI CSS */
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
