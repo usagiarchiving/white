@@ -113,18 +113,15 @@ function changeInlineFontSize(delta) {
 }
 
 // =========================================================
-// 💡 [업그레이드] (1) 일괄 변환 파싱 로직 (발췌기 기능 이식)
+// (1) 일괄 변환 파싱 로직 (발췌기 기능 이식)
 // =========================================================
 
-// 마크다운 서식(취소선, 밑줄, 형광펜 등)을 텍스트 내부 마크업으로 정밀 변환하는 헬퍼 함수
+// 마크다운 서식을 텍스트 내부 마크업으로 정밀 변환하는 헬퍼 함수
 function parseAdvancedMarkdown(text) {
     if (!text) return text;
     let t = text;
-    // 취소선 ~~내용~~
     t = t.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
-    // 밑줄 ++내용++
     t = t.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
-    // 형광펜 ==내용==
     t = t.replace(/==([^=]+)==/g, '<mark style="background-color: #fef08a; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>');
     return t;
 }
@@ -181,7 +178,6 @@ function parseBulkInput() {
                 return;
             }
 
-            // 고도화된 마크다운 치환 적용
             seg = parseAdvancedMarkdown(seg);
 
             const isEmojiStart = /^(🗓|💍|📍|👕|👥|💭|🔔|🚨|💕|❤|🔥|🔫|✏|📰|💘)/.test(seg);
