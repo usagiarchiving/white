@@ -15,7 +15,7 @@
 <body>
 
 <div class="page-wrapper">
-    <!-- 새롭게 추가된 전체 설정 (다크모드, 폰트, 크기) 패널 -->
+    <!-- 전체 설정 (다크모드, 폰트, 크기) 패널 -->
     <div class="panel" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 15px 20px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <h2 class="panel-title" style="border: none; padding: 0; margin: 0; font-size: 16px;">디자인 설정</h2>
@@ -51,6 +51,8 @@
                 - <b>---</b> 또는 <b>***</b> 를 입력하면 회색 실선 구분선이 추가됩니다.<br>
                 - 문장 맨 앞에 <b>이모티콘(🗓️, 💍 등)</b>이 오면 <b>[상태창]</b>이 됩니다.<br>
                 - <b>포스트잇: 내용</b> 또는 <b>폴라로이드: 링크|날짜|캡션</b> 을 입력하면 감성 블록이 생성됩니다.<br>
+                <!-- 💡 툴바.js 업데이트를 대비한 신규 규칙 안내 💡 -->
+                <span style="color: var(--primary);">+ <b>~~취소선~~</b>, <b>++밑줄++</b>, <b>==형광펜==</b> 등 특수 기호 변환도 지원합니다.</span>
             </p>
             <textarea id="bulkInput" rows="5" placeholder="여기에 텍스트를 붙여넣으세요..."></textarea>
             <button onclick="parseBulkInput()" style="width: 100%;">규칙에 맞춰 변환하기</button>
@@ -112,7 +114,48 @@
                     </div>
                 </div>
             </div>
-            <div class="tool-buttons">
+
+            <!-- 💡 [업그레이드] 텍스트 및 간격 설정 UI 추가 💡 -->
+            <div style="margin-top: 15px; background: var(--block-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); transition: 0.3s ease;">
+                <label style="font-size: 12px; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 12px;">텍스트·간격 상세 설정</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
+                    <!-- 행간 -->
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">행간 (줄간격)</label>
+                            <span id="lineHeightVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">1.6</span>
+                        </div>
+                        <input type="range" min="1.1" max="2.5" step="0.05" value="1.6" oninput="document.getElementById('lineHeightVal').innerText = this.value; updateLayoutSetting('lineHeight', this.value);" style="accent-color: var(--primary); cursor: pointer;">
+                    </div>
+                    <!-- 자간 -->
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">자간 (글자간격)</label>
+                            <span id="letterSpacingVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">-0.02em</span>
+                        </div>
+                        <input type="range" min="-0.1" max="0.1" step="0.01" value="-0.02" oninput="document.getElementById('letterSpacingVal').innerText = this.value + 'em'; updateLayoutSetting('letterSpacing', this.value);" style="accent-color: var(--primary); cursor: pointer;">
+                    </div>
+                    <!-- 문단 간격 -->
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">문단 간격</label>
+                            <span id="blockGapVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">15px</span>
+                        </div>
+                        <input type="range" min="0" max="40" step="1" value="15" oninput="document.getElementById('blockGapVal').innerText = this.value + 'px'; updateLayoutSetting('blockGap', this.value);" style="accent-color: var(--primary); cursor: pointer;">
+                    </div>
+                    <!-- 줄바꿈 방식 -->
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">줄바꿈 방식</label>
+                        <select onchange="updateLayoutSetting('wordBreak', this.value)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 11px; cursor: pointer; transition: 0.2s;">
+                            <option value="keep-all">단어 단위 (추천)</option>
+                            <option value="break-all">글자 단위</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!-- 💡 신규 추가 끝 💡 -->
+
+            <div class="tool-buttons" style="margin-top: 15px;">
                 <button class="btn-secondary" onclick="addBlock('title')">+ 제목</button>
                 <button class="btn-secondary" onclick="addBlock('narration')">+ 나레이션</button>
                 <button class="btn-secondary" onclick="addBlock('mint')">+ 민트 대사</button>
@@ -162,7 +205,7 @@
     </div>
 </div>
 
-<!-- 요청하신 이미지를 바탕으로 새롭게 디자인된 애플 스타일 플로팅 툴바 -->
+<!-- 애플 스타일 플로팅 툴바 -->
 <div id="floatingToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000;">
     <div class="tb-row">
         <button type="button" class="tb-btn" onclick="undo()" title="실행 취소">
@@ -200,8 +243,9 @@
     </div>
 </div>
 
-<!-- 분리된 JS 파일 연결 -->
+<!-- 분리된 JS 파일 연결 (여기에 toolbar.js도 연결되어 있다고 가정합니다) -->
 <script src="script.js"></script>
+<script src="toolbar.js"></script>
 
 </body>
 </html>
