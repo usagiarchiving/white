@@ -6,7 +6,13 @@ let currentFontSize = 14;
 let currentFontFamily = "'Noto Serif KR', serif";
 let currentInlineFontSize = 13; // 툴바 폰트 사이즈 상태값
 
-// == 추가된 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
+// == 텍스트·간격 설정을 위한 전역 변수 추가 ==
+let currentLineHeight = 1.6;
+let currentLetterSpacing = -0.02; // em
+let currentBlockGap = 15; // 기본 문단 간격 (px)
+let currentWordBreak = 'keep-all'; // 줄바꿈 방식
+
+// == 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
 let historyStack = [];
 let historyIndex = -1;
 let typingTimer;
@@ -107,7 +113,6 @@ document.addEventListener('keydown', function(e) {
 // 기존 및 신규 기능 함수들
 // ===================================
 
-// 새롭게 추가된 블록 이동 기능 (위/아래/특정 숫자)
 function moveBlockUp(index) {
     if (index <= 0) return;
     const temp = blocks[index - 1];
@@ -131,7 +136,7 @@ function moveBlockDown(index) {
 function moveBlockTo(oldIndex, targetInputId) {
     const el = document.getElementById(targetInputId);
     if(!el) return;
-    let newIndex = parseInt(el.value) - 1; // 사용자는 1부터 입력하므로 -1 처리
+    let newIndex = parseInt(el.value) - 1; 
     if (isNaN(newIndex) || newIndex < 0 || newIndex >= blocks.length) {
         showToast('유효한 순서를 입력해주세요. (1 ~ ' + blocks.length + ')');
         return;
@@ -175,6 +180,15 @@ function changeFontSize(delta) {
     if(currentFontSize < 10) currentFontSize = 10;
     if(currentFontSize > 30) currentFontSize = 30;
     document.getElementById('fontSizeDisplay').innerText = currentFontSize + 'px';
+    updateOutput();
+}
+
+// 💡 새롭게 추가된 레이아웃(간격, 장평 등) 일괄 업데이트 함수
+function updateLayoutSetting(key, value) {
+    if (key === 'lineHeight') currentLineHeight = parseFloat(value);
+    if (key === 'letterSpacing') currentLetterSpacing = parseFloat(value);
+    if (key === 'blockGap') currentBlockGap = parseInt(value, 10);
+    if (key === 'wordBreak') currentWordBreak = value;
     updateOutput();
 }
 
@@ -293,7 +307,7 @@ function applyAutoCustomColor(safeKey) {
     if (count > 0) {
         document.getElementById('customCharacterAutoList').innerHTML = ''; 
         renderEditor(); 
-        saveState(); // 변경사항 히스토리 저장
+        saveState(); 
         showToast(`총 ${count}개의 대사에 색상이 일괄 적용되었습니다! 🚀`);
     } else {
         showToast("해당 캐릭터를 사용하는 대사가 없습니다.");
@@ -326,7 +340,7 @@ function stripSymbols(str) {
 
 function applyTextStyles(text) {
     if (!text) return text;
-    let styledText = text.replace(/\*\*/g, ''); // 연이은 별표(**) 무시/제거
+    let styledText = text.replace(/\*\*/g, ''); 
     styledText = styledText.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
     return styledText;
 }
@@ -389,14 +403,10 @@ function focusAndScrollBlock(index, preventFocus = false) {
     }, 100);
 }
 
-// 수정됨: 이제 편집창에서 Enter를 치면 오직 단순 줄바꿈만 수행합니다. (블록 분리 로직 삭제)
 function handleTextareaKeydown(e, index) {
     if (e.isComposing || e.keyCode === 229) return;
-    // 엔터키 블록 분리 기능을 요청에 따라 완전히 삭제했습니다.
-    // 텍스트에리어 기본 동작(줄바꿈)이 자연스럽게 작동합니다.
 }
 
-// 수정됨: 툴바 위치 계산 고도화 (텍스트 가림 방지)
 function handleSelection() {
     const selection = window.getSelection();
     const toolbar = document.getElementById('floatingToolbar');
@@ -421,20 +431,16 @@ function handleSelection() {
     
     toolbar.style.display = 'flex';
     
-    // 툴바 크기를 유동적으로 가져옴
     const toolbarHeight = toolbar.offsetHeight || 80; 
     const toolbarWidth = toolbar.offsetWidth || 340;
     
-    // 텍스트를 가리지 않도록 텍스트 박스 바로 위(-12px)로 올림
     let top = rect.top + window.scrollY - toolbarHeight - 12;
     let left = rect.left + window.scrollX + (rect.width / 2) - (toolbarWidth / 2);
     
-    // 화면 맨 위쪽으로 스크롤이 올라가서 툴바가 잘린다면 텍스트 바로 아래로 내림
     if (top < window.scrollY) {
         top = rect.bottom + window.scrollY + 12;
     }
     
-    // 화면 왼쪽으로 잘리지 않도록 안전 여백 추가
     if (left < window.scrollX + 10) left = window.scrollX + 10;
     
     toolbar.style.top = top + 'px';
@@ -453,7 +459,6 @@ function wrapSelectionWithStyle(styles) {
     const range = selection.getRangeAt(0);
     if (range.collapsed) return;
 
-    // 브라우저 기본 execCommand를 사용하면 텍스트 노드 분리 버그나 불필요한 여백 발생을 막을 수 있습니다.
     if (Object.keys(styles).length === 1 && styles.color) {
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, styles.color);
@@ -503,7 +508,6 @@ function formatPalette(command, value) {
     setTimeout(handleSelection, 10);
 }
 
-// 툴바 인라인 폰트 크기 변경 함수
 function changeInlineFontSize(delta) {
     currentInlineFontSize += delta;
     if(currentInlineFontSize < 10) currentInlineFontSize = 10;
@@ -517,7 +521,7 @@ function changeInlineFontSize(delta) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    saveState(); // 최초 빈 상태 저장
+    saveState(); 
 
     const previewEl = document.getElementById('htmlPreview');
     previewEl.addEventListener('mouseup', handleSelection);
@@ -535,7 +539,6 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('htmlPreview').addEventListener('keydown', function(e) {
         if (e.isComposing || e.keyCode === 229) return;
         
-        // 미리보기 창에서 Enter 쳤을 때만 블록이 나뉩니다.
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             const selection = window.getSelection();
@@ -579,7 +582,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     };
                     blocks.splice(index + 1, 0, newBlock);
                     renderEditor(); 
-                    saveState(); // 변경사항 히스토리 저장
+                    saveState(); 
                     
                     setTimeout(() => {
                         const newBlockEl = document.getElementById(`preview-block-${index + 1}`);
@@ -609,163 +612,12 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-function parseBulkInput() {
-    try {
-        const bulkInput = document.getElementById('bulkInput');
-        let text = bulkInput.value;
-        
-        if (!text.trim()) {
-            showToast('변환할 텍스트를 입력해주세요.');
-            return;
-        }
-
-        const lines = text.split(/\n/); 
-        let statusBuffer = [];
-        let isCodeBlock = false;
-        let codeBuffer = [];
-
-        lines.forEach(line => {
-            let seg = line.trim();
-
-            if (seg.startsWith('```')) {
-                if (isCodeBlock) {
-                    blocks.push({ type: 'html', content: codeBuffer.join('\n') });
-                    codeBuffer = [];
-                    isCodeBlock = false;
-                } else {
-                    if (statusBuffer.length > 0) {
-                        blocks.push({ type: 'status', content: statusBuffer.join('\n') });
-                        statusBuffer = [];
-                    }
-                    isCodeBlock = true;
-                    codeBuffer = [];
-                }
-                return;
-            }
-
-            if (isCodeBlock) {
-                codeBuffer.push(line);
-                return;
-            }
-
-            if (!seg) return;
-
-            let mdImgMatch = seg.match(/^!\[.*?\]\((.*?)\)$/);
-            if (mdImgMatch) {
-                blocks.push({ type: 'image', content: mdImgMatch[1].trim() });
-                return;
-            }
-
-            if (seg === '---' || seg === '***' || seg.startsWith('구분선:')) {
-                blocks.push({ type: 'divider', content: 'solid-gray' });
-                return;
-            }
-
-            // ** 연이은 별표 무시/제거
-            seg = seg.replace(/\*\*/g, '');
-
-            const isEmojiStart = /^(🗓|💍|📍|👕|👥|💭|🔔|🚨|💕|❤|🔥|🔫|✏|📰|💘)/.test(seg);
-
-            if (isEmojiStart) {
-                if (seg.startsWith('🗓') && statusBuffer.length > 0) {
-                    blocks.push({ type: 'status', content: statusBuffer.join('\n') });
-                    statusBuffer = [];
-                }
-                statusBuffer.push(stripSymbols(seg));
-            } else {
-                if (statusBuffer.length > 0) {
-                    blocks.push({ type: 'status', content: statusBuffer.join('\n') });
-                    statusBuffer = [];
-                }
-
-                if (seg.startsWith('제목:')) { blocks.push({ type: 'title', content: stripSymbols(seg.replace(/^제목:\s*/, '')) }); return; }
-                if (seg.startsWith('민트:')) { blocks.push({ type: 'mint', content: stripSymbols(seg.replace(/^민트:\s*/, '')) }); return; }
-                if (seg.startsWith('핑크:')) { blocks.push({ type: 'pink', content: stripSymbols(seg.replace(/^핑크:\s*/, '')) }); return; }
-                if (seg.startsWith('모브:')) { blocks.push({ type: 'mob', content: stripSymbols(seg.replace(/^모브:\s*/, '')) }); return; }
-                if (seg.startsWith('제3자:')) { blocks.push({ type: 'custom', content: stripSymbols(seg.replace(/^제3자:\s*/, '')), customTextColor: '#333333' }); return; }
-                if (seg.startsWith('속마음:')) { blocks.push({ type: 'thought', content: stripSymbols(seg.replace(/^속마음:\s*/, '')) }); return; }
-                
-                if (seg.startsWith('포스트잇:')) { blocks.push({ type: 'postit', content: stripSymbols(seg.replace(/^포스트잇:\s*/, '')) }); return; }
-                if (seg.startsWith('폴라로이드:')) { 
-                    let parts = stripSymbols(seg.replace(/^폴라로이드:\s*/, '')).split('|');
-                    blocks.push({ type: 'polaroid', content: parts[0] ? parts[0].trim() : '', polaroidDate: parts[1] ? parts[1].trim() : '', polaroidCaption: parts[2] ? parts[2].trim() : '' });
-                    return;
-                }
-
-                if (seg.startsWith('브금:')) {
-                    let parts = stripSymbols(seg.replace(/^브금:\s*/, '')).split('|');
-                    blocks.push({ type: 'bgm', content: '', bgmTitle: parts[0] ? parts[0].trim() : '', bgmUrl: parts[1] ? parts[1].trim() : '' });
-                    return;
-                }
-                if (seg.startsWith('디데이:') || seg.startsWith('작은텍스트:')) { blocks.push({ type: 'dday', content: stripSymbols(seg.replace(/^(디데이|작은텍스트):\s*/, '')) }); return; }
-                if (seg.startsWith('상태창:')) { blocks.push({ type: 'status', content: stripSymbols(seg.replace(/^상태창:\s*/, '')) }); return; }
-
-                if (seg.startsWith('*') && seg.endsWith('*')) {
-                    blocks.push({ type: 'narration', content: stripSymbols(seg.replace(/^\*|\*$/g, '')) });
-                    return;
-                }
-
-                if (seg.startsWith('(') && seg.endsWith(')')) {
-                    let lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
-                    if (lastBlock && ['mint', 'pink', 'mob', 'custom'].includes(lastBlock.type)) {
-                        lastBlock.content += '\n' + seg;
-                        return;
-                    }
-                }
-
-                let rawText = seg;
-
-                if (/(["“"].*?["”"])/.test(rawText)) {
-                    let parts = rawText.split(/(["“"].*?["”"])/g);
-                    parts.forEach(part => {
-                        part = part.trim();
-                        if (!part) return;
-
-                        if (/^["“"].*?["”"]$/.test(part)) {
-                            let diag = part.replace(/^["“"]|["”"]$/g, '').trim();
-                            if (diag) blocks.push({ type: 'mint', content: diag });
-                        } else { 
-                           if (/^\(.*\)$/.test(part)) {
-                              let lastBlock = blocks[blocks.length - 1];
-                               if (lastBlock && ['mint', 'pink', 'mob', 'custom'].includes(lastBlock.type)) {
-                                  lastBlock.content += '\n' + part;
-                                 return;
-                                }
-                             }
-                          
-                            let nar = part.replace(/^\*|\*$/g, '').trim();
-                            if (nar) blocks.push({ type: 'narration', content: nar });
-                            
-                        }
-                    });
-                    return;
-                }
-
-                blocks.push({ type: 'narration', content: stripSymbols(seg) });
-            }
-        });
-
-        if (statusBuffer.length > 0) {
-            blocks.push({ type: 'status', content: statusBuffer.join('\n') });
-        }
-        if (isCodeBlock && codeBuffer.length > 0) {
-            blocks.push({ type: 'html', content: codeBuffer.join('\n') });
-        }
-
-        renderEditor();
-        saveState(); // 변경사항 히스토리 저장
-        bulkInput.value = ''; 
-    } catch(e) {
-        console.error(e);
-        showToast('텍스트 변환 중 오류가 발생했습니다.');
-    }
-}
+// 💡 parseBulkInput() 함수는 toolbar.js로 이동하기 위해 삭제되었습니다.
 
 function addBlock(type, index = -1) {
     let defaultContent = '';
     if (type === 'divider') defaultContent = 'solid-gray';
     
-    // 폴라로이드 기본값 없음(빈칸)으로 생성되도록 수정
     const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     let addedIndex = -1;
     if (index === -1) {
@@ -776,7 +628,7 @@ function addBlock(type, index = -1) {
         addedIndex = index;
     }
     renderEditor();
-    saveState(); // 변경사항 히스토리 저장
+    saveState(); 
     focusAndScrollBlock(addedIndex); 
 }
 
@@ -784,20 +636,20 @@ function insertEmptyLine(index) {
     const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     blocks.splice(index + 1, 0, newBlock);
     renderEditor();
-    saveState(); // 변경사항 히스토리 저장
+    saveState(); 
     focusAndScrollBlock(index + 1); 
 }
 
 function deleteBlock(index) {
     blocks.splice(index, 1);
     renderEditor();
-    saveState(); // 변경사항 히스토리 저장
+    saveState(); 
 }
 
 function updateBlockContent(index, value) {
     blocks[index].content = value;
     updateOutput();
-    debounceSaveState(); // 텍스트 수정 시 디바운스 적용 히스토리 저장
+    debounceSaveState(); 
 }
 
 function updateBlockCustom(index, field, value) {
@@ -807,7 +659,7 @@ function updateBlockCustom(index, field, value) {
     if (field === 'polaroidDate') blocks[index].polaroidDate = value;
     if (field === 'polaroidCaption') blocks[index].polaroidCaption = value;
     updateOutput();
-    debounceSaveState(); // 커스텀 값 수정 시 디바운스 적용 히스토리 저장
+    debounceSaveState(); 
 }
 
 function changeBlockType(index, newType) {
@@ -827,7 +679,7 @@ function changeBlockType(index, newType) {
         blocks[index].content = 'solid-gray';
     }
     renderEditor();
-    saveState(); // 변경사항 히스토리 저장
+    saveState(); 
 }
 
 function renderEditor() {
@@ -868,7 +720,6 @@ function renderEditor() {
                 </div>
             `;
         } else if (block.type === 'polaroid') {
-            // Placeholder도 비워두도록 수정
             customFields = `
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
                     <input type="text" placeholder="이미지 URL" value="${escapeHtml(block.content)}" onchange="updateBlockContent(${index}, this.value)" style="font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
@@ -882,7 +733,6 @@ function renderEditor() {
 
         let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
 
-        // 변경점: 블록 위치 조절 컨트롤(숫자 포함) UI 추가
         item.innerHTML = `
             <div style="display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 5px;">
                 <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">#${index + 1}</span>
@@ -1004,7 +854,7 @@ function syncPreviewToBlocks() {
     });
     
     updateOutput(true); 
-    debounceSaveState(); // 미리보기 편집 시에도 히스토리 저장
+    debounceSaveState(); 
 }
 
 function updateOutput(skipPreviewUpdate = false) {
@@ -1013,7 +863,6 @@ function updateOutput(skipPreviewUpdate = false) {
     const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#2c2c2e');
     const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
 
-    // -- 다크모드 대응 인라인 색상 변수들 --
     const cTitle = isDarkMode ? '#F9F9F8' : '#1c1c1e';
     const cStatusBg = isDarkMode ? '#242424' : '#fdfdfd';
     const cStatusBorder = isDarkMode ? '#444444' : '#eeeeee';
@@ -1034,17 +883,16 @@ function updateOutput(skipPreviewUpdate = false) {
     let prevValidType = null;
     let lastCustomTextColor = null;
     let consecutivePostitCount = 0;
-    let consecutivePolaroidCount = 0; // 폴라로이드 연속 렌더링을 위한 카운터 추가
+    let consecutivePolaroidCount = 0; 
 
-    // 💡 [수정됨] 가독성을 위한 동적 여백 비율 계산 로직 추가
-    // 현재 폰트가 14px 이하일 때는 줄어들고, 초과할 때는 1(100%)로 고정하여 간격이 더 커지지 않게 함
+    // 💡 [업그레이드] 동적 여백 비율 계산 및 설정된 문단 간격(currentBlockGap) 반영
     let marginRatio = Math.min(currentFontSize / 14, 1);
+    let baseGap = currentBlockGap;
     
-    // 비율이 적용된 동적 마진(Margin) 값들 생성
-    let mt_20 = Math.round(20 * marginRatio) + 'px';
-    let mt_15 = Math.round(15 * marginRatio) + 'px';
-    let mt_10 = Math.round(10 * marginRatio) + 'px';
-    let mt_4 = Math.round(4 * marginRatio) + 'px';
+    let mt_20 = Math.round((baseGap + 5) * marginRatio) + 'px';
+    let mt_15 = Math.round(baseGap * marginRatio) + 'px';
+    let mt_10 = Math.round(Math.max((baseGap - 5), 5) * marginRatio) + 'px';
+    let mt_4 = Math.round((baseGap * 0.3) * marginRatio) + 'px';
 
     innerContent += `<div class="preview-gap" onclick="insertEmptyLine(-1)" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>\n`;
 
@@ -1082,7 +930,6 @@ function updateOutput(skipPreviewUpdate = false) {
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
-                // 💡 [수정됨] 고정된 픽셀값 대신 계산된 동적 비율 변수(mt_20, mt_15 등)를 대입합니다.
                 if ((isPrevDiag && isCurrNarration) || (isPrevNarration && isCurrDiag)) {
                     mt = mt_20; 
                 } else if (isPrevDiag && isCurrDiag) {
@@ -1120,9 +967,8 @@ function updateOutput(skipPreviewUpdate = false) {
             let lines = block.content.split('\n').filter(l => l.trim() !== '');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
-            // 💡 [수정됨] 맨 첫 줄(mt === '0px')일 때 적용되는 기본 여백들도 동적 비율 변수로 교체했습니다.
             if (block.type === 'title') {
-                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: keep-all;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
             }
             else if (isCurrDiag) {
                 let textColor;
@@ -1131,7 +977,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : '#666666'; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${divContent}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">\n    ${divContent}\n</div>\n`;
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
@@ -1282,10 +1128,10 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
             }
             else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${lines.join('<br>')}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">\n    ${lines.join('<br>')}\n</div>\n`;
             }
             else if (block.type === 'thought') {
-                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: keep-all; text-align: left; line-height: 1.6;">\n    ${lines.join('<br>')}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">\n    ${lines.join('<br>')}\n</div>\n`;
             }
             else if (block.type === 'dday') {
                 htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;">\n    <span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span>\n</div>\n`;
@@ -1382,6 +1228,7 @@ function stopBGM() {
 <\/script>\n`;
     }
 
+    // 💡 [업그레이드] 변수로 추가된 텍스트·간격 설정들이 전역 CSS에 반영되도록 업데이트
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
@@ -1391,8 +1238,10 @@ function stopBGM() {
 .tistory-post-wrapper {
     font-family: ${currentFontFamily};
     font-size: ${currentFontSize}px;
-    line-height: 1.6;
-    word-break: keep-all;
+    line-height: ${currentLineHeight};
+    letter-spacing: ${currentLetterSpacing}em;
+    word-break: ${currentWordBreak};
+    overflow-wrap: ${currentWordBreak === 'break-all' ? 'anywhere' : 'break-word'};
     padding: 0 25px;
     box-sizing: border-box;
     max-width: 600px;
@@ -1403,7 +1252,6 @@ function stopBGM() {
 /*나레이션 간격*/
 [data-type="narration"] {
     margin-bottom: 3px !important;
-    word-break: break-all !important;
 }
 /* 포스트잇 내부 내용 길어질 때 스크롤 */
 .postit-scroll {
@@ -1628,8 +1476,7 @@ function importFromHtml() {
     if (newBlocks.length > 0) {
         blocks = newBlocks;
         renderEditor();
-        saveState(); // 변경사항 히스토리 저장
-        // 동기화 완료 후 거슬릴 수 있는 팝업(토스트) 제거 처리
+        saveState(); 
     } else {
         showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
     }
@@ -1639,7 +1486,6 @@ function copyHtml() {
     const code = document.getElementById('finalHtmlCode');
     code.select();
     document.execCommand('copy');
-    // 복사 완료 팝업이 뜨지 않도록 showToast 호출을 삭제했습니다.
 }
 
 document.getElementById('mintTextColor').addEventListener('input', () => updateOutput());
