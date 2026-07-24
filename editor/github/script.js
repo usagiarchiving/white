@@ -6,11 +6,11 @@ let currentFontSize = 14;
 let currentFontFamily = "'Noto Serif KR', serif";
 let currentInlineFontSize = 13; // 툴바 폰트 사이즈 상태값
 
-// == 텍스트·간격 설정을 위한 전역 변수 추가 ==
+// == 텍스트·간격 설정을 위한 전역 변수 ==
 let currentLineHeight = 1.6;
 let currentLetterSpacing = -0.02; // em
 let currentBlockGap = 15; // 기본 문단 간격 (px)
-let currentWordBreak = 'keep-all'; // 줄바꿈 방식
+let currentWordBreak = 'break-all'; // 💡 [수정] 줄바꿈 방식 기본값을 글자 단위로 설정
 
 // == 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
 let historyStack = [];
@@ -90,7 +90,6 @@ function redo() {
     }
 }
 
-// == 전역 키보드 이벤트 (Ctrl+Z / Cmd+Z, Ctrl+Y) ==
 document.addEventListener('keydown', function(e) {
     if (e.isComposing || e.keyCode === 229) return;
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -110,7 +109,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ===================================
-// 기존 및 신규 기능 함수들
+// 블록 제어 함수들
 // ===================================
 
 function moveBlockUp(index) {
@@ -175,15 +174,27 @@ function changeGlobalFont(font) {
     updateOutput();
 }
 
+// 💡 [수정] 폰트 크기 변경 시, 문단 간격(currentBlockGap)도 비율에 맞춰 유동적으로 연동
 function changeFontSize(delta) {
+    let oldSize = currentFontSize;
     currentFontSize += delta;
     if(currentFontSize < 10) currentFontSize = 10;
     if(currentFontSize > 30) currentFontSize = 30;
+
+    if (oldSize !== currentFontSize) {
+        let ratio = currentFontSize / oldSize;
+        currentBlockGap = Math.round(currentBlockGap * ratio);
+        
+        let gapSlider = document.getElementById('blockGapSlider');
+        let gapVal = document.getElementById('blockGapVal');
+        if (gapSlider) gapSlider.value = currentBlockGap;
+        if (gapVal) gapVal.innerText = currentBlockGap + 'px';
+    }
+
     document.getElementById('fontSizeDisplay').innerText = currentFontSize + 'px';
     updateOutput();
 }
 
-// 💡 새롭게 추가된 레이아웃(간격, 장평 등) 일괄 업데이트 함수
 function updateLayoutSetting(key, value) {
     if (key === 'lineHeight') currentLineHeight = parseFloat(value);
     if (key === 'letterSpacing') currentLetterSpacing = parseFloat(value);
@@ -338,11 +349,36 @@ function stripSymbols(str) {
     return str.trim();
 }
 
+// 💡 [수정] 마크다운 변환기를 정밀하게 업데이트 (굵게, 기울임, 취소선, 밑줄, 형광펜, 인용구 완벽 지원)
 function applyTextStyles(text) {
     if (!text) return text;
-    let styledText = text.replace(/\*\*/g, ''); 
+    let styledText = text;
+    styledText = styledText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     styledText = styledText.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
+    styledText = styledText.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
+    styledText = styledText.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
+    styledText = styledText.replace(/==([^=]+)==/g, '<mark style="background-color: #fef08a; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>');
+    styledText = styledText.replace(/%%([^%]+)%%/g, '<span style="border-left: 3px solid #8e8e93; padding-left: 8px; margin-left: 4px; color: #8e8e93; display: inline-block;">$1</span>');
     return styledText;
+}
+
+// 💡 [추가] 텍스트 입력창에서 서식 버튼을 눌렀을 때 기호를 삽입해주는 헬퍼 함수
+function insertFmt(index, mark) {
+    const ta = document.getElementById(`textarea-${index}`);
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const text = ta.value;
+    const selectedText = text.substring(start, end) || '텍스트';
+    const newText = text.substring(0, start) + mark + selectedText + mark + text.substring(end);
+    
+    ta.value = newText;
+    updateBlockContent(index, newText); 
+    setTimeout(() => {
+        ta.focus();
+        ta.selectionStart = start + mark.length;
+        ta.selectionEnd = start + mark.length + selectedText.length;
+    }, 0);
 }
 
 function extractVideoId(url) {
@@ -407,134 +443,8 @@ function handleTextareaKeydown(e, index) {
     if (e.isComposing || e.keyCode === 229) return;
 }
 
-function handleSelection() {
-    const selection = window.getSelection();
-    const toolbar = document.getElementById('floatingToolbar');
-    
-    if (!selection.rangeCount || selection.isCollapsed) {
-        toolbar.style.display = 'none';
-        return;
-    }
-    
-    const range = selection.getRangeAt(0);
-    const previewContainer = document.getElementById('htmlPreview');
-    if (!previewContainer.contains(range.commonAncestorContainer)) {
-        toolbar.style.display = 'none';
-        return;
-    }
-    
-    const rect = range.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
-        toolbar.style.display = 'none';
-        return;
-    }
-    
-    toolbar.style.display = 'flex';
-    
-    const toolbarHeight = toolbar.offsetHeight || 80; 
-    const toolbarWidth = toolbar.offsetWidth || 340;
-    
-    let top = rect.top + window.scrollY - toolbarHeight - 12;
-    let left = rect.left + window.scrollX + (rect.width / 2) - (toolbarWidth / 2);
-    
-    if (top < window.scrollY) {
-        top = rect.bottom + window.scrollY + 12;
-    }
-    
-    if (left < window.scrollX + 10) left = window.scrollX + 10;
-    
-    toolbar.style.top = top + 'px';
-    toolbar.style.left = left + 'px';
-}
-
-function formatText(command) {
-    document.execCommand(command, false, null);
-    syncPreviewToBlocks();
-    setTimeout(handleSelection, 10);
-}
-
-function wrapSelectionWithStyle(styles) {
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-    const range = selection.getRangeAt(0);
-    if (range.collapsed) return;
-
-    if (Object.keys(styles).length === 1 && styles.color) {
-        document.execCommand('styleWithCSS', false, true);
-        document.execCommand('foreColor', false, styles.color);
-        syncPreviewToBlocks();
-        return;
-    }
-    if (Object.keys(styles).length === 1 && styles.backgroundColor) {
-        document.execCommand('styleWithCSS', false, true);
-        document.execCommand('hiliteColor', false, styles.backgroundColor);
-        syncPreviewToBlocks();
-        return;
-    }
-
-    const span = document.createElement('span');
-    for (let key in styles) {
-        span.style[key] = styles[key];
-    }
-    
-    try {
-        span.appendChild(range.extractContents());
-        range.insertNode(span);
-        selection.removeAllRanges();
-        const newRange = document.createRange();
-        newRange.selectNodeContents(span);
-        selection.addRange(newRange);
-    } catch(e) {
-        console.error(e);
-    }
-    syncPreviewToBlocks();
-}
-
-function applyQuickStyle(styleName) {
-    if (styleName === 'mint') {
-        wrapSelectionWithStyle({ color: '#0E865E', backgroundColor: '#E1F9F1', padding: '0 2px', borderRadius: '3px' });
-    } else if (styleName === 'pink') {
-        wrapSelectionWithStyle({ color: '#D04978', backgroundColor: '#FDEDF4', padding: '0 2px', borderRadius: '3px' });
-    }
-    setTimeout(handleSelection, 10);
-}
-
-function formatPalette(command, value) {
-    if (command === 'foreColor') {
-        wrapSelectionWithStyle({ color: value });
-    } else if (command === 'hiliteColor') {
-        wrapSelectionWithStyle({ backgroundColor: value });
-    }
-    setTimeout(handleSelection, 10);
-}
-
-function changeInlineFontSize(delta) {
-    currentInlineFontSize += delta;
-    if(currentInlineFontSize < 10) currentInlineFontSize = 10;
-    if(currentInlineFontSize > 40) currentInlineFontSize = 40;
-    
-    const display = document.getElementById('inlineFontSizeDisplay');
-    if(display) display.innerText = currentInlineFontSize;
-    
-    wrapSelectionWithStyle({ fontSize: currentInlineFontSize + 'px' });
-    setTimeout(handleSelection, 10);
-}
-
 document.addEventListener("DOMContentLoaded", function() {
     saveState(); 
-
-    const previewEl = document.getElementById('htmlPreview');
-    previewEl.addEventListener('mouseup', handleSelection);
-    previewEl.addEventListener('keyup', handleSelection);
-    previewEl.addEventListener('touchend', handleSelection);
-    
-    document.addEventListener('mousedown', function(e) {
-        const toolbar = document.getElementById('floatingToolbar');
-        const previewContainer = document.getElementById('htmlPreview');
-        if (toolbar && !toolbar.contains(e.target) && !previewContainer.contains(e.target)) {
-            toolbar.style.display = 'none';
-        }
-    });
 
     document.getElementById('htmlPreview').addEventListener('keydown', function(e) {
         if (e.isComposing || e.keyCode === 229) return;
@@ -611,8 +521,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
-
-// 💡 parseBulkInput() 함수는 toolbar.js로 이동하기 위해 삭제되었습니다.
 
 function addBlock(type, index = -1) {
     let defaultContent = '';
@@ -700,6 +608,7 @@ function renderEditor() {
         let isEmpty = block.type === 'empty';
         let isDivider = block.type === 'divider';
         let isPolaroid = block.type === 'polaroid';
+        let isNarration = block.type === 'narration';
 
         if (block.type === 'custom') {
             let validTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customTextColor) ? block.customTextColor : '#333333';
@@ -732,6 +641,22 @@ function renderEditor() {
         }
 
         let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
+
+        // 💡 [추가] 나레이션 전용 애플 스타일 미니 툴바
+        let narrationToolbar = '';
+        if (isNarration) {
+            narrationToolbar = `
+                <div style="display: flex; gap: 4px; margin-bottom: 6px; padding: 4px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto;">
+                    <button class="btn-secondary btn-small" style="padding: 2px 8px; font-weight: bold;" onclick="insertFmt(${index}, '**')">B</button>
+                    <button class="btn-secondary btn-small" style="padding: 2px 8px; font-style: italic; font-family: serif;" onclick="insertFmt(${index}, '*')">I</button>
+                    <button class="btn-secondary btn-small" style="padding: 2px 8px; text-decoration: line-through;" onclick="insertFmt(${index}, '~~')">S</button>
+                    <button class="btn-secondary btn-small" style="padding: 2px 8px; text-decoration: underline;" onclick="insertFmt(${index}, '++')">U</button>
+                    <span style="width: 1px; background: var(--border); margin: 0 2px;"></span>
+                    <button class="btn-secondary btn-small" style="padding: 2px 8px;" onclick="insertFmt(${index}, '%%')" title="인용구">❞</button>
+                    <button class="btn-secondary btn-small" style="padding: 2px 8px;" onclick="insertFmt(${index}, '==')" title="형광펜">✏️</button>
+                </div>
+            `;
+        }
 
         item.innerHTML = `
             <div style="display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 5px;">
@@ -785,7 +710,10 @@ function renderEditor() {
                             <option value="diamond" ${block.content === 'diamond' ? 'selected' : ''}>다이아몬드 (─ ◇ ─)</option>
                         </select>
                       `
-                      : `<textarea id="textarea-${index}" rows="2" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockContent(${index}, this.value)" onchange="updateBlockContent(${index}, this.value); saveState();" onkeydown="handleTextareaKeydown(event, ${index})">${escapeHtml(block.content)}</textarea>`}
+                      : `
+                        ${narrationToolbar}
+                        <textarea id="textarea-${index}" rows="2" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockContent(${index}, this.value)" onchange="updateBlockContent(${index}, this.value); saveState();" onkeydown="handleTextareaKeydown(event, ${index})">${escapeHtml(block.content)}</textarea>
+                      `}
             <div style="text-align: center; margin-top: 5px;">
                 <button class="btn-small btn-secondary" onclick="addBlock('narration', ${index + 1})">⬇ 이 아래에 추가</button>
             </div>
@@ -885,7 +813,6 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePostitCount = 0;
     let consecutivePolaroidCount = 0; 
 
-    // 💡 [업그레이드] 동적 여백 비율 계산 및 설정된 문단 간격(currentBlockGap) 반영
     let marginRatio = Math.min(currentFontSize / 14, 1);
     let baseGap = currentBlockGap;
     
@@ -964,7 +891,8 @@ function updateOutput(skipPreviewUpdate = false) {
             
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">\n    ${dividerInner}\n</div>\n`;
         } else {
-            let lines = block.content.split('\n').filter(l => l.trim() !== '');
+            // 💡 [수정] 빈 줄을 필터링하지 않고 남겨, Enter 입력 시 <br> 로 변환하여 행간 간격 적용
+            let lines = block.content.split('\n');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
@@ -1128,10 +1056,10 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
             }
             else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">\n    ${lines.join('<br>')}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">\n    ${divContent}\n</div>\n`;
             }
             else if (block.type === 'thought') {
-                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">\n    ${lines.join('<br>')}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">\n    ${divContent}\n</div>\n`;
             }
             else if (block.type === 'dday') {
                 htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;">\n    <span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span>\n</div>\n`;
@@ -1228,7 +1156,6 @@ function stopBGM() {
 <\/script>\n`;
     }
 
-    // 💡 [업그레이드] 변수로 추가된 텍스트·간격 설정들이 전역 CSS에 반영되도록 업데이트
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
