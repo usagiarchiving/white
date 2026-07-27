@@ -1,7 +1,7 @@
 // == 전역 상태 변수 ==
 let blocks = [];
 let outputVersion = 1; 
-let outputMode = 'novel'; // 💡 기본 출력 모드 (novel / bubble)
+let outputMode = 'novel'; // 💡 [신규] 기본 출력 모드 (novel / bubble)
 let isDarkMode = false;
 let currentFontSize = 14;
 let currentFontFamily = "'Noto Serif KR', serif";
@@ -251,7 +251,7 @@ function setupColorPicker(pickerId, textId) {
 setupColorPicker('mintTextColorPicker', 'mintTextColor');
 setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
 setupColorPicker('narrColorPicker', 'narrColor');
-// 💡 [신규] 형광펜 컬러피커 리스너 연결
+// 💡 [수정반영] 형광펜 컬러피커 리스너 연결
 setupColorPicker('highlightColorPicker', 'highlightColor');
 
 function getSafeId(str) {
@@ -346,6 +346,7 @@ function setVersion(v) {
     updateOutput(); 
 }
 
+// 💡 [신규] 출력 모드 (소설 / 말풍선) 전환 함수
 function setOutputMode(mode) {
     outputMode = mode;
     const btnNovel = document.getElementById('btnModeNovel');
@@ -370,19 +371,17 @@ function stripSymbols(str) {
     return str.trim();
 }
 
-// 💡 [수정] 텍스트 스타일 적용 함수에 실시간 형광펜 컬러 적용
+// 💡 [수정반영] 형광펜 동적 색상 적용
 function applyTextStyles(text) {
     if (!text) return text;
-    // HTML에서 형광펜 색상 변수를 가져옵니다.
     let hlColorEl = document.getElementById('highlightColor');
     let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
 
     let styledText = text;
     styledText = styledText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    styledText = styledText.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
+    styledText = styledText.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
     styledText = styledText.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
     styledText = styledText.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
-    // 사용자가 지정한 형광펜 색상을 배경색으로 입힙니다.
     styledText = styledText.replace(/==([^=]+)==/g, `<mark style="background-color: ${hlColor}; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>`);
     styledText = styledText.replace(/%%([^%]+)%%/g, '<span style="border-left: 3px solid #8e8e93; padding-left: 8px; margin-left: 4px; color: #8e8e93; display: inline-block;">$1</span>');
     return styledText;
@@ -649,7 +648,7 @@ function renderEditor() {
             isBgm = true;
             customFields = `
                 <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                    <input type="text" placeholder="음악 제목" value="${escapeHtml(block.bgmTitle)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" onchange="updateBlockCustom(${index}, 'bgmTitle', this.value)" style="flex: 1; font-size: 11px; padding: 6px; margin: 0; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                    <input type="text" placeholder="음 음악 제목" value="${escapeHtml(block.bgmTitle)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" onchange="updateBlockCustom(${index}, 'bgmTitle', this.value)" style="flex: 1; font-size: 11px; padding: 6px; margin: 0; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                     <input type="text" placeholder="유튜브 링크" value="${escapeHtml(block.bgmUrl)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" onchange="updateBlockCustom(${index}, 'bgmUrl', this.value)" style="flex: 1.5; font-size: 11px; padding: 6px; margin: 0; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                 </div>
             `;
@@ -932,20 +931,17 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
             }
             else if (outputMode === 'bubble' && isCurrDiag) {
-                let bgColor = '';
-                let textColor = '';
-                let imageUrl = '';
-
-                // HTML 인풋값에서 직접 가져옴 (안전 장치 포함)
+                // 💡 [수정반영] 마크다운 형식 [텍스트](URL)가 입력되어도 순수 이미지 URL만 추출
                 function extractProfileUrl(rawVal) {
                     if (!rawVal) return '';
                     let cleaned = rawVal.trim();
                     let match = cleaned.match(/\[.*?\]\((.*?)\)/);
-                    if (match && match[1]) {
-                        return match[1].trim();
-                    }
-                    return cleaned; 
+                    return match && match[1] ? match[1].trim() : cleaned;
                 }
+
+                let bgColor = '';
+                let textColor = '';
+                let imageUrl = '';
 
                 let mintUrlEl = document.getElementById('mintProfileUrl');
                 let pinkUrlEl = document.getElementById('pinkProfileUrl');
@@ -980,7 +976,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                 }
 
-                // 💡 [수정] 좌우 마진(margin: 0), 패딩(padding: 0)을 적용하여 나레이션과 줄을 정확히 맞춤
+                // 💡 [수정반영] 말풍선 여백(margin/padding) 좌우 0으로 설정하여 나레이션과 정렬 맞춤
                 htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
             }
             else if (isCurrDiag) { 
@@ -1504,3 +1500,7 @@ document.getElementById('mintTextColor').addEventListener('input', () => updateO
 document.getElementById('pinkTextColor').addEventListener('input', () => updateOutput());
 document.getElementById('narrColor').addEventListener('input', () => updateOutput());
 document.getElementById('narrItalic').addEventListener('change', () => updateOutput());
+
+// 💡 [수정반영] 형광펜 색상 변경 시 실시간 반영
+let hlColorInput = document.getElementById('highlightColor');
+if (hlColorInput) hlColorInput.addEventListener('input', () => updateOutput());
