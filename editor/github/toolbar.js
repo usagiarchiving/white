@@ -116,15 +116,16 @@ function changeInlineFontSize(delta) {
 // (1) 일괄 변환 파싱 로직 (발췌기 기능 이식)
 // =========================================================
 
-// 마크다운 서식을 텍스트 내부 마크업으로 정밀 변환하는 헬퍼 함수
 function parseAdvancedMarkdown(text) {
     if (!text) return text;
+    // HTML에서 선택된 형광펜 색상을 실시간으로 가져옵니다.
     let hlColorEl = document.getElementById('highlightColor');
     let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
-    
+
     let t = text;
     t = t.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
     t = t.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
+    // 사용자가 선택한 형광펜 색상이 적용되도록 수정
     t = t.replace(/==([^=]+)==/g, `<mark style="background-color: ${hlColor}; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>`);
     return t;
 }
@@ -278,3 +279,11 @@ function parseBulkInput() {
         showToast('텍스트 변환 중 오류가 발생했습니다.');
     }
 }
+
+// =========================================================
+// 💡 [오류 수정] 툴바 트리거를 위한 이벤트 리스너 추가
+// =========================================================
+document.addEventListener('mouseup', handleSelection);
+document.addEventListener('keyup', handleSelection);
+// 모바일/태블릿 등 터치 환경 대응
+document.addEventListener('touchend', handleSelection);
