@@ -371,12 +371,17 @@ function stripSymbols(str) {
 
 function applyTextStyles(text) {
     if (!text) return text;
+    // HTML에서 형광펜 색상을 실시간으로 가져옴
+    let hlColorEl = document.getElementById('highlightColor');
+    let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
+
     let styledText = text;
     styledText = styledText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    styledText = styledText.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
+    styledText = styledText.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
     styledText = styledText.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
     styledText = styledText.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
-    styledText = styledText.replace(/==([^=]+)==/g, '<mark style="background-color: #fef08a; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>');
+    // 💡 가져온 색상을 배경색으로 적용
+    styledText = styledText.replace(/==([^=]+)==/g, `<mark style="background-color: ${hlColor}; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>`);
     styledText = styledText.replace(/%%([^%]+)%%/g, '<span style="border-left: 3px solid #8e8e93; padding-left: 8px; margin-left: 4px; color: #8e8e93; display: inline-block;">$1</span>');
     return styledText;
 }
@@ -1494,6 +1499,11 @@ function copyHtml() {
     code.select();
     document.execCommand('copy');
 }
+
+setupColorPicker('highlightColorPicker', 'highlightColor');
+const hlInput = document.getElementById('highlightColor');
+if (hlInput) hlInput.addEventListener('input', () => updateOutput());
+
 
 document.getElementById('mintTextColor').addEventListener('input', () => updateOutput());
 document.getElementById('pinkTextColor').addEventListener('input', () => updateOutput());
