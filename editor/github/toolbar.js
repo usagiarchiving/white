@@ -119,10 +119,13 @@ function changeInlineFontSize(delta) {
 // 마크다운 서식을 텍스트 내부 마크업으로 정밀 변환하는 헬퍼 함수
 function parseAdvancedMarkdown(text) {
     if (!text) return text;
+    let hlColorEl = document.getElementById('highlightColor');
+    let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
+    
     let t = text;
     t = t.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
     t = t.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
-    t = t.replace(/==([^=]+)==/g, '<mark style="background-color: #fef08a; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>');
+    t = t.replace(/==([^=]+)==/g, `<mark style="background-color: ${hlColor}; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>`);
     return t;
 }
 
