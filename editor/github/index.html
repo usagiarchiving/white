@@ -114,22 +114,34 @@
                     </div>
                 </div>
 
-                <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
-                    <label style="font-size: 12px; font-weight: bold; color: var(--text-main);">나레이션 (Narration)</label>
-                    <div style="display: flex; gap: 15px; margin-top: 8px; align-items: center;">
-                        <div style="flex: 1;">
-                            <label style="font-size: 10px; color: var(--text-muted);">글자색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="narrColorPicker" value="#2c2c2e" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="narrColor" value="#2c2c2e" style="flex: 1; min-width: 0;">
-                            </div>
-                        </div>
-                        <div style="flex: 1; display: flex; align-items: center; gap: 8px; margin-top: 18px;">
-                            <input type="checkbox" id="narrItalic" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
-                            <label for="narrItalic" style="font-size: 12px; color: var(--text-main); cursor: pointer; user-select: none;">이탤릭체 (기울임) 적용</label>
-                        </div>
-                    </div>
-                </div>
+                <!-- 💡 형광펜 색상 설정이 추가된 나레이션 패널 (기존 코드를 이것으로 교체) -->
+<div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
+    <label style="font-size: 12px; font-weight: bold; color: var(--text-main);">나레이션 (Narration)</label>
+    <div style="display: flex; gap: 15px; margin-top: 8px; align-items: center; flex-wrap: wrap;">
+        <!-- 기존 글자색 설정 -->
+        <div style="flex: 1; min-width: 120px;">
+            <label style="font-size: 10px; color: var(--text-muted);">글자색</label>
+            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                <input type="color" id="narrColorPicker" value="#2c2c2e" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                <input type="text" id="narrColor" value="#2c2c2e" style="flex: 1; min-width: 0;">
+            </div>
+        </div>
+        
+        <!-- 💡 [요청사항 반영] 형광펜 색상 설정 추가 -->
+        <div style="flex: 1; min-width: 120px;">
+            <label style="font-size: 10px; color: var(--text-muted);">형광펜(==) 색상</label>
+            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                <input type="color" id="highlightColorPicker" value="#fef08a" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                <input type="text" id="highlightColor" value="#fef08a" style="flex: 1; min-width: 0;">
+            </div>
+        </div>
+
+        <div style="flex: 1; display: flex; align-items: center; gap: 8px; margin-top: 18px; min-width: 120px;">
+            <input type="checkbox" id="narrItalic" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+            <label for="narrItalic" style="font-size: 12px; color: var(--text-main); cursor: pointer; user-select: none;">이탤릭체 (기울임) 적용</label>
+        </div>
+    </div>
+</div>
 
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1; outline: none;">
                     <summary style="font-size: 12px; font-weight: bold; color: var(--text-main); cursor: pointer; user-select: none; outline: none;">
