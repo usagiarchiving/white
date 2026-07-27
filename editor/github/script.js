@@ -405,6 +405,18 @@ function extractVideoId(url) {
     return match ? match[1] : url.trim(); 
 }
 
+// 💡 [추가된 부분] 마크다운 문법에서 이미지 URL만 안전하게 추출하는 함수
+function extractImageUrl(text) {
+    if (!text) return '';
+    let str = text.trim();
+    // ![대체텍스트](URL) 또는 [텍스트](URL) 형태에서 URL만 추출
+    let match = str.match(/(?:!\[.*?\]|\[.*?\])\((.*?)\)/);
+    if (match && match[1]) {
+        return match[1].trim();
+    }
+    return str;
+}
+
 function scrollToPreview(index) {
     const target = document.getElementById(`preview-block-${index}`);
     const container = document.getElementById('htmlPreview');
@@ -926,7 +938,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
             }
             else if (outputMode === 'bubble' && isCurrDiag) {
-                // 💡 [신규] 말풍선 모드 렌더링
+                // 💡 [수정된 부분] extractImageUrl 필터를 거쳐 마크다운을 자동 제거합니다.
                 let bgColor = '';
                 let textColor = '';
                 let imageUrl = '';
@@ -938,19 +950,18 @@ function updateOutput(skipPreviewUpdate = false) {
                 if (curr === 'mint') {
                     bgColor = '#F2FCF7';
                     textColor = '#333333';
-                    imageUrl = (mintUrlEl && mintUrlEl.value.trim()) ? mintUrlEl.value : 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
+                    imageUrl = (mintUrlEl && mintUrlEl.value.trim()) ? extractImageUrl(mintUrlEl.value) : 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
                 } else if (curr === 'pink') {
                     bgColor = '#FFF6FA';
                     textColor = '#333333';
-                    imageUrl = (pinkUrlEl && pinkUrlEl.value.trim()) ? pinkUrlEl.value : 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
+                    imageUrl = (pinkUrlEl && pinkUrlEl.value.trim()) ? extractImageUrl(pinkUrlEl.value) : 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
                 } else if (curr === 'mob') {
                     bgColor = '#F4F5F7';
                     textColor = '#333333';
-                    imageUrl = (mobUrlEl && mobUrlEl.value.trim()) ? mobUrlEl.value : 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
+                    imageUrl = (mobUrlEl && mobUrlEl.value.trim()) ? extractImageUrl(mobUrlEl.value) : 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
                 } else {
                     bgColor = '#E2E8F0';
                     textColor = block.customTextColor || '#333333';
-                    // 제3자는 기본 프로필 대신, 배경색을 채운 동그라미로 대체하여 유동적으로 표시
                     imageUrl = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
                 }
 
@@ -1151,6 +1162,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}">\n    <div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div>\n    <div class="postit-scroll" style="line-height: 1.7; font-size: 14px;">${divContent}</div>\n</div>\n`;
             }
             else if (block.type === 'polaroid') {
+                // 💡 [수정된 부분] 폴라로이드에도 필터를 적용하여 마크다운 방어
                 let isEvenPol = consecutivePolaroidCount % 2 === 0;
 
                 let bgStr = isDarkMode ? '#242424' : '#FFFFFF';
@@ -1162,9 +1174,10 @@ function updateOutput(skipPreviewUpdate = false) {
                 
                 let rotStr = isEvenPol ? 'rotate(-1.8deg)' : 'rotate(1.5deg)';
                 let tapeRot = isEvenPol ? 'rotate(2deg)' : 'rotate(-2deg)';
-                let tapePos = isEvenPol ? 'left: 48%;' : 'left: 50%;';
+                let tapePos = isEvenPol ? 'left: 48%;';
 
-                let imgSrc = block.content || '[https://via.placeholder.com/380x380?text=Polaroid+Image](https://via.placeholder.com/380x380?text=Polaroid+Image)';
+                let rawImgSrc = block.content || '[https://via.placeholder.com/380x380?text=Polaroid+Image](https://via.placeholder.com/380x380?text=Polaroid+Image)';
+                let imgSrc = extractImageUrl(rawImgSrc);
                 
                 let pDate = applyTextStyles(block.polaroidDate || '');
                 let pCap = applyTextStyles(block.polaroidCaption || '');
@@ -1177,7 +1190,9 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;">\n    <div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div>\n    <div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;">\n        <img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo">\n    </div>${captionHtml}\n</div>\n`;
             }
             else if (block.type === 'image') {
-                htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center; box-sizing: border-box;">\n    <img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image">\n</div>\n`;
+                // 💡 [수정된 부분] 일반 이미지 블록에도 마크다운 방어 적용
+                let imgSrc = extractImageUrl(block.content);
+                htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center; box-sizing: border-box;">\n    <img src="${imgSrc}" style="max-width: 100%; border-radius: 8px;" alt="image">\n</div>\n`;
             }
             else if (block.type === 'html') {
                 htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">\n${block.content}\n</div>\n`;
