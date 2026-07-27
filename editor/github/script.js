@@ -1,7 +1,7 @@
 // == 전역 상태 변수 ==
 let blocks = [];
 let outputVersion = 1; 
-let outputMode = 'novel'; // 💡 [신규] 기본 출력 모드 (novel / bubble)
+let outputMode = 'novel'; // 💡 기본 출력 모드 (novel / bubble)
 let isDarkMode = false;
 let currentFontSize = 14;
 let currentFontFamily = "'Noto Serif KR', serif";
@@ -251,6 +251,8 @@ function setupColorPicker(pickerId, textId) {
 setupColorPicker('mintTextColorPicker', 'mintTextColor');
 setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
 setupColorPicker('narrColorPicker', 'narrColor');
+// 💡 [신규] 형광펜 컬러피커 리스너 연결
+setupColorPicker('highlightColorPicker', 'highlightColor');
 
 function getSafeId(str) {
     let hash = 0;
@@ -344,7 +346,6 @@ function setVersion(v) {
     updateOutput(); 
 }
 
-// 💡 [신규] 출력 모드 (소설 / 말풍선) 전환 함수
 function setOutputMode(mode) {
     outputMode = mode;
     const btnNovel = document.getElementById('btnModeNovel');
@@ -369,9 +370,10 @@ function stripSymbols(str) {
     return str.trim();
 }
 
+// 💡 [수정] 텍스트 스타일 적용 함수에 실시간 형광펜 컬러 적용
 function applyTextStyles(text) {
     if (!text) return text;
-    // HTML에서 형광펜 색상을 실시간으로 가져옴
+    // HTML에서 형광펜 색상 변수를 가져옵니다.
     let hlColorEl = document.getElementById('highlightColor');
     let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
 
@@ -380,7 +382,7 @@ function applyTextStyles(text) {
     styledText = styledText.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
     styledText = styledText.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
     styledText = styledText.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
-    // 💡 가져온 색상을 배경색으로 적용
+    // 사용자가 지정한 형광펜 색상을 배경색으로 입힙니다.
     styledText = styledText.replace(/==([^=]+)==/g, `<mark style="background-color: ${hlColor}; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>`);
     styledText = styledText.replace(/%%([^%]+)%%/g, '<span style="border-left: 3px solid #8e8e93; padding-left: 8px; margin-left: 4px; color: #8e8e93; display: inline-block;">$1</span>');
     return styledText;
@@ -807,7 +809,6 @@ function syncPreviewToBlocks() {
     debounceSaveState(); 
 }
 
-// 💡 [신규] 말풍선 전용 포매팅 헬퍼 함수
 function formatBubbleText(text) {
     if (!text) return '';
     let lines = text.split('\n');
@@ -931,12 +932,11 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
             }
             else if (outputMode === 'bubble' && isCurrDiag) {
-                // 💡 [신규] 말풍선 모드 렌더링
                 let bgColor = '';
                 let textColor = '';
                 let imageUrl = '';
 
-                // 💡 [수정사항 반영] 마크다운 형식 [텍스트](URL)가 입력되어도 순수 이미지 URL만 추출하는 함수
+                // HTML 인풋값에서 직접 가져옴 (안전 장치 포함)
                 function extractProfileUrl(rawVal) {
                     if (!rawVal) return '';
                     let cleaned = rawVal.trim();
@@ -944,7 +944,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     if (match && match[1]) {
                         return match[1].trim();
                     }
-                    return cleaned; // 마크다운 형식이 아닐 경우 입력된 값 그대로 반환
+                    return cleaned; 
                 }
 
                 let mintUrlEl = document.getElementById('mintProfileUrl');
@@ -966,7 +966,6 @@ function updateOutput(skipPreviewUpdate = false) {
                 } else {
                     bgColor = '#E2E8F0';
                     textColor = block.customTextColor || '#333333';
-                    // 제3자는 기본 프로필 대신, 배경색을 채운 동그라미로 대체하여 유동적으로 표시
                     imageUrl = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
                 }
 
@@ -981,8 +980,10 @@ function updateOutput(skipPreviewUpdate = false) {
                     avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                 }
 
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;            }
-            else if (isCurrDiag) { // 소설 모드
+                // 💡 [수정] 좌우 마진(margin: 0), 패딩(padding: 0)을 적용하여 나레이션과 줄을 정확히 맞춤
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
+            }
+            else if (isCurrDiag) { 
                 let textColor;
                 if (curr === 'mint') { textColor = mintTextColor; }
                 else if (curr === 'pink') { textColor = pinkTextColor; }
@@ -1498,11 +1499,6 @@ function copyHtml() {
     code.select();
     document.execCommand('copy');
 }
-
-setupColorPicker('highlightColorPicker', 'highlightColor');
-const hlInput = document.getElementById('highlightColor');
-if (hlInput) hlInput.addEventListener('input', () => updateOutput());
-
 
 document.getElementById('mintTextColor').addEventListener('input', () => updateOutput());
 document.getElementById('pinkTextColor').addEventListener('input', () => updateOutput());
