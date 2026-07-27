@@ -981,8 +981,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                 }
 
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} auto 0; padding: ${bubPaddingTop} 20px ${bubPaddingBottom} 20px; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
-            }
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;            }
             else if (isCurrDiag) { // 소설 모드
                 let textColor;
                 if (curr === 'mint') { textColor = mintTextColor; }
