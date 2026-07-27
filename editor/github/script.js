@@ -931,6 +931,17 @@ function updateOutput(skipPreviewUpdate = false) {
                 let textColor = '';
                 let imageUrl = '';
 
+                // 💡 [수정사항 반영] 마크다운 형식 [텍스트](URL)가 입력되어도 순수 이미지 URL만 추출하는 함수
+                function extractProfileUrl(rawVal) {
+                    if (!rawVal) return '';
+                    let cleaned = rawVal.trim();
+                    let match = cleaned.match(/\[.*?\]\((.*?)\)/);
+                    if (match && match[1]) {
+                        return match[1].trim();
+                    }
+                    return cleaned; // 마크다운 형식이 아닐 경우 입력된 값 그대로 반환
+                }
+
                 let mintUrlEl = document.getElementById('mintProfileUrl');
                 let pinkUrlEl = document.getElementById('pinkProfileUrl');
                 let mobUrlEl = document.getElementById('mobProfileUrl');
@@ -938,15 +949,15 @@ function updateOutput(skipPreviewUpdate = false) {
                 if (curr === 'mint') {
                     bgColor = '#F2FCF7';
                     textColor = '#333333';
-                    imageUrl = (mintUrlEl && mintUrlEl.value.trim()) ? mintUrlEl.value : 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
+                    imageUrl = extractProfileUrl(mintUrlEl ? mintUrlEl.value : '') || 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
                 } else if (curr === 'pink') {
                     bgColor = '#FFF6FA';
                     textColor = '#333333';
-                    imageUrl = (pinkUrlEl && pinkUrlEl.value.trim()) ? pinkUrlEl.value : 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
+                    imageUrl = extractProfileUrl(pinkUrlEl ? pinkUrlEl.value : '') || 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
                 } else if (curr === 'mob') {
                     bgColor = '#F4F5F7';
                     textColor = '#333333';
-                    imageUrl = (mobUrlEl && mobUrlEl.value.trim()) ? mobUrlEl.value : 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
+                    imageUrl = extractProfileUrl(mobUrlEl ? mobUrlEl.value : '') || 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
                 } else {
                     bgColor = '#E2E8F0';
                     textColor = block.customTextColor || '#333333';
