@@ -282,9 +282,12 @@ function syncPreviewToBlocks() {
                 let target = el;
                 if (block.type === 'dday') {
                     target = el.querySelector('span');
-                } else if (outputMode === 'bubble' && el.classList.contains('scroll-msg-box')) {
-                    // 💡 [버그 수정] 말풍선 모드일 때 대사 영역(div)만 콕 집어서 타겟팅 (프로필 이미지 제외)
+                } else if (outputMode === 'bubble1' && el.classList.contains('scroll-msg-box')) {
+                    // 💡 말풍선 1 모드일 때 대사 영역(div)만 타겟팅
                     target = el.children[1];
+                } else if (outputMode === 'bubble2' && el.classList.contains('scroll-msg-box')) {
+                    // 💡 말풍선 2 모드일 때 내부 텍스트 래퍼(.m-text)만 타겟팅하여 꼬리(tail) 혼입 방지
+                    target = el.querySelector('.m-text') || el.querySelector('.m-bubble');
                 }
 
                 if (target) {
@@ -323,9 +326,9 @@ function formatBubbleText(text) {
 }
 
 function updateOutput(skipPreviewUpdate = false) {
-    const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#B2E4D4' : '#459fa5');
+    const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#B2E4D4' : '#237768');
     const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
-    const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#2c2c2e');
+    const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#48484A');
     const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
 
     const cTitle = isDarkMode ? '#F9F9F8' : '#1c1c1e';
@@ -434,7 +437,8 @@ function updateOutput(skipPreviewUpdate = false) {
             if (block.type === 'title') {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
             }
-            else if (outputMode === 'bubble' && isCurrDiag) {
+            // 💡 [수정사항] 말풍선 1, 2 모드 공통 변수 셋업 및 렌더링 분기
+            else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && isCurrDiag) {
                 function extractProfileUrl(rawVal) {
                     if (!rawVal) return '';
                     let cleaned = rawVal.trim();
@@ -445,41 +449,71 @@ function updateOutput(skipPreviewUpdate = false) {
                 let bgColor = '';
                 let textColor = '';
                 let imageUrl = '';
+                let nameTag = ''; // 말풍선 2 이름표 용도
 
                 let mintUrlEl = document.getElementById('mintProfileUrl');
                 let pinkUrlEl = document.getElementById('pinkProfileUrl');
                 let mobUrlEl = document.getElementById('mobProfileUrl');
 
                 if (curr === 'mint') {
-                    bgColor = '#F2FCF7';
-                    textColor = '#333333';
+                    bgColor = '#eef8f3';
+                    textColor = '#1d6f60';
+                    nameTag = '하시온';
                     imageUrl = extractProfileUrl(mintUrlEl ? mintUrlEl.value : '') || 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
                 } else if (curr === 'pink') {
-                    bgColor = '#FFF6FA';
-                    textColor = '#333333';
+                    bgColor = '#fdf2f6';
+                    textColor = '#9b3e61';
+                    nameTag = '핑크';
                     imageUrl = extractProfileUrl(pinkUrlEl ? pinkUrlEl.value : '') || 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
                 } else if (curr === 'mob') {
-                    bgColor = '#F4F5F7';
-                    textColor = '#333333';
+                    bgColor = '#eff1f5';
+                    textColor = '#3a414d';
+                    nameTag = '모브';
                     imageUrl = extractProfileUrl(mobUrlEl ? mobUrlEl.value : '') || 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
                 } else {
                     bgColor = '#E2E8F0';
                     textColor = block.customTextColor || '#333333';
+                    nameTag = '제3자';
                     imageUrl = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
                 }
 
-                let bubMarginTop = isSameAsPrev ? '0px' : '15px';
-                let bubPaddingTop = isSameAsPrev ? '10.5px' : '12px';
-                let bubPaddingBottom = isSameAsPrev ? '0px' : '12px';
+                // 💡 말풍선 1 모드 렌더링
+                if (outputMode === 'bubble1') {
+                    let bubMarginTop = isSameAsPrev ? '0px' : '15px';
+                    let bubPaddingTop = isSameAsPrev ? '10.5px' : '12px';
+                    let bubPaddingBottom = isSameAsPrev ? '0px' : '12px';
 
-                let avatarHtml = '';
-                if (isSameAsPrev) {
-                    avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 0;"></div>`;
-                } else {
-                    avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                    let avatarHtml = '';
+                    if (isSameAsPrev) {
+                        avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 0;"></div>`;
+                    } else {
+                        avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                    }
+
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
+                } 
+                // 💡 말풍선 2 모드 (메신저 꼬리 테마) 렌더링
+                else if (outputMode === 'bubble2') {
+                    let bubMarginTop = isSameAsPrev ? '5px' : '15px';
+                    
+                    let avatarHtml = '';
+                    let nameHtml = '';
+                    let tailHtml = '';
+
+                    // 연속 대사일 경우 프로필 이미지, 이름, 꼬리 생략
+                    if (isSameAsPrev) {
+                        avatarHtml = `<div class="av" style="position: absolute; left: 0; top: 0; width: 36px; height: 0;"></div>`;
+                        nameHtml = ``;
+                        tailHtml = ``;
+                    } else {
+                        avatarHtml = `<div class="av" style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;">\n        <img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;">\n    </div>`;
+                        nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; text-align: left;">\n        ${nameTag}\n    </div>`;
+                        tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; left: -8px; width: 0; height: 0; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor}; z-index: -1;"></div>`;
+                    }
+
+                    // 텍스트를 .m-text 래퍼로 감싸 동기화 시 꼬리 태그 혼입 방지
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box m-msg" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 5px; width: 100%; box-sizing: border-box;">\n    ${avatarHtml}\n    ${nameHtml}\n    <div class="m-bubble" style="position: relative; display: inline-block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; max-width: 80%; word-break: keep-all; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left;">\n        ${tailHtml}\n        <div class="m-text" style="display:inline;">${formatBubbleText(block.content)}</div>\n    </div>\n</div>\n`;
                 }
-
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
             }
             else if (isCurrDiag) { 
                 let textColor;
@@ -739,11 +773,13 @@ function stopBGM() {
 <\/script>\n`;
     }
 
+    // 💡 [수정사항] 본고딕 Noto Sans KR 폰트 추가 
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&display=swap');
 
 .tistory-post-wrapper {
     font-family: ${currentFontFamily};
