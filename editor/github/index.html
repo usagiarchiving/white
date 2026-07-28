@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
     <!-- 프리텐다드 폰트 추가 -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <!-- 💡 [수정사항] 본고딕 폰트 추가 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- 분리된 CSS 파일 연결 -->
     <link rel="stylesheet" href="style.css">
@@ -27,6 +29,8 @@
                 <select id="fontSelect" onchange="changeGlobalFont(this.value)" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-family: inherit; font-size: 13px;">
                     <option value="'Noto Serif KR', serif">노션 세리프</option>
                     <option value="'Pretendard', sans-serif">프리텐다드</option>
+                    <!-- 💡 [수정사항] 본고딕 폰트 선택지 추가 -->
+                    <option value="'Noto Sans KR', sans-serif">본고딕</option>
                 </select>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -67,14 +71,14 @@
                         <div style="flex: 1;">
                             <label style="font-size: 10px; color: #459fa5;">글자색</label>
                             <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="mintTextColorPicker" value="#459fa5" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="mintTextColor" value="#459fa5" style="flex: 1; min-width: 0;">
+                                <!-- 💡 [수정사항] 민트 글자색 기본값 #237768 적용 -->
+                                <input type="color" id="mintTextColorPicker" value="#237768" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="mintTextColor" value="#237768" style="flex: 1; min-width: 0;">
                             </div>
                         </div>
-                        <!-- 💡 [신규] 프사 URL -->
                         <div style="flex: 2;">
                             <label style="font-size: 10px; color: #459fa5;">프로필 이미지 URL</label>
-                            <input type="text" id="mintProfileUrl" value="https://i.ibb.co/VYrHdHd8/IMG-6825.jpg" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                            <input type="text" id="mintProfileUrl" value="[https://i.ibb.co/VYrHdHd8/IMG-6825.jpg](https://i.ibb.co/VYrHdHd8/IMG-6825.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                     </div>
                 </div>
@@ -90,15 +94,14 @@
                                 <input type="text" id="pinkTextColor" value="#f5bdcc" style="flex: 1; min-width: 0;">
                             </div>
                         </div>
-                        <!-- 💡 [신규] 프사 URL -->
                         <div style="flex: 2;">
                             <label style="font-size: 10px; color: #f5bdcc;">프로필 이미지 URL</label>
-                            <input type="text" id="pinkProfileUrl" value="https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                            <input type="text" id="pinkProfileUrl" value="[https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg](https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                     </div>
                 </div>
 
-                <!-- 💡 [신규] 모브 설정 추가 -->
+                <!-- 모브 설정 -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
                     <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">모브 (Mob)</label>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
@@ -106,42 +109,40 @@
                             <label style="font-size: 10px; color: var(--text-muted);">글자색 (고정)</label>
                             <input type="text" value="#333333" disabled style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-muted); width: 100%; box-sizing: border-box;">
                         </div>
-                        <!-- 💡 [신규] 프사 URL -->
                         <div style="flex: 3;">
                             <label style="font-size: 10px; color: var(--text-muted);">프로필 이미지 URL</label>
-                            <input type="text" id="mobProfileUrl" value="https://i.ibb.co/jP5RR5gx/IMG-6832.jpg" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                            <input type="text" id="mobProfileUrl" value="[https://i.ibb.co/jP5RR5gx/IMG-6832.jpg](https://i.ibb.co/jP5RR5gx/IMG-6832.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                     </div>
                 </div>
 
-                <!-- 💡 형광펜 색상 설정이 추가된 나레이션 패널 (기존 코드를 이것으로 교체) -->
-<div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
-    <label style="font-size: 12px; font-weight: bold; color: var(--text-main);">나레이션 (Narration)</label>
-    <div style="display: flex; gap: 15px; margin-top: 8px; align-items: center; flex-wrap: wrap;">
-        <!-- 기존 글자색 설정 -->
-        <div style="flex: 1; min-width: 120px;">
-            <label style="font-size: 10px; color: var(--text-muted);">글자색</label>
-            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                <input type="color" id="narrColorPicker" value="#2c2c2e" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                <input type="text" id="narrColor" value="#2c2c2e" style="flex: 1; min-width: 0;">
-            </div>
-        </div>
-        
-        <!-- 💡 [요청사항 반영] 형광펜 색상 설정 추가 -->
-        <div style="flex: 1; min-width: 120px;">
-            <label style="font-size: 10px; color: var(--text-muted);">형광펜(==) 색상</label>
-            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                <input type="color" id="highlightColorPicker" value="#fef08a" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                <input type="text" id="highlightColor" value="#fef08a" style="flex: 1; min-width: 0;">
-            </div>
-        </div>
+                <!-- 나레이션 설정 -->
+                <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
+                    <label style="font-size: 12px; font-weight: bold; color: var(--text-main);">나레이션 (Narration)</label>
+                    <div style="display: flex; gap: 15px; margin-top: 8px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <label style="font-size: 10px; color: var(--text-muted);">글자색</label>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <!-- 💡 [수정사항] 나레이션 글자색 기본값 #48484A 적용 -->
+                                <input type="color" id="narrColorPicker" value="#48484A" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="narrColor" value="#48484A" style="flex: 1; min-width: 0;">
+                            </div>
+                        </div>
+                        
+                        <div style="flex: 1; min-width: 120px;">
+                            <label style="font-size: 10px; color: var(--text-muted);">형광펜(==) 색상</label>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <input type="color" id="highlightColorPicker" value="#fef08a" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="highlightColor" value="#fef08a" style="flex: 1; min-width: 0;">
+                            </div>
+                        </div>
 
-        <div style="flex: 1; display: flex; align-items: center; gap: 8px; margin-top: 18px; min-width: 120px;">
-            <input type="checkbox" id="narrItalic" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
-            <label for="narrItalic" style="font-size: 12px; color: var(--text-main); cursor: pointer; user-select: none;">이탤릭체 (기울임) 적용</label>
-        </div>
-    </div>
-</div>
+                        <div style="flex: 1; display: flex; align-items: center; gap: 8px; margin-top: 18px; min-width: 120px;">
+                            <input type="checkbox" id="narrItalic" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+                            <label for="narrItalic" style="font-size: 12px; color: var(--text-main); cursor: pointer; user-select: none;">이탤릭체 (기울임) 적용</label>
+                        </div>
+                    </div>
+                </div>
 
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1; outline: none;">
                     <summary style="font-size: 12px; font-weight: bold; color: var(--text-main); cursor: pointer; user-select: none; outline: none;">
@@ -224,10 +225,11 @@
             <h2 class="panel-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <span>(4) 미리보기 확인 및 직접 수정</span>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <!-- 💡 [신규] 소설 / 말풍선 모드 토글 -->
+                    <!-- 💡 [수정사항] 말풍선 1, 2 모드로 버튼 세분화 -->
                     <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
                         <button id="btnModeNovel" onclick="setOutputMode('novel')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">📝 소설</button>
-                        <button id="btnModeBubble" onclick="setOutputMode('bubble')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💬 말풍선</button>
+                        <button id="btnModeBubble1" onclick="setOutputMode('bubble1')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💬 말풍선 1</button>
+                        <button id="btnModeBubble2" onclick="setOutputMode('bubble2')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💬 말풍선 2</button>
                     </span>
                     <!-- 기존 V1 / V2 토글 -->
                     <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
