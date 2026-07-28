@@ -564,9 +564,10 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = block.customName || '제3자';
                 }
 
+                // 💡 [수정] 말풍선 대사 간격 3단계 오토 계산 (연속 대사는 3px 고정)
                 let bubMarginTop = '15px';
                 if (isSameAsPrev) {
-                    bubMarginTop = '0px'; 
+                    bubMarginTop = '3px'; 
                 } else if (isPrevDiag) {
                     bubMarginTop = mt_10; 
                 } else {
@@ -574,9 +575,6 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
 
                 if (outputMode === 'bubble1') {
-                    let bubPaddingTop = isSameAsPrev ? '0px' : '12px';
-                    let bubPaddingBottom = isSameAsPrev ? '0px' : '12px';
-
                     let avatarHtml = '';
                     if (isSameAsPrev) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 0;"></div>`;
@@ -584,8 +582,8 @@ function updateOutput(skipPreviewUpdate = false) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
-                    // 💡 말풍선 1: max-width 제한 해제 (width: fit-content 만 유지)
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5;">${formatBubbleText(block.content)}</div></div>\n`;
+                    // 💡 [수정] 말풍선 1: 위아래 padding을 제거하고 말풍선 2와 동일하게 margin-top으로만 간격을 제어합니다.
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${bubMarginTop}; margin-bottom: 0px; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5;">${formatBubbleText(block.content)}</div></div>\n`;
                 
                 } else if (outputMode === 'bubble2') {
                     let avatarHtml = '';
@@ -600,7 +598,7 @@ function updateOutput(skipPreviewUpdate = false) {
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; left: -8px; width: 0; height: 0; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor}; z-index: -1;"></div>`;
                     }
 
-                    // 💡 말풍선 2: max-width 제한 해제, display: block 적용하여 유령 여백 완벽 제거
+                    // 💡 [수정] 말풍선 2: margin-top 3px 수식 통일 및 display: block 유지
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 0px;">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; word-break: inherit; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
