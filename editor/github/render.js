@@ -574,7 +574,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
 
                 if (outputMode === 'bubble1') {
-                    let bubPaddingTop = isSameAsPrev ? '10.5px' : '12px';
+                    let bubPaddingTop = isSameAsPrev ? '0px' : '12px';
                     let bubPaddingBottom = isSameAsPrev ? '0px' : '12px';
 
                     let avatarHtml = '';
