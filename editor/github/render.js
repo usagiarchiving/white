@@ -61,6 +61,7 @@ function focusAndScrollBlock(index, preventFocus = false) {
     }, 100);
 }
 
+// 💡 [확장/버그픽스] 제3자 캐릭터 일괄 관리 패널 (이름, 배색, 프사 확장 및 컬러피커 동기화 해결)
 function updateCustomCharacterPanel() {
     const list = document.getElementById('customCharacterAutoList');
     if(!list) return;
@@ -68,56 +69,90 @@ function updateCustomCharacterPanel() {
     const uniqueChars = {};
     blocks.forEach(b => {
         if(b.type === 'custom') {
-            const key = /^#[0-9A-Fa-f]{6}$/i.test(b.customTextColor) ? b.customTextColor.toUpperCase() : '#333333';
+            const key = (b.customName || '제3자') + '|' + (b.customTextColor || '#333333');
             if(!uniqueChars[key]) {
-                uniqueChars[key] = { text: key };
+                uniqueChars[key] = { 
+                    textColor: b.customTextColor || '#333333',
+                    bgColor: b.customBgColor || '#E2E8F0',
+                    name: b.customName || '',
+                    profileUrl: b.customProfileUrl || ''
+                };
             }
         }
     });
 
+    list.innerHTML = ''; 
+
     Object.keys(uniqueChars).forEach(key => {
         const safeKey = getSafeId(key);
-        let row = document.getElementById(`auto-custom-${safeKey}`);
-        if(!row) {
-            row = document.createElement('div');
-            row.id = `auto-custom-${safeKey}`;
-            row.dataset.originalColor = uniqueChars[key].text;
-            row.style.cssText = "display: flex; gap: 8px; padding: 12px; background: var(--block-bg); border: 1px solid var(--border); border-radius: 6px; align-items: flex-end;";
-            
-            row.innerHTML = `
+        const charData = uniqueChars[key];
+        
+        let row = document.createElement('div');
+        row.id = `auto-custom-${safeKey}`;
+        row.dataset.originalKey = key;
+        row.style.cssText = "display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--block-hover); border: 1px solid var(--border); border-radius: 6px;";
+        
+        row.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; font-weight: bold; color: var(--primary);">[${escapeHtml(charData.name || '제3자')}] 일괄 설정</span>
+                <button class="btn-small" style="background-color: var(--primary); color: white; border: none; font-weight: bold; padding: 4px 12px; border-radius: 4px; cursor: pointer;" onclick="applyAutoCustomColor('${safeKey}')">이 캐릭터 일괄 적용</button>
+            </div>
+            <div style="display: flex; gap: 8px;">
                 <div style="flex: 1;">
-                    <label style="font-size: 10px; color: var(--text-muted);">제3자 글자색 관리</label>
-                    <div style="display: flex; gap: 4px; margin-top: 4px;">
-                        <input type="color" id="auto-text-picker-${safeKey}" value="${escapeHtml(uniqueChars[key].text)}" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                        <input type="text" id="auto-text-text-${safeKey}" value="${escapeHtml(uniqueChars[key].text)}" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                    </div>
+                    <label style="font-size: 10px; color: var(--text-muted);">이름</label>
+                    <input type="text" id="auto-name-${safeKey}" value="${escapeHtml(charData.name)}" placeholder="제3자" style="width: 100%; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); box-sizing: border-box;">
                 </div>
-                <button class="btn-small" style="background-color: var(--primary); color: white; border: none; height: 26px; font-weight: bold; padding: 0 12px; border-radius: 4px; cursor: pointer;" onclick="applyAutoCustomColor('${safeKey}')">일괄 적용</button>
-            `;
-            list.appendChild(row);
-            setupColorPicker(`auto-text-picker-${safeKey}`, `auto-text-text-${safeKey}`);
-        }
+                <div style="flex: 2;">
+                    <label style="font-size: 10px; color: var(--text-muted);">프로필 URL</label>
+                    <input type="text" id="auto-profile-${safeKey}" value="${escapeHtml(charData.profileUrl)}" placeholder="https://..." style="width: 100%; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); box-sizing: border-box;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <div style="flex: 1; display: flex; align-items: center; gap: 4px;">
+                    <input type="color" id="auto-text-picker-${safeKey}" value="${escapeHtml(charData.textColor)}" style="width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                    <input type="text" id="auto-text-text-${safeKey}" value="${escapeHtml(charData.textColor)}" placeholder="글자색" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; gap: 4px;">
+                    <input type="color" id="auto-bg-picker-${safeKey}" value="${escapeHtml(charData.bgColor)}" style="width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                    <input type="text" id="auto-bg-text-${safeKey}" value="${escapeHtml(charData.bgColor)}" placeholder="배경색" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                </div>
+            </div>
+        `;
+        list.appendChild(row);
+        
+        // 💡 텍스트 입력창과 컬러 피커 양방향 동기화 해결
+        setupColorPicker(`auto-text-picker-${safeKey}`, `auto-text-text-${safeKey}`);
+        setupColorPicker(`auto-bg-picker-${safeKey}`, `auto-bg-text-${safeKey}`);
     });
 }
 
 function applyAutoCustomColor(safeKey) {
     const row = document.getElementById(`auto-custom-${safeKey}`);
-    const originalColor = row.dataset.originalColor;
-    const newText = document.getElementById(`auto-text-text-${safeKey}`).value.trim();
+    const originalKey = row.dataset.originalKey;
+    
+    const newName = document.getElementById(`auto-name-${safeKey}`).value.trim();
+    const newProfile = document.getElementById(`auto-profile-${safeKey}`).value.trim();
+    const newTextCol = document.getElementById(`auto-text-text-${safeKey}`).value.trim();
+    const newBgCol = document.getElementById(`auto-bg-text-${safeKey}`).value.trim();
 
     let count = 0;
     blocks.forEach(b => {
-        if (b.type === 'custom' && b.customTextColor === originalColor) {
-            b.customTextColor = newText;
-            count++;
+        if (b.type === 'custom') {
+            const bKey = (b.customName || '제3자') + '|' + (b.customTextColor || '#333333');
+            if (bKey === originalKey) {
+                b.customName = newName;
+                b.customProfileUrl = newProfile;
+                b.customTextColor = newTextCol;
+                b.customBgColor = newBgCol;
+                count++;
+            }
         }
     });
 
     if (count > 0) {
-        document.getElementById('customCharacterAutoList').innerHTML = ''; 
         renderEditor(); 
         saveState(); 
-        showToast(`총 ${count}개의 대사에 색상이 일괄 적용되었습니다! 🚀`);
+        showToast(`총 ${count}개의 대사에 캐릭터 설정이 일괄 적용되었습니다! 🚀`);
     } else {
         showToast("해당 캐릭터를 사용하는 대사가 없습니다.");
     }
@@ -158,13 +193,28 @@ function renderEditor() {
         let isPolaroid = block.type === 'polaroid';
         let isNarration = block.type === 'narration';
 
+        // 💡 [확장] 제3자(Custom) 블록의 개별 편집 UI (이름, 배경, 프사 추가)
         if (block.type === 'custom') {
             let validTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customTextColor) ? block.customTextColor : '#333333';
+            let validBgHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customBgColor) ? block.customBgColor : '#E2E8F0';
+            let cName = block.customName || '';
+            let cProf = block.customProfileUrl || '';
+
             customFields = `
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
-                    <div style="display: flex; gap: 4px;">
-                        <input type="color" value="${validTextHex}" oninput="document.getElementById('custom-textcolor-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'textColor', this.value.toUpperCase());" style="width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                        <input type="text" id="custom-textcolor-text-${index}" placeholder="제3자 글자색 (#333333)" value="${escapeHtml(block.customTextColor)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockCustom(${index}, 'textColor', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1; display: flex; align-items: center; gap: 4px;">
+                            <input type="color" value="${validTextHex}" oninput="document.getElementById('custom-textcolor-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'textColor', this.value.toUpperCase());" style="width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                            <input type="text" id="custom-textcolor-text-${index}" placeholder="글자색" value="${escapeHtml(block.customTextColor)}" oninput="updateBlockCustom(${index}, 'textColor', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                        </div>
+                        <div style="flex: 1; display: flex; align-items: center; gap: 4px;">
+                            <input type="color" value="${validBgHex}" oninput="document.getElementById('custom-bgcolor-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'bgColor', this.value.toUpperCase());" style="width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                            <input type="text" id="custom-bgcolor-text-${index}" placeholder="배경색" value="${escapeHtml(block.customBgColor)}" oninput="updateBlockCustom(${index}, 'bgColor', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" placeholder="이름" value="${escapeHtml(cName)}" oninput="updateBlockCustom(${index}, 'customName', this.value)" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                        <input type="text" placeholder="프로필 URL" value="${escapeHtml(cProf)}" oninput="updateBlockCustom(${index}, 'customProfileUrl', this.value)" style="flex: 2; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                     </div>
                 </div>
             `;
@@ -306,9 +356,12 @@ function syncPreviewToBlocks() {
                 if (block.type === 'dday') {
                     target = el.querySelector('span');
                 } else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && el.classList.contains('scroll-msg-box')) {
-                    // 💡 [버그 완벽 수정] 말풍선 모드일 때 텍스트 영역(m-bubble)만 정확히 타겟팅하여 이미지/이름표가 빨려 들어가는 현상 차단
+                    // 💡 [버그 완벽 수정] 텍스트 수정 시 프로필/꼬리/이름표가 입력창으로 빨려들어가지 않게 텍스트 노드만 추출
                     if (outputMode === 'bubble2') {
-                        target = el.querySelector('.m-bubble');
+                        let clone = el.querySelector('.m-bubble').cloneNode(true);
+                        let tail = clone.querySelector('.bubble-tail');
+                        if (tail) tail.remove(); // 꼬리 태그 제거
+                        target = clone;
                     } else {
                         target = el.children[1]; 
                     }
@@ -350,7 +403,6 @@ function formatBubbleText(text) {
 }
 
 function updateOutput(skipPreviewUpdate = false) {
-    // 💡 변경된 기본 컬러(민트: #237768, 나레이션: #48484A) 설정 연동
     const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#B2E4D4' : '#237768');
     const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
     const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#48484A');
@@ -375,6 +427,7 @@ function updateOutput(skipPreviewUpdate = false) {
     let hasBgm = false;
     let prevValidType = null;
     let lastCustomTextColor = null;
+    let lastCustomName = null;
     let consecutivePostitCount = 0;
     let consecutivePolaroidCount = 0; 
 
@@ -401,7 +454,7 @@ function updateOutput(skipPreviewUpdate = false) {
         let isSameAsPrev = false;
         if (isCurrDiag && prevValidType === curr) {
             if (curr === 'custom') {
-                if (lastCustomTextColor === block.customTextColor) isSameAsPrev = true;
+                if (lastCustomTextColor === block.customTextColor && lastCustomName === block.customName) isSameAsPrev = true;
             } else {
                 isSameAsPrev = true;
             }
@@ -425,7 +478,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 if ((isPrevDiag && isCurrNarration) || (isPrevNarration && isCurrDiag)) {
                     mt = mt_20; 
                 } else if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? mt_4 : mt_15; 
+                    mt = isSameAsPrev ? '5px' : mt_15; // 💡 [요청사항] 연속된 말풍선 간격 5px
                 } else if (isPrevNarration && isCurrNarration) {
                     mt = mt_4;  
                 } else {
@@ -479,35 +532,39 @@ function updateOutput(skipPreviewUpdate = false) {
                 let pinkUrlEl = document.getElementById('pinkProfileUrl');
                 let mobUrlEl = document.getElementById('mobProfileUrl');
 
-                // 💡 [수정반영] 파스텔톤 색상 및 이름 설정
+                // 💡 [수정] 말풍선용 새로운 파스텔 색상 적용 및 모브 색상 고정 해제
                 if (curr === 'mint') {
                     bgColor = '#eef8f3';
                     textColor = '#1d6f60';
                     imageUrl = extractProfileUrl(mintUrlEl ? mintUrlEl.value : '') || 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
                     let nameEl = document.getElementById('mintName');
-                    charName = nameEl ? nameEl.value : '민트';
+                    charName = nameEl ? nameEl.value : '하시온';
                 } else if (curr === 'pink') {
                     bgColor = '#fdf2f6';
                     textColor = '#9b3e61';
                     imageUrl = extractProfileUrl(pinkUrlEl ? pinkUrlEl.value : '') || 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
                     let nameEl = document.getElementById('pinkName');
-                    charName = nameEl ? nameEl.value : '핑크';
+                    charName = nameEl ? nameEl.value : '김민정';
                 } else if (curr === 'mob') {
                     bgColor = '#eff1f5';
-                    textColor = '#3a414d';
+                    // 모브 글자색은 이제 사용자 지정 컬러피커에서 가져옵니다.
+                    let mobColorEl = document.getElementById('mobTextColor');
+                    textColor = mobColorEl ? mobColorEl.value : '#3a414d';
                     imageUrl = extractProfileUrl(mobUrlEl ? mobUrlEl.value : '') || 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
                     let nameEl = document.getElementById('mobName');
-                    charName = nameEl ? nameEl.value : '모브';
+                    charName = nameEl ? nameEl.value : 'Mob';
                 } else {
-                    bgColor = '#E2E8F0';
+                    bgColor = block.customBgColor || '#E2E8F0';
                     textColor = block.customTextColor || '#333333';
-                    imageUrl = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
-                    charName = '제3자';
+                    imageUrl = extractProfileUrl(block.customProfileUrl) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
+                    charName = block.customName || '제3자';
                 }
 
+                // 연속된 대사 여백 5px 적용, 캐릭터가 바뀌면 mt(15px 등)로 자동 복구
+                let bubMarginTop = isSameAsPrev ? '5px' : (mt === '0px' ? '15px' : mt);
+
                 if (outputMode === 'bubble1') {
-                    // 기존 말풍선 1 모드 렌더링 (여백 0 유지)
-                    let bubMarginTop = isSameAsPrev ? '0px' : '15px';
+                    // 말풍선 1 모드 렌더링
                     let bubPaddingTop = isSameAsPrev ? '10.5px' : '12px';
                     let bubPaddingBottom = isSameAsPrev ? '0px' : '12px';
 
@@ -521,9 +578,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
                 
                 } else if (outputMode === 'bubble2') {
-                    // 💡 [신규 반영] 말풍선 2 (이름표 + 꼬리 테마) 렌더링
-                    let bubMarginTop = isSameAsPrev ? '5px' : '15px';
-                    
+                    // 💡 [신규] 말풍선 2 (이름표 + 꼬리 테마) 렌더링
                     let avatarHtml = '';
                     let nameHtml = '';
                     let tailHtml = '';
@@ -539,11 +594,12 @@ function updateOutput(skipPreviewUpdate = false) {
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 5px;">\n    ${avatarHtml}\n    ${nameHtml}\n    <div class="m-bubble" style="position: relative; display: inline-block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; max-width: 80%; word-break: keep-all; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left;">\n        ${tailHtml}\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
                 }
             }
-            else if (isCurrDiag) { 
+            else if (isCurrDiag) { // 소설 모드
                 let textColor;
+                let mobColorEl = document.getElementById('mobTextColor');
                 if (curr === 'mint') { textColor = mintTextColor; }
                 else if (curr === 'pink') { textColor = pinkTextColor; }
-                else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : '#666666'; }
+                else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : (mobColorEl ? mobColorEl.value : '#3a414d'); }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
                 htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">\n    ${divContent}\n</div>\n`;
@@ -761,7 +817,10 @@ function updateOutput(skipPreviewUpdate = false) {
 
         if (curr !== 'empty' && curr !== 'bgm' && curr !== 'html' && curr !== 'divider') {
             prevValidType = curr;
-            if (curr === 'custom') lastCustomTextColor = block.customTextColor;
+            if (curr === 'custom') {
+                lastCustomTextColor = block.customTextColor;
+                lastCustomName = block.customName;
+            }
         }
     });
     
