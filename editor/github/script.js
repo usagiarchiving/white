@@ -274,6 +274,7 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
+// 💡 [버그 픽스] 컬러 피커와 텍스트 박스 양방향 동기화 완벽 보강
 function setupColorPicker(pickerId, textId) {
     const picker = document.getElementById(pickerId);
     const text = document.getElementById(textId);
@@ -288,9 +289,16 @@ function setupColorPicker(pickerId, textId) {
     
     text.addEventListener('input', (e) => {
         let val = e.target.value.trim();
-        if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-            picker.value = val;
+        
+        // 사용자가 #fff 처럼 3자리로 쳐도 인식하여 팔레트에 반영되도록 안전망 추가
+        if (/^#[0-9A-F]{3}$/i.test(val)) {
+            val = '#' + val[1]+val[1] + val[2]+val[2] + val[3]+val[3];
         }
+        
+        if (/^#[0-9A-F]{6}$/i.test(val)) {
+            picker.value = val.toUpperCase();
+        }
+        
         if(!pickerId.includes('auto-bg') && !pickerId.includes('auto-text')) {
             if (typeof updateOutput === 'function') updateOutput();
         }
@@ -533,7 +541,7 @@ function changeBlockType(index, newType) {
     saveState(); 
 }
 
-// 💡 [핵심 복구 완벽 반영] 모든 모드(말풍선 2 포함)를 영리하게 역추적하는 동기화 로직
+// 💡 모든 모드(말풍선 2 포함)를 영리하게 역추적하는 동기화 로직
 function importFromHtml() {
     const htmlText = document.getElementById('finalHtmlCode').value;
     if (!htmlText.trim()) {
@@ -577,7 +585,6 @@ function importFromHtml() {
         let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
 
         if (!type) {
-            // 과거 버전(V1/V2) 코드를 분석하여 타입을 자동으로 분류합니다.
             if (outerHtml.includes('playBGM')) {
                 type = 'bgm';
             } else if (outerHtml.includes('max-width: 500px') && (outerHtml.includes('#fdfdfd') || outerHtml.includes('상태창') || outerHtml.includes('INNER THOUGHT') || outerHtml.includes('#242424'))) {
@@ -613,13 +620,11 @@ function importFromHtml() {
         } else if (['mint', 'pink', 'mob', 'custom'].includes(type)) {
             let textTarget = child;
             
-            // 💡 [지능형 동기화] 과거 구버전과 최신 말풍선 1, 2 버전을 모두 호환하여 텍스트만 빼옵니다.
             if (child.classList && (child.classList.contains('scroll-msg-box') || child.classList.contains('m-msg'))) {
                 let bubble2Target = child.querySelector('.m-bubble');
                 if (bubble2Target) {
                     textTarget = bubble2Target;
                     
-                    // 말풍선 2 테마인 경우 이름표와 프사, 배경색도 추출합니다.
                     let nameEl = child.querySelector('.m-name');
                     if (nameEl) customName = nameEl.textContent.trim();
                     
@@ -628,7 +633,6 @@ function importFromHtml() {
                     
                     customBgColor = rgbToHex(bubble2Target.style.backgroundColor) || '#E2E8F0';
                 } else if (child.children.length > 1) {
-                    // 말풍선 1 테마
                     textTarget = child.children[1];
                     let imgEl = child.querySelector('img');
                     if (imgEl) customProfileUrl = imgEl.src;
@@ -637,7 +641,6 @@ function importFromHtml() {
             }
 
             let rawHtml = textTarget.innerHTML || '';
-            // 말풍선 2에 존재하는 꼬리 태그 찌꺼기를 지능적으로 제거합니다.
             rawHtml = rawHtml.replace(/<div class="bubble-tail"[^>]*>.*?<\/div>/gi, '');
             rawHtml = rawHtml.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
             content = rawHtml.replace(/^\n+|\n+$/g, '').trim();
@@ -757,7 +760,7 @@ function importFromHtml() {
     }
 }
 
-// 💡 [핵심 복구 완료] 복사하기 함수
+// 💡 복사하기 함수
 function copyHtml() {
     const code = document.getElementById('finalHtmlCode');
     if(code) {
@@ -767,22 +770,39 @@ function copyHtml() {
     }
 }
 
-// 💡 이벤트 리스너 연결
-let elMint = document.getElementById('mintTextColor');
-if (elMint) elMint.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
+// 💡 [핵심 버그 픽스 완료] HTML 요소와 스크립트를 완벽하게 묶어주는 전역 동기화 로직
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. 에디터 메인 설정의 모든 컬러 피커와 텍스트 박스 양방향 동기화 연결
+    setupColorPicker('mintTextColorPicker', 'mintTextColor');
+    setupColorPicker('mintBgColorPicker', 'mintBgColor');
+    setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
+    setupColorPicker('pinkBgColorPicker', 'pinkBgColor');
+    setupColorPicker('mobTextColorPicker', 'mobTextColor');
+    setupColorPicker('mobBgColorPicker', 'mobBgColor');
+    setupColorPicker('narrColorPicker', 'narrColor');
+    setupColorPicker('highlightColorPicker', 'highlightColor');
 
-let elPink = document.getElementById('pinkTextColor');
-if (elPink) elPink.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
+    // 2. 글자색, 배경색, 이름, 프사 등 무엇이든 수정하면 실시간으로 미리보기가 변하도록 전체 이벤트 연결
+    const inputsToSync = [
+        'mintTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
+        'pinkTextColor', 'pinkBgColor', 'pinkName', 'pinkProfileUrl',
+        'mobTextColor', 'mobBgColor', 'mobName', 'mobProfileUrl',
+        'narrColor', 'highlightColor'
+    ];
 
-// 모브 색상 동기화 이벤트 추가
-let elMob = document.getElementById('mobTextColor');
-if (elMob) elMob.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
+    inputsToSync.forEach(id => {
+        let el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => { 
+                if(typeof updateOutput === 'function') updateOutput(); 
+            });
+        }
+    });
 
-let elNarr = document.getElementById('narrColor');
-if (elNarr) elNarr.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
-
-let elNarrItalic = document.getElementById('narrItalic');
-if (elNarrItalic) elNarrItalic.addEventListener('change', () => { if(typeof updateOutput === 'function') updateOutput(); });
-
-let hlColorInput = document.getElementById('highlightColor');
-if (hlColorInput) hlColorInput.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
+    let elNarrItalic = document.getElementById('narrItalic');
+    if (elNarrItalic) {
+        elNarrItalic.addEventListener('change', () => { 
+            if(typeof updateOutput === 'function') updateOutput(); 
+        });
+    }
+});
