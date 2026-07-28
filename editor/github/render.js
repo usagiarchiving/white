@@ -566,7 +566,7 @@ function updateOutput(skipPreviewUpdate = false) {
 
                 let bubMarginTop = '15px';
                 if (isSameAsPrev) {
-                    bubMarginTop = '3px'; 
+                    bubMarginTop = '1px'; 
                 } else if (isPrevDiag) {
                     bubMarginTop = mt_10; 
                 } else {
