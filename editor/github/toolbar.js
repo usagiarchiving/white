@@ -1,4 +1,8 @@
-// == (기존 원본) 플로팅 툴바 기능 ==
+// ==========================================
+// toolbar.js
+// 플로팅 툴바 기능 및 일괄 변환 파서 전용
+// ==========================================
+
 function handleSelection() {
     const selection = window.getSelection();
     const toolbar = document.getElementById('floatingToolbar');
@@ -41,7 +45,7 @@ function handleSelection() {
 
 function formatText(command) {
     document.execCommand(command, false, null);
-    syncPreviewToBlocks();
+    if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
     setTimeout(handleSelection, 10);
 }
 
@@ -54,13 +58,13 @@ function wrapSelectionWithStyle(styles) {
     if (Object.keys(styles).length === 1 && styles.color) {
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, styles.color);
-        syncPreviewToBlocks();
+        if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
         return;
     }
     if (Object.keys(styles).length === 1 && styles.backgroundColor) {
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('hiliteColor', false, styles.backgroundColor);
-        syncPreviewToBlocks();
+        if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
         return;
     }
 
@@ -79,14 +83,20 @@ function wrapSelectionWithStyle(styles) {
     } catch(e) {
         console.error(e);
     }
-    syncPreviewToBlocks();
+    if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
 }
 
 function applyQuickStyle(styleName) {
+    // 💡 [변경] 통일성을 위해 툴바 버튼 클릭 시 적용되는 색상도 새로운 파스텔 톤으로 맞췄습니다.
     if (styleName === 'mint') {
-        wrapSelectionWithStyle({ color: '#0E865E', backgroundColor: '#E1F9F1', padding: '0 2px', borderRadius: '3px' });
+        wrapSelectionWithStyle({ color: '#1d6f60', backgroundColor: '#eef8f3', padding: '0 2px', borderRadius: '3px' });
     } else if (styleName === 'pink') {
-        wrapSelectionWithStyle({ color: '#D04978', backgroundColor: '#FDEDF4', padding: '0 2px', borderRadius: '3px' });
+        wrapSelectionWithStyle({ color: '#9b3e61', backgroundColor: '#fdf2f6', padding: '0 2px', borderRadius: '3px' });
+    } else if (styleName === 'highlight') {
+        // 💡 [신규] 형광펜 버튼 기능 추가 (설정된 형광펜 색상 가져오기)
+        let hlColorEl = document.getElementById('highlightColor');
+        let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
+        wrapSelectionWithStyle({ backgroundColor: hlColor, color: 'inherit', padding: '0 2px', borderRadius: '2px' });
     }
     setTimeout(handleSelection, 10);
 }
@@ -116,7 +126,6 @@ function changeInlineFontSize(delta) {
 // (1) 일괄 변환 파싱 로직 (발췌기 기능 이식)
 // =========================================================
 
-// 💡 형광펜 색상 변수를 동적으로 가져와서 적용
 function parseAdvancedMarkdown(text) {
     if (!text) return text;
     let hlColorEl = document.getElementById('highlightColor');
@@ -135,7 +144,7 @@ function parseBulkInput() {
         let text = bulkInput.value;
         
         if (!text.trim()) {
-            showToast('변환할 텍스트를 입력해주세요.');
+            if (typeof showToast === 'function') showToast('변환할 텍스트를 입력해주세요.');
             return;
         }
 
@@ -270,19 +279,19 @@ function parseBulkInput() {
             blocks.push({ type: 'html', content: codeBuffer.join('\n') });
         }
 
-        renderEditor();
-        saveState(); 
+        if (typeof renderEditor === 'function') renderEditor();
+        if (typeof saveState === 'function') saveState(); 
         bulkInput.value = ''; 
     } catch(e) {
         console.error(e);
-        showToast('텍스트 변환 중 오류가 발생했습니다.');
+        if (typeof showToast === 'function') showToast('텍스트 변환 중 오류가 발생했습니다.');
     }
 }
 
 // =========================================================
-// 💡 마우스를 드래그하거나 선택 영역이 변경될 때 툴바를 띄우는 이벤트 리스너 
+// 💡 드래그 센서 복구 (모바일 환경 호환)
 // =========================================================
 document.addEventListener('selectionchange', () => setTimeout(handleSelection, 10));
 document.addEventListener('mouseup', () => setTimeout(handleSelection, 10));
 document.addEventListener('keyup', () => setTimeout(handleSelection, 10));
-document.addEventListener('touchend', () => setTimeout(handleSelection, 10)); // 모바일 터치 대응 추가
+document.addEventListener('touchend', () => setTimeout(handleSelection, 10));
