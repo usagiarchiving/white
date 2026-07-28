@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <title>웹사이트 HTML 코드 생성기</title>
+    <!-- 기존 폰트 및 본고딕(Noto Sans KR) 추가 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
-    <!-- 프리텐다드 폰트 추가 -->
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    <!-- 💡 [수정사항] 본고딕 폰트 추가 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     
     <!-- 분리된 CSS 파일 연결 -->
     <link rel="stylesheet" href="style.css">
@@ -63,122 +62,70 @@
         <div class="panel">
             <h2 class="panel-title">(2) 캐릭터 설정 & 수동 블록 추가</h2>
             <div class="settings-grid">
-                
-                <!-- 💡 [수정사항] 민트 설정: 이름, 말풍선 배경색/폰트색 추가 (2줄 배치) -->
-                <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
-                    <label style="font-size: 12px; font-weight: bold; color: #459fa5;">민트 (Mint)</label>
-                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 100px;">
-                            <label style="font-size: 10px; color: #459fa5;">이름</label>
-                            <input type="text" id="mintName" value="하시온" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                <!-- 민트 설정 (기본 컬러 #237768 적용 및 이름 칸 추가) -->
+                <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                    <label style="font-size: 12px; font-weight: bold; color: #237768;">민트 (Mint)</label>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 10px; color: #237768;">글자색</label>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <input type="color" id="mintTextColorPicker" value="#237768" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="mintTextColor" value="#237768" style="flex: 1; min-width: 0;">
+                            </div>
                         </div>
-                        <div style="flex: 2; min-width: 150px;">
-                            <label style="font-size: 10px; color: #459fa5;">프로필 이미지 URL</label>
+                        <div style="flex: 1;">
+                            <label style="font-size: 10px; color: #237768;">이름</label>
+                            <input type="text" id="mintName" value="민트" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                        </div>
+                        <div style="flex: 2;">
+                            <label style="font-size: 10px; color: #237768;">프로필 이미지 URL</label>
                             <input type="text" id="mintProfileUrl" value="[https://i.ibb.co/VYrHdHd8/IMG-6825.jpg](https://i.ibb.co/VYrHdHd8/IMG-6825.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: #459fa5;">소설 폰트색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="mintTextColorPicker" value="#237768" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="mintTextColor" value="#237768" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: #459fa5;">말풍선 배경색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="mintBubbleBgPicker" value="#eef8f3" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="mintBubbleBg" value="#eef8f3" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: #459fa5;">말풍선 폰트색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="mintBubbleTextPicker" value="#1d6f60" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="mintBubbleText" value="#1d6f60" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 💡 [수정사항] 핑크 설정: 이름, 말풍선 배경색/폰트색 추가 (2줄 배치) -->
-                <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
+                <!-- 핑크 설정 (이름 칸 추가) -->
+                <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #f5bdcc;">핑크 (Pink)</label>
-                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 100px;">
-                            <label style="font-size: 10px; color: #f5bdcc;">이름</label>
-                            <input type="text" id="pinkName" value="김민정" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 10px; color: #f5bdcc;">글자색</label>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <input type="color" id="pinkTextColorPicker" value="#f5bdcc" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="pinkTextColor" value="#f5bdcc" style="flex: 1; min-width: 0;">
+                            </div>
                         </div>
-                        <div style="flex: 2; min-width: 150px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 10px; color: #f5bdcc;">이름</label>
+                            <input type="text" id="pinkName" value="핑크" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                        </div>
+                        <div style="flex: 2;">
                             <label style="font-size: 10px; color: #f5bdcc;">프로필 이미지 URL</label>
                             <input type="text" id="pinkProfileUrl" value="[https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg](https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: #f5bdcc;">소설 폰트색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="pinkTextColorPicker" value="#f5bdcc" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="pinkTextColor" value="#f5bdcc" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: #f5bdcc;">말풍선 배경색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="pinkBubbleBgPicker" value="#fdf2f6" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="pinkBubbleBg" value="#fdf2f6" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: #f5bdcc;">말풍선 폰트색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="pinkBubbleTextPicker" value="#9b3e61" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="pinkBubbleText" value="#9b3e61" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- 💡 [수정사항] 모브 설정: 이름, 말풍선 배경색/폰트색 추가 및 소설 폰트색 잠금 해제 (2줄 배치) -->
+                <!-- 모브 설정 (이름 칸 추가) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
                     <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">모브 (Mob)</label>
-                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 100px;">
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 10px; color: var(--text-muted);">글자색 (고정)</label>
+                            <input type="text" value="#333333" disabled style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-muted); width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div style="flex: 1;">
                             <label style="font-size: 10px; color: var(--text-muted);">이름</label>
                             <input type="text" id="mobName" value="모브" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
-                        <div style="flex: 2; min-width: 150px;">
+                        <div style="flex: 2;">
                             <label style="font-size: 10px; color: var(--text-muted);">프로필 이미지 URL</label>
                             <input type="text" id="mobProfileUrl" value="[https://i.ibb.co/jP5RR5gx/IMG-6832.jpg](https://i.ibb.co/jP5RR5gx/IMG-6832.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: var(--text-muted);">소설 폰트색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="mobTextColorPicker" value="#333333" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="mobTextColor" value="#333333" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: var(--text-muted);">말풍선 배경색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="mobBubbleBgPicker" value="#eff1f5" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="mobBubbleBg" value="#eff1f5" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 90px;">
-                            <label style="font-size: 10px; color: var(--text-muted);">말풍선 폰트색</label>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <input type="color" id="mobBubbleTextPicker" value="#3a414d" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                <input type="text" id="mobBubbleText" value="#3a414d" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- 나레이션 설정 -->
+                <!-- 나레이션 설정 (기본 컬러 #48484A 적용) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
                     <label style="font-size: 12px; font-weight: bold; color: var(--text-main);">나레이션 (Narration)</label>
                     <div style="display: flex; gap: 15px; margin-top: 8px; align-items: center; flex-wrap: wrap;">
@@ -189,7 +136,6 @@
                                 <input type="text" id="narrColor" value="#48484A" style="flex: 1; min-width: 0;">
                             </div>
                         </div>
-                        
                         <div style="flex: 1; min-width: 120px;">
                             <label style="font-size: 10px; color: var(--text-muted);">형광펜(==) 색상</label>
                             <div style="display: flex; gap: 4px; margin-top: 4px;">
@@ -197,7 +143,6 @@
                                 <input type="text" id="highlightColor" value="#fef08a" style="flex: 1; min-width: 0;">
                             </div>
                         </div>
-
                         <div style="flex: 1; display: flex; align-items: center; gap: 8px; margin-top: 18px; min-width: 120px;">
                             <input type="checkbox" id="narrItalic" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
                             <label for="narrItalic" style="font-size: 12px; color: var(--text-main); cursor: pointer; user-select: none;">이탤릭체 (기울임) 적용</label>
@@ -205,7 +150,6 @@
                     </div>
                 </div>
 
-                <!-- 제3자 캐릭터 일괄 관리 -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1; outline: none;">
                     <summary style="font-size: 12px; font-weight: bold; color: var(--text-main); cursor: pointer; user-select: none; outline: none;">
                         ▶ 제3자 (Custom) 캐릭터 일괄 관리 (클릭하여 열기)
@@ -287,10 +231,11 @@
             <h2 class="panel-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <span>(4) 미리보기 확인 및 직접 수정</span>
                 <div style="display: flex; gap: 10px; align-items: center;">
+                    <!-- 💡 [변경] 출력 모드 3분할 토글 (소설 / 말풍선 1 / 말풍선 2) -->
                     <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
                         <button id="btnModeNovel" onclick="setOutputMode('novel')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">📝 소설</button>
                         <button id="btnModeBubble1" onclick="setOutputMode('bubble1')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💬 말풍선 1</button>
-                        <button id="btnModeBubble2" onclick="setOutputMode('bubble2')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💬 말풍선 2</button>
+                        <button id="btnModeBubble2" onclick="setOutputMode('bubble2')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💭 말풍선 2</button>
                     </span>
                     <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
                         <button id="btnV1" onclick="setVersion(1)" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">V1</button>
@@ -352,8 +297,9 @@
     </div>
 </div>
 
-<script src="render.js"></script>
+<!-- 분할된 자바스크립트 파일 연결 (순서 엄수) -->
 <script src="script.js"></script>
+<script src="render.js"></script>
 <script src="toolbar.js"></script>
 
 </body>
