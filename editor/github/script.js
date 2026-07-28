@@ -71,7 +71,6 @@ function undo() {
             }
         }
 
-        // 💡 렌더링 전 현재 스크롤 위치 임시 저장 (튕김 방지)
         const editorList = document.getElementById('editorList');
         const htmlPreview = document.getElementById('htmlPreview');
         const scrollPos = {
@@ -82,9 +81,8 @@ function undo() {
 
         historyIndex--;
         blocks = JSON.parse(historyStack[historyIndex]);
-        renderEditor();
+        if (typeof renderEditor === 'function') renderEditor();
 
-        // 💡 렌더링 직후 스크롤 위치 원상 복구
         setTimeout(() => {
             if (editorList) editorList.scrollTop = scrollPos.editor;
             if (htmlPreview) htmlPreview.scrollTop = scrollPos.preview;
@@ -108,7 +106,6 @@ function redo() {
             }
         }
 
-        // 💡 렌더링 전 현재 스크롤 위치 임시 저장 (튕김 방지)
         const editorList = document.getElementById('editorList');
         const htmlPreview = document.getElementById('htmlPreview');
         const scrollPos = {
@@ -119,9 +116,8 @@ function redo() {
 
         historyIndex++;
         blocks = JSON.parse(historyStack[historyIndex]);
-        renderEditor();
+        if (typeof renderEditor === 'function') renderEditor();
 
-        // 💡 렌더링 직후 스크롤 위치 원상 복구
         setTimeout(() => {
             if (editorList) editorList.scrollTop = scrollPos.editor;
             if (htmlPreview) htmlPreview.scrollTop = scrollPos.preview;
@@ -151,7 +147,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ===================================
-// 블록 제어 함수들
+// 블록 제어 로직
 // ===================================
 
 function moveBlockUp(index) {
@@ -159,9 +155,9 @@ function moveBlockUp(index) {
     const temp = blocks[index - 1];
     blocks[index - 1] = blocks[index];
     blocks[index] = temp;
-    renderEditor();
+    if (typeof renderEditor === 'function') renderEditor();
     saveState();
-    focusAndScrollBlock(index - 1);
+    if (typeof focusAndScrollBlock === 'function') focusAndScrollBlock(index - 1);
 }
 
 function moveBlockDown(index) {
@@ -169,9 +165,9 @@ function moveBlockDown(index) {
     const temp = blocks[index + 1];
     blocks[index + 1] = blocks[index];
     blocks[index] = temp;
-    renderEditor();
+    if (typeof renderEditor === 'function') renderEditor();
     saveState();
-    focusAndScrollBlock(index + 1);
+    if (typeof focusAndScrollBlock === 'function') focusAndScrollBlock(index + 1);
 }
 
 function moveBlockTo(oldIndex, targetInputId) {
@@ -186,9 +182,9 @@ function moveBlockTo(oldIndex, targetInputId) {
     
     const block = blocks.splice(oldIndex, 1)[0];
     blocks.splice(newIndex, 0, block);
-    renderEditor();
+    if (typeof renderEditor === 'function') renderEditor();
     saveState();
-    focusAndScrollBlock(newIndex);
+    if (typeof focusAndScrollBlock === 'function') focusAndScrollBlock(newIndex);
 }
 
 function toggleDarkMode() {
@@ -197,23 +193,31 @@ function toggleDarkMode() {
     document.getElementById('darkModeBtn').innerText = isDarkMode ? '☀️ 라이트 모드' : '🌙 다크 모드';
     
     if (isDarkMode) {
-        document.getElementById('mintTextColor').value = '#B2E4D4';
-        document.getElementById('mintTextColorPicker').value = '#B2E4D4';
-        document.getElementById('narrColor').value = '#F9F9F8';
-        document.getElementById('narrColorPicker').value = '#F9F9F8';
+        let elMint = document.getElementById('mintTextColor');
+        let elMintP = document.getElementById('mintTextColorPicker');
+        let elNarr = document.getElementById('narrColor');
+        let elNarrP = document.getElementById('narrColorPicker');
+        if(elMint) elMint.value = '#B2E4D4';
+        if(elMintP) elMintP.value = '#B2E4D4';
+        if(elNarr) elNarr.value = '#F9F9F8';
+        if(elNarrP) elNarrP.value = '#F9F9F8';
     } else {
-        document.getElementById('mintTextColor').value = '#237768';
-        document.getElementById('mintTextColorPicker').value = '#237768';
-        document.getElementById('narrColor').value = '#48484A';
-        document.getElementById('narrColorPicker').value = '#48484A';
+        let elMint = document.getElementById('mintTextColor');
+        let elMintP = document.getElementById('mintTextColorPicker');
+        let elNarr = document.getElementById('narrColor');
+        let elNarrP = document.getElementById('narrColorPicker');
+        if(elMint) elMint.value = '#237768';
+        if(elMintP) elMintP.value = '#237768';
+        if(elNarr) elNarr.value = '#48484A';
+        if(elNarrP) elNarrP.value = '#48484A';
     }
-    updateOutput();
+    if (typeof updateOutput === 'function') updateOutput();
 }
 
 function changeGlobalFont(font) {
     currentFontFamily = font;
     document.body.style.fontFamily = font;
-    updateOutput();
+    if (typeof updateOutput === 'function') updateOutput();
 }
 
 function changeFontSize(delta) {
@@ -233,7 +237,7 @@ function changeFontSize(delta) {
     }
 
     document.getElementById('fontSizeDisplay').innerText = currentFontSize + 'px';
-    updateOutput();
+    if (typeof updateOutput === 'function') updateOutput();
 }
 
 function updateLayoutSetting(key, value) {
@@ -241,7 +245,7 @@ function updateLayoutSetting(key, value) {
     if (key === 'letterSpacing') currentLetterSpacing = parseFloat(value);
     if (key === 'blockGap') currentBlockGap = parseInt(value, 10);
     if (key === 'wordBreak') currentWordBreak = value;
-    updateOutput();
+    if (typeof updateOutput === 'function') updateOutput();
 }
 
 function showToast(msg) {
@@ -249,7 +253,7 @@ function showToast(msg) {
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'toast-notification';
-        toast.style.cssText = 'position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 10000; transition: opacity 0.3s ease; opacity: 0; pointer-events: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: "Noto Serif KR", serif; word-break: keep-all; text-align: center;';
+        toast.style.cssText = 'position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background-color: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 10000; transition: opacity 0.3s ease; opacity: 0; pointer-events: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: "Noto Sans KR", "Noto Serif KR", sans-serif; word-break: keep-all; text-align: center;';
         document.body.appendChild(toast);
     }
     toast.innerText = msg;
@@ -277,7 +281,9 @@ function setupColorPicker(pickerId, textId) {
     
     picker.addEventListener('input', (e) => {
         text.value = e.target.value.toUpperCase();
-        if(!pickerId.includes('auto-bg') && !pickerId.includes('auto-text')) updateOutput();
+        if(!pickerId.includes('auto-bg') && !pickerId.includes('auto-text')) {
+            if (typeof updateOutput === 'function') updateOutput();
+        }
     });
     
     text.addEventListener('input', (e) => {
@@ -285,15 +291,11 @@ function setupColorPicker(pickerId, textId) {
         if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
             picker.value = val;
         }
-        if(!pickerId.includes('auto-bg') && !pickerId.includes('auto-text')) updateOutput();
+        if(!pickerId.includes('auto-bg') && !pickerId.includes('auto-text')) {
+            if (typeof updateOutput === 'function') updateOutput();
+        }
     });
 }
-
-// 💡 초기 컬러 피커 설정 연결 유지
-setupColorPicker('mintTextColorPicker', 'mintTextColor');
-setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
-setupColorPicker('narrColorPicker', 'narrColor');
-setupColorPicker('highlightColorPicker', 'highlightColor');
 
 function getSafeId(str) {
     let hash = 0;
@@ -318,7 +320,7 @@ function setVersion(v) {
         if(btnV2) { btnV2.style.background = 'var(--primary)'; btnV2.style.color = 'white'; }
         if(btnV1) { btnV1.style.background = 'transparent'; btnV1.style.color = 'var(--text-muted)'; }
     }
-    updateOutput(); 
+    if (typeof updateOutput === 'function') updateOutput(); 
 }
 
 function setOutputMode(mode) {
@@ -344,7 +346,7 @@ function setOutputMode(mode) {
         activeBtn.style.color = 'white';
     }
     
-    updateOutput(); 
+    if (typeof updateOutput === 'function') updateOutput(); 
 }
 
 function stripSymbols(str) {
@@ -407,7 +409,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     range.deleteContents();
                     range.insertNode(textNode);
                     
-                    syncPreviewToBlocks();
+                    if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
                     
                     let content = blocks[index].content;
                     let parts = content.split(marker);
@@ -418,13 +420,16 @@ document.addEventListener("DOMContentLoaded", function() {
                             type: currentBlock.type,
                             content: parts.slice(1).join('').replace(/^[\n\r]+/, '').trim(),
                             customTextColor: currentBlock.customTextColor || '#333333',
+                            customBgColor: currentBlock.customBgColor || '#E2E8F0',
+                            customName: currentBlock.customName || '',
+                            customProfileUrl: currentBlock.customProfileUrl || '',
                             bgmTitle: currentBlock.bgmTitle,
                             bgmUrl: currentBlock.bgmUrl,
                             polaroidDate: currentBlock.polaroidDate || '',
                             polaroidCaption: currentBlock.polaroidCaption || ''
                         };
                         blocks.splice(index + 1, 0, newBlock);
-                        renderEditor(); 
+                        if (typeof renderEditor === 'function') renderEditor(); 
                         saveState(); 
                         
                         setTimeout(() => {
@@ -460,7 +465,7 @@ function addBlock(type, index = -1) {
     let defaultContent = '';
     if (type === 'divider') defaultContent = 'solid-gray';
     
-    const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
+    const newBlock = { type, content: defaultContent, customTextColor: '#333333', customBgColor: '#E2E8F0', customName: '', customProfileUrl: '', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     let addedIndex = -1;
     if (index === -1) {
         blocks.push(newBlock);
@@ -469,38 +474,41 @@ function addBlock(type, index = -1) {
         blocks.splice(index, 0, newBlock);
         addedIndex = index;
     }
-    renderEditor();
+    if (typeof renderEditor === 'function') renderEditor();
     saveState(); 
-    focusAndScrollBlock(addedIndex); 
+    if (typeof focusAndScrollBlock === 'function') focusAndScrollBlock(addedIndex); 
 }
 
 function insertEmptyLine(index) {
     const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     blocks.splice(index + 1, 0, newBlock);
-    renderEditor();
+    if (typeof renderEditor === 'function') renderEditor();
     saveState(); 
-    focusAndScrollBlock(index + 1); 
+    if (typeof focusAndScrollBlock === 'function') focusAndScrollBlock(index + 1); 
 }
 
 function deleteBlock(index) {
     blocks.splice(index, 1);
-    renderEditor();
+    if (typeof renderEditor === 'function') renderEditor();
     saveState(); 
 }
 
 function updateBlockContent(index, value) {
     blocks[index].content = value;
-    updateOutput();
+    if (typeof updateOutput === 'function') updateOutput();
     debounceSaveState(); 
 }
 
 function updateBlockCustom(index, field, value) {
     if (field === 'textColor') blocks[index].customTextColor = value;
+    if (field === 'bgColor') blocks[index].customBgColor = value;
+    if (field === 'customName') blocks[index].customName = value;
+    if (field === 'customProfileUrl') blocks[index].customProfileUrl = value;
     if (field === 'bgmTitle') blocks[index].bgmTitle = value;
     if (field === 'bgmUrl') blocks[index].bgmUrl = value;
     if (field === 'polaroidDate') blocks[index].polaroidDate = value;
     if (field === 'polaroidCaption') blocks[index].polaroidCaption = value;
-    updateOutput();
+    if (typeof updateOutput === 'function') updateOutput();
     debounceSaveState(); 
 }
 
@@ -508,6 +516,7 @@ function changeBlockType(index, newType) {
     blocks[index].type = newType;
     if (newType === 'custom') {
         blocks[index].customTextColor = blocks[index].customTextColor || '#333333';
+        blocks[index].customBgColor = blocks[index].customBgColor || '#E2E8F0';
     }
     if (newType === 'bgm') {
         blocks[index].bgmTitle = blocks[index].bgmTitle || '';
@@ -520,11 +529,11 @@ function changeBlockType(index, newType) {
     if (newType === 'divider' && !['solid-black', 'solid-gray', 'dashed-gray', 'dots', 'diamond'].includes(blocks[index].content)) {
         blocks[index].content = 'solid-gray';
     }
-    renderEditor();
+    if (typeof renderEditor === 'function') renderEditor();
     saveState(); 
 }
 
-// 💡 [핵심 복구 완료] 구버전, 신버전(말풍선 1, 2) 완벽 호환 동기화 기능
+// 💡 [핵심 복구 완벽 반영] 모든 모드(말풍선 2 포함)를 영리하게 역추적하는 동기화 로직
 function importFromHtml() {
     const htmlText = document.getElementById('finalHtmlCode').value;
     if (!htmlText.trim()) {
@@ -556,6 +565,9 @@ function importFromHtml() {
         let type = child.getAttribute('data-type');
         let content = '';
         let customTextColor = '#333333';
+        let customBgColor = '#E2E8F0';
+        let customName = '';
+        let customProfileUrl = '';
         let bgmTitle = '';
         let bgmUrl = '';
         let polaroidDate = '';
@@ -565,13 +577,14 @@ function importFromHtml() {
         let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
 
         if (!type) {
+            // 과거 버전(V1/V2) 코드를 분석하여 타입을 자동으로 분류합니다.
             if (outerHtml.includes('playBGM')) {
                 type = 'bgm';
             } else if (outerHtml.includes('max-width: 500px') && (outerHtml.includes('#fdfdfd') || outerHtml.includes('상태창') || outerHtml.includes('INNER THOUGHT') || outerHtml.includes('#242424'))) {
                 type = 'status'; 
             } else if (child.style.fontStyle === 'italic' && (child.style.color === 'rgb(119, 119, 119)' || child.style.color === 'rgb(142, 142, 147)')) {
                 type = 'thought';
-            } else if (child.style.color === 'rgb(69, 159, 165)' || child.style.color === 'rgb(178, 228, 212)' || child.style.color === 'rgb(35, 119, 104)') { 
+            } else if (child.style.color === 'rgb(69, 159, 165)' || child.style.color === 'rgb(178, 228, 212)' || child.style.color === 'rgb(35, 119, 104)' || child.style.color === 'rgb(29, 111, 96)') { 
                 type = 'mint';
             } else if (child.style.color === 'rgb(245, 189, 204)' || child.style.color === 'rgb(155, 62, 97)') {
                 type = 'pink';
@@ -605,18 +618,31 @@ function importFromHtml() {
                 let bubble2Target = child.querySelector('.m-bubble');
                 if (bubble2Target) {
                     textTarget = bubble2Target;
+                    
+                    // 말풍선 2 테마인 경우 이름표와 프사, 배경색도 추출합니다.
+                    let nameEl = child.querySelector('.m-name');
+                    if (nameEl) customName = nameEl.textContent.trim();
+                    
+                    let imgEl = child.querySelector('.av img');
+                    if (imgEl) customProfileUrl = imgEl.src;
+                    
+                    customBgColor = rgbToHex(bubble2Target.style.backgroundColor) || '#E2E8F0';
                 } else if (child.children.length > 1) {
+                    // 말풍선 1 테마
                     textTarget = child.children[1];
+                    let imgEl = child.querySelector('img');
+                    if (imgEl) customProfileUrl = imgEl.src;
+                    customBgColor = rgbToHex(textTarget.style.backgroundColor) || '#E2E8F0';
                 }
             }
 
             let rawHtml = textTarget.innerHTML || '';
             // 말풍선 2에 존재하는 꼬리 태그 찌꺼기를 지능적으로 제거합니다.
-            rawHtml = rawHtml.replace(/<div class="bubble-tail"[^>]*><\/div>/gi, '');
+            rawHtml = rawHtml.replace(/<div class="bubble-tail"[^>]*>.*?<\/div>/gi, '');
             rawHtml = rawHtml.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
             content = rawHtml.replace(/^\n+|\n+$/g, '').trim();
             
-            let textHex = rgbToHex(child.style.color);
+            let textHex = rgbToHex(textTarget.style.color || child.style.color);
 
             if (type === 'mint') {
                 if (!foundMint) {
@@ -712,6 +738,9 @@ function importFromHtml() {
             type: type,
             content: content || '',
             customTextColor: customTextColor,
+            customBgColor: customBgColor,
+            customName: customName,
+            customProfileUrl: customProfileUrl,
             bgmTitle: bgmTitle,
             bgmUrl: bgmUrl,
             polaroidDate: polaroidDate,
@@ -721,7 +750,7 @@ function importFromHtml() {
 
     if (newBlocks.length > 0) {
         blocks = newBlocks;
-        renderEditor();
+        if (typeof renderEditor === 'function') renderEditor();
         saveState(); 
     } else {
         showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
@@ -740,16 +769,20 @@ function copyHtml() {
 
 // 💡 이벤트 리스너 연결
 let elMint = document.getElementById('mintTextColor');
-if (elMint) elMint.addEventListener('input', () => updateOutput());
+if (elMint) elMint.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
 
 let elPink = document.getElementById('pinkTextColor');
-if (elPink) elPink.addEventListener('input', () => updateOutput());
+if (elPink) elPink.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
+
+// 모브 색상 동기화 이벤트 추가
+let elMob = document.getElementById('mobTextColor');
+if (elMob) elMob.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
 
 let elNarr = document.getElementById('narrColor');
-if (elNarr) elNarr.addEventListener('input', () => updateOutput());
+if (elNarr) elNarr.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
 
 let elNarrItalic = document.getElementById('narrItalic');
-if (elNarrItalic) elNarrItalic.addEventListener('change', () => updateOutput());
+if (elNarrItalic) elNarrItalic.addEventListener('change', () => { if(typeof updateOutput === 'function') updateOutput(); });
 
 let hlColorInput = document.getElementById('highlightColor');
-if (hlColorInput) hlColorInput.addEventListener('input', () => updateOutput());
+if (hlColorInput) hlColorInput.addEventListener('input', () => { if(typeof updateOutput === 'function') updateOutput(); });
