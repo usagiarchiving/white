@@ -709,7 +709,7 @@ function updateOutput(skipPreviewUpdate = false) {
     
     if (hasBgm) {
         innerContent += `
-<iframe id="bgmPlayerFrame" src="[https://loading-lovebullets.naru.pub/editor/bgm.html](https://loading-lovebullets.naru.pub/editor/bgm.html)" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
+<iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
 <script>
 window.addEventListener('message', function(e) {
     var frame = document.getElementById('bgmPlayerFrame');
