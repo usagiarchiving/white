@@ -62,7 +62,7 @@
         <div class="panel">
             <h2 class="panel-title">(2) 캐릭터 설정 & 수동 블록 추가</h2>
             <div class="settings-grid">
-                <!-- 민트 설정 (기본 컬러 #237768 적용 및 이름 칸 추가) -->
+                <!-- 민트 설정 (기본 이름 "하시온" 적용) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #237768;">민트 (Mint)</label>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
@@ -75,7 +75,7 @@
                         </div>
                         <div style="flex: 1;">
                             <label style="font-size: 10px; color: #237768;">이름</label>
-                            <input type="text" id="mintName" value="민트" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                            <input type="text" id="mintName" value="하시온" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                         <div style="flex: 2;">
                             <label style="font-size: 10px; color: #237768;">프로필 이미지 URL</label>
@@ -84,7 +84,7 @@
                     </div>
                 </div>
                 
-                <!-- 핑크 설정 (이름 칸 추가) -->
+                <!-- 핑크 설정 (기본 이름 "김민정" 적용) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #f5bdcc;">핑크 (Pink)</label>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
@@ -97,7 +97,7 @@
                         </div>
                         <div style="flex: 1;">
                             <label style="font-size: 10px; color: #f5bdcc;">이름</label>
-                            <input type="text" id="pinkName" value="핑크" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                            <input type="text" id="pinkName" value="김민정" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                         <div style="flex: 2;">
                             <label style="font-size: 10px; color: #f5bdcc;">프로필 이미지 URL</label>
@@ -106,26 +106,29 @@
                     </div>
                 </div>
 
-                <!-- 모브 설정 (이름 칸 추가) -->
+                <!-- 모브 설정 (기본 이름 "Mob" 적용, 컬러 피커 고정 해제 및 추가) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
-                    <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">모브 (Mob)</label>
+                    <label style="font-size: 12px; font-weight: bold; color: #3a414d;">모브 (Mob)</label>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
                         <div style="flex: 1;">
-                            <label style="font-size: 10px; color: var(--text-muted);">글자색 (고정)</label>
-                            <input type="text" value="#333333" disabled style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-muted); width: 100%; box-sizing: border-box;">
+                            <label style="font-size: 10px; color: #3a414d;">글자색</label>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <input type="color" id="mobTextColorPicker" value="#3a414d" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="mobTextColor" value="#3a414d" style="flex: 1; min-width: 0;">
+                            </div>
                         </div>
                         <div style="flex: 1;">
-                            <label style="font-size: 10px; color: var(--text-muted);">이름</label>
-                            <input type="text" id="mobName" value="모브" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
+                            <label style="font-size: 10px; color: #3a414d;">이름</label>
+                            <input type="text" id="mobName" value="Mob" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                         <div style="flex: 2;">
-                            <label style="font-size: 10px; color: var(--text-muted);">프로필 이미지 URL</label>
+                            <label style="font-size: 10px; color: #3a414d;">프로필 이미지 URL</label>
                             <input type="text" id="mobProfileUrl" value="[https://i.ibb.co/jP5RR5gx/IMG-6832.jpg](https://i.ibb.co/jP5RR5gx/IMG-6832.jpg)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;" onchange="updateOutput()">
                         </div>
                     </div>
                 </div>
 
-                <!-- 나레이션 설정 (기본 컬러 #48484A 적용) -->
+                <!-- 나레이션 설정 -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
                     <label style="font-size: 12px; font-weight: bold; color: var(--text-main);">나레이션 (Narration)</label>
                     <div style="display: flex; gap: 15px; margin-top: 8px; align-items: center; flex-wrap: wrap;">
@@ -150,13 +153,14 @@
                     </div>
                 </div>
 
+                <!-- 제3자 관리 안내 문구 수정 (이름, 배경 등 추가 예고) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1; outline: none;">
                     <summary style="font-size: 12px; font-weight: bold; color: var(--text-main); cursor: pointer; user-select: none; outline: none;">
                         ▶ 제3자 (Custom) 캐릭터 일괄 관리 (클릭하여 열기)
                     </summary>
                     <div style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px;">
                         <p style="font-size: 10px; color: var(--text-muted); margin: 0 0 10px 0; line-height: 1.3;">
-                            에디터에 추가된 제3자 캐릭터가 <b>글자색</b>을 기준으로 자동 분류됩니다. 색상 및 프로필 이미지를 변경하고 <b>[일괄 적용]</b>을 누르세요.
+                            에디터에 추가된 제3자 캐릭터가 <b>글자색</b>을 기준으로 자동 분류됩니다. 이름, 배경색, 글자색 및 프로필 이미지를 변경하고 <b>[일괄 적용]</b>을 누르세요.
                         </p>
                         <div id="customCharacterAutoList" style="display: flex; flex-direction: column; gap: 10px;"></div>
                     </div>
@@ -231,7 +235,7 @@
             <h2 class="panel-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <span>(4) 미리보기 확인 및 직접 수정</span>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <!-- 💡 [변경] 출력 모드 3분할 토글 (소설 / 말풍선 1 / 말풍선 2) -->
+                    <!-- 출력 모드 3분할 토글 -->
                     <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
                         <button id="btnModeNovel" onclick="setOutputMode('novel')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">📝 소설</button>
                         <button id="btnModeBubble1" onclick="setOutputMode('bubble1')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💬 말풍선 1</button>
