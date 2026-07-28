@@ -61,7 +61,6 @@ function focusAndScrollBlock(index, preventFocus = false) {
     }, 100);
 }
 
-// 💡 [확장/버그픽스] 제3자 캐릭터 일괄 관리 패널 (이름, 배색, 프사 확장 및 컬러피커 동기화 해결)
 function updateCustomCharacterPanel() {
     const list = document.getElementById('customCharacterAutoList');
     if(!list) return;
@@ -120,7 +119,6 @@ function updateCustomCharacterPanel() {
         `;
         list.appendChild(row);
         
-        // 💡 텍스트 입력창과 컬러 피커 양방향 동기화 해결
         setupColorPicker(`auto-text-picker-${safeKey}`, `auto-text-text-${safeKey}`);
         setupColorPicker(`auto-bg-picker-${safeKey}`, `auto-bg-text-${safeKey}`);
     });
@@ -193,7 +191,6 @@ function renderEditor() {
         let isPolaroid = block.type === 'polaroid';
         let isNarration = block.type === 'narration';
 
-        // 💡 [확장] 제3자(Custom) 블록의 개별 편집 UI (이름, 배경, 프사 추가)
         if (block.type === 'custom') {
             let validTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customTextColor) ? block.customTextColor : '#333333';
             let validBgHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customBgColor) ? block.customBgColor : '#E2E8F0';
@@ -356,11 +353,10 @@ function syncPreviewToBlocks() {
                 if (block.type === 'dday') {
                     target = el.querySelector('span');
                 } else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && el.classList.contains('scroll-msg-box')) {
-                    // 💡 [버그 완벽 수정] 텍스트 수정 시 프로필/꼬리/이름표가 입력창으로 빨려들어가지 않게 텍스트 노드만 추출
                     if (outputMode === 'bubble2') {
                         let clone = el.querySelector('.m-bubble').cloneNode(true);
                         let tail = clone.querySelector('.bubble-tail');
-                        if (tail) tail.remove(); // 꼬리 태그 제거
+                        if (tail) tail.remove(); 
                         target = clone;
                     } else {
                         target = el.children[1]; 
@@ -478,7 +474,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 if ((isPrevDiag && isCurrNarration) || (isPrevNarration && isCurrDiag)) {
                     mt = mt_20; 
                 } else if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? '5px' : mt_15; // 💡 [요청사항] 연속된 말풍선 간격 5px
+                    mt = isSameAsPrev ? '5px' : mt_15; 
                 } else if (isPrevNarration && isCurrNarration) {
                     mt = mt_4;  
                 } else {
@@ -507,13 +503,14 @@ function updateOutput(skipPreviewUpdate = false) {
                 dividerInner = `<div style="display: flex; align-items: center; width: 100%;"><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div><div style="width: 9px; height: 9px; border: 1px solid ${isDarkMode ? '#666666' : '#c7c7cc'}; background-color: transparent; transform: rotate(45deg); margin: 0 15px; box-sizing: border-box;"></div><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div></div>`;
             }
             
-            htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">\n    ${dividerInner}\n</div>\n`;
+            htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">${dividerInner}</div>\n`;
         } else {
             let lines = block.content.split('\n');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
-                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">\n    ${applyTextStyles(block.content)}\n</div>\n`;
+                // 💡 HTML 렌더링 시 태그 사이의 엔터(\n) 및 탭 여백 제거
+                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">${applyTextStyles(block.content)}</div>\n`;
             }
             else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && isCurrDiag) {
                 function extractProfileUrl(rawVal) {
@@ -532,7 +529,6 @@ function updateOutput(skipPreviewUpdate = false) {
                 let pinkUrlEl = document.getElementById('pinkProfileUrl');
                 let mobUrlEl = document.getElementById('mobProfileUrl');
 
-                // 💡 [수정] 말풍선용 새로운 파스텔 색상 적용 및 모브 색상 고정 해제
                 if (curr === 'mint') {
                     bgColor = '#eef8f3';
                     textColor = '#1d6f60';
@@ -547,7 +543,6 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = nameEl ? nameEl.value : '김민정';
                 } else if (curr === 'mob') {
                     bgColor = '#eff1f5';
-                    // 모브 글자색은 이제 사용자 지정 컬러피커에서 가져옵니다.
                     let mobColorEl = document.getElementById('mobTextColor');
                     textColor = mobColorEl ? mobColorEl.value : '#3a414d';
                     imageUrl = extractProfileUrl(mobUrlEl ? mobUrlEl.value : '') || 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
@@ -560,11 +555,9 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = block.customName || '제3자';
                 }
 
-                // 연속된 대사 여백 5px 적용, 캐릭터가 바뀌면 mt(15px 등)로 자동 복구
                 let bubMarginTop = isSameAsPrev ? '5px' : (mt === '0px' ? '15px' : mt);
 
                 if (outputMode === 'bubble1') {
-                    // 말풍선 1 모드 렌더링
                     let bubPaddingTop = isSameAsPrev ? '10.5px' : '12px';
                     let bubPaddingBottom = isSameAsPrev ? '0px' : '12px';
 
@@ -575,10 +568,10 @@ function updateOutput(skipPreviewUpdate = false) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
+                    // 💡 HTML 태그 간 공백 제거 완료
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">${formatBubbleText(block.content)}</div></div>\n`;
                 
                 } else if (outputMode === 'bubble2') {
-                    // 💡 [신규] 말풍선 2 (이름표 + 꼬리 테마) 렌더링
                     let avatarHtml = '';
                     let nameHtml = '';
                     let tailHtml = '';
@@ -591,10 +584,11 @@ function updateOutput(skipPreviewUpdate = false) {
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; left: -8px; width: 0; height: 0; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor}; z-index: -1;"></div>`;
                     }
 
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 5px;">\n    ${avatarHtml}\n    ${nameHtml}\n    <div class="m-bubble" style="position: relative; display: inline-block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; max-width: 80%; word-break: keep-all; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left;">\n        ${tailHtml}\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
+                    // 💡 HTML 태그 간 공백 제거 및 margin-bottom: 0px 적용 완료 (5px 간격 정확히 고정)
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 0px;">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: inline-block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; max-width: 80%; word-break: keep-all; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
-            else if (isCurrDiag) { // 소설 모드
+            else if (isCurrDiag) { 
                 let textColor;
                 let mobColorEl = document.getElementById('mobTextColor');
                 if (curr === 'mint') { textColor = mintTextColor; }
@@ -602,12 +596,12 @@ function updateOutput(skipPreviewUpdate = false) {
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : (mobColorEl ? mobColorEl.value : '#3a414d'); }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">\n    ${divContent}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
                 let vid = extractVideoId(block.bgmUrl);
-                htmlStr = `<div id="preview-block-${index}" data-type="bgm" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 10px 0; text-align: center; box-sizing: border-box;">\n    <div style="display: inline-flex; align-items: center; background-color: ${isDarkMode ? '#333' : '#ffffff'}; border: 1px solid ${isDarkMode ? '#444' : '#e5e5ea'}; border-radius: 20px; padding: 4px 12px; gap: 8px; font-size: 11px; color: ${isDarkMode ? '#ccc' : '#8e8e93'}; box-shadow: 0 1px 2px rgba(0,0,0,0.02); line-height: 1;">\n        <span style="display: flex; align-items: center; color: ${isDarkMode ? '#888' : '#aeaeb2'};">\n            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>\n        </span>\n        <span style="max-width: 120px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isDarkMode ? '#F9F9F8' : '#3a3a3c'};">${block.bgmTitle || 'BGM'}</span>\n        <span style="color: ${isDarkMode ? '#555' : '#d1d1d6'};">|</span>\n        <div style="display: flex; align-items: center; gap: 4px;">\n            <div onclick="playBGM('${vid}', '${block.bgmTitle}')" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="재생">\n                <svg width="8" height="8" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M8 5v14l11-7z"/></svg>\n            </div>\n            <div onclick="stopBGM()" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="정지">\n                <svg width="7" height="7" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M6 6h12v12H6z"/></svg>\n            </div>\n        </div>\n    </div>\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="bgm" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 10px 0; text-align: center; box-sizing: border-box;"><div style="display: inline-flex; align-items: center; background-color: ${isDarkMode ? '#333' : '#ffffff'}; border: 1px solid ${isDarkMode ? '#444' : '#e5e5ea'}; border-radius: 20px; padding: 4px 12px; gap: 8px; font-size: 11px; color: ${isDarkMode ? '#ccc' : '#8e8e93'}; box-shadow: 0 1px 2px rgba(0,0,0,0.02); line-height: 1;"><span style="display: flex; align-items: center; color: ${isDarkMode ? '#888' : '#aeaeb2'};"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span><span style="max-width: 120px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isDarkMode ? '#F9F9F8' : '#3a3a3c'};">${block.bgmTitle || 'BGM'}</span><span style="color: ${isDarkMode ? '#555' : '#d1d1d6'};">|</span><div style="display: flex; align-items: center; gap: 4px;"><div onclick="playBGM('${vid}', '${block.bgmTitle}')" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="재생"><svg width="8" height="8" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M8 5v14l11-7z"/></svg></div><div onclick="stopBGM()" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="정지"><svg width="7" height="7" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M6 6h12v12H6z"/></svg></div></div></div></div>\n`;
             }
             else if (block.type === 'status') {
                 if (block.content.trim().startsWith('<div')) {
@@ -644,24 +638,17 @@ function updateOutput(skipPreviewUpdate = false) {
                             let parts = sData.date.split('/');
                             let mainDate = parts[0]?.trim() || '';
                             let subDate = parts[1]?.trim() || '';
-                            dateHtml = `
-                            <div>
-                              <div style="font-size: 12px; color: ${cMainText};">🗓️ ${mainDate}</div>
-                              ${subDate ? `<div style="font-size: 11px; color: ${cMuted}; margin-top: 2px;">${subDate}</div>` : ''}
-                            </div>`;
+                            dateHtml = `<div><div style="font-size: 12px; color: ${cMainText};">🗓️ ${mainDate}</div>${subDate ? `<div style="font-size: 11px; color: ${cMuted}; margin-top: 2px;">${subDate}</div>` : ''}</div>`;
                         }
                         let locHtml = '<div></div>';
                         if (sData.loc) {
-                            locHtml = `
-                            <div style="text-align: right; font-size: 12px; color: ${cMainText};">
-                              📍 ${sData.loc}
-                            </div>`;
+                            locHtml = `<div style="text-align: right; font-size: 12px; color: ${cMainText};">📍 ${sData.loc}</div>`;
                         }
-                        statusHtml += `\n                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid ${cBoxBorder}; padding-bottom: 8px; margin-bottom: 8px;">\n                        ${dateHtml}\n                        ${locHtml}\n                    </div>`;
+                        statusHtml += `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid ${cBoxBorder}; padding-bottom: 8px; margin-bottom: 8px;">${dateHtml}${locHtml}</div>`;
                     }
 
                     if (sData.ring) {
-                        statusHtml += `\n                    <div style="font-size: 11px; color: ${cStatusText}; margin-bottom: 10px; line-height: 1.5; word-break: break-all;">\n                        ${sData.ring}\n                    </div>`;
+                        statusHtml += `<div style="font-size: 11px; color: ${cStatusText}; margin-bottom: 10px; line-height: 1.5; word-break: break-all;">${sData.ring}</div>`;
                     }
 
                     if (sData.outfit) {
@@ -669,30 +656,30 @@ function updateOutput(skipPreviewUpdate = false) {
                             let parts = sData.outfit.split('/');
                             let p1 = parts[0].trim();
                             let p2 = parts.slice(1).join('/').trim();
-                            statusHtml += `\n                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 10px;">\n                        <div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">\n                          <div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div>\n                          <div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p1}</div>\n                        </div>\n                        <div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">\n                          <div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div>\n                          <div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p2}</div>\n                        </div>\n                    </div>`;
+                            statusHtml += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p1}</div></div><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p2}</div></div></div>`;
                         } else {
-                            statusHtml += `\n                    <div style="margin-bottom: 10px;">\n                        <div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">\n                          <div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div>\n                          <div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.outfit}</div>\n                        </div>\n                    </div>`;
+                            statusHtml += `<div style="margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.outfit}</div></div></div>`;
                         }
                     }
 
                     if (sData.state || sData.thought) {
-                        statusHtml += `\n                    <div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; border-radius: 4px; padding: 10px; margin-bottom: 10px; box-sizing: border-box;">`;
+                        statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; border-radius: 4px; padding: 10px; margin-bottom: 10px; box-sizing: border-box;">`;
                         if (sData.state) {
-                            statusHtml += `\n                        <div style="${sData.thought ? 'margin-bottom: 8px;' : ''}">\n                          <span style="font-size: 11px; background-color: ${cBadgeBg}; color: ${cBadgeText}; padding: 2px 4px; border-radius: 2px;">👥 STATE</span>\n                          <div style="margin-top: 4px; font-size: 12px; color: ${cMainText}; line-height: 1.5;">${sData.state}</div>\n                        </div>`;
+                            statusHtml += `<div style="${sData.thought ? 'margin-bottom: 8px;' : ''}"><span style="font-size: 11px; background-color: ${cBadgeBg}; color: ${cBadgeText}; padding: 2px 4px; border-radius: 2px;">👥 STATE</span><div style="margin-top: 4px; font-size: 12px; color: ${cMainText}; line-height: 1.5;">${sData.state}</div></div>`;
                         }
                         if (sData.state && sData.thought) {
-                            statusHtml += `\n                        <hr style="border: 0; border-top: 1px dashed ${cBoxBorder}; margin: 8px 0;">`;
+                            statusHtml += `<hr style="border: 0; border-top: 1px dashed ${cBoxBorder}; margin: 8px 0;">`;
                         }
                         if (sData.thought) {
-                            statusHtml += `\n                        <div>\n                          <span style="font-size: 11px; background-color: ${cBadgeBg}; color: ${cBadgeText}; padding: 2px 4px; border-radius: 2px;">💭 INNER THOUGHT</span>\n                          <div style="margin-top: 4px; font-size: 12px; color: ${cStatusText}; font-style: italic; line-height: 1.5;">${sData.thought}</div>\n                        </div>`;
+                            statusHtml += `<div><span style="font-size: 11px; background-color: ${cBadgeBg}; color: ${cBadgeText}; padding: 2px 4px; border-radius: 2px;">💭 INNER THOUGHT</span><div style="margin-top: 4px; font-size: 12px; color: ${cStatusText}; font-style: italic; line-height: 1.5;">${sData.thought}</div></div>`;
                         }
-                        statusHtml += `\n                    </div>`;
+                        statusHtml += `</div>`;
                     }
 
                     if (sData.alert || sData.guide || sData.affection) {
-                        statusHtml += `\n                    <div style="background-color: ${cAlertBg}; border-left: 3px solid ${cAlertBorder}; padding: 8px 10px; margin-bottom: 10px; box-sizing: border-box;">`;
+                        statusHtml += `<div style="background-color: ${cAlertBg}; border-left: 3px solid ${cAlertBorder}; padding: 8px 10px; margin-bottom: 10px; box-sizing: border-box;">`;
                         if (sData.alert) {
-                            statusHtml += `\n                        <div style="font-size: 12px; color: ${cStatusText}; margin-bottom: ${(sData.guide || sData.affection) ? '6px' : '0'};">\n                          <span class="bell">🔔</span> ${sData.alert}\n                        </div>`;
+                            statusHtml += `<div style="font-size: 12px; color: ${cStatusText}; margin-bottom: ${(sData.guide || sData.affection) ? '6px' : '0'};"><span class="bell">🔔</span> ${sData.alert}</div>`;
                         }
                         if (sData.guide) {
                             let parts = sData.guide.split('|').map(s=>s.trim());
@@ -700,7 +687,7 @@ function updateOutput(skipPreviewUpdate = false) {
                             let state = parts[1] || '';
                             let desc = parts[2] || '';
                             let num = val.replace(/[^0-9]/g, '');
-                            statusHtml += `\n                        <div style="margin-bottom: ${sData.affection ? '6px' : '0'};">\n                          <div style="display: flex; justify-content: space-between; font-size: 11px; color: ${cMuted}; margin-bottom: 3px;">\n                            <span>🚨 가이딩 필요 수치</span>\n                            <span>${val} ${state ? `(${state})` : ''}</span>\n                          </div>\n                          <div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;">\n                            <div style="width: ${num}%; height: 100%; background-color: #A8E6CF;"></div>\n                          </div>\n                          ${desc ? `<div style="font-size: 10px; color: ${cMuted}; margin-top: 2px; text-align: right;">${desc}</div>` : ''}\n                        </div>`;
+                            statusHtml += `<div style="margin-bottom: ${sData.affection ? '6px' : '0'};"><div style="display: flex; justify-content: space-between; font-size: 11px; color: ${cMuted}; margin-bottom: 3px;"><span>🚨 가이딩 필요 수치</span><span>${val} ${state ? `(${state})` : ''}</span></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #A8E6CF;"></div></div>${desc ? `<div style="font-size: 10px; color: ${cMuted}; margin-top: 2px; text-align: right;">${desc}</div>` : ''}</div>`;
                         }
                         if (sData.affection) {
                             let val = sData.affection;
@@ -713,53 +700,53 @@ function updateOutput(skipPreviewUpdate = false) {
                             }
                             let num = (mainVal === 'MAX' || mainVal.includes('∞')) ? '100' : mainVal.replace(/[^0-9]/g, '');
                             
-                            statusHtml += `\n                        <div>\n                          <div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: ${cMuted}; margin-bottom: 6px;">\n                            <span style="margin-bottom: 2px;">💕 호감도</span>\n                            <div style="text-align: right;">\n                              <div style="color: #E598A6; font-weight: bold; font-size: 12px;">${mainVal}</div>\n                              ${bracketText ? `<div style="font-size: 10.5px; color: ${cMuted}; margin-top: 3px; font-weight: normal; word-break: break-all;">${bracketText}</div>` : ''}\n                            </div>\n                          </div>\n                          <div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;">\n                            <div style="width: ${num}%; height: 100%; background-color: #FFB6C1;"></div>\n                          </div>\n                        </div>`;
+                            statusHtml += `<div><div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: ${cMuted}; margin-bottom: 6px;"><span style="margin-bottom: 2px;">💕 호감도</span><div style="text-align: right;"><div style="color: #E598A6; font-weight: bold; font-size: 12px;">${mainVal}</div>${bracketText ? `<div style="font-size: 10.5px; color: ${cMuted}; margin-top: 3px; font-weight: normal; word-break: break-all;">${bracketText}</div>` : ''}</div></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #FFB6C1;"></div></div></div>`;
                         }
-                        statusHtml += `\n                    </div>`;
+                        statusHtml += `</div>`;
                     }
 
                     if (sData.nsfw || sData.tmi) {
                         let gridCols = (sData.nsfw && sData.tmi) ? '110px 1fr' : '1fr';
-                        statusHtml += `\n                    <div style="display: grid; grid-template-columns: ${gridCols}; gap: 8px; margin-bottom: 10px;">`;
+                        statusHtml += `<div style="display: grid; grid-template-columns: ${gridCols}; gap: 8px; margin-bottom: 10px;">`;
                         if (sData.nsfw) {
-                            statusHtml += `\n                        <div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">\n                          <div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">❤️‍🔥 NSFW COUNT</div>\n                          <div style="font-size: 12px; color: ${cMainText};">${sData.nsfw}</div>\n                        </div>`;
+                            statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">❤️‍🔥 NSFW COUNT</div><div style="font-size: 12px; color: ${cMainText};">${sData.nsfw}</div></div>`;
                         }
                         if (sData.tmi) {
-                            statusHtml += `\n                        <div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;">\n                          <div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">🔫 TMI</div>\n                          <div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.tmi}</div>\n                        </div>`;
+                            statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">🔫 TMI</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.tmi}</div></div>`;
                         }
-                        statusHtml += `\n                    </div>`;
+                        statusHtml += `</div>`;
                     }
 
                     if (sData.interview || sData.relation) {
-                        statusHtml += `\n                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">`;
+                        statusHtml += `<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">`;
                         if (sData.interview) {
                             let ivText = sData.interview.replace(/^(PC에 대한 랜덤 인터뷰|랜덤 인터뷰|인터뷰)/i, '').replace(/^[|\s:]+/, '');
                             ivText = ivText.replace(/\s*(A\.)/g, '<br><br>$1').replace(/^(<br>)+/, '');
-                            statusHtml += `\n                        <div style="background-color: ${isDarkMode ? '#1e293b' : '#f8fafc'}; border: 1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}; padding: 10px 12px; border-radius: 4px; box-sizing: border-box; border-left: 3px solid ${isDarkMode ? '#475569' : '#94a3b8'};">\n                          <div style="font-size: 11px; color: ${isDarkMode ? '#94a3b8' : '#64748b'}; margin-bottom: 4px; font-weight: bold;">📰 INTERVIEW</div>\n                          <div style="font-size: 12px; color: ${isDarkMode ? '#e2e8f0' : '#334155'}; line-height: 1.5; font-style: italic;">${ivText}</div>\n                        </div>`;
+                            statusHtml += `<div style="background-color: ${isDarkMode ? '#1e293b' : '#f8fafc'}; border: 1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}; padding: 10px 12px; border-radius: 4px; box-sizing: border-box; border-left: 3px solid ${isDarkMode ? '#475569' : '#94a3b8'};"><div style="font-size: 11px; color: ${isDarkMode ? '#94a3b8' : '#64748b'}; margin-bottom: 4px; font-weight: bold;">📰 INTERVIEW</div><div style="font-size: 12px; color: ${isDarkMode ? '#e2e8f0' : '#334155'}; line-height: 1.5; font-style: italic;">${ivText}</div></div>`;
                         }
                         if (sData.relation) {
                             let relText = sData.relation.replace(/^(뱅이 생각하는 PC와의 관계|뱅이 생각하는 관계|PC와의 관계|관계)/i, '').replace(/^[|\s:]+/, '');
-                            statusHtml += `\n                        <div style="background-color: ${isDarkMode ? '#4c0519' : '#fff0f2'}; border: 1px solid ${isDarkMode ? '#881337' : '#ffe4e6'}; padding: 10px 12px; border-radius: 4px; box-sizing: border-box; border-left: 3px solid ${isDarkMode ? '#e11d48' : '#fecdd3'};">\n                          <div style="font-size: 11px; color: ${isDarkMode ? '#fda4af' : '#e11d48'}; margin-bottom: 4px; font-weight: bold;">💘</div>\n                          <div style="font-size: 12px; color: ${isDarkMode ? '#ffe4e6' : '#4c0519'}; line-height: 1.5;">${relText}</div>\n                        </div>`;
+                            statusHtml += `<div style="background-color: ${isDarkMode ? '#4c0519' : '#fff0f2'}; border: 1px solid ${isDarkMode ? '#881337' : '#ffe4e6'}; padding: 10px 12px; border-radius: 4px; box-sizing: border-box; border-left: 3px solid ${isDarkMode ? '#e11d48' : '#fecdd3'};"><div style="font-size: 11px; color: ${isDarkMode ? '#fda4af' : '#e11d48'}; margin-bottom: 4px; font-weight: bold;">💘</div><div style="font-size: 12px; color: ${isDarkMode ? '#ffe4e6' : '#4c0519'}; line-height: 1.5;">${relText}</div></div>`;
                         }
-                        statusHtml += `\n                    </div>`;
+                        statusHtml += `</div>`;
                     }
 
                     if (sData.doodle) {
-                        statusHtml += `\n                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid ${cBoxBorder}; text-align: center; width: 100%; box-sizing: border-box;">\n                      <span style="font-size: 12px; color: ${cMuted}; display: inline-block;">\n                        ${sData.doodle}\n                      </span>\n                    </div>`;
+                        statusHtml += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid ${cBoxBorder}; text-align: center; width: 100%; box-sizing: border-box;"><span style="font-size: 12px; color: ${cMuted}; display: inline-block;">${sData.doodle}</span></div>`;
                     }
 
-                    statusHtml += `\n</div>\n`;
+                    statusHtml += `</div>\n`;
                     htmlStr = statusHtml;
                 }
             }
             else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">\n    ${divContent}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'thought') {
-                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">\n    ${divContent}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'dday') {
-                htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;">\n    <span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span>\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;"><span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span></div>\n`;
             }
             else if (block.type === 'postit') {
                 let isEven = consecutivePostitCount % 2 === 0;
@@ -776,7 +763,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 let tapeRot = isEven ? 'rotate(-3deg)' : 'rotate(1deg)';
                 let tapePos = isEven ? 'left: 45%; top: -10px; width: 75px; height: 20px;' : 'left: 50%; top: -12px; width: 70px; height: 22px;';
 
-                htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}">\n    <div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div>\n    <div class="postit-scroll" style="line-height: 1.7; font-size: 14px;">${divContent}</div>\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}"><div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div><div class="postit-scroll" style="line-height: 1.7; font-size: 14px;">${divContent}</div></div>\n`;
             }
             else if (block.type === 'polaroid') {
                 let isEvenPol = consecutivePolaroidCount % 2 === 0;
@@ -799,16 +786,16 @@ function updateOutput(skipPreviewUpdate = false) {
 
                 let captionHtml = '';
                 if (pDate || pCap) {
-                    captionHtml = `\n    <div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">\n        ${pDate ? `<div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}\n        ${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}\n    </div>`;
+                    captionHtml = `<div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">${pDate ? `<div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}</div>`;
                 }
 
-                htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;">\n    <div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div>\n    <div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;">\n        <img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo">\n    </div>${captionHtml}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;"><div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div><div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;"><img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo"></div>${captionHtml}</div>\n`;
             }
             else if (block.type === 'image') {
-                htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center; box-sizing: border-box;">\n    <img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image">\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center; box-sizing: border-box;"><img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image"></div>\n`;
             }
             else if (block.type === 'html') {
-                htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">\n${block.content}\n</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">${block.content}</div>\n`;
             }
         }
 
