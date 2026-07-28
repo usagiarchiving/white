@@ -61,6 +61,7 @@ function focusAndScrollBlock(index, preventFocus = false) {
     }, 100);
 }
 
+// 💡 [수정사항] 제3자 캐릭터 일괄 관리 패널 UI 확장 및 컬러 피커 연동 고도화
 function updateCustomCharacterPanel() {
     const list = document.getElementById('customCharacterAutoList');
     if(!list) return;
@@ -70,34 +71,105 @@ function updateCustomCharacterPanel() {
         if(b.type === 'custom') {
             const key = /^#[0-9A-Fa-f]{6}$/i.test(b.customTextColor) ? b.customTextColor.toUpperCase() : '#333333';
             if(!uniqueChars[key]) {
-                uniqueChars[key] = { text: key };
+                uniqueChars[key] = { 
+                    textColor: key,
+                    name: b.customName || '',
+                    profileUrl: b.customProfileUrl || '',
+                    bubbleBg: b.customBubbleBg || '#E2E8F0',
+                    bubbleText: b.customBubbleText || '#333333'
+                };
             }
         }
     });
 
+    list.innerHTML = ''; // 렌더링 초기화
+
     Object.keys(uniqueChars).forEach(key => {
         const safeKey = getSafeId(key);
-        let row = document.getElementById(`auto-custom-${safeKey}`);
-        if(!row) {
-            row = document.createElement('div');
-            row.id = `auto-custom-${safeKey}`;
-            row.dataset.originalColor = uniqueChars[key].text;
-            row.style.cssText = "display: flex; gap: 8px; padding: 12px; background: var(--block-bg); border: 1px solid var(--border); border-radius: 6px; align-items: flex-end;";
-            
-            row.innerHTML = `
-                <div style="flex: 1;">
-                    <label style="font-size: 10px; color: var(--text-muted);">제3자 글자색 관리</label>
+        const data = uniqueChars[key];
+        
+        let row = document.createElement('div');
+        row.id = `auto-custom-${safeKey}`;
+        row.dataset.originalColor = key;
+        row.style.cssText = "display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--block-hover); border: 1px solid var(--border); border-radius: 6px;";
+        
+        row.innerHTML = `
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 100px;">
+                    <label style="font-size: 10px; color: var(--text-muted);">이름</label>
+                    <input type="text" id="auto-name-${safeKey}" value="${escapeHtml(data.name)}" style="margin-top: 4px; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                </div>
+                <div style="flex: 2; min-width: 150px;">
+                    <label style="font-size: 10px; color: var(--text-muted);">프로필 URL</label>
+                    <input type="text" id="auto-profile-${safeKey}" value="${escapeHtml(data.profileUrl)}" style="margin-top: 4px; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 90px;">
+                    <label style="font-size: 10px; color: var(--text-muted);">소설 폰트색</label>
                     <div style="display: flex; gap: 4px; margin-top: 4px;">
-                        <input type="color" id="auto-text-picker-${safeKey}" value="${escapeHtml(uniqueChars[key].text)}" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                        <input type="text" id="auto-text-text-${safeKey}" value="${escapeHtml(uniqueChars[key].text)}" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                        <input type="color" id="auto-text-picker-${safeKey}" value="${escapeHtml(data.textColor)}" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                        <input type="text" id="auto-text-text-${safeKey}" value="${escapeHtml(data.textColor)}" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 90px;">
+                    <label style="font-size: 10px; color: var(--text-muted);">말풍선 배경색</label>
+                    <div style="display: flex; gap: 4px; margin-top: 4px;">
+                        <input type="color" id="auto-bg-picker-${safeKey}" value="${escapeHtml(data.bubbleBg)}" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                        <input type="text" id="auto-bg-text-${safeKey}" value="${escapeHtml(data.bubbleBg)}" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 90px;">
+                    <label style="font-size: 10px; color: var(--text-muted);">말풍선 폰트색</label>
+                    <div style="display: flex; gap: 4px; margin-top: 4px;">
+                        <input type="color" id="auto-btext-picker-${safeKey}" value="${escapeHtml(data.bubbleText)}" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                        <input type="text" id="auto-btext-text-${safeKey}" value="${escapeHtml(data.bubbleText)}" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                     </div>
                 </div>
                 <button class="btn-small" style="background-color: var(--primary); color: white; border: none; height: 26px; font-weight: bold; padding: 0 12px; border-radius: 4px; cursor: pointer;" onclick="applyAutoCustomColor('${safeKey}')">일괄 적용</button>
-            `;
-            list.appendChild(row);
-            setupColorPicker(`auto-text-picker-${safeKey}`, `auto-text-text-${safeKey}`);
+            </div>
+        `;
+        list.appendChild(row);
+        
+        // 💡 [버그 수정] 동적으로 생성된 요소에 컬러 피커 이벤트 즉시 연결
+        setupColorPicker(`auto-text-picker-${safeKey}`, `auto-text-text-${safeKey}`);
+        setupColorPicker(`auto-bg-picker-${safeKey}`, `auto-bg-text-${safeKey}`);
+        setupColorPicker(`auto-btext-picker-${safeKey}`, `auto-btext-text-${safeKey}`);
+    });
+}
+
+// 💡 [신규] 제3자 캐릭터 5가지 설정 일괄 적용 함수
+function applyAutoCustomColor(safeKey) {
+    const row = document.getElementById(`auto-custom-${safeKey}`);
+    if(!row) return;
+    
+    const originalColor = row.dataset.originalColor;
+    const newName = document.getElementById(`auto-name-${safeKey}`).value;
+    const newProfile = document.getElementById(`auto-profile-${safeKey}`).value;
+    const newTextColor = document.getElementById(`auto-text-text-${safeKey}`).value;
+    const newBubbleBg = document.getElementById(`auto-bg-text-${safeKey}`).value;
+    const newBubbleText = document.getElementById(`auto-btext-text-${safeKey}`).value;
+
+    let changed = false;
+    blocks.forEach(b => {
+        if(b.type === 'custom') {
+            const bColor = /^#[0-9A-Fa-f]{6}$/i.test(b.customTextColor) ? b.customTextColor.toUpperCase() : '#333333';
+            if(bColor === originalColor) {
+                b.customName = newName;
+                b.customProfileUrl = newProfile;
+                b.customTextColor = newTextColor;
+                b.customBubbleBg = newBubbleBg;
+                b.customBubbleText = newBubbleText;
+                changed = true;
+            }
         }
     });
+
+    if(changed) {
+        renderEditor();
+        saveState();
+        showToast('일괄 적용되었습니다.');
+    }
 }
 
 function applyTextStyles(text) {
@@ -137,11 +209,44 @@ function renderEditor() {
 
         if (block.type === 'custom') {
             let validTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customTextColor) ? block.customTextColor : '#333333';
+            let validBubBgHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customBubbleBg) ? block.customBubbleBg : '#E2E8F0';
+            let validBubTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customBubbleText) ? block.customBubbleText : '#333333';
+
+            // 💡 [수정사항] 제3자(Custom) 에디터 블록 UI를 콤팩트한 2줄 Grid(flex-wrap)로 확장
             customFields = `
-                <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
-                    <div style="display: flex; gap: 4px;">
-                        <input type="color" value="${validTextHex}" oninput="document.getElementById('custom-textcolor-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'textColor', this.value.toUpperCase());" style="width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                        <input type="text" id="custom-textcolor-text-${index}" placeholder="제3자 글자색 (#333333)" value="${escapeHtml(block.customTextColor)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockCustom(${index}, 'textColor', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; background: var(--block-bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="font-size: 10px; color: var(--text-muted);">이름</label>
+                            <input type="text" placeholder="제3자 이름" value="${escapeHtml(block.customName)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockCustom(${index}, 'customName', this.value)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div style="flex: 2; min-width: 150px;">
+                            <label style="font-size: 10px; color: var(--text-muted);">프로필 이미지 URL</label>
+                            <input type="text" placeholder="이미지 URL" value="${escapeHtml(block.customProfileUrl)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockCustom(${index}, 'customProfileUrl', this.value)" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 90px;">
+                            <label style="font-size: 10px; color: var(--text-muted);">소설 폰트색</label>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <input type="color" value="${validTextHex}" oninput="document.getElementById('custom-textcolor-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'textColor', this.value.toUpperCase());" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="custom-textcolor-text-${index}" placeholder="#333333" value="${escapeHtml(block.customTextColor)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockCustom(${index}, 'textColor', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 90px;">
+                            <label style="font-size: 10px; color: var(--text-muted);">말풍선 배경색</label>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <input type="color" value="${validBubBgHex}" oninput="document.getElementById('custom-bubblebg-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'customBubbleBg', this.value.toUpperCase());" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="custom-bubblebg-text-${index}" placeholder="#E2E8F0" value="${escapeHtml(block.customBubbleBg)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockCustom(${index}, 'customBubbleBg', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 90px;">
+                            <label style="font-size: 10px; color: var(--text-muted);">말풍선 폰트색</label>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <input type="color" value="${validBubTextHex}" oninput="document.getElementById('custom-bubbletext-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'customBubbleText', this.value.toUpperCase());" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                <input type="text" id="custom-bubbletext-text-${index}" placeholder="#333333" value="${escapeHtml(block.customBubbleText)}" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockCustom(${index}, 'customBubbleText', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -283,10 +388,8 @@ function syncPreviewToBlocks() {
                 if (block.type === 'dday') {
                     target = el.querySelector('span');
                 } else if (outputMode === 'bubble1' && el.classList.contains('scroll-msg-box')) {
-                    // 💡 말풍선 1 모드일 때 대사 영역(div)만 타겟팅
                     target = el.children[1];
                 } else if (outputMode === 'bubble2' && el.classList.contains('scroll-msg-box')) {
-                    // 💡 말풍선 2 모드일 때 내부 텍스트 래퍼(.m-text)만 타겟팅하여 꼬리(tail) 혼입 방지
                     target = el.querySelector('.m-text') || el.querySelector('.m-bubble');
                 }
 
@@ -449,35 +552,48 @@ function updateOutput(skipPreviewUpdate = false) {
                 let bgColor = '';
                 let textColor = '';
                 let imageUrl = '';
-                let nameTag = ''; // 말풍선 2 이름표 용도
+                let nameTag = '';
 
+                // DOM에서 설정값 가져오기
+                let mintNameEl = document.getElementById('mintName');
+                let pinkNameEl = document.getElementById('pinkName');
+                let mobNameEl = document.getElementById('mobName');
+
+                let mintBubBgEl = document.getElementById('mintBubbleBg');
+                let mintBubTextEl = document.getElementById('mintBubbleText');
                 let mintUrlEl = document.getElementById('mintProfileUrl');
+                
+                let pinkBubBgEl = document.getElementById('pinkBubbleBg');
+                let pinkBubTextEl = document.getElementById('pinkBubbleText');
                 let pinkUrlEl = document.getElementById('pinkProfileUrl');
+                
+                let mobBubBgEl = document.getElementById('mobBubbleBg');
+                let mobBubTextEl = document.getElementById('mobBubbleText');
                 let mobUrlEl = document.getElementById('mobProfileUrl');
 
                 if (curr === 'mint') {
-                    bgColor = '#eef8f3';
-                    textColor = '#1d6f60';
-                    nameTag = '하시온';
+                    bgColor = mintBubBgEl ? mintBubBgEl.value : '#eef8f3';
+                    textColor = mintBubTextEl ? mintBubTextEl.value : '#1d6f60';
+                    nameTag = mintNameEl ? mintNameEl.value : '하시온';
                     imageUrl = extractProfileUrl(mintUrlEl ? mintUrlEl.value : '') || 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
                 } else if (curr === 'pink') {
-                    bgColor = '#fdf2f6';
-                    textColor = '#9b3e61';
-                    nameTag = '핑크';
+                    bgColor = pinkBubBgEl ? pinkBubBgEl.value : '#fdf2f6';
+                    textColor = pinkBubTextEl ? pinkBubTextEl.value : '#9b3e61';
+                    nameTag = pinkNameEl ? pinkNameEl.value : '김민정';
                     imageUrl = extractProfileUrl(pinkUrlEl ? pinkUrlEl.value : '') || 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
                 } else if (curr === 'mob') {
-                    bgColor = '#eff1f5';
-                    textColor = '#3a414d';
-                    nameTag = '모브';
+                    bgColor = mobBubBgEl ? mobBubBgEl.value : '#eff1f5';
+                    textColor = mobBubTextEl ? mobBubTextEl.value : '#3a414d';
+                    nameTag = mobNameEl ? mobNameEl.value : '모브';
                     imageUrl = extractProfileUrl(mobUrlEl ? mobUrlEl.value : '') || 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
                 } else {
-                    bgColor = '#E2E8F0';
-                    textColor = block.customTextColor || '#333333';
-                    nameTag = '제3자';
-                    imageUrl = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
+                    bgColor = block.customBubbleBg || '#E2E8F0';
+                    textColor = block.customBubbleText || '#333333';
+                    nameTag = block.customName || '제3자';
+                    let rawProfile = block.customProfileUrl || '';
+                    imageUrl = extractProfileUrl(rawProfile) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
                 }
 
-                // 💡 말풍선 1 모드 렌더링
                 if (outputMode === 'bubble1') {
                     let bubMarginTop = isSameAsPrev ? '0px' : '15px';
                     let bubPaddingTop = isSameAsPrev ? '10.5px' : '12px';
@@ -492,7 +608,6 @@ function updateOutput(skipPreviewUpdate = false) {
 
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">\n    ${avatarHtml}\n    <div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">\n        ${formatBubbleText(block.content)}\n    </div>\n</div>\n`;
                 } 
-                // 💡 말풍선 2 모드 (메신저 꼬리 테마) 렌더링
                 else if (outputMode === 'bubble2') {
                     let bubMarginTop = isSameAsPrev ? '5px' : '15px';
                     
@@ -500,7 +615,6 @@ function updateOutput(skipPreviewUpdate = false) {
                     let nameHtml = '';
                     let tailHtml = '';
 
-                    // 연속 대사일 경우 프로필 이미지, 이름, 꼬리 생략
                     if (isSameAsPrev) {
                         avatarHtml = `<div class="av" style="position: absolute; left: 0; top: 0; width: 36px; height: 0;"></div>`;
                         nameHtml = ``;
@@ -511,15 +625,18 @@ function updateOutput(skipPreviewUpdate = false) {
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; left: -8px; width: 0; height: 0; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor}; z-index: -1;"></div>`;
                     }
 
-                    // 텍스트를 .m-text 래퍼로 감싸 동기화 시 꼬리 태그 혼입 방지
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box m-msg" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 5px; width: 100%; box-sizing: border-box;">\n    ${avatarHtml}\n    ${nameHtml}\n    <div class="m-bubble" style="position: relative; display: inline-block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; max-width: 80%; word-break: keep-all; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left;">\n        ${tailHtml}\n        <div class="m-text" style="display:inline;">${formatBubbleText(block.content)}</div>\n    </div>\n</div>\n`;
                 }
             }
+            // 💡 [수정사항] 소설 모드 폰트색 연동 (모브 잠금 해제 반영)
             else if (isCurrDiag) { 
                 let textColor;
                 if (curr === 'mint') { textColor = mintTextColor; }
                 else if (curr === 'pink') { textColor = pinkTextColor; }
-                else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : '#666666'; }
+                else if (curr === 'mob') { 
+                    let mobTextEl = document.getElementById('mobTextColor');
+                    textColor = mobTextEl ? mobTextEl.value : (isDarkMode ? '#aaaaaa' : '#333333'); 
+                }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
                 htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">\n    ${divContent}\n</div>\n`;
@@ -773,7 +890,6 @@ function stopBGM() {
 <\/script>\n`;
     }
 
-    // 💡 [수정사항] 본고딕 Noto Sans KR 폰트 추가 
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
