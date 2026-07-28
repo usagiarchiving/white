@@ -116,16 +116,15 @@ function changeInlineFontSize(delta) {
 // (1) 일괄 변환 파싱 로직 (발췌기 기능 이식)
 // =========================================================
 
+// 💡 형광펜 색상 변수를 동적으로 가져와서 적용
 function parseAdvancedMarkdown(text) {
     if (!text) return text;
-    // HTML에서 선택된 형광펜 색상을 실시간으로 가져옵니다.
     let hlColorEl = document.getElementById('highlightColor');
     let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
 
     let t = text;
     t = t.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
     t = t.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
-    // 사용자가 선택한 형광펜 색상이 적용되도록 수정
     t = t.replace(/==([^=]+)==/g, `<mark style="background-color: ${hlColor}; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>`);
     return t;
 }
@@ -281,9 +280,9 @@ function parseBulkInput() {
 }
 
 // =========================================================
-// 💡 [오류 수정] 툴바 트리거를 위한 이벤트 리스너 추가
+// 💡 마우스를 드래그하거나 선택 영역이 변경될 때 툴바를 띄우는 이벤트 리스너 
 // =========================================================
-document.addEventListener('mouseup', handleSelection);
-document.addEventListener('keyup', handleSelection);
-// 모바일/태블릿 등 터치 환경 대응
-document.addEventListener('touchend', handleSelection);
+document.addEventListener('selectionchange', () => setTimeout(handleSelection, 10));
+document.addEventListener('mouseup', () => setTimeout(handleSelection, 10));
+document.addEventListener('keyup', () => setTimeout(handleSelection, 10));
+document.addEventListener('touchend', () => setTimeout(handleSelection, 10)); // 모바일 터치 대응 추가
