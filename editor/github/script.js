@@ -274,7 +274,6 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
-// 💡 [버그 픽스] 컬러 피커와 텍스트 박스 양방향 동기화 완벽 보강
 function setupColorPicker(pickerId, textId) {
     const picker = document.getElementById(pickerId);
     const text = document.getElementById(textId);
@@ -290,7 +289,6 @@ function setupColorPicker(pickerId, textId) {
     text.addEventListener('input', (e) => {
         let val = e.target.value.trim();
         
-        // 사용자가 #fff 처럼 3자리로 쳐도 인식하여 팔레트에 반영되도록 안전망 추가
         if (/^#[0-9A-F]{3}$/i.test(val)) {
             val = '#' + val[1]+val[1] + val[2]+val[2] + val[3]+val[3];
         }
@@ -541,7 +539,7 @@ function changeBlockType(index, newType) {
     saveState(); 
 }
 
-// 💡 모든 모드(말풍선 2 포함)를 영리하게 역추적하는 동기화 로직
+// 💡 소설용/말풍선용 색상 데이터를 모두 안전하게 보존하며 불러오는 동기화 로직
 function importFromHtml() {
     const htmlText = document.getElementById('finalHtmlCode').value;
     if (!htmlText.trim()) {
@@ -619,18 +617,17 @@ function importFromHtml() {
             content = styleMatch || 'solid-gray';
         } else if (['mint', 'pink', 'mob', 'custom'].includes(type)) {
             let textTarget = child;
+            let isBubbleMode = false;
             
             if (child.classList && (child.classList.contains('scroll-msg-box') || child.classList.contains('m-msg'))) {
+                isBubbleMode = true;
                 let bubble2Target = child.querySelector('.m-bubble');
                 if (bubble2Target) {
                     textTarget = bubble2Target;
-                    
                     let nameEl = child.querySelector('.m-name');
                     if (nameEl) customName = nameEl.textContent.trim();
-                    
                     let imgEl = child.querySelector('.av img');
                     if (imgEl) customProfileUrl = imgEl.src;
-                    
                     customBgColor = rgbToHex(bubble2Target.style.backgroundColor) || '#E2E8F0';
                 } else if (child.children.length > 1) {
                     textTarget = child.children[1];
@@ -649,21 +646,37 @@ function importFromHtml() {
 
             if (type === 'mint') {
                 if (!foundMint) {
-                    if (textHex) { 
-                        let m1 = document.getElementById('mintTextColor');
-                        let m2 = document.getElementById('mintTextColorPicker');
-                        if (m1) m1.value = textHex; 
-                        if (m2) m2.value = textHex; 
+                    if (textHex) {
+                        if (isBubbleMode) {
+                            let b1 = document.getElementById('mintBubbleTextColor');
+                            let b2 = document.getElementById('mintBubbleTextColorPicker');
+                            let bg1 = document.getElementById('mintBgColor');
+                            let bg2 = document.getElementById('mintBgColorPicker');
+                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
+                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
+                        } else {
+                            let m1 = document.getElementById('mintTextColor');
+                            let m2 = document.getElementById('mintTextColorPicker');
+                            if (m1) m1.value = textHex; if (m2) m2.value = textHex;
+                        }
                     }
                     foundMint = true;
                 }
             } else if (type === 'pink') {
                 if (!foundPink) {
                     if (textHex) { 
-                        let p1 = document.getElementById('pinkTextColor');
-                        let p2 = document.getElementById('pinkTextColorPicker');
-                        if (p1) p1.value = textHex; 
-                        if (p2) p2.value = textHex; 
+                        if (isBubbleMode) {
+                            let b1 = document.getElementById('pinkBubbleTextColor');
+                            let b2 = document.getElementById('pinkBubbleTextColorPicker');
+                            let bg1 = document.getElementById('pinkBgColor');
+                            let bg2 = document.getElementById('pinkBgColorPicker');
+                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
+                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
+                        } else {
+                            let p1 = document.getElementById('pinkTextColor');
+                            let p2 = document.getElementById('pinkTextColorPicker');
+                            if (p1) p1.value = textHex; if (p2) p2.value = textHex;
+                        }
                     }
                     foundPink = true;
                 }
@@ -770,23 +783,29 @@ function copyHtml() {
     }
 }
 
-// 💡 [핵심 버그 픽스 완료] HTML 요소와 스크립트를 완벽하게 묶어주는 전역 동기화 로직
+// 💡 전역 동기화 로직 (새롭게 분리된 소설/말풍선 색상 모두 포함)
 document.addEventListener("DOMContentLoaded", function() {
     // 1. 에디터 메인 설정의 모든 컬러 피커와 텍스트 박스 양방향 동기화 연결
     setupColorPicker('mintTextColorPicker', 'mintTextColor');
+    setupColorPicker('mintBubbleTextColorPicker', 'mintBubbleTextColor');
     setupColorPicker('mintBgColorPicker', 'mintBgColor');
+    
     setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
+    setupColorPicker('pinkBubbleTextColorPicker', 'pinkBubbleTextColor');
     setupColorPicker('pinkBgColorPicker', 'pinkBgColor');
+    
     setupColorPicker('mobTextColorPicker', 'mobTextColor');
+    setupColorPicker('mobBubbleTextColorPicker', 'mobBubbleTextColor');
     setupColorPicker('mobBgColorPicker', 'mobBgColor');
+    
     setupColorPicker('narrColorPicker', 'narrColor');
     setupColorPicker('highlightColorPicker', 'highlightColor');
 
     // 2. 글자색, 배경색, 이름, 프사 등 무엇이든 수정하면 실시간으로 미리보기가 변하도록 전체 이벤트 연결
     const inputsToSync = [
-        'mintTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
-        'pinkTextColor', 'pinkBgColor', 'pinkName', 'pinkProfileUrl',
-        'mobTextColor', 'mobBgColor', 'mobName', 'mobProfileUrl',
+        'mintTextColor', 'mintBubbleTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
+        'pinkTextColor', 'pinkBubbleTextColor', 'pinkBgColor', 'pinkName', 'pinkProfileUrl',
+        'mobTextColor', 'mobBubbleTextColor', 'mobBgColor', 'mobName', 'mobProfileUrl',
         'narrColor', 'highlightColor'
     ];
 
