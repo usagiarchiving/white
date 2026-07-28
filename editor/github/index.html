@@ -62,22 +62,30 @@
         <div class="panel">
             <h2 class="panel-title">(2) 캐릭터 설정 & 수동 블록 추가</h2>
             <div class="settings-grid">
-                <!-- 민트 설정 (글자색, 배경색, 이름, 프사 완벽 반영) -->
+                
+                <!-- 민트 설정 (소설색/말풍선색 분리) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #237768;">민트 (Mint)</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                        <div style="display: flex; gap: 8px;">
-                            <div style="flex: 1;">
-                                <label style="font-size: 10px; color: #237768;">글자색</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 90px;">
+                                <label style="font-size: 10px; color: #237768;">소설 글자색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="mintTextColorPicker" value="#237768" oninput="document.getElementById('mintTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="color" id="mintTextColorPicker" value="#237768" oninput="document.getElementById('mintTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
                                     <input type="text" id="mintTextColor" value="#237768" oninput="document.getElementById('mintTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
-                            <div style="flex: 1;">
+                            <div style="flex: 1; min-width: 90px;">
+                                <label style="font-size: 10px; color: #237768;">말풍선 글자색</label>
+                                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                    <input type="color" id="mintBubbleTextColorPicker" value="#1d6f60" oninput="document.getElementById('mintBubbleTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="mintBubbleTextColor" value="#1d6f60" oninput="document.getElementById('mintBubbleTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 90px;">
                                 <label style="font-size: 10px; color: #237768;">말풍선 배경색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="mintBgColorPicker" value="#eef8f3" oninput="document.getElementById('mintBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="color" id="mintBgColorPicker" value="#eef8f3" oninput="document.getElementById('mintBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
                                     <input type="text" id="mintBgColor" value="#eef8f3" oninput="document.getElementById('mintBgColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
@@ -95,22 +103,29 @@
                     </div>
                 </div>
                 
-                <!-- 핑크 설정 (글자색, 배경색, 이름, 프사 완벽 반영) -->
+                <!-- 핑크 설정 (소설색/말풍선색 분리) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #9b3e61;">핑크 (Pink)</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                        <div style="display: flex; gap: 8px;">
-                            <div style="flex: 1;">
-                                <label style="font-size: 10px; color: #9b3e61;">글자색</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 90px;">
+                                <label style="font-size: 10px; color: #9b3e61;">소설 글자색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="pinkTextColorPicker" value="#9b3e61" oninput="document.getElementById('pinkTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                    <input type="text" id="pinkTextColor" value="#9b3e61" oninput="document.getElementById('pinkTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                    <input type="color" id="pinkTextColorPicker" value="#f5bdcc" oninput="document.getElementById('pinkTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="pinkTextColor" value="#f5bdcc" oninput="document.getElementById('pinkTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
-                            <div style="flex: 1;">
+                            <div style="flex: 1; min-width: 90px;">
+                                <label style="font-size: 10px; color: #9b3e61;">말풍선 글자색</label>
+                                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                    <input type="color" id="pinkBubbleTextColorPicker" value="#9b3e61" oninput="document.getElementById('pinkBubbleTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="pinkBubbleTextColor" value="#9b3e61" oninput="document.getElementById('pinkBubbleTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 90px;">
                                 <label style="font-size: 10px; color: #9b3e61;">말풍선 배경색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="pinkBgColorPicker" value="#fdf2f6" oninput="document.getElementById('pinkBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="color" id="pinkBgColorPicker" value="#fdf2f6" oninput="document.getElementById('pinkBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
                                     <input type="text" id="pinkBgColor" value="#fdf2f6" oninput="document.getElementById('pinkBgColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
@@ -128,22 +143,29 @@
                     </div>
                 </div>
 
-                <!-- 모브 설정 (글자색, 배경색, 이름, 프사 완벽 반영) -->
+                <!-- 모브 설정 (소설색/말풍선색 분리) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
                     <label style="font-size: 12px; font-weight: bold; color: #3a414d;">모브 (Mob)</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                        <div style="display: flex; gap: 8px;">
-                            <div style="flex: 1;">
-                                <label style="font-size: 10px; color: #3a414d;">글자색</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 90px;">
+                                <label style="font-size: 10px; color: #3a414d;">소설 글자색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="mobTextColorPicker" value="#3a414d" oninput="document.getElementById('mobTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="color" id="mobTextColorPicker" value="#3a414d" oninput="document.getElementById('mobTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
                                     <input type="text" id="mobTextColor" value="#3a414d" oninput="document.getElementById('mobTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
-                            <div style="flex: 1;">
+                            <div style="flex: 1; min-width: 90px;">
+                                <label style="font-size: 10px; color: #3a414d;">말풍선 글자색</label>
+                                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                    <input type="color" id="mobBubbleTextColorPicker" value="#3a414d" oninput="document.getElementById('mobBubbleTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="mobBubbleTextColor" value="#3a414d" oninput="document.getElementById('mobBubbleTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 90px;">
                                 <label style="font-size: 10px; color: #3a414d;">말풍선 배경색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="mobBgColorPicker" value="#eff1f5" oninput="document.getElementById('mobBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 1px; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="color" id="mobBgColorPicker" value="#eff1f5" oninput="document.getElementById('mobBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
                                     <input type="text" id="mobBgColor" value="#eff1f5" oninput="document.getElementById('mobBgColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
