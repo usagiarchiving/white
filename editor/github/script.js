@@ -6,7 +6,7 @@
 // == 전역 상태 변수 ==
 let blocks = [];
 let outputVersion = 1; 
-let outputMode = 'novel'; // 💡 기본 출력 모드 (novel / bubble1 / bubble2)
+let outputMode = 'novel'; // 기본 출력 모드 (novel / bubble1 / bubble2)
 let isDarkMode = false;
 let currentFontSize = 14;
 let currentFontFamily = "'Noto Serif KR', serif";
@@ -71,7 +71,6 @@ function undo() {
             }
         }
 
-        // 💡 렌더링 전 현재 스크롤 위치 임시 저장 (튕김 방지)
         const editorList = document.getElementById('editorList');
         const htmlPreview = document.getElementById('htmlPreview');
         const scrollPos = {
@@ -84,7 +83,6 @@ function undo() {
         blocks = JSON.parse(historyStack[historyIndex]);
         renderEditor();
 
-        // 💡 렌더링 직후 스크롤 위치 원상 복구
         setTimeout(() => {
             if (editorList) editorList.scrollTop = scrollPos.editor;
             if (htmlPreview) htmlPreview.scrollTop = scrollPos.preview;
@@ -108,7 +106,6 @@ function redo() {
             }
         }
 
-        // 💡 렌더링 전 현재 스크롤 위치 임시 저장 (튕김 방지)
         const editorList = document.getElementById('editorList');
         const htmlPreview = document.getElementById('htmlPreview');
         const scrollPos = {
@@ -121,7 +118,6 @@ function redo() {
         blocks = JSON.parse(historyStack[historyIndex]);
         renderEditor();
 
-        // 💡 렌더링 직후 스크롤 위치 원상 복구
         setTimeout(() => {
             if (editorList) editorList.scrollTop = scrollPos.editor;
             if (htmlPreview) htmlPreview.scrollTop = scrollPos.preview;
@@ -202,7 +198,6 @@ function toggleDarkMode() {
         document.getElementById('narrColor').value = '#F9F9F8';
         document.getElementById('narrColorPicker').value = '#F9F9F8';
     } else {
-        // 💡 [수정사항] 라이트 모드 복귀 시 새롭게 요청된 기본 색상으로 적용되도록 수정
         document.getElementById('mintTextColor').value = '#237768';
         document.getElementById('mintTextColorPicker').value = '#237768';
         document.getElementById('narrColor').value = '#48484A';
@@ -290,9 +285,19 @@ function setupColorPicker(pickerId, textId) {
     });
 }
 
-// 💡 초기 컬러 피커 설정 연결 유지
+// 💡 [수정사항] 새롭게 추가된 말풍선 색상 및 모브 색상 피커 이벤트 연결
 setupColorPicker('mintTextColorPicker', 'mintTextColor');
+setupColorPicker('mintBubbleBgPicker', 'mintBubbleBg');
+setupColorPicker('mintBubbleTextPicker', 'mintBubbleText');
+
 setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
+setupColorPicker('pinkBubbleBgPicker', 'pinkBubbleBg');
+setupColorPicker('pinkBubbleTextPicker', 'pinkBubbleText');
+
+setupColorPicker('mobTextColorPicker', 'mobTextColor');
+setupColorPicker('mobBubbleBgPicker', 'mobBubbleBg');
+setupColorPicker('mobBubbleTextPicker', 'mobBubbleText');
+
 setupColorPicker('narrColorPicker', 'narrColor');
 setupColorPicker('highlightColorPicker', 'highlightColor');
 
@@ -326,19 +331,16 @@ function setVersion(v) {
     updateOutput(); 
 }
 
-// 💡 [수정사항] 말풍선 버튼 세분화에 맞춘 상태 및 디자인 변경 로직 반영
 function setOutputMode(mode) {
     outputMode = mode;
     const btnNovel = document.getElementById('btnModeNovel');
     const btnBubble1 = document.getElementById('btnModeBubble1');
     const btnBubble2 = document.getElementById('btnModeBubble2');
     
-    // 버튼 초기화
     if (btnNovel) { btnNovel.style.background = 'transparent'; btnNovel.style.color = 'var(--text-muted)'; }
     if (btnBubble1) { btnBubble1.style.background = 'transparent'; btnBubble1.style.color = 'var(--text-muted)'; }
     if (btnBubble2) { btnBubble2.style.background = 'transparent'; btnBubble2.style.color = 'var(--text-muted)'; }
     
-    // 선택된 버튼 활성화 디자인
     if (mode === 'novel' && btnNovel) {
         btnNovel.style.background = 'var(--primary)';
         btnNovel.style.color = 'white';
@@ -421,6 +423,10 @@ document.addEventListener("DOMContentLoaded", function() {
                         type: currentBlock.type,
                         content: parts.slice(1).join('').replace(/^[\n\r]+/, '').trim(),
                         customTextColor: currentBlock.customTextColor || '#333333',
+                        customName: currentBlock.customName || '',
+                        customProfileUrl: currentBlock.customProfileUrl || '',
+                        customBubbleBg: currentBlock.customBubbleBg || '#E2E8F0',
+                        customBubbleText: currentBlock.customBubbleText || '#333333',
                         bgmTitle: currentBlock.bgmTitle,
                         bgmUrl: currentBlock.bgmUrl,
                         polaroidDate: currentBlock.polaroidDate || '',
@@ -458,11 +464,24 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+// 💡 [수정사항] 제3자(Custom) 블록 생성 시 필요한 5가지 데이터(이름, 프사, 말풍선색 등) 기본 뼈대 확보
 function addBlock(type, index = -1) {
     let defaultContent = '';
     if (type === 'divider') defaultContent = 'solid-gray';
     
-    const newBlock = { type, content: defaultContent, customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
+    const newBlock = { 
+        type, 
+        content: defaultContent, 
+        customTextColor: '#333333', 
+        customName: '', 
+        customProfileUrl: '', 
+        customBubbleBg: '#E2E8F0', 
+        customBubbleText: '#333333', 
+        bgmTitle: '', 
+        bgmUrl: '', 
+        polaroidDate: '', 
+        polaroidCaption: '' 
+    };
     let addedIndex = -1;
     if (index === -1) {
         blocks.push(newBlock);
@@ -477,7 +496,7 @@ function addBlock(type, index = -1) {
 }
 
 function insertEmptyLine(index) {
-    const newBlock = { type: 'empty', content: '', customTextColor: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
+    const newBlock = { type: 'empty', content: '', customTextColor: '#333333', customName: '', customProfileUrl: '', customBubbleBg: '#E2E8F0', customBubbleText: '#333333', bgmTitle: '', bgmUrl: '', polaroidDate: '', polaroidCaption: '' };
     blocks.splice(index + 1, 0, newBlock);
     renderEditor();
     saveState(); 
@@ -496,8 +515,13 @@ function updateBlockContent(index, value) {
     debounceSaveState(); 
 }
 
+// 💡 [수정사항] 에디터에서 입력한 5가지 설정값을 전역 변수에 업데이트하는 로직 확장
 function updateBlockCustom(index, field, value) {
     if (field === 'textColor') blocks[index].customTextColor = value;
+    if (field === 'customName') blocks[index].customName = value;
+    if (field === 'customProfileUrl') blocks[index].customProfileUrl = value;
+    if (field === 'customBubbleBg') blocks[index].customBubbleBg = value;
+    if (field === 'customBubbleText') blocks[index].customBubbleText = value;
     if (field === 'bgmTitle') blocks[index].bgmTitle = value;
     if (field === 'bgmUrl') blocks[index].bgmUrl = value;
     if (field === 'polaroidDate') blocks[index].polaroidDate = value;
@@ -510,6 +534,10 @@ function changeBlockType(index, newType) {
     blocks[index].type = newType;
     if (newType === 'custom') {
         blocks[index].customTextColor = blocks[index].customTextColor || '#333333';
+        blocks[index].customName = blocks[index].customName || '';
+        blocks[index].customProfileUrl = blocks[index].customProfileUrl || '';
+        blocks[index].customBubbleBg = blocks[index].customBubbleBg || '#E2E8F0';
+        blocks[index].customBubbleText = blocks[index].customBubbleText || '#333333';
     }
     if (newType === 'bgm') {
         blocks[index].bgmTitle = blocks[index].bgmTitle || '';
