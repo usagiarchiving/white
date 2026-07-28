@@ -6,7 +6,7 @@
 // == 전역 상태 변수 ==
 let blocks = [];
 let outputVersion = 1; 
-let outputMode = 'novel'; // 💡 기본 출력 모드 (novel / bubble)
+let outputMode = 'novel'; // 💡 기본 출력 모드 (novel / bubble1 / bubble2)
 let isDarkMode = false;
 let currentFontSize = 14;
 let currentFontFamily = "'Noto Serif KR', serif";
@@ -202,10 +202,11 @@ function toggleDarkMode() {
         document.getElementById('narrColor').value = '#F9F9F8';
         document.getElementById('narrColorPicker').value = '#F9F9F8';
     } else {
-        document.getElementById('mintTextColor').value = '#459fa5';
-        document.getElementById('mintTextColorPicker').value = '#459fa5';
-        document.getElementById('narrColor').value = '#2c2c2e';
-        document.getElementById('narrColorPicker').value = '#2c2c2e';
+        // 💡 [수정사항] 라이트 모드 복귀 시 새롭게 요청된 기본 색상으로 적용되도록 수정
+        document.getElementById('mintTextColor').value = '#237768';
+        document.getElementById('mintTextColorPicker').value = '#237768';
+        document.getElementById('narrColor').value = '#48484A';
+        document.getElementById('narrColorPicker').value = '#48484A';
     }
     updateOutput();
 }
@@ -325,21 +326,28 @@ function setVersion(v) {
     updateOutput(); 
 }
 
+// 💡 [수정사항] 말풍선 버튼 세분화에 맞춘 상태 및 디자인 변경 로직 반영
 function setOutputMode(mode) {
     outputMode = mode;
     const btnNovel = document.getElementById('btnModeNovel');
-    const btnBubble = document.getElementById('btnModeBubble');
+    const btnBubble1 = document.getElementById('btnModeBubble1');
+    const btnBubble2 = document.getElementById('btnModeBubble2');
     
-    if (mode === 'novel') {
+    // 버튼 초기화
+    if (btnNovel) { btnNovel.style.background = 'transparent'; btnNovel.style.color = 'var(--text-muted)'; }
+    if (btnBubble1) { btnBubble1.style.background = 'transparent'; btnBubble1.style.color = 'var(--text-muted)'; }
+    if (btnBubble2) { btnBubble2.style.background = 'transparent'; btnBubble2.style.color = 'var(--text-muted)'; }
+    
+    // 선택된 버튼 활성화 디자인
+    if (mode === 'novel' && btnNovel) {
         btnNovel.style.background = 'var(--primary)';
         btnNovel.style.color = 'white';
-        btnBubble.style.background = 'transparent';
-        btnBubble.style.color = 'var(--text-muted)';
-    } else {
-        btnBubble.style.background = 'var(--primary)';
-        btnBubble.style.color = 'white';
-        btnNovel.style.background = 'transparent';
-        btnNovel.style.color = 'var(--text-muted)';
+    } else if (mode === 'bubble1' && btnBubble1) {
+        btnBubble1.style.background = 'var(--primary)';
+        btnBubble1.style.color = 'white';
+    } else if (mode === 'bubble2' && btnBubble2) {
+        btnBubble2.style.background = 'var(--primary)';
+        btnBubble2.style.color = 'white';
     }
     updateOutput(); 
 }
