@@ -399,8 +399,21 @@ function formatBubbleText(text) {
 }
 
 function updateOutput(skipPreviewUpdate = false) {
+    // 💡 [수정] 소설 모드 글자색 
     const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#B2E4D4' : '#237768');
     const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
+    const mobTextColor = document.getElementById('mobTextColor') ? document.getElementById('mobTextColor').value : '#3a414d';
+    
+    // 💡 [수정] 말풍선 모드 전용 변수 연결 (없을 경우 기본값 세팅)
+    const mintBubbleTextColor = document.getElementById('mintBubbleTextColor') ? document.getElementById('mintBubbleTextColor').value : '#1d6f60';
+    const mintBgColor = document.getElementById('mintBgColor') ? document.getElementById('mintBgColor').value : '#eef8f3';
+    
+    const pinkBubbleTextColor = document.getElementById('pinkBubbleTextColor') ? document.getElementById('pinkBubbleTextColor').value : '#9b3e61';
+    const pinkBgColor = document.getElementById('pinkBgColor') ? document.getElementById('pinkBgColor').value : '#fdf2f6';
+    
+    const mobBubbleTextColor = document.getElementById('mobBubbleTextColor') ? document.getElementById('mobBubbleTextColor').value : '#3a414d';
+    const mobBgColor = document.getElementById('mobBgColor') ? document.getElementById('mobBgColor').value : '#eff1f5';
+
     const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#48484A');
     const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
 
@@ -430,6 +443,7 @@ function updateOutput(skipPreviewUpdate = false) {
     let marginRatio = Math.min(currentFontSize / 14, 1);
     let baseGap = currentBlockGap;
     
+    // 💡 오토 비율 수식 (기존 소설 여백 보존)
     let mt_20 = Math.round((baseGap + 5) * marginRatio) + 'px';
     let mt_15 = Math.round(baseGap * marginRatio) + 'px';
     let mt_10 = Math.round(Math.max((baseGap - 5), 5) * marginRatio) + 'px';
@@ -468,13 +482,14 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePolaroidCount = 0;
         }
 
+        // 💡 [절대 보존] 소설 모드 기본 여백 계산 (건드리지 않음)
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
                 if ((isPrevDiag && isCurrNarration) || (isPrevNarration && isCurrDiag)) {
                     mt = mt_20; 
                 } else if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? '5px' : mt_15; 
+                    mt = isSameAsPrev ? mt_4 : mt_15; 
                 } else if (isPrevNarration && isCurrNarration) {
                     mt = mt_4;  
                 } else {
@@ -509,7 +524,6 @@ function updateOutput(skipPreviewUpdate = false) {
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
-                // 💡 HTML 렌더링 시 태그 사이의 엔터(\n) 및 탭 여백 제거
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">${applyTextStyles(block.content)}</div>\n`;
             }
             else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && isCurrDiag) {
@@ -530,21 +544,20 @@ function updateOutput(skipPreviewUpdate = false) {
                 let mobUrlEl = document.getElementById('mobProfileUrl');
 
                 if (curr === 'mint') {
-                    bgColor = '#eef8f3';
-                    textColor = '#1d6f60';
+                    bgColor = mintBgColor;
+                    textColor = mintBubbleTextColor;
                     imageUrl = extractProfileUrl(mintUrlEl ? mintUrlEl.value : '') || 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
                     let nameEl = document.getElementById('mintName');
                     charName = nameEl ? nameEl.value : '하시온';
                 } else if (curr === 'pink') {
-                    bgColor = '#fdf2f6';
-                    textColor = '#9b3e61';
+                    bgColor = pinkBgColor;
+                    textColor = pinkBubbleTextColor;
                     imageUrl = extractProfileUrl(pinkUrlEl ? pinkUrlEl.value : '') || 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
                     let nameEl = document.getElementById('pinkName');
                     charName = nameEl ? nameEl.value : '김민정';
                 } else if (curr === 'mob') {
-                    bgColor = '#eff1f5';
-                    let mobColorEl = document.getElementById('mobTextColor');
-                    textColor = mobColorEl ? mobColorEl.value : '#3a414d';
+                    bgColor = mobBgColor;
+                    textColor = mobBubbleTextColor;
                     imageUrl = extractProfileUrl(mobUrlEl ? mobUrlEl.value : '') || 'https://i.ibb.co/jP5RR5gx/IMG-6832.jpg';
                     let nameEl = document.getElementById('mobName');
                     charName = nameEl ? nameEl.value : 'Mob';
@@ -555,7 +568,15 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = block.customName || '제3자';
                 }
 
-                let bubMarginTop = isSameAsPrev ? '5px' : (mt === '0px' ? '15px' : mt);
+                // 💡 [수정] 말풍선 대사 간격 3단계 오토 계산
+                let bubMarginTop = '15px';
+                if (isSameAsPrev) {
+                    bubMarginTop = '5px'; // 1단계: 연속 같은 캐릭터는 무조건 5px 밀착
+                } else if (isPrevDiag) {
+                    bubMarginTop = mt_10; // 2단계: 다른 캐릭터 대사간엔 오토 스케일링 mt_10 (약 10px 비율)
+                } else {
+                    bubMarginTop = mt === '0px' ? mt_15 : mt; // 3단계: 나레이션 등 종류 변환 시 기본 넓은 간격
+                }
 
                 if (outputMode === 'bubble1') {
                     let bubPaddingTop = isSameAsPrev ? '10.5px' : '12px';
@@ -568,8 +589,8 @@ function updateOutput(skipPreviewUpdate = false) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
-                    // 💡 HTML 태그 간 공백 제거 완료
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 80%; width: fit-content; word-break: keep-all; line-height: 1.5;">${formatBubbleText(block.content)}</div></div>\n`;
+                    // 💡 [수정] word-break: inherit 설정으로 상위 패널 옵션에 연동
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin: ${bubMarginTop} 0 0; padding: ${bubPaddingTop} 0 ${bubPaddingBottom} 0; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 14px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); max-width: 85%; width: fit-content; word-break: inherit; line-height: 1.5;">${formatBubbleText(block.content)}</div></div>\n`;
                 
                 } else if (outputMode === 'bubble2') {
                     let avatarHtml = '';
@@ -584,16 +605,16 @@ function updateOutput(skipPreviewUpdate = false) {
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; left: -8px; width: 0; height: 0; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor}; z-index: -1;"></div>`;
                     }
 
-                    // 💡 HTML 태그 간 공백 제거 및 margin-bottom: 0px 적용 완료 (5px 간격 정확히 고정)
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 0px;">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: inline-block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; max-width: 80%; word-break: keep-all; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
+                    // 💡 [수정] 말풍선 2 가로제한 해제 (width: fit-content) & word-break: inherit 설정
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 0px;">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: inline-block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; max-width: 85%; word-break: inherit; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
             else if (isCurrDiag) { 
+                // 💡 [수정] 소설 모드는 철저하게 소설 전용 글자색 변수를 사용하도록 분리 적용 완료
                 let textColor;
-                let mobColorEl = document.getElementById('mobTextColor');
                 if (curr === 'mint') { textColor = mintTextColor; }
                 else if (curr === 'pink') { textColor = pinkTextColor; }
-                else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : (mobColorEl ? mobColorEl.value : '#3a414d'); }
+                else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : mobTextColor; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
                 htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
