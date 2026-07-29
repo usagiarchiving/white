@@ -438,15 +438,9 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePostitCount = 0;
     let consecutivePolaroidCount = 0; 
 
-    let marginRatio = Math.min(currentFontSize / 14, 1);
-    let baseGap = currentBlockGap;
-    
-    let mt_20 = Math.round((baseGap + 5) * marginRatio) + 'px';
-    let mt_15 = Math.round(baseGap * marginRatio) + 'px';
-    let mt_10 = Math.round(Math.max((baseGap - 5), 5) * marginRatio) + 'px';
-    let mt_4 = Math.round((baseGap * 0.3) * marginRatio) + 'px';
-
-    innerContent += `<div class="preview-gap" onclick="insertEmptyLine(-1)" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>\n`;
+    // 💡 [수정] 강제 최소 여백 제거, 설정한 px 그대로 반영
+    let gapBlock = currentBlockGap + 'px';
+    let gapInner = currentInnerGap + 'px';
 
     blocks.forEach((block, index) => {
         if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid'].includes(block.type)) return;
@@ -479,17 +473,18 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePolaroidCount = 0;
         }
 
+        // 💡 [수정] 호흡 및 전환에 따른 여백 매핑 로직 완벽 적용
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
-                if ((isPrevDiag && isCurrNarration) || (isPrevNarration && isCurrDiag)) {
-                    mt = mt_20; 
-                } else if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? mt_4 : mt_15; 
+                if (isPrevDiag && isCurrDiag) {
+                    mt = isSameAsPrev ? gapInner : gapBlock; // 동일 화자면 내부 간격, 다르면 문단 간격
+                } else if ((isPrevDiag && isCurrNarration) || (isPrevNarration && isCurrDiag)) {
+                    mt = gapInner; // 요청에 따라 나레이션-대사 간격은 내부 호흡(gapInner)으로 처리
                 } else if (isPrevNarration && isCurrNarration) {
-                    mt = mt_4;  
+                    mt = gapInner; // 연속된 나레이션은 내부 호흡
                 } else {
-                    mt = mt_15; 
+                    mt = gapBlock; // 그 외 (제목, 상태창 등과 만날 때)
                 }
             }
         }
@@ -520,7 +515,7 @@ function updateOutput(skipPreviewUpdate = false) {
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
-                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_15 : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">${applyTextStyles(block.content)}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? gapBlock : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">${applyTextStyles(block.content)}</div>\n`;
             }
             else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && isCurrDiag) {
                 function extractProfileUrl(rawVal) {
@@ -564,13 +559,14 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = block.customName || '제3자';
                 }
 
-                let bubMarginTop = '15px';
+                // 💡 [수정] 말풍선 여백 로직 단순화 적용
+                let bubMarginTop = gapBlock;
                 if (isSameAsPrev) {
-                    bubMarginTop = '1px'; 
+                    bubMarginTop = gapInner; 
                 } else if (isPrevDiag) {
-                    bubMarginTop = mt_10; 
+                    bubMarginTop = gapBlock; 
                 } else {
-                    bubMarginTop = mt === '0px' ? mt_15 : mt; 
+                    bubMarginTop = mt === '0px' ? gapBlock : mt; 
                 }
 
                 if (outputMode === 'bubble1') {
@@ -581,7 +577,6 @@ function updateOutput(skipPreviewUpdate = false) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
-                    // 💡 [수정] 외부 CSS의 margin 침범 방어를 위한 margin: 0 !important; 방어막 구축 및 패딩(12px 18px) 통일
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${bubMarginTop}; margin-bottom: 0px; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
                 
                 } else if (outputMode === 'bubble2') {
@@ -607,7 +602,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : mobTextColor; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_10 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? gapBlock : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
@@ -751,10 +746,10 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
             }
             else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? gapInner : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'thought') {
-                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? mt_4 : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? gapInner : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'dday') {
                 htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;"><span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span></div>\n`;
@@ -811,7 +806,6 @@ function updateOutput(skipPreviewUpdate = false) {
         }
 
         innerContent += htmlStr;
-        innerContent += `<div class="preview-gap" onclick="insertEmptyLine(${index})" title="클릭하여 공백 줄 추가"><span>+ 공백 줄 추가</span></div>\n`;
 
         if (curr !== 'empty' && curr !== 'bgm' && curr !== 'html' && curr !== 'divider') {
             prevValidType = curr;
@@ -894,8 +888,8 @@ function stopBGM() {
 
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
     
+    // 💡 [수정] 미리보기 공백 버튼 삭제에 따라 불필요해진 정규식 정리
     let cleanInnerContent = innerContent
-        .replace(/<div class="preview-gap"[^>]*>.*?<\/div>\n?/g, '')
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
         .replace(/ onclick="focusAndScrollBlock\(\d+, true\)"/g, ''); 
