@@ -16,6 +16,7 @@ let currentInlineFontSize = 13;
 let currentLineHeight = 1.6;
 let currentLetterSpacing = -0.02; // em
 let currentBlockGap = 15; // 기본 문단 간격 (px)
+let currentInnerGap = 4;  // 💡 [추가] 기본 내부 간격 (px) - 연속된 화자/나레이션 등
 let currentWordBreak = 'break-all'; // 줄바꿈 방식 기본값을 글자 단위로 설정
 
 // == 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
@@ -230,10 +231,19 @@ function changeFontSize(delta) {
         let ratio = currentFontSize / oldSize;
         currentBlockGap = Math.round(currentBlockGap * ratio);
         
+        // 💡 [수정] 내부 간격도 비율에 맞춰 동일하게 스케일링
+        currentInnerGap = Math.round(currentInnerGap * ratio);
+        
         let gapSlider = document.getElementById('blockGapSlider');
         let gapVal = document.getElementById('blockGapVal');
         if (gapSlider) gapSlider.value = currentBlockGap;
         if (gapVal) gapVal.innerText = currentBlockGap + 'px';
+        
+        // 💡 [수정] 내부 간격 UI 동기화
+        let innerGapSlider = document.getElementById('innerGapSlider');
+        let innerGapVal = document.getElementById('innerGapVal');
+        if (innerGapSlider) innerGapSlider.value = currentInnerGap;
+        if (innerGapVal) innerGapVal.innerText = currentInnerGap + 'px';
     }
 
     document.getElementById('fontSizeDisplay').innerText = currentFontSize + 'px';
@@ -244,6 +254,7 @@ function updateLayoutSetting(key, value) {
     if (key === 'lineHeight') currentLineHeight = parseFloat(value);
     if (key === 'letterSpacing') currentLetterSpacing = parseFloat(value);
     if (key === 'blockGap') currentBlockGap = parseInt(value, 10);
+    if (key === 'innerGap') currentInnerGap = parseInt(value, 10); // 💡 [추가] 내부 간격 상태 업데이트
     if (key === 'wordBreak') currentWordBreak = value;
     if (typeof updateOutput === 'function') updateOutput();
 }
