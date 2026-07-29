@@ -94,7 +94,7 @@ input[type="text"] {
     color: var(--text-main);
 }
 
-/* 💡 애플 스타일 range(슬라이더) UI CSS (신규 추가) */
+/* 💡 애플 스타일 range(슬라이더) UI CSS */
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -206,31 +206,9 @@ body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-c
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
 }
 
+/* 💡 [수정] 시각적 방해물 및 불필요한 여백 완전 제거 (숨김 처리) */
 .preview-gap {
-    height: 12px;
-    margin: 2px 0;
-    border: 1px dashed transparent;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    opacity: 0;
-    transition: all 0.2s;
-    background-color: transparent;
-}
-.preview-gap:hover {
-    border-color: var(--text-muted);
-    background-color: var(--block-bg);
-    opacity: 1;
-    height: 24px;
-}
-.preview-gap span {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 600;
-    pointer-events: none;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    display: none !important;
 }
 
 .empty-line-preview {
