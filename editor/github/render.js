@@ -473,18 +473,16 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePolaroidCount = 0;
         }
 
-        // 💡 [유지] 호흡 및 전환에 따른 여백 매핑 로직 완벽 적용
+        // 💡 [수정] 빗나갔던 여백 매핑 로직 완벽 분리 및 정상화
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
                 if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? gapInner : gapBlock; // 동일 화자면 내부 간격, 다르면 문단 간격
-                } else if ((isPrevDiag && isCurrNarration) || (isPrevNarration && isCurrDiag)) {
-                    mt = gapInner; // 요청에 따라 나레이션-대사 간격은 내부 호흡(gapInner)으로 처리
+                    mt = isSameAsPrev ? gapInner : gapBlock; // 동일 화자: 내부, 다른 화자: 문단
                 } else if (isPrevNarration && isCurrNarration) {
-                    mt = gapInner; // 연속된 나레이션은 내부 호흡
+                    mt = gapInner; // 연속된 나레이션: 내부
                 } else {
-                    mt = gapBlock; // 그 외 (제목, 상태창 등과 만날 때)
+                    mt = gapBlock; // 나레이션-대사, 대사-상태창 등 성격이 다르면 무조건 문단 간격
                 }
             }
         }
@@ -568,7 +566,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     bubMarginTop = mt === '0px' ? gapBlock : mt; 
                 }
 
-                // 💡 [추가] 핑크 캐릭터 확인 플래그
+                // 💡 [유지] 핑크 캐릭터 확인 플래그
                 let isPink = (curr === 'pink');
 
                 if (outputMode === 'bubble1') {
@@ -579,7 +577,7 @@ function updateOutput(skipPreviewUpdate = false) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
-                    // 💡 [수정] 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
+                    // 💡 [유지] 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
                     let alignStyle = isPink ? 'flex-direction: row-reverse;' : '';
 
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${bubMarginTop}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
@@ -590,24 +588,24 @@ function updateOutput(skipPreviewUpdate = false) {
                     let tailHtml = '';
 
                     if (!isSameAsPrev) {
-                        // 💡 [수정] 핑크일 때 프로필 사진 위치 반전
+                        // 💡 [유지] 핑크일 때 프로필 사진 위치 반전
                         let avPos = isPink ? 'right: 0;' : 'left: 0;';
                         avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                         
                         if (charName.trim() !== '') {
-                            // 💡 [수정] 핑크일 때 이름 텍스트 정렬 반전
+                            // 💡 [유지] 핑크일 때 이름 텍스트 정렬 반전
                             let nameAlign = isPink ? 'text-align: right;' : 'text-align: left;';
                             nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
                         }
                         
-                        // 💡 [수정] 핑크일 때 꼬리 방향 반전
+                        // 💡 [유지] 핑크일 때 꼬리 방향 반전
                         let tailPos = isPink 
                             ? `right: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-left: 12px solid ${bgColor};` 
                             : `left: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor};`;
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; ${tailPos} z-index: -1;"></div>`;
                     }
 
-                    // 💡 [수정] 핑크일 때 전체 컨테이너 정렬 및 패딩 방향 변경
+                    // 💡 [유지] 핑크일 때 전체 컨테이너 정렬 및 패딩 방향 변경
                     let containerPadding = isPink ? 'padding-right: 50px;' : 'padding-left: 50px;';
                     let containerFlex = isPink ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
 
