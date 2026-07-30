@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- [수정됨] maximum-scale=1.0, user-scalable=no 추가: 모바일 입력창 터치 시 화면 강제 줌인 방지 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>접은글 생성기 (Toggle Generator)</title>
     <!-- 생성기 자체의 디자인 (Apple iCloud 스타일 기반, 가독성 최우선) -->
     <style>
@@ -19,6 +20,7 @@
             --pastel-gray-bg: #f2f2f7;
         }
 
+        /* [수정됨] 모바일 전체 스크롤을 위해 기존 height: 100vh; overflow: hidden; 해제 후 min-height 적용 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
             background-color: var(--bg-color);
@@ -27,10 +29,9 @@
             padding: 0;
             line-height: 1.6;
             letter-spacing: -0.01em;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
 
         /* 상단 헤더 영역 */
@@ -70,23 +71,38 @@
         .btn-save:hover { background-color: #d1f0d9; }
 
         /* 좌우 스플릿 레이아웃 */
+        /* [수정됨] 모바일에서는 overflow 제한 없이 자연스럽게 아래로 콘텐츠가 이어지도록 설정 */
         .split-container {
             display: flex;
             flex-direction: column;
             flex: 1;
-            overflow: hidden;
         }
         
+        /* [수정됨] PC(가로 800px 이상) 환경 전용 스크롤 고정 세팅 */
         @media (min-width: 800px) {
-            .split-container { flex-direction: row; }
+            body {
+                height: 100vh; /* PC는 전체 높이 고정 */
+                overflow: hidden;
+            }
+            .split-container { 
+                flex-direction: row; 
+                overflow: hidden; /* PC는 내부에서만 스크롤 되도록 틀 고정 */
+            }
         }
 
         /* 패널 공통 */
+        /* [수정됨] 모바일에서는 패널 자체가 늘어나며 바디 스크롤을 타도록 flex: 1, overflow 속성 분리 */
         .panel {
-            flex: 1;
             padding: 30px;
-            overflow-y: auto;
             box-sizing: border-box;
+        }
+        
+        /* [수정됨] PC 환경에서는 좌우 5:5 비율을 맞추고 개별 스크롤 되도록 설정 */
+        @media (min-width: 800px) {
+            .panel {
+                flex: 1;
+                overflow-y: auto;
+            }
         }
         
         /* 좌측: 입력 패널 */
