@@ -438,7 +438,7 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePostitCount = 0;
     let consecutivePolaroidCount = 0; 
 
-    // 💡 [수정] 강제 최소 여백 제거, 설정한 px 그대로 반영
+    // 💡 [유지] 강제 최소 여백 제거, 설정한 px 그대로 반영
     let gapBlock = currentBlockGap + 'px';
     let gapInner = currentInnerGap + 'px';
 
@@ -473,7 +473,7 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePolaroidCount = 0;
         }
 
-        // 💡 [수정] 호흡 및 전환에 따른 여백 매핑 로직 완벽 적용
+        // 💡 [유지] 호흡 및 전환에 따른 여백 매핑 로직 완벽 적용
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
@@ -559,7 +559,6 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = block.customName || '제3자';
                 }
 
-                // 💡 [수정] 말풍선 여백 로직 단순화 적용
                 let bubMarginTop = gapBlock;
                 if (isSameAsPrev) {
                     bubMarginTop = gapInner; 
@@ -569,6 +568,9 @@ function updateOutput(skipPreviewUpdate = false) {
                     bubMarginTop = mt === '0px' ? gapBlock : mt; 
                 }
 
+                // 💡 [추가] 핑크 캐릭터 확인 플래그
+                let isPink = (curr === 'pink');
+
                 if (outputMode === 'bubble1') {
                     let avatarHtml = '';
                     if (isSameAsPrev) {
@@ -577,7 +579,10 @@ function updateOutput(skipPreviewUpdate = false) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${bubMarginTop}; margin-bottom: 0px; display: flex; align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
+                    // 💡 [수정] 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
+                    let alignStyle = isPink ? 'flex-direction: row-reverse;' : '';
+
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${bubMarginTop}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
                 
                 } else if (outputMode === 'bubble2') {
                     let avatarHtml = '';
@@ -585,14 +590,28 @@ function updateOutput(skipPreviewUpdate = false) {
                     let tailHtml = '';
 
                     if (!isSameAsPrev) {
-                        avatarHtml = `<div class="av" style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                        // 💡 [수정] 핑크일 때 프로필 사진 위치 반전
+                        let avPos = isPink ? 'right: 0;' : 'left: 0;';
+                        avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                        
                         if (charName.trim() !== '') {
-                            nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; text-align: left;">${escapeHtml(charName)}</div>`;
+                            // 💡 [수정] 핑크일 때 이름 텍스트 정렬 반전
+                            let nameAlign = isPink ? 'text-align: right;' : 'text-align: left;';
+                            nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
                         }
-                        tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; left: -8px; width: 0; height: 0; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor}; z-index: -1;"></div>`;
+                        
+                        // 💡 [수정] 핑크일 때 꼬리 방향 반전
+                        let tailPos = isPink 
+                            ? `right: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-left: 12px solid ${bgColor};` 
+                            : `left: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor};`;
+                        tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; ${tailPos} z-index: -1;"></div>`;
                     }
 
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; padding-left: 50px; margin-top: ${bubMarginTop}; margin-bottom: 0px;">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; word-break: inherit; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
+                    // 💡 [수정] 핑크일 때 전체 컨테이너 정렬 및 패딩 방향 변경
+                    let containerPadding = isPink ? 'padding-right: 50px;' : 'padding-left: 50px;';
+                    let containerFlex = isPink ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
+
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${bubMarginTop}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; word-break: inherit; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
             else if (isCurrDiag) { 
@@ -888,7 +907,7 @@ function stopBGM() {
 
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
     
-    // 💡 [수정] 미리보기 공백 버튼 삭제에 따라 불필요해진 정규식 정리
+    // 💡 [유지] 미리보기 공백 버튼 삭제에 따라 불필요해진 정규식 정리된 상태
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
