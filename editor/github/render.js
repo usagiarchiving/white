@@ -473,7 +473,7 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePolaroidCount = 0;
         }
 
-        // 💡 [수정] 빗나갔던 여백 매핑 로직 완벽 분리 및 정상화
+        // 💡 [완전 수정] 낡은 0px 조건문과 변수를 삭제하고, 오직 mt 하나로 통일하여 다이렉트 렌더링
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
@@ -482,7 +482,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 } else if (isPrevNarration && isCurrNarration) {
                     mt = gapInner; // 연속된 나레이션: 내부
                 } else {
-                    mt = gapBlock; // 나레이션-대사, 대사-상태창 등 성격이 다르면 무조건 문단 간격
+                    mt = gapBlock; // 나레이션-대사, 대사-상태창 등 블록 성격이 전환되면 무조건 문단 간격
                 }
             }
         }
@@ -513,7 +513,7 @@ function updateOutput(skipPreviewUpdate = false) {
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
-                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? gapBlock : mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">${applyTextStyles(block.content)}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">${applyTextStyles(block.content)}</div>\n`;
             }
             else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && isCurrDiag) {
                 function extractProfileUrl(rawVal) {
@@ -557,15 +557,6 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = block.customName || '제3자';
                 }
 
-                let bubMarginTop = gapBlock;
-                if (isSameAsPrev) {
-                    bubMarginTop = gapInner; 
-                } else if (isPrevDiag) {
-                    bubMarginTop = gapBlock; 
-                } else {
-                    bubMarginTop = mt === '0px' ? gapBlock : mt; 
-                }
-
                 // 💡 [유지] 핑크 캐릭터 확인 플래그
                 let isPink = (curr === 'pink');
 
@@ -580,7 +571,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     // 💡 [유지] 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
                     let alignStyle = isPink ? 'flex-direction: row-reverse;' : '';
 
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${bubMarginTop}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${mt}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
                 
                 } else if (outputMode === 'bubble2') {
                     let avatarHtml = '';
@@ -609,7 +600,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     let containerPadding = isPink ? 'padding-right: 50px;' : 'padding-left: 50px;';
                     let containerFlex = isPink ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
 
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${bubMarginTop}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; word-break: inherit; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${mt}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; word-break: inherit; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
             else if (isCurrDiag) { 
@@ -619,7 +610,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : mobTextColor; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? gapBlock : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
@@ -763,10 +754,10 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
             }
             else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? gapInner : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'thought') {
-                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt === '0px' ? gapInner : mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'dday') {
                 htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;"><span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span></div>\n`;
@@ -886,10 +877,6 @@ function stopBGM() {
     ${isDarkMode ? 'background-color: #1B1B1B; color: #F9F9F8;' : ''}
 }
 .tistory-post-wrapper * { box-sizing: border-box; }
-/*나레이션 간격*/
-[data-type="narration"] {
-    margin-bottom: 3px !important;
-}
 /* 포스트잇 내부 내용 길어질 때 스크롤 */
 .postit-scroll {
     max-height: 350px;
@@ -905,7 +892,7 @@ function stopBGM() {
 
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
     
-    // 💡 [유지] 미리보기 공백 버튼 삭제에 따라 불필요해진 정규식 정리된 상태
+    // 💡 불필요해진 공백 줄 정규식 삭제 적용 완료
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
