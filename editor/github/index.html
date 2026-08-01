@@ -249,7 +249,7 @@
                         </div>
                         <input type="range" min="0" max="40" step="1" value="15" id="blockGapSlider" oninput="document.getElementById('blockGapVal').innerText = this.value + 'px'; updateLayoutSetting('blockGap', this.value);" style="accent-color: var(--primary); cursor: pointer;">
                     </div>
-                    <!-- 💡 [수정] 내부 간격 (동일 화자/연속) -->
+                    <!-- 내부 간격 (동일 화자/연속) -->
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">내부 간격 (연속)</label>
@@ -283,7 +283,6 @@
                 <button class="btn-secondary" onclick="addBlock('divider')">+ 구분선</button>
                 <button class="btn-secondary" onclick="addBlock('dday')">+ 작은 텍스트</button>
                 <button class="btn-secondary" onclick="addBlock('html')">+ HTML 코드</button>
-                <!-- 💡 [수정] 수동 공백 줄 추가 버튼 생성 -->
                 <button class="btn-secondary" onclick="addBlock('empty')">+ 공백 줄</button>
             </div>
         </div>
@@ -328,7 +327,7 @@
     </div>
 </div>
 
-<!-- 애플 스타일 플로팅 툴바 -->
+<!-- 애플 스타일 플로팅 툴바 (텍스트 드래그 시) -->
 <div id="floatingToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000;">
     <div class="tb-row">
         <button type="button" class="tb-btn" onclick="undo()" title="실행 취소">
@@ -365,6 +364,13 @@
             <span class="px-label">px</span>
         </div>
     </div>
+</div>
+
+<!-- 💡 [신규] 빠른 화자 전환 미니 툴바 (블록 클릭 시) -->
+<div id="quickSpeakerToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000; padding: 6px; flex-direction: row; gap: 6px;">
+    <button type="button" class="tb-circle btn-quick-status" onclick="changeSpeakerFromPreview('narration')" title="나레이션으로 변경">N</button>
+    <button type="button" class="tb-circle mint-bg" onclick="changeSpeakerFromPreview('mint')" title="민트로 변경">M</button>
+    <button type="button" class="tb-circle pink-bg" onclick="changeSpeakerFromPreview('pink')" title="핑크로 변경">P</button>
 </div>
 
 <!-- 분할된 자바스크립트 파일 연결 (순서 엄수) -->
