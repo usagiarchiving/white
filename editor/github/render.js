@@ -438,7 +438,7 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePostitCount = 0;
     let consecutivePolaroidCount = 0; 
 
-    // 💡 [유지] 강제 최소 여백 제거, 설정한 px 그대로 반영
+    // 강제 최소 여백 제거, 설정한 px 그대로 반영
     let gapBlock = currentBlockGap + 'px';
     let gapInner = currentInnerGap + 'px';
 
@@ -473,7 +473,7 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePolaroidCount = 0;
         }
 
-        // 💡 [완전 수정] 낡은 0px 조건문과 변수를 삭제하고, 오직 mt 하나로 통일하여 다이렉트 렌더링
+        // 낡은 0px 조건문과 변수를 삭제하고, 오직 mt 하나로 통일하여 다이렉트 렌더링
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
@@ -490,7 +490,8 @@ function updateOutput(skipPreviewUpdate = false) {
         let htmlStr = '';
 
         if (block.type === 'empty') {
-            htmlStr = `<div id="preview-block-${index}" data-type="empty" class="empty-line-preview" onclick="focusAndScrollBlock(${index}, true)">공백 줄 (Enter)</div>\n`;
+            // 💡 [수정] 미리보기 화면에서 텍스트와 테두리 제거. 클릭 및 높이는 유지되도록 투명한 공백 블록 생성
+            htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
         } else if (block.type === 'divider') {
             let dStyle = block.content || 'solid-gray';
             let dividerInner = '';
@@ -557,7 +558,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = block.customName || '제3자';
                 }
 
-                // 💡 [유지] 핑크 캐릭터 확인 플래그
+                // 핑크 캐릭터 확인 플래그
                 let isPink = (curr === 'pink');
 
                 if (outputMode === 'bubble1') {
@@ -568,7 +569,7 @@ function updateOutput(skipPreviewUpdate = false) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
-                    // 💡 [유지] 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
+                    // 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
                     let alignStyle = isPink ? 'flex-direction: row-reverse;' : '';
 
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${mt}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
@@ -579,24 +580,24 @@ function updateOutput(skipPreviewUpdate = false) {
                     let tailHtml = '';
 
                     if (!isSameAsPrev) {
-                        // 💡 [유지] 핑크일 때 프로필 사진 위치 반전
+                        // 핑크일 때 프로필 사진 위치 반전
                         let avPos = isPink ? 'right: 0;' : 'left: 0;';
                         avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                         
                         if (charName.trim() !== '') {
-                            // 💡 [유지] 핑크일 때 이름 텍스트 정렬 반전
+                            // 핑크일 때 이름 텍스트 정렬 반전
                             let nameAlign = isPink ? 'text-align: right;' : 'text-align: left;';
                             nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
                         }
                         
-                        // 💡 [유지] 핑크일 때 꼬리 방향 반전
+                        // 핑크일 때 꼬리 방향 반전
                         let tailPos = isPink 
                             ? `right: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-left: 12px solid ${bgColor};` 
                             : `left: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor};`;
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; ${tailPos} z-index: -1;"></div>`;
                     }
 
-                    // 💡 [유지] 핑크일 때 전체 컨테이너 정렬 및 패딩 방향 변경
+                    // 핑크일 때 전체 컨테이너 정렬 및 패딩 방향 변경
                     let containerPadding = isPink ? 'padding-right: 50px;' : 'padding-left: 50px;';
                     let containerFlex = isPink ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
 
@@ -892,7 +893,7 @@ function stopBGM() {
 
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
     
-    // 💡 불필요해진 공백 줄 정규식 삭제 적용 완료
+    // 💡 불필요해진 공백 줄 정규식 삭제 적용 완료. 이 정규식은 투명한 30px짜리 블록을 깔끔한 형태로 복사 HTML에 남깁니다.
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
