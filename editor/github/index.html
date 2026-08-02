@@ -366,11 +366,38 @@
     </div>
 </div>
 
-<!-- 💡 [신규] 빠른 화자 전환 미니 툴바 (블록 클릭 시) -->
-<div id="quickSpeakerToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000; padding: 6px; flex-direction: row; gap: 6px;">
+<!-- 💡 [신규] 빠른 화자 전환 및 관리 미니 툴바 (블록 클릭 시 토글) -->
+<div id="quickSpeakerToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000; padding: 6px 10px; flex-direction: row; align-items: center; gap: 8px;">
     <button type="button" class="tb-circle btn-quick-status" onclick="changeSpeakerFromPreview('narration')" title="나레이션으로 변경">N</button>
     <button type="button" class="tb-circle mint-bg" onclick="changeSpeakerFromPreview('mint')" title="민트로 변경">M</button>
     <button type="button" class="tb-circle pink-bg" onclick="changeSpeakerFromPreview('pink')" title="핑크로 변경">P</button>
+    
+    <div class="tb-divider" style="height: 16px; opacity: 0.3;"></div>
+    
+    <!-- 기타 블록 선택 드롭다운 -->
+    <select onchange="if(this.value) { changeSpeakerFromPreview(this.value); this.value=''; }" style="padding: 2px 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); cursor: pointer; outline: none; -webkit-appearance: none; appearance: none; font-weight: 600;">
+        <option value="" disabled selected>기타 ▼</option>
+        <option value="title">제목</option>
+        <option value="mob">모브 대사</option>
+        <option value="custom">제3자 대사</option>
+        <option value="thought">속마음</option>
+        <option value="status">상태창</option>
+        <option value="postit">포스트잇</option>
+        <option value="polaroid">폴라로이드</option>
+        <option value="divider">구분선</option>
+        <option value="dday">작은 텍스트</option>
+        <option value="image">이미지</option>
+        <option value="bgm">BGM 재생</option>
+        <option value="html">HTML</option>
+        <option value="empty">공백 줄</option>
+    </select>
+
+    <div class="tb-divider" style="height: 16px; opacity: 0.3;"></div>
+    
+    <!-- 블록 삭제 버튼 -->
+    <button type="button" onclick="deleteBlockFromPreview()" style="background: transparent; border: none; padding: 4px; cursor: pointer; color: #ff3b30; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,59,48,0.1)'" onmouseout="this.style.backgroundColor='transparent'" title="이 블록 삭제">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+    </button>
 </div>
 
 <!-- 분할된 자바스크립트 파일 연결 (순서 엄수) -->
