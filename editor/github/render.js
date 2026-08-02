@@ -587,7 +587,8 @@ function updateOutput(skipPreviewUpdate = false) {
                         if (charName.trim() !== '') {
                             // 핑크일 때 이름 텍스트 정렬 반전
                             let nameAlign = isPink ? 'text-align: right;' : 'text-align: left;';
-                            nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
+                            // 💡 [유지] 고정 11.5px에서 0.82em (상대 비율)로 변경하여 본문 크기에 연동
+                            nameHtml = `<div class="m-name" style="font-size: 0.82em; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
                         }
                         
                         // 핑크일 때 꼬리 방향 반전
@@ -937,7 +938,7 @@ document.addEventListener('keyup', () => setTimeout(handleSelection, 10));
 document.addEventListener('touchend', () => setTimeout(handleSelection, 10));
 
 // =========================================================
-// 💡 [신규] 미리보기 내 블록 클릭 시 빠른 화자 전환 툴바
+// 💡 미리보기 내 블록 클릭 시 빠른 화자 전환 툴바
 // =========================================================
 let activePreviewIndex = -1;
 
@@ -962,7 +963,7 @@ function handleBlockClick(e) {
 
     const index = parseInt(blockEl.id.replace('preview-block-', ''));
     
-    // 💡 [수정] 토글 로직: 툴바가 켜진 상태에서 같은 블록을 한 번 더 클릭하면 꺼짐
+    // 토글 로직: 툴바가 켜진 상태에서 같은 블록을 한 번 더 클릭하면 꺼짐
     if (activePreviewIndex === index && speakerToolbar && speakerToolbar.style.display === 'flex') {
         speakerToolbar.style.display = 'none';
         activePreviewIndex = -1;
@@ -983,9 +984,8 @@ function handleBlockClick(e) {
         const rect = blockEl.getBoundingClientRect();
         
         const toolbarHeight = speakerToolbar.offsetHeight || 36; 
-        const toolbarWidth = speakerToolbar.offsetWidth || 200; // 드롭다운 추가로 넓어짐
+        const toolbarWidth = speakerToolbar.offsetWidth || 200; 
         
-        // 클릭한 블록 바로 위 좌측쯤에 귀엽게 나타남
         let top = rect.top + window.scrollY - toolbarHeight - 8;
         let left = rect.left + window.scrollX + 10; 
         
@@ -1010,7 +1010,7 @@ function changeSpeakerFromPreview(newType) {
     activePreviewIndex = -1;
 }
 
-// 💡 [수정] 미니 툴바 삭제 버튼 연동 함수
+// 미니 툴바 삭제 버튼 연동 함수
 function deleteBlockFromPreview() {
     if (activePreviewIndex === -1) return;
     
@@ -1028,14 +1028,11 @@ document.addEventListener('click', (e) => {
     const htmlPreview = document.getElementById('htmlPreview');
     const speakerToolbar = document.getElementById('quickSpeakerToolbar');
     
-    // 툴바 자체를 클릭한 경우 무시
     if (speakerToolbar && speakerToolbar.contains(e.target)) return;
 
-    // 미리보기 안을 클릭한 경우
     if (htmlPreview && htmlPreview.contains(e.target)) {
         handleBlockClick(e);
     } else {
-        // 완전 바깥을 클릭하면 툴바 숨김
         if (speakerToolbar) speakerToolbar.style.display = 'none';
     }
 });
