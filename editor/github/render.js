@@ -490,7 +490,7 @@ function updateOutput(skipPreviewUpdate = false) {
         let htmlStr = '';
 
         if (block.type === 'empty') {
-            // 💡 [수정] 미리보기 화면에서 텍스트와 테두리 제거. 클릭 및 높이는 유지되도록 투명한 공백 블록 생성
+            // 미리보기 화면에서 텍스트와 테두리 제거. 클릭 및 높이는 유지되도록 투명한 공백 블록 생성
             htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
         } else if (block.type === 'divider') {
             let dStyle = block.content || 'solid-gray';
@@ -893,7 +893,6 @@ function stopBGM() {
 
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
     
-    // 💡 불필요해진 공백 줄 정규식 삭제 적용 완료. 이 정규식은 투명한 30px짜리 블록을 깔끔한 형태로 복사 HTML에 남깁니다.
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
@@ -930,3 +929,113 @@ ${cleanInnerContent}
     }
     document.getElementById('finalHtmlCode').value = finalHtml;
 }
+
+// 드래그 센서 복구 (모바일 환경 호환)
+document.addEventListener('selectionchange', () => setTimeout(handleSelection, 10));
+document.addEventListener('mouseup', () => setTimeout(handleSelection, 10));
+document.addEventListener('keyup', () => setTimeout(handleSelection, 10));
+document.addEventListener('touchend', () => setTimeout(handleSelection, 10));
+
+// =========================================================
+// 💡 [신규] 미리보기 내 블록 클릭 시 빠른 화자 전환 툴바
+// =========================================================
+let activePreviewIndex = -1;
+
+function handleBlockClick(e) {
+    let target = e.target;
+    let blockEl = null;
+    
+    while (target && target.id !== 'htmlPreview') {
+        if (target.id && target.id.startsWith('preview-block-')) {
+            blockEl = target;
+            break;
+        }
+        target = target.parentNode;
+    }
+
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (!blockEl) {
+        if(speakerToolbar) speakerToolbar.style.display = 'none';
+        activePreviewIndex = -1; // 초기화
+        return;
+    }
+
+    const index = parseInt(blockEl.id.replace('preview-block-', ''));
+    
+    // 💡 [수정] 토글 로직: 툴바가 켜진 상태에서 같은 블록을 한 번 더 클릭하면 꺼짐
+    if (activePreviewIndex === index && speakerToolbar && speakerToolbar.style.display === 'flex') {
+        speakerToolbar.style.display = 'none';
+        activePreviewIndex = -1;
+        return;
+    }
+
+    activePreviewIndex = index;
+
+    // 드래그(선택) 중일 때는 서식 툴바가 뜨므로 미니 툴바는 충돌을 막기 위해 띄우지 않음
+    const selection = window.getSelection();
+    if (selection.rangeCount && !selection.isCollapsed) {
+        if(speakerToolbar) speakerToolbar.style.display = 'none';
+        return;
+    }
+
+    if (speakerToolbar) {
+        speakerToolbar.style.display = 'flex';
+        const rect = blockEl.getBoundingClientRect();
+        
+        const toolbarHeight = speakerToolbar.offsetHeight || 36; 
+        const toolbarWidth = speakerToolbar.offsetWidth || 200; // 드롭다운 추가로 넓어짐
+        
+        // 클릭한 블록 바로 위 좌측쯤에 귀엽게 나타남
+        let top = rect.top + window.scrollY - toolbarHeight - 8;
+        let left = rect.left + window.scrollX + 10; 
+        
+        if (top < window.scrollY) {
+            top = rect.bottom + window.scrollY + 8;
+        }
+        
+        speakerToolbar.style.top = top + 'px';
+        speakerToolbar.style.left = left + 'px';
+    }
+}
+
+function changeSpeakerFromPreview(newType) {
+    if (activePreviewIndex === -1) return;
+    
+    if (typeof changeBlockType === 'function') {
+        changeBlockType(activePreviewIndex, newType);
+    }
+    
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (speakerToolbar) speakerToolbar.style.display = 'none';
+    activePreviewIndex = -1;
+}
+
+// 💡 [수정] 미니 툴바 삭제 버튼 연동 함수
+function deleteBlockFromPreview() {
+    if (activePreviewIndex === -1) return;
+    
+    if (typeof deleteBlock === 'function') {
+        deleteBlock(activePreviewIndex); // 기존 스크립트의 삭제 로직 재사용
+    }
+    
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (speakerToolbar) speakerToolbar.style.display = 'none';
+    activePreviewIndex = -1;
+}
+
+// 클릭 이벤트 감지 (바탕을 누르면 팝업이 스르륵 사라짐)
+document.addEventListener('click', (e) => {
+    const htmlPreview = document.getElementById('htmlPreview');
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    
+    // 툴바 자체를 클릭한 경우 무시
+    if (speakerToolbar && speakerToolbar.contains(e.target)) return;
+
+    // 미리보기 안을 클릭한 경우
+    if (htmlPreview && htmlPreview.contains(e.target)) {
+        handleBlockClick(e);
+    } else {
+        // 완전 바깥을 클릭하면 툴바 숨김
+        if (speakerToolbar) speakerToolbar.style.display = 'none';
+    }
+});
