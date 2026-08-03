@@ -330,7 +330,7 @@ function handleBlockClick(e) {
         const rect = blockEl.getBoundingClientRect();
         
         const toolbarHeight = speakerToolbar.offsetHeight || 36; 
-        const toolbarWidth = speakerToolbar.offsetWidth || 110;
+        const toolbarWidth = speakerToolbar.offsetWidth || 180; // 💡 버튼 추가로 인한 너비 조정
         
         // 클릭한 블록 바로 위 좌측쯤에 귀엽게 나타남
         let top = rect.top + window.scrollY - toolbarHeight - 8;
@@ -356,6 +356,25 @@ function changeSpeakerFromPreview(newType) {
     const speakerToolbar = document.getElementById('quickSpeakerToolbar');
     if (speakerToolbar) speakerToolbar.style.display = 'none';
     activePreviewIndex = -1;
+}
+
+// 💡 [추가] 툴바에서 문단 삭제를 안전하게 수행하는 함수
+function deleteBlockFromPreview() {
+    if (activePreviewIndex === -1) return;
+    
+    // script.js의 완벽하게 검증된 기본 삭제 로직(배열 삭제 + 렌더링 + 상태저장)을 호출
+    if (typeof deleteBlock === 'function') {
+        deleteBlock(activePreviewIndex);
+    }
+    
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (speakerToolbar) speakerToolbar.style.display = 'none';
+    activePreviewIndex = -1;
+    
+    // 삭제되었다는 부드러운 피드백 토스트 알림
+    if (typeof showToast === 'function') {
+        showToast('문단이 삭제되었습니다.');
+    }
 }
 
 // 클릭 이벤트 감지 (바탕을 누르면 팝업이 스르륵 사라짐)
