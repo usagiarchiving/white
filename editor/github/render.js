@@ -490,7 +490,7 @@ function updateOutput(skipPreviewUpdate = false) {
         let htmlStr = '';
 
         if (block.type === 'empty') {
-            // 💡 [수정] 미리보기 화면에서 텍스트와 테두리 제거. 클릭 및 높이는 유지되도록 투명한 공백 블록 생성
+            // 미리보기 화면에서 텍스트와 테두리 제거. 클릭 및 높이는 유지되도록 투명한 공백 블록 생성
             htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
         } else if (block.type === 'divider') {
             let dStyle = block.content || 'solid-gray';
@@ -566,7 +566,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     if (isSameAsPrev) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 0;"></div>`;
                     } else {
-                        avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                        avatarHtml = `<div class="av" style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
                     // 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
@@ -871,13 +871,26 @@ function stopBGM() {
     letter-spacing: ${currentLetterSpacing}em;
     word-break: ${currentWordBreak};
     overflow-wrap: ${currentWordBreak === 'break-all' ? 'anywhere' : 'break-word'};
-    padding: 0 25px;
+    padding: ${outputVersion === 2 ? '0 0px' : '0 25px'};
     box-sizing: border-box;
     max-width: 600px;
     margin: 0 auto;
     ${isDarkMode ? 'background-color: #1B1B1B; color: #F9F9F8;' : ''}
 }
 .tistory-post-wrapper * { box-sizing: border-box; }
+
+/* 티스토리 스킨의 이미지 간섭 방지 및 아바타 고정 */
+.tistory-post-wrapper img {
+    max-width: none !important;
+}
+.tistory-post-wrapper .av img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+    margin: 0 !important;
+}
+
 /* 포스트잇 내부 내용 길어질 때 스크롤 */
 .postit-scroll {
     max-height: 350px;
@@ -893,7 +906,7 @@ function stopBGM() {
 
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
     
-    // 💡 불필요해진 공백 줄 정규식 삭제 적용 완료. 이 정규식은 투명한 30px짜리 블록을 깔끔한 형태로 복사 HTML에 남깁니다.
+    // 불필요해진 공백 줄 정규식 삭제 적용 완료. 이 정규식은 투명한 30px짜리 블록을 깔끔한 형태로 복사 HTML에 남깁니다.
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
@@ -930,3 +943,286 @@ ${cleanInnerContent}
     }
     document.getElementById('finalHtmlCode').value = finalHtml;
 }
+
+
+function importFromHtml() {
+    const htmlText = document.getElementById('finalHtmlCode').value;
+    if (!htmlText.trim()) {
+        showToast('불러올 HTML 코드를 입력해주세요.');
+        return;
+    }
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlText;
+
+    let container = tempDiv.querySelector('#content-wrapper') || tempDiv.querySelector('body') || tempDiv;
+    const newBlocks = [];
+
+    let foundMint = false;
+    let foundPink = false;
+    let foundNarr = false;
+
+    function rgbToHex(rgb) {
+        if (!rgb) return '';
+        if (rgb.startsWith('#')) return rgb.toUpperCase();
+        let match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        if (!match) return rgb;
+        return "#" + (1 << 24 | match[1] << 16 | match[2] << 8 | match[3]).toString(16).slice(1).toUpperCase();
+    }
+
+    Array.from(container.children).forEach(child => {
+        if (['STYLE', 'SCRIPT', 'IFRAME', 'LINK', 'META', 'TITLE'].includes(child.tagName)) return;
+
+        let type = child.getAttribute('data-type');
+        let content = '';
+        let customTextColor = '#333333';
+        let customBgColor = '#E2E8F0';
+        let customName = '';
+        let customProfileUrl = '';
+        let bgmTitle = '';
+        let bgmUrl = '';
+        let polaroidDate = '';
+        let polaroidCaption = '';
+        
+        let outerHtml = child.outerHTML;
+        let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
+
+        if (!type) {
+            if (outerHtml.includes('playBGM')) {
+                type = 'bgm';
+            } else if (outerHtml.includes('max-width: 500px') && (outerHtml.includes('#fdfdfd') || outerHtml.includes('상태창') || outerHtml.includes('INNER THOUGHT') || outerHtml.includes('#242424'))) {
+                type = 'status'; 
+            } else if (child.style.fontStyle === 'italic' && (child.style.color === 'rgb(119, 119, 119)' || child.style.color === 'rgb(142, 142, 147)')) {
+                type = 'thought';
+            } else if (child.style.color === 'rgb(69, 159, 165)' || child.style.color === 'rgb(178, 228, 212)' || child.style.color === 'rgb(35, 119, 104)' || child.style.color === 'rgb(29, 111, 96)') { 
+                type = 'mint';
+            } else if (child.style.color === 'rgb(245, 189, 204)' || child.style.color === 'rgb(155, 62, 97)') {
+                type = 'pink';
+            } else if (child.querySelector('img') && !outerHtml.includes('border-radius: 50%') && !outerHtml.includes('Polaroid') && !outerHtml.includes('av')) {
+                type = 'image';
+            } else if (outerHtml.includes('font-weight: bold') && child.style.textAlign === 'left') {
+                type = 'title';
+            } else if (outerHtml.includes('color: #8e8e93') || outerHtml.includes('0.8em') || outerHtml.includes('13px')) {
+                type = 'dday';
+            } else if (outerHtml.includes('background-color: #333333') || outerHtml.includes('background-color: #e5e5ea') || outerHtml.includes('rotate(45deg)') || outerHtml.includes('dashed')) {
+                type = 'divider';
+            } else if (outerHtml.includes('data-type="postit"') || (outerHtml.includes('max-width: 450px') && outerHtml.includes('rotate(') && !outerHtml.includes('Polaroid'))) {
+                type = 'postit';
+            } else if (outerHtml.includes('data-type="polaroid"') || outerHtml.includes('Polaroid')) {
+                type = 'polaroid';
+            } else if (innerTextClean === '' && !child.querySelector('img')) {
+                type = 'empty';
+            } else {
+                type = 'narration';
+            }
+        }
+
+        if (type === 'divider') {
+            let styleMatch = child.getAttribute('data-style');
+            content = styleMatch || 'solid-gray';
+        } else if (['mint', 'pink', 'mob', 'custom'].includes(type)) {
+            let textTarget = child;
+            let isBubbleMode = false;
+            
+            if (child.classList && (child.classList.contains('scroll-msg-box') || child.classList.contains('m-msg'))) {
+                isBubbleMode = true;
+                let bubble2Target = child.querySelector('.m-bubble');
+                if (bubble2Target) {
+                    textTarget = bubble2Target;
+                    let nameEl = child.querySelector('.m-name');
+                    if (nameEl) customName = nameEl.textContent.trim();
+                    let imgEl = child.querySelector('.av img');
+                    if (imgEl) customProfileUrl = imgEl.src;
+                    customBgColor = rgbToHex(bubble2Target.style.backgroundColor) || '#E2E8F0';
+                } else if (child.children.length > 1) {
+                    textTarget = child.children[1];
+                    let imgEl = child.querySelector('img');
+                    if (imgEl) customProfileUrl = imgEl.src;
+                    customBgColor = rgbToHex(textTarget.style.backgroundColor) || '#E2E8F0';
+                }
+            }
+
+            let rawHtml = textTarget.innerHTML || '';
+            rawHtml = rawHtml.replace(/<div class="bubble-tail"[^>]*>.*?<\/div>/gi, '');
+            rawHtml = rawHtml.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+            content = rawHtml.replace(/^\n+|\n+$/g, '').trim();
+            
+            let textHex = rgbToHex(textTarget.style.color || child.style.color);
+
+            if (type === 'mint') {
+                if (!foundMint) {
+                    if (textHex) {
+                        if (isBubbleMode) {
+                            let b1 = document.getElementById('mintBubbleTextColor');
+                            let b2 = document.getElementById('mintBubbleTextColorPicker');
+                            let bg1 = document.getElementById('mintBgColor');
+                            let bg2 = document.getElementById('mintBgColorPicker');
+                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
+                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
+                        } else {
+                            let m1 = document.getElementById('mintTextColor');
+                            let m2 = document.getElementById('mintTextColorPicker');
+                            if (m1) m1.value = textHex; if (m2) m2.value = textHex;
+                        }
+                    }
+                    foundMint = true;
+                }
+            } else if (type === 'pink') {
+                if (!foundPink) {
+                    if (textHex) { 
+                        if (isBubbleMode) {
+                            let b1 = document.getElementById('pinkBubbleTextColor');
+                            let b2 = document.getElementById('pinkBubbleTextColorPicker');
+                            let bg1 = document.getElementById('pinkBgColor');
+                            let bg2 = document.getElementById('pinkBgColorPicker');
+                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
+                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
+                        } else {
+                            let p1 = document.getElementById('pinkTextColor');
+                            let p2 = document.getElementById('pinkTextColorPicker');
+                            if (p1) p1.value = textHex; if (p2) p2.value = textHex;
+                        }
+                    }
+                    foundPink = true;
+                }
+            } else if (type === 'custom') {
+                customTextColor = textHex || '#333333';
+            }
+        } else if (type === 'thought') {
+            let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+            content = rawHtml.replace(/^\n+|\n+$/g, '');
+        } else if (type === 'title') {
+            let rawHtml = child.innerHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+            let tDiv = document.createElement('div');
+            tDiv.innerHTML = rawHtml;
+            content = (tDiv.textContent || tDiv.innerText || "").trim();
+        } else if (type === 'postit') {
+            const txtDiv = child.querySelectorAll('div')[1];
+            if (txtDiv) {
+                let rawHtml = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n');
+                content = rawHtml.replace(/^\n+|\n+$/g, '').replace(/<[^>]*>?/gm, ''); 
+            }
+        } else if (type === 'polaroid') {
+            const img = child.querySelector('img');
+            if (img) content = img.src;
+            
+            const textContainer = child.children[2];
+            if (textContainer) {
+                const txtDivs = textContainer.querySelectorAll('div');
+                if (txtDivs.length >= 2) {
+                    polaroidDate = txtDivs[0].textContent || '';
+                    polaroidCaption = txtDivs[1].textContent || '';
+                }
+            }
+        } else if (type === 'narration') {
+            let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+            content = rawHtml.replace(/^\n+|\n+$/g, '');
+
+            if (!foundNarr) {
+                let nColor = rgbToHex(child.style.color);
+                if (nColor) {
+                    let n1 = document.getElementById('narrColor');
+                    let n2 = document.getElementById('narrColorPicker');
+                    if (n1) n1.value = nColor;
+                    if (n2) n2.value = nColor;
+                }
+                let italicCheck = document.getElementById('narrItalic');
+                if (italicCheck) italicCheck.checked = child.style.fontStyle === 'italic';
+                foundNarr = true;
+            }
+        } else if (type === 'dday') {
+            let rawHtml = child.innerHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+            let tDiv = document.createElement('div');
+            tDiv.innerHTML = rawHtml;
+            content = (tDiv.textContent || tDiv.innerText || "").trim();
+        } else if (type === 'status' || type === 'html') {
+            content = child.innerHTML.trim(); 
+        } else if (type === 'bgm') {
+            const titleSpan = child.querySelector('span[style*="max-width: 120px"]');
+            if (titleSpan) bgmTitle = titleSpan.textContent.trim();
+            
+            const playDiv = child.querySelector('div[onclick*="playBGM"]');
+            if (playDiv) {
+                const match = playDiv.getAttribute('onclick').match(/playBGM\('([^']+)'/);
+                if (match) bgmUrl = '[https://youtu.be/](https://youtu.be/)' + match[1];
+            }
+        } else if (type === 'image') {
+            const img = child.querySelector('img');
+            if (img) content = img.src;
+        } else if (type === 'empty') {
+            content = '';
+        }
+
+        if (type === 'narration' && !content) type = 'empty'; 
+
+        newBlocks.push({
+            type: type,
+            content: content || '',
+            customTextColor: customTextColor,
+            customBgColor: customBgColor,
+            customName: customName,
+            customProfileUrl: customProfileUrl,
+            bgmTitle: bgmTitle,
+            bgmUrl: bgmUrl,
+            polaroidDate: polaroidDate,
+            polaroidCaption: polaroidCaption
+        });
+    });
+
+    if (newBlocks.length > 0) {
+        blocks = newBlocks;
+        if (typeof renderEditor === 'function') renderEditor();
+        saveState(); 
+    } else {
+        showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
+    }
+}
+
+function copyHtml() {
+    const code = document.getElementById('finalHtmlCode');
+    if(code) {
+        code.select();
+        document.execCommand('copy');
+        showToast('최종 HTML이 복사되었습니다!');
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    setupColorPicker('mintTextColorPicker', 'mintTextColor');
+    setupColorPicker('mintBubbleTextColorPicker', 'mintBubbleTextColor');
+    setupColorPicker('mintBgColorPicker', 'mintBgColor');
+    
+    setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
+    setupColorPicker('pinkBubbleTextColorPicker', 'pinkBubbleTextColor');
+    setupColorPicker('pinkBgColorPicker', 'pinkBgColor');
+    
+    setupColorPicker('mobTextColorPicker', 'mobTextColor');
+    setupColorPicker('mobBubbleTextColorPicker', 'mobBubbleTextColor');
+    setupColorPicker('mobBgColorPicker', 'mobBgColor');
+    
+    setupColorPicker('narrColorPicker', 'narrColor');
+    setupColorPicker('highlightColorPicker', 'highlightColor');
+
+    const inputsToSync = [
+        'mintTextColor', 'mintBubbleTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
+        'pinkTextColor', 'pinkBubbleTextColor', 'pinkBgColor', 'pinkName', 'pinkProfileUrl',
+        'mobTextColor', 'mobBubbleTextColor', 'mobBgColor', 'mobName', 'mobProfileUrl',
+        'narrColor', 'highlightColor'
+    ];
+
+    inputsToSync.forEach(id => {
+        let el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => { 
+                if(typeof updateOutput === 'function') updateOutput(); 
+            });
+        }
+    });
+
+    let elNarrItalic = document.getElementById('narrItalic');
+    if (elNarrItalic) {
+        elNarrItalic.addEventListener('change', () => { 
+            if(typeof updateOutput === 'function') updateOutput(); 
+        });
+    }
+});
