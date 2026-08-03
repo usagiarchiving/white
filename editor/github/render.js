@@ -134,6 +134,8 @@ function applyAutoCustomColor(safeKey) {
     const newBgCol = document.getElementById(`auto-bg-text-${safeKey}`).value.trim();
 
     let count = 0;
+    if (!blocks || !Array.isArray(blocks)) return;
+
     blocks.forEach(b => {
         if (b.type === 'custom') {
             const bKey = (b.customName || '제3자') + '|' + (b.customTextColor || '#333333');
@@ -174,6 +176,8 @@ function applyTextStyles(text) {
 function renderEditor() {
     const list = document.getElementById('editorList');
     list.innerHTML = '';
+    
+    if (!blocks || !Array.isArray(blocks)) blocks = [];
 
     blocks.forEach((block, index) => {
         const item = document.createElement('div');
@@ -234,8 +238,6 @@ function renderEditor() {
                 </div>
             `;
         }
-
-        let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
 
         let narrationToolbar = '';
         if (isNarration) {
@@ -320,6 +322,8 @@ function renderEditor() {
 }
 
 function syncPreviewToBlocks() {
+    if (!blocks || !Array.isArray(blocks)) return;
+
     blocks.forEach((block, index) => {
         const el = document.getElementById(`preview-block-${index}`);
         if (!el) return;
@@ -413,7 +417,8 @@ function updateOutput(skipPreviewUpdate = false) {
     const mobBgColor = document.getElementById('mobBgColor') ? document.getElementById('mobBgColor').value : '#eff1f5';
 
     const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#48484A');
-    const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
+    let narrItalicCheck = document.getElementById('narrItalic');
+    const narrItalic = narrItalicCheck && narrItalicCheck.checked ? 'italic' : 'normal';
 
     const cTitle = isDarkMode ? '#F9F9F8' : '#1c1c1e';
     const cStatusBg = isDarkMode ? '#242424' : '#fdfdfd';
@@ -438,9 +443,13 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePostitCount = 0;
     let consecutivePolaroidCount = 0; 
 
-    // 강제 최소 여백 제거, 설정한 px 그대로 반영
-    let gapBlock = currentBlockGap + 'px';
-    let gapInner = currentInnerGap + 'px';
+    // 💡 [수정] 변수 누락 방어: script.js 갱신을 건너뛰었더라도 치명적 오류(먹통)가 나지 않도록 fallback(기본값) 적용
+    let fallbackInnerGap = typeof currentInnerGap !== 'undefined' ? currentInnerGap : 4;
+    let fallbackBlockGap = typeof currentBlockGap !== 'undefined' ? currentBlockGap : 15;
+    let gapBlock = fallbackBlockGap + 'px';
+    let gapInner = fallbackInnerGap + 'px';
+
+    if (!blocks || !Array.isArray(blocks)) return;
 
     blocks.forEach((block, index) => {
         if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid'].includes(block.type)) return;
@@ -473,16 +482,15 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePolaroidCount = 0;
         }
 
-        // 낡은 0px 조건문과 변수를 삭제하고, 오직 mt 하나로 통일하여 다이렉트 렌더링
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
                 if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? gapInner : gapBlock; // 동일 화자: 내부, 다른 화자: 문단
+                    mt = isSameAsPrev ? gapInner : gapBlock; 
                 } else if (isPrevNarration && isCurrNarration) {
-                    mt = gapInner; // 연속된 나레이션: 내부
+                    mt = gapInner; 
                 } else {
-                    mt = gapBlock; // 나레이션-대사, 대사-상태창 등 블록 성격이 전환되면 무조건 문단 간격
+                    mt = gapBlock; 
                 }
             }
         }
@@ -490,7 +498,6 @@ function updateOutput(skipPreviewUpdate = false) {
         let htmlStr = '';
 
         if (block.type === 'empty') {
-            // 미리보기 화면에서 텍스트와 테두리 제거. 클릭 및 높이는 유지되도록 투명한 공백 블록 생성
             htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
         } else if (block.type === 'divider') {
             let dStyle = block.content || 'solid-gray';
@@ -510,7 +517,7 @@ function updateOutput(skipPreviewUpdate = false) {
             
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">${dividerInner}</div>\n`;
         } else {
-            let lines = block.content.split('\n');
+            let lines = (block.content || '').split('\n');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
 
             if (block.type === 'title') {
@@ -558,7 +565,6 @@ function updateOutput(skipPreviewUpdate = false) {
                     charName = block.customName || '제3자';
                 }
 
-                // 핑크 캐릭터 확인 플래그
                 let isPink = (curr === 'pink');
 
                 if (outputMode === 'bubble1') {
@@ -569,7 +575,6 @@ function updateOutput(skipPreviewUpdate = false) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
 
-                    // 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
                     let alignStyle = isPink ? 'flex-direction: row-reverse;' : '';
 
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${mt}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
@@ -580,24 +585,20 @@ function updateOutput(skipPreviewUpdate = false) {
                     let tailHtml = '';
 
                     if (!isSameAsPrev) {
-                        // 핑크일 때 프로필 사진 위치 반전
                         let avPos = isPink ? 'right: 0;' : 'left: 0;';
                         avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                         
                         if (charName.trim() !== '') {
-                            // 핑크일 때 이름 텍스트 정렬 반전
                             let nameAlign = isPink ? 'text-align: right;' : 'text-align: left;';
                             nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
                         }
                         
-                        // 핑크일 때 꼬리 방향 반전
                         let tailPos = isPink 
                             ? `right: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-left: 12px solid ${bgColor};` 
                             : `left: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor};`;
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; ${tailPos} z-index: -1;"></div>`;
                     }
 
-                    // 핑크일 때 전체 컨테이너 정렬 및 패딩 방향 변경
                     let containerPadding = isPink ? 'padding-right: 50px;' : 'padding-left: 50px;';
                     let containerFlex = isPink ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
 
@@ -619,7 +620,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="bgm" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 10px 0; text-align: center; box-sizing: border-box;"><div style="display: inline-flex; align-items: center; background-color: ${isDarkMode ? '#333' : '#ffffff'}; border: 1px solid ${isDarkMode ? '#444' : '#e5e5ea'}; border-radius: 20px; padding: 4px 12px; gap: 8px; font-size: 11px; color: ${isDarkMode ? '#ccc' : '#8e8e93'}; box-shadow: 0 1px 2px rgba(0,0,0,0.02); line-height: 1;"><span style="display: flex; align-items: center; color: ${isDarkMode ? '#888' : '#aeaeb2'};"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span><span style="max-width: 120px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isDarkMode ? '#F9F9F8' : '#3a3a3c'};">${block.bgmTitle || 'BGM'}</span><span style="color: ${isDarkMode ? '#555' : '#d1d1d6'};">|</span><div style="display: flex; align-items: center; gap: 4px;"><div onclick="playBGM('${vid}', '${block.bgmTitle}')" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="재생"><svg width="8" height="8" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M8 5v14l11-7z"/></svg></div><div onclick="stopBGM()" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="정지"><svg width="7" height="7" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M6 6h12v12H6z"/></svg></div></div></div></div>\n`;
             }
             else if (block.type === 'status') {
-                if (block.content.trim().startsWith('<div')) {
+                if ((block.content || '').trim().startsWith('<div')) {
                     htmlStr = `<div id="preview-block-${index}" data-type="status" onclick="focusAndScrollBlock(${index}, true)" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: ${cStatusBg}; border: 1px solid ${cStatusBorder}; border-radius: 6px; box-sizing: border-box; color: ${cStatusText};">\n${block.content}\n</div>\n`;
                 } else {
                     let sData = {};
@@ -946,7 +947,8 @@ function handleBlockClick(e) {
     let blockEl = null;
     
     while (target && target.id !== 'htmlPreview') {
-        if (target.id && target.id.startsWith('preview-block-')) {
+        // 💡 [수정] 클릭 타겟이 예상치 못한 요소(텍스트 노드, SVG 등)일 때 발생하는 치명적인 에러 방어
+        if (target.id && typeof target.id === 'string' && target.id.startsWith('preview-block-')) {
             blockEl = target;
             break;
         }
@@ -956,7 +958,7 @@ function handleBlockClick(e) {
     const speakerToolbar = document.getElementById('quickSpeakerToolbar');
     if (!blockEl) {
         if(speakerToolbar) speakerToolbar.style.display = 'none';
-        activePreviewIndex = -1; // 초기화
+        activePreviewIndex = -1;
         return;
     }
 
@@ -973,7 +975,7 @@ function handleBlockClick(e) {
 
     // 드래그(선택) 중일 때는 서식 툴바가 뜨므로 미니 툴바는 충돌을 막기 위해 띄우지 않음
     const selection = window.getSelection();
-    if (selection.rangeCount && !selection.isCollapsed) {
+    if (selection && selection.rangeCount && !selection.isCollapsed) {
         if(speakerToolbar) speakerToolbar.style.display = 'none';
         return;
     }
@@ -983,7 +985,7 @@ function handleBlockClick(e) {
         const rect = blockEl.getBoundingClientRect();
         
         const toolbarHeight = speakerToolbar.offsetHeight || 36; 
-        const toolbarWidth = speakerToolbar.offsetWidth || 200; // 드롭다운 추가로 넓어짐
+        const toolbarWidth = speakerToolbar.offsetWidth || 200; 
         
         // 클릭한 블록 바로 위 좌측쯤에 귀엽게 나타남
         let top = rect.top + window.scrollY - toolbarHeight - 8;
@@ -1023,19 +1025,23 @@ function deleteBlockFromPreview() {
     activePreviewIndex = -1;
 }
 
-// 클릭 이벤트 감지 (바탕을 누르면 팝업이 스르륵 사라짐)
+// 💡 [수정] 클릭 이벤트 전체를 try-catch로 감싸서 절대 화면이 마비되지 않게 보호
 document.addEventListener('click', (e) => {
-    const htmlPreview = document.getElementById('htmlPreview');
-    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
-    
-    // 툴바 자체를 클릭한 경우 무시
-    if (speakerToolbar && speakerToolbar.contains(e.target)) return;
+    try {
+        const htmlPreview = document.getElementById('htmlPreview');
+        const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+        
+        // 툴바 자체를 클릭한 경우 무시
+        if (speakerToolbar && speakerToolbar.contains(e.target)) return;
 
-    // 미리보기 안을 클릭한 경우
-    if (htmlPreview && htmlPreview.contains(e.target)) {
-        handleBlockClick(e);
-    } else {
-        // 완전 바깥을 클릭하면 툴바 숨김
-        if (speakerToolbar) speakerToolbar.style.display = 'none';
+        // 미리보기 안을 클릭한 경우
+        if (htmlPreview && htmlPreview.contains(e.target)) {
+            handleBlockClick(e);
+        } else {
+            // 완전 바깥을 클릭하면 툴바 숨김
+            if (speakerToolbar) speakerToolbar.style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Click event error safely bypassed:', err);
     }
 });
