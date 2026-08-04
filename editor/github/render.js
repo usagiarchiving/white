@@ -439,6 +439,7 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePolaroidCount = 0; 
 
     // 강제 최소 여백 제거, 설정한 px 그대로 반영
+    // 💡 유저 확인 완료: gapBlock은 이제 '지문/대사 간격'을 완벽하게 통제합니다.
     let gapBlock = currentBlockGap + 'px';
     let gapInner = currentInnerGap + 'px';
 
@@ -473,16 +474,18 @@ function updateOutput(skipPreviewUpdate = false) {
             consecutivePolaroidCount = 0;
         }
 
-        // 낡은 0px 조건문과 변수를 삭제하고, 오직 mt 하나로 통일하여 다이렉트 렌더링
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
                 if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? gapInner : gapBlock; // 동일 화자: 내부, 다른 화자: 문단
+                    // 동일 화자 연속일 때만 내부 간격(gapInner) 적용.
+                    // 💡 다른 화자일 경우 지문/대사 간격(gapBlock)이 깔끔하게 적용됩니다.
+                    mt = isSameAsPrev ? gapInner : gapBlock; 
                 } else if (isPrevNarration && isCurrNarration) {
-                    mt = gapInner; // 연속된 나레이션: 내부
+                    mt = gapInner; // 연속된 나레이션: 내부 간격
                 } else {
-                    mt = gapBlock; // 나레이션-대사, 대사-상태창 등 블록 성격이 전환되면 무조건 문단 간격
+                    // 💡 나레이션-대사 교차 시 지문/대사 간격(gapBlock)이 정확히 적용됩니다.
+                    mt = gapBlock; 
                 }
             }
         }
@@ -906,7 +909,6 @@ function stopBGM() {
 
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
     
-    // 불필요해진 공백 줄 정규식 삭제 적용 완료. 이 정규식은 투명한 30px짜리 블록을 깔끔한 형태로 복사 HTML에 남깁니다.
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
