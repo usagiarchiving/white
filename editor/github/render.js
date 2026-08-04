@@ -439,7 +439,7 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePolaroidCount = 0; 
 
     // 강제 최소 여백 제거, 설정한 px 그대로 반영
-    // 💡 유저 확인 완료: gapBlock은 이제 '지문/대사 간격'을 완벽하게 통제합니다.
+    // gapBlock은 이제 '지문/대사 간격' 및 '다른 화자간 간격'을 완벽하게 통제합니다.
     let gapBlock = currentBlockGap + 'px';
     let gapInner = currentInnerGap + 'px';
 
@@ -479,12 +479,12 @@ function updateOutput(skipPreviewUpdate = false) {
             if (prevValidType) {
                 if (isPrevDiag && isCurrDiag) {
                     // 동일 화자 연속일 때만 내부 간격(gapInner) 적용.
-                    // 💡 다른 화자일 경우 지문/대사 간격(gapBlock)이 깔끔하게 적용됩니다.
+                    // 다른 화자일 경우 지문/대사 간격(gapBlock)이 깔끔하게 적용됩니다.
                     mt = isSameAsPrev ? gapInner : gapBlock; 
                 } else if (isPrevNarration && isCurrNarration) {
                     mt = gapInner; // 연속된 나레이션: 내부 간격
                 } else {
-                    // 💡 나레이션-대사 교차 시 지문/대사 간격(gapBlock)이 정확히 적용됩니다.
+                    // 나레이션-대사 교차 시 지문/대사 간격(gapBlock)이 정확히 적용됩니다.
                     mt = gapBlock; 
                 }
             }
@@ -493,7 +493,6 @@ function updateOutput(skipPreviewUpdate = false) {
         let htmlStr = '';
 
         if (block.type === 'empty') {
-            // 미리보기 화면에서 텍스트와 테두리 제거. 클릭 및 높이는 유지되도록 투명한 공백 블록 생성
             htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
         } else if (block.type === 'divider') {
             let dStyle = block.content || 'solid-gray';
@@ -937,7 +936,8 @@ ${cleanInnerContent}
 </body>
 </html>`;
     } else {
-        finalHtml = globalStyle + cleanInnerContent;
+        // 💡 해결 완료: V2에서도 CSS가 적용될 수 있도록 wrapper 껍데기를 완벽하게 씌웠습니다.
+        finalHtml = globalStyle + `<div class="tistory-post-wrapper">\n${cleanInnerContent}\n</div>`;
     }
 
     if (!skipPreviewUpdate) {
@@ -957,7 +957,7 @@ function importFromHtml() {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = htmlText;
 
-    let container = tempDiv.querySelector('#content-wrapper') || tempDiv.querySelector('body') || tempDiv;
+    let container = tempDiv.querySelector('#content-wrapper') || tempDiv.querySelector('.tistory-post-wrapper') || tempDiv.querySelector('body') || tempDiv;
     const newBlocks = [];
 
     let foundMint = false;
