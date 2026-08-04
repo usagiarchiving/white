@@ -117,8 +117,8 @@
         <div class="grid-layout">
             <!-- 왼쪽: 입력 영역 -->
             <div class="input-group">
-                <label for="inputHtml">HTML 코드 입력 (여러 개 입력 시 줄바꿈되어 추출됩니다)</label>
-                <textarea id="inputHtml" placeholder='<a href="..."><img src="https://i.ibb.co/..." alt="..."></a>'></textarea>
+                <label for="inputHtml">HTML / BBCode 코드 입력 (여러 개 입력 시 줄바꿈되어 추출됩니다)</label>
+                <textarea id="inputHtml" placeholder='<a href="..."><img src="https://i.ibb.co/..." alt="..."></a> 또는 [img]https://i.postimg.cc/...[/img]'></textarea>
             </div>
 
             <!-- 오른쪽: 출력 영역 -->
@@ -137,14 +137,21 @@
 
         // 입력창에 텍스트가 입력될 때마다 자동으로 추출
         inputHtml.addEventListener('input', function() {
-            const htmlContent = this.value;
-            // img 태그 내의 src 속성 값을 추출하는 정규식
-            const regex = /<img[^>]+src=["']([^"']+)["']/gi;
-            let matches;
+            const textContent = this.value;
             const extractedUrls = [];
 
-            while ((matches = regex.exec(htmlContent)) !== null) {
-                extractedUrls.push(matches[1]);
+            // 1. HTML img 태그 내의 src 속성 값을 추출하는 정규식
+            const htmlRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+            let htmlMatches;
+            while ((htmlMatches = htmlRegex.exec(textContent)) !== null) {
+                extractedUrls.push(htmlMatches[1]);
+            }
+
+            // 2. BBCode [img] 태그 내의 주소를 추출하는 정규식 추가
+            const bbcodeRegex = /\[img\](.*?)\[\/img\]/gi;
+            let bbcodeMatches;
+            while ((bbcodeMatches = bbcodeRegex.exec(textContent)) !== null) {
+                extractedUrls.push(bbcodeMatches[1]);
             }
 
             // 추출된 URL들을 줄바꿈(\n)으로 연결하여 출력창에 표시
