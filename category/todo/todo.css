@@ -63,7 +63,7 @@
 .progress-text { font-size: 7px !important; color: var(--sub-color); font-family: 'Courier New', monospace; letter-spacing: 0; }
 
 .cal-header, .weekly-header, .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 600; font-size: 10px !important; width: 100%; }
-.weekly-strip { display: flex; justify-content: space-between; margin-bottom: 10px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px 10px; width: 100%; box-sizing: border-box;}
+.weekly-strip { display: flex; justify-content: space-between; margin-bottom: 10px; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px; padding: 12px 10px; width: 100%; box-sizing: border-box; transition: opacity 0.3s ease, height 0.3s ease;}
 .day-col { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
 .day-name { font-size: 8px !important; color: var(--sub-color); }
 .day-date { font-size: 10px !important; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.2s; border: none; position: relative; z-index: 1;}
@@ -148,4 +148,71 @@
     .quadrant-box { padding: 18px; gap: 8px; }
     .m-header-top { font-size: 11px !important; padding-bottom: 6px; }
     .m-header-left { font-size: 11px !important; letter-spacing: 4px; }
+}
+
+/* ==========================================================================
+   [추가] 검색 결과 전용 UI 및 캘린더 하이라이트 스타일 (iCloud 파스텔 톤)
+   ========================================================================== */
+
+/* 위클리 탭 전체 검색 시 숨겨질 스트립 레이아웃 */
+.search-mode-hidden {
+    display: none !important;
+}
+
+/* 위클리 탭 검색 결과 메타데이터 (날짜, 카테고리 태그 래퍼) */
+.search-result-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding-left: 2px;
+}
+
+/* 날짜 태그 스타일 */
+.search-tag-date {
+    font-size: 8px !important;
+    color: var(--sub-color);
+    background: var(--divider-bg);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+/* 카테고리 태그 스타일 */
+.search-tag-category {
+    font-size: 7.5px !important;
+    color: #fff;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* 캘린더 탭 검색 결과 하이라이트 (노란 동그라미) */
+.cal-day-cell.search-highlight {
+    position: relative;
+    z-index: 2;
+    color: var(--main-color);
+    font-weight: bold;
+}
+
+.cal-day-cell.search-highlight::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--cat-yellow); /* 기존 팔레트의 옐로우 색상 재활용 */
+    border-radius: 50%;
+    z-index: -1;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: popYellow 0.4s ease forwards;
+}
+
+@keyframes popYellow {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    60% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
