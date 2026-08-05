@@ -276,7 +276,11 @@
             const colClass = `day-col ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`;
             strip.append(`<div class="${colClass}" onclick="selectDate('${getFormatDate(d)}')"><span class="day-name">${daysKor[i]}</span><span class="day-date">${d.getDate()}</span></div>`);
         }
-        renderDateList('weekly-list');
+        
+        // 검색 모드가 아닐 때만 렌더링
+        if (!$('#weekly-search').val()) {
+            renderDateList('weekly-list');
+        }
     }
 
     window.selectDate = function(dateStr) { selectedDate = new Date(dateStr); refreshAllViews(); };
@@ -297,13 +301,9 @@
         }
         
         filtered = getSortedTodos(filtered, true);
-        const searchInputId = containerId === 'weekly-list' ? 'weekly-search' : 'cal-search';
-        const keyword = $(`#${searchInputId}`).val()?.toLowerCase() || '';
 
         filtered.forEach(todo => {
-            const itemHtml = $(createTodoHTML(todo, true)); 
-            if (keyword && !todo.content.toLowerCase().includes(keyword)) itemHtml.hide();
-            list.append(itemHtml);
+            list.append(createTodoHTML(todo, true));
         });
     }
 
@@ -353,9 +353,20 @@
             const classes = `cal-day-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${hasUncompleted && actualCompletedToday.length === 0 ? 'has-todo' : ''}`;
             grid.append(`<div class="${classes}" onclick="selectDate('${dStr}')">${i}${badgeHtml}</div>`);
         }
-        renderDateList('cal-list');
+        
+        // 검색 모드일 경우 하이라이트 유지, 아닐 경우 일반 리스트 렌더링
+        if ($('#cal-search').val()) {
+            handleCalendarSearch($('#cal-search').val().toLowerCase().trim());
+        } else {
+            renderDateList('cal-list');
+        }
     }
 
+    /* ==========================================================================
+       🚨 [수정/추가] 강력한 글로벌 검색 기능 엔진 (정규식 파싱 및 뷰 전환)
+       ========================================================================== */
+       
+    // 검색창 애니메이션 유지
     $(document).on('click', '.todo-search-icon', function() {
         const input = $(this).siblings('.todo-search-input');
         input.addClass('active').focus();
@@ -369,22 +380,160 @@
         }
     });
 
-    $(document).on('input', '.todo-search-input', function() {
-        const keyword = $(this).val().toLowerCase();
-        const id = $(this).attr('id');
-        let containerId = '#weekly-list';
-        if (id === 'cal-search') containerId = '#cal-list';
-        else if (id === 'sd-search') containerId = '#sd-list';
-        
-        $(`${containerId} .todo-item`).each(function() {
-            const text = $(this).find('.todo-text').text().toLowerCase();
-            let subText = "";
-            $(this).find('.exp-subtask-item span').each(function() { subText += " " + $(this).text().toLowerCase(); });
+    // 글로벌 필터링 핵심 로직
+    function filterTodosByKeyword(keyword) {
+        return todosData.filter(todo => {
+            // 1. /all 명령어: 모든 데이터 반환
+            if (keyword === '/all') return true;
             
-            if(text.includes(keyword) || subText.includes(keyword)) $(this).show();
-            else $(this).hide();
+            // 2. /미완료 명령어: 완료되지 않은 데이터 반환
+            if (keyword === '/미완료' || keyword === '/미완') return !todo.is_completed;
+
+            // 3. 연/월 정규식 파싱 (예: "2026년", "7월", "2026년 7월", "/7월")
+            const yearMatch = keyword.match(/(\d{4})년/);
+            const monthMatch = keyword.match(/(\d{1,2})월/);
+            
+            if (yearMatch || monthMatch) {
+                const dateStr = todo.target_date || todo.completed_date || ""; // 기준 날짜 추출
+                if (!dateStr) return false;
+                
+                const [y, m, d] = dateStr.split('-');
+                let isMatch = true;
+                
+                if (yearMatch && yearMatch[1] !== y) isMatch = false;
+                if (monthMatch && monthMatch[1].padStart(2, '0') !== m) isMatch = false;
+                
+                if (yearMatch || monthMatch) return isMatch; 
+            }
+
+            // 4. 일반 텍스트 검색 (내용 및 하위 할일)
+            const text = todo.content.toLowerCase();
+            let subText = "";
+            if (todo.subtasks) {
+                todo.subtasks.forEach(st => subText += " " + st.content.toLowerCase());
+            }
+            
+            return text.includes(keyword.replace('/', '')) || subText.includes(keyword.replace('/', ''));
         });
+    }
+
+    // 카테고리 색상 -> 한글 이름 변환 헬퍼 함수
+    function getCategoryName(cat) {
+        const names = {
+            'gray': '기본', 'red': '긴급', 'orange': '주의', 'yellow': '아이디어',
+            'green': '실행', 'mint': '개인', 'blue': '업무', 'navy': '기록', 
+            'purple': '창작', 'pink': '중요'
+        };
+        return names[cat] || '분류';
+    }
+
+    // [위클리 탭] 검색 렌더링 함수
+    function handleWeeklySearch(keyword) {
+        const list = $('#weekly-list');
+        const strip = $('#weekly-strip');
+        
+        if (!keyword) {
+            strip.removeClass('search-mode-hidden');
+            renderDateList('weekly-list');
+            return;
+        }
+        
+        // 검색어 존재 시 주간 달력 숨김 처리
+        strip.addClass('search-mode-hidden');
+        list.empty();
+        
+        let filtered = filterTodosByKeyword(keyword);
+        
+        if (filtered.length === 0) {
+            list.append('<div style="width: 100%; text-align:center; color:var(--sub-color); padding: 40px 0; font-size: 10px;">조건에 일치하는 기록이 없습니다.</div>');
+            return;
+        }
+        
+        // 최신 날짜순 정렬
+        filtered.sort((a, b) => {
+            const dateA = a.target_date || a.completed_date || "";
+            const dateB = b.target_date || b.completed_date || "";
+            return dateB.localeCompare(dateA);
+        });
+        
+        filtered.forEach(todo => {
+            const itemHtml = $(createTodoHTML(todo, false)); 
+            const dateStr = todo.target_date ? todo.target_date.replace(/-/g, '.') : '기한 없음';
+            const catName = getCategoryName(todo.category);
+            
+            // 검색 결과 전용 메타 꼬리표 부착
+            const metaHtml = `
+                <div class="search-result-meta">
+                    <span class="search-tag-date">${dateStr}</span>
+                    <span class="search-tag-category" style="background-color: var(--cat-${todo.category});">${catName}</span>
+                </div>
+            `;
+            
+            itemHtml.append(metaHtml);
+            list.append(itemHtml);
+        });
+    }
+
+    // [캘린더 탭] 검색 렌더링 함수 (노란 동그라미)
+    function handleCalendarSearch(keyword) {
+        $('.cal-day-cell').removeClass('search-highlight');
+        const list = $('#cal-list');
+        
+        if (!keyword) {
+            renderDateList('cal-list');
+            return;
+        }
+        
+        let filtered = filterTodosByKeyword(keyword);
+        const matchedDates = new Set();
+        
+        filtered.forEach(todo => {
+            if (todo.target_date) matchedDates.add(todo.target_date);
+            if (todo.completed_date) matchedDates.add(todo.completed_date);
+        });
+        
+        // 현재 달력에 노란색 하이라이트 동그라미 적용
+        $('.cal-day-cell').each(function() {
+            const day = $(this).text().replace(/[^0-9]/g, '');
+            if (!day) return;
+            
+            const y = currentDate.getFullYear();
+            const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const d = String(day).padStart(2, '0');
+            const dStr = `${y}-${m}-${d}`;
+            
+            if (matchedDates.has(dStr)) {
+                $(this).addClass('search-highlight');
+            }
+        });
+        
+        list.empty();
+        list.append('<div style="width: 100%; text-align:center; color:var(--point-color); padding: 30px 0; font-size: 9px; font-weight: 600;"><i class="xi-search"></i> 위 달력에서 강조된 노란 동그라미를 확인하세요.</div>');
+    }
+
+    // 입력 감지 통합 라우터
+    $(document).on('input', '.todo-search-input', function() {
+        const keyword = $(this).val().toLowerCase().trim();
+        const id = $(this).attr('id');
+        
+        if (id === 'weekly-search') {
+            handleWeeklySearch(keyword);
+        } else if (id === 'cal-search') {
+            handleCalendarSearch(keyword);
+        } else if (id === 'sd-search') {
+            // 통계 탭 기존 검색 로직 유지
+            $('#sd-list .todo-item').each(function() {
+                const text = $(this).find('.todo-text').text().toLowerCase();
+                let subText = "";
+                $(this).find('.exp-subtask-item span').each(function() { subText += " " + $(this).text().toLowerCase(); });
+                
+                if(text.includes(keyword) || subText.includes(keyword)) $(this).show();
+                else $(this).hide();
+            });
+        }
     });
+
+    /* ========================================================================== */
 
     function renderStatsMain() {
         const y = statsDate.getFullYear();
@@ -559,7 +708,6 @@
         }, 300); 
     };
 
-    // 🚨 빠른 추가: 즉시완료 체크 시 완료된 상태로 바로 저장됨
     window.quickAddTodo = async function() {
         const content = $('#qa-input').val().trim();
         if (!content) return;
@@ -584,13 +732,12 @@
         if (data) {
             todosData.push(data[0]);
             $('#qa-input').val('');
-            $('#qa-instant-complete').prop('checked', false); // 체크박스 리셋
+            $('#qa-instant-complete').prop('checked', false); 
             selectColor('gray', 'qa');
             refreshAllViews();
         }
     };
 
-    // 🚨 모달 열기: 계획일/완료일 분리 렌더링
     window.openDetailedModal = function(id = null, useSelectedDate = false) {
         currentSubtasks = []; 
         
@@ -701,7 +848,6 @@
         });
     }
 
-    // 🚨 모달 저장: 계획일, 완료일 수동 조정 가능하도록 로직 변경
     window.saveDetailedTodo = async function() {
         const id = $('#dm-id').val();
         const content = $('#dm-input').val().trim();
@@ -717,7 +863,6 @@
             autoCompDate = getFormatDate(new Date());
         }
 
-        // 사용자가 완료일을 입력했다면 그게 1순위, 아니라면 하위항목 전부 완료 여부를 체크
         const finalIsCompleted = compDateVal ? true : (currentSubtasks.length > 0 ? isParentCompleted : false);
         const finalCompDate = compDateVal ? compDateVal : (isParentCompleted ? autoCompDate : null);
 
