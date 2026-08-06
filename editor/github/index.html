@@ -312,7 +312,7 @@
                 </div>
             </h2>
             <p class="help-text">박스 안의 글자를 직접 클릭해 수정할 수 있습니다. 본문 글자를 드래그하면 <b>애플 스타일 편집 툴바</b>가 나타나며, 미리보기 창에서 <b>Enter</b>를 치면 블록이 나뉩니다.</p>
-            <div class="preview-container" id="htmlPreview" contenteditable="true" oninput="syncPreviewToBlocks()"></div>
+            <div class="preview-container" id="htmlPreview" contenteditable="true" oninput="debounceSyncPreviewToBlocks()"></div>
         </div>
     </div>
 
