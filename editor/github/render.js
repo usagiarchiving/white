@@ -3,6 +3,24 @@
 // 화면 출력(미리보기 HTML 생성) 및 에디터 UI 조작 전용
 // ==========================================
 
+// 💡 [수정사항] 타자 칠 때 발생하는 렉(버벅거림)을 없애기 위한 디바운싱 함수 추가
+let renderTimer = null;
+let syncTimer = null;
+
+function debounceUpdateOutput(skipPreviewUpdate = false) {
+    if (renderTimer) clearTimeout(renderTimer);
+    renderTimer = setTimeout(() => {
+        if (typeof updateOutput === 'function') updateOutput(skipPreviewUpdate);
+    }, 300);
+}
+
+function debounceSyncPreviewToBlocks() {
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+        if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
+    }, 300);
+}
+
 function extractVideoId(url) {
     if (!url) return '';
     let match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
