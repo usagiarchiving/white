@@ -361,27 +361,3 @@ body.dark-mode .postit-scroll::-webkit-scrollbar-thumb { background: rgba(255,25
         height: 75vh;
     }
 }
-/* 💡 [추가] 프리셋 드롭다운 UI 스타일 (Apple iCloud 느낌의 부드러운 스타일) */
-.preset-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--block-bg);
-    padding: 12px 15px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    margin-bottom: 15px;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.preset-controls select {
-    flex: 1;
-    padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--input-bg);
-    color: var(--text-main);
-    font-size: 13px;
-    font-family: inherit;
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-}
