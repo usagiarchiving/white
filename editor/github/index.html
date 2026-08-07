@@ -12,9 +12,6 @@
     
     <!-- 분리된 CSS 파일 연결 -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- 💡 [추가] Supabase 연동을 위한 공식 JS 라이브러리 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -64,18 +61,6 @@
 
         <div class="panel">
             <h2 class="panel-title">(2) 캐릭터 설정 & 수동 블록 추가</h2>
-            
-            <!-- 💡 [추가] 프리셋 기능 UI (Supabase 연동) - 심플하고 세련된 스타일 -->
-            <div class="preset-controls">
-                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">🎨 프리셋</span>
-                <select id="presetSelect" onchange="applyPreset(this.value)">
-                    <option value="">기본 설정 불러오기...</option>
-                    <!-- 서버에서 불러온 목록이 여기에 추가됩니다 -->
-                </select>
-                <button class="btn-small" onclick="savePreset()" style="background-color: var(--primary); color: white;">+ 현재 설정 저장</button>
-                <button class="btn-small" onclick="deletePreset()" style="background-color: transparent; border: 1px solid #ff3b30; color: #ff3b30;">삭제</button>
-            </div>
-
             <div class="settings-grid">
                 
                 <!-- 민트 설정 (소설색/말풍선색 분리) -->
@@ -381,6 +366,7 @@
     </div>
 </div>
 
+<!-- 💡 [신규] 빠른 화자 전환 미니 툴바 (블록 클릭 시) -->
 <div id="quickSpeakerToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000; padding: 6px; flex-direction: row; gap: 6px;">
     <button type="button" class="tb-circle btn-quick-status" onclick="changeSpeakerFromPreview('narration')" title="나레이션으로 변경">N</button>
     <button type="button" class="tb-circle mint-bg" onclick="changeSpeakerFromPreview('mint')" title="민트로 변경">M</button>
@@ -390,9 +376,9 @@
     <button type="button" class="tb-circle" style="background: #ffe5e5; color: #d70015;" onclick="deleteBlockFromPreview()" title="문단 삭제">🗑️</button>
 </div>
 
-<!-- 💡 [수정] 분할된 자바스크립트 파일 연결 (순서 엄수) -->
+<!-- 분할된 자바스크립트 파일 연결 (순서 엄수) -->
+<!-- 분할된 자바스크립트 파일 연결 (순서 엄수) -->
 <script src="script.js"></script>
-<script src="preview.js"></script>
 <script src="render.js"></script>
 <script src="toolbar.js"></script>
 
