@@ -231,6 +231,7 @@ function changeFontSize(delta) {
         let ratio = currentFontSize / oldSize;
         currentBlockGap = Math.round(currentBlockGap * ratio);
         
+        // 💡 [수정] 내부 간격도 비율에 맞춰 동일하게 스케일링
         currentInnerGap = Math.round(currentInnerGap * ratio);
         
         let gapSlider = document.getElementById('blockGapSlider');
@@ -238,6 +239,7 @@ function changeFontSize(delta) {
         if (gapSlider) gapSlider.value = currentBlockGap;
         if (gapVal) gapVal.innerText = currentBlockGap + 'px';
         
+        // 💡 [수정] 내부 간격 UI 동기화
         let innerGapSlider = document.getElementById('innerGapSlider');
         let innerGapVal = document.getElementById('innerGapVal');
         if (innerGapSlider) innerGapSlider.value = currentInnerGap;
@@ -252,7 +254,7 @@ function updateLayoutSetting(key, value) {
     if (key === 'lineHeight') currentLineHeight = parseFloat(value);
     if (key === 'letterSpacing') currentLetterSpacing = parseFloat(value);
     if (key === 'blockGap') currentBlockGap = parseInt(value, 10);
-    if (key === 'innerGap') currentInnerGap = parseInt(value, 10);
+    if (key === 'innerGap') currentInnerGap = parseInt(value, 10); // 💡 [추가] 내부 간격 상태 업데이트
     if (key === 'wordBreak') currentWordBreak = value;
     if (typeof updateOutput === 'function') updateOutput();
 }
@@ -834,239 +836,3 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
-
-
-// ==========================================
-// 💡 [추가] Supabase 프리셋(Preset) 동기화 로직 (텍스트 상세설정 포함 완료)
-// ==========================================
-
-const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let presetList = [];
-
-// 서버에서 프리셋 불러오기
-async function fetchPresets() {
-    try {
-        const { data, error } = await supabase
-            .from('posts')
-            .select('*')
-            .eq('category', 'preset')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        presetList = data || [];
-        renderPresetSelect();
-    } catch (err) {
-        console.error('프리셋 불러오기 실패:', err);
-    }
-}
-
-// 드롭다운 메뉴에 목록 그리기
-function renderPresetSelect() {
-    const select = document.getElementById('presetSelect');
-    if (!select) return;
-    
-    select.innerHTML = '<option value="">기본 설정 불러오기...</option>';
-    
-    presetList.forEach(preset => {
-        const option = document.createElement('option');
-        option.value = preset.id;
-        option.textContent = preset.title;
-        select.appendChild(option);
-    });
-}
-
-// 현재 화면의 설정을 서버에 새 프리셋으로 저장
-async function savePreset() {
-    const presetName = prompt('새로 저장할 프리셋의 이름을 입력하세요.\n(예: 실내, 야외, 특별 의상 등)');
-    if (!presetName || !presetName.trim()) return;
-
-    // 💡 [수정] 캐릭터 정보 + 텍스트 간격 상세 설정까지 모두 수집
-    const currentSettings = {
-        // 캐릭터 설정
-        mintTextColor: document.getElementById('mintTextColor')?.value,
-        mintBubbleTextColor: document.getElementById('mintBubbleTextColor')?.value,
-        mintBgColor: document.getElementById('mintBgColor')?.value,
-        mintName: document.getElementById('mintName')?.value,
-        mintProfileUrl: document.getElementById('mintProfileUrl')?.value,
-        
-        pinkTextColor: document.getElementById('pinkTextColor')?.value,
-        pinkBubbleTextColor: document.getElementById('pinkBubbleTextColor')?.value,
-        pinkBgColor: document.getElementById('pinkBgColor')?.value,
-        pinkName: document.getElementById('pinkName')?.value,
-        pinkProfileUrl: document.getElementById('pinkProfileUrl')?.value,
-        
-        mobTextColor: document.getElementById('mobTextColor')?.value,
-        mobBubbleTextColor: document.getElementById('mobBubbleTextColor')?.value,
-        mobBgColor: document.getElementById('mobBgColor')?.value,
-        mobName: document.getElementById('mobName')?.value,
-        mobProfileUrl: document.getElementById('mobProfileUrl')?.value,
-        
-        narrColor: document.getElementById('narrColor')?.value,
-        highlightColor: document.getElementById('highlightColor')?.value,
-        narrItalic: document.getElementById('narrItalic')?.checked,
-
-        // 텍스트 간격 상세 설정
-        lineHeight: currentLineHeight,
-        letterSpacing: currentLetterSpacing,
-        blockGap: currentBlockGap,
-        innerGap: currentInnerGap,
-        wordBreak: currentWordBreak
-    };
-
-    // 기존 posts 구조에 맞게 |||#preset 으로 이어붙임
-    const contentString = JSON.stringify(currentSettings) + '|||#preset';
-
-    try {
-        const { error } = await supabase
-            .from('posts')
-            .insert([
-                { 
-                    category: 'preset', 
-                    title: presetName.trim(), 
-                    content: contentString,
-                    created_at: new Date().toISOString()
-                }
-            ]);
-
-        if (error) throw error;
-
-        showToast(`'${presetName}' 프리셋이 안전하게 보관되었습니다! 🚀`);
-        fetchPresets(); // 목록 즉시 새로고침
-    } catch (err) {
-        console.error('프리셋 저장 실패:', err);
-        showToast('프리셋 저장 중 오류가 발생했습니다.');
-    }
-}
-
-// 선택된 프리셋 삭제
-async function deletePreset() {
-    const select = document.getElementById('presetSelect');
-    const selectedId = select.value;
-    
-    if (!selectedId) {
-        showToast('삭제할 프리셋을 선택해주세요.');
-        return;
-    }
-    
-    const selectedText = select.options[select.selectedIndex].text;
-    
-    if (!confirm(`'${selectedText}' 프리셋을 정말 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
-
-    try {
-        const { error } = await supabase
-            .from('posts')
-            .delete()
-            .eq('id', selectedId);
-
-        if (error) throw error;
-
-        showToast(`'${selectedText}' 프리셋이 삭제되었습니다.`);
-        fetchPresets(); // 목록 즉시 새로고침
-    } catch (err) {
-        console.error('프리셋 삭제 실패:', err);
-        showToast('프리셋 삭제 중 오류가 발생했습니다.');
-    }
-}
-
-// 선택한 프리셋의 데이터를 에디터에 적용
-function applyPreset(presetId) {
-    if (!presetId) return; // '기본 설정 불러오기...' 선택 시
-
-    const preset = presetList.find(p => p.id == presetId);
-    if (!preset) return;
-
-    try {
-        // 기존 구조 호환: '|||#preset' 앞부분의 JSON 데이터만 파싱
-        const jsonString = preset.content.split('|||')[0];
-        const settings = JSON.parse(jsonString);
-
-        // 값 업데이트 및 컬러 피커 연동 헬퍼 함수
-        const setVal = (id, val) => {
-            const el = document.getElementById(id);
-            if (el && val !== undefined) {
-                el.value = val;
-                const picker = document.getElementById(id + 'Picker');
-                // 색상 값일 경우 피커도 동기화
-                if (picker && /^#[0-9A-Fa-f]{6}$/i.test(val)) {
-                    picker.value = val.toUpperCase();
-                }
-            }
-        };
-
-        // 캐릭터 설정 적용
-        setVal('mintTextColor', settings.mintTextColor);
-        setVal('mintBubbleTextColor', settings.mintBubbleTextColor);
-        setVal('mintBgColor', settings.mintBgColor);
-        setVal('mintName', settings.mintName);
-        setVal('mintProfileUrl', settings.mintProfileUrl);
-        
-        setVal('pinkTextColor', settings.pinkTextColor);
-        setVal('pinkBubbleTextColor', settings.pinkBubbleTextColor);
-        setVal('pinkBgColor', settings.pinkBgColor);
-        setVal('pinkName', settings.pinkName);
-        setVal('pinkProfileUrl', settings.pinkProfileUrl);
-        
-        setVal('mobTextColor', settings.mobTextColor);
-        setVal('mobBubbleTextColor', settings.mobBubbleTextColor);
-        setVal('mobBgColor', settings.mobBgColor);
-        setVal('mobName', settings.mobName);
-        setVal('mobProfileUrl', settings.mobProfileUrl);
-        
-        setVal('narrColor', settings.narrColor);
-        setVal('highlightColor', settings.highlightColor);
-        
-        const narrItalic = document.getElementById('narrItalic');
-        if (narrItalic && settings.narrItalic !== undefined) {
-            narrItalic.checked = settings.narrItalic;
-        }
-
-        // 💡 [추가] 텍스트 간격 상세 설정 UI 및 변수 적용
-        if (settings.lineHeight !== undefined) {
-            currentLineHeight = settings.lineHeight;
-            let lhSpan = document.getElementById('lineHeightVal');
-            if(lhSpan) lhSpan.innerText = settings.lineHeight;
-            let lhSlider = document.querySelector('input[oninput*="lineHeight"]');
-            if(lhSlider) lhSlider.value = settings.lineHeight;
-        }
-        if (settings.letterSpacing !== undefined) {
-            currentLetterSpacing = settings.letterSpacing;
-            let lsSpan = document.getElementById('letterSpacingVal');
-            if(lsSpan) lsSpan.innerText = settings.letterSpacing + 'em';
-            let lsSlider = document.querySelector('input[oninput*="letterSpacing"]');
-            if(lsSlider) lsSlider.value = settings.letterSpacing;
-        }
-        if (settings.blockGap !== undefined) {
-            currentBlockGap = settings.blockGap;
-            let bgSpan = document.getElementById('blockGapVal');
-            if(bgSpan) bgSpan.innerText = settings.blockGap + 'px';
-            let bgSlider = document.getElementById('blockGapSlider');
-            if(bgSlider) bgSlider.value = settings.blockGap;
-        }
-        if (settings.innerGap !== undefined) {
-            currentInnerGap = settings.innerGap;
-            let igSpan = document.getElementById('innerGapVal');
-            if(igSpan) igSpan.innerText = settings.innerGap + 'px';
-            let igSlider = document.getElementById('innerGapSlider');
-            if(igSlider) igSlider.value = settings.innerGap;
-        }
-        if (settings.wordBreak !== undefined) {
-            currentWordBreak = settings.wordBreak;
-            let wbSelect = document.getElementById('wordBreakSelect');
-            if(wbSelect) wbSelect.value = settings.wordBreak;
-        }
-
-        showToast(`'${preset.title}' 프리셋 적용 완료! ✨`);
-        
-        // 미리보기 화면 실시간 업데이트
-        if (typeof updateOutput === 'function') updateOutput();
-    } catch (err) {
-        console.error('프리셋 적용 실패:', err);
-        showToast('프리셋을 적용하는 중 오류가 발생했습니다.');
-    }
-}
-
-// 문서 로드 완료 시 프리셋 목록 최초 호출
-document.addEventListener("DOMContentLoaded", fetchPresets);
