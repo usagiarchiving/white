@@ -231,7 +231,6 @@ function changeFontSize(delta) {
         let ratio = currentFontSize / oldSize;
         currentBlockGap = Math.round(currentBlockGap * ratio);
         
-        // 💡 [수정] 내부 간격도 비율에 맞춰 동일하게 스케일링
         currentInnerGap = Math.round(currentInnerGap * ratio);
         
         let gapSlider = document.getElementById('blockGapSlider');
@@ -239,7 +238,6 @@ function changeFontSize(delta) {
         if (gapSlider) gapSlider.value = currentBlockGap;
         if (gapVal) gapVal.innerText = currentBlockGap + 'px';
         
-        // 💡 [수정] 내부 간격 UI 동기화
         let innerGapSlider = document.getElementById('innerGapSlider');
         let innerGapVal = document.getElementById('innerGapVal');
         if (innerGapSlider) innerGapSlider.value = currentInnerGap;
@@ -254,7 +252,7 @@ function updateLayoutSetting(key, value) {
     if (key === 'lineHeight') currentLineHeight = parseFloat(value);
     if (key === 'letterSpacing') currentLetterSpacing = parseFloat(value);
     if (key === 'blockGap') currentBlockGap = parseInt(value, 10);
-    if (key === 'innerGap') currentInnerGap = parseInt(value, 10); // 💡 [추가] 내부 간격 상태 업데이트
+    if (key === 'innerGap') currentInnerGap = parseInt(value, 10);
     if (key === 'wordBreak') currentWordBreak = value;
     if (typeof updateOutput === 'function') updateOutput();
 }
@@ -839,7 +837,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 // ==========================================
-// 💡 [추가] Supabase 프리셋(Preset) 동기화 로직
+// 💡 [추가] Supabase 프리셋(Preset) 동기화 로직 (텍스트 상세설정 포함 완료)
 // ==========================================
 
 const SUPABASE_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
@@ -885,8 +883,9 @@ async function savePreset() {
     const presetName = prompt('새로 저장할 프리셋의 이름을 입력하세요.\n(예: 실내, 야외, 특별 의상 등)');
     if (!presetName || !presetName.trim()) return;
 
-    // 화면의 입력창 데이터 수집
+    // 💡 [수정] 캐릭터 정보 + 텍스트 간격 상세 설정까지 모두 수집
     const currentSettings = {
+        // 캐릭터 설정
         mintTextColor: document.getElementById('mintTextColor')?.value,
         mintBubbleTextColor: document.getElementById('mintBubbleTextColor')?.value,
         mintBgColor: document.getElementById('mintBgColor')?.value,
@@ -907,7 +906,14 @@ async function savePreset() {
         
         narrColor: document.getElementById('narrColor')?.value,
         highlightColor: document.getElementById('highlightColor')?.value,
-        narrItalic: document.getElementById('narrItalic')?.checked
+        narrItalic: document.getElementById('narrItalic')?.checked,
+
+        // 텍스트 간격 상세 설정
+        lineHeight: currentLineHeight,
+        letterSpacing: currentLetterSpacing,
+        blockGap: currentBlockGap,
+        innerGap: currentInnerGap,
+        wordBreak: currentWordBreak
     };
 
     // 기존 posts 구조에 맞게 |||#preset 으로 이어붙임
@@ -990,6 +996,7 @@ function applyPreset(presetId) {
             }
         };
 
+        // 캐릭터 설정 적용
         setVal('mintTextColor', settings.mintTextColor);
         setVal('mintBubbleTextColor', settings.mintBubbleTextColor);
         setVal('mintBgColor', settings.mintBgColor);
@@ -1014,6 +1021,41 @@ function applyPreset(presetId) {
         const narrItalic = document.getElementById('narrItalic');
         if (narrItalic && settings.narrItalic !== undefined) {
             narrItalic.checked = settings.narrItalic;
+        }
+
+        // 💡 [추가] 텍스트 간격 상세 설정 UI 및 변수 적용
+        if (settings.lineHeight !== undefined) {
+            currentLineHeight = settings.lineHeight;
+            let lhSpan = document.getElementById('lineHeightVal');
+            if(lhSpan) lhSpan.innerText = settings.lineHeight;
+            let lhSlider = document.querySelector('input[oninput*="lineHeight"]');
+            if(lhSlider) lhSlider.value = settings.lineHeight;
+        }
+        if (settings.letterSpacing !== undefined) {
+            currentLetterSpacing = settings.letterSpacing;
+            let lsSpan = document.getElementById('letterSpacingVal');
+            if(lsSpan) lsSpan.innerText = settings.letterSpacing + 'em';
+            let lsSlider = document.querySelector('input[oninput*="letterSpacing"]');
+            if(lsSlider) lsSlider.value = settings.letterSpacing;
+        }
+        if (settings.blockGap !== undefined) {
+            currentBlockGap = settings.blockGap;
+            let bgSpan = document.getElementById('blockGapVal');
+            if(bgSpan) bgSpan.innerText = settings.blockGap + 'px';
+            let bgSlider = document.getElementById('blockGapSlider');
+            if(bgSlider) bgSlider.value = settings.blockGap;
+        }
+        if (settings.innerGap !== undefined) {
+            currentInnerGap = settings.innerGap;
+            let igSpan = document.getElementById('innerGapVal');
+            if(igSpan) igSpan.innerText = settings.innerGap + 'px';
+            let igSlider = document.getElementById('innerGapSlider');
+            if(igSlider) igSlider.value = settings.innerGap;
+        }
+        if (settings.wordBreak !== undefined) {
+            currentWordBreak = settings.wordBreak;
+            let wbSelect = document.getElementById('wordBreakSelect');
+            if(wbSelect) wbSelect.value = settings.wordBreak;
         }
 
         showToast(`'${preset.title}' 프리셋 적용 완료! ✨`);
