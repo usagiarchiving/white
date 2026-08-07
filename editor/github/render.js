@@ -602,7 +602,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     if (!isSameAsPrev) {
                         // 핑크일 때 프로필 사진 위치 반전
                         let avPos = isPink ? 'right: 0;' : 'left: 0;';
-                        avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                        avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 0; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                         
                         if (charName.trim() !== '') {
                             // 핑크일 때 이름 텍스트 정렬 반전
