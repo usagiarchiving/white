@@ -15,8 +15,8 @@ let currentInlineFontSize = 13;
 // == 텍스트·간격 설정을 위한 전역 변수 ==
 let currentLineHeight = 1.6;
 let currentLetterSpacing = -0.02; // em
-let currentBlockGap = 15; // 기본 문단 간격 (px)
-let currentInnerGap = 4;  // 💡 [추가] 기본 내부 간격 (px) - 연속된 화자/나레이션 등
+let currentBlockGap = 16; // 💡 [수정] 기본 문단 간격 (px)
+let currentInnerGap = 5;  // 💡 [수정] 기본 내부 간격 (px) - 연속된 화자/나레이션 등
 let currentWordBreak = 'break-all'; // 줄바꿈 방식 기본값을 글자 단위로 설정
 
 // == 전체 히스토리(Undo/Redo) 관리를 위한 전역 변수 ==
@@ -231,7 +231,6 @@ function changeFontSize(delta) {
         let ratio = currentFontSize / oldSize;
         currentBlockGap = Math.round(currentBlockGap * ratio);
         
-        // 💡 [수정] 내부 간격도 비율에 맞춰 동일하게 스케일링
         currentInnerGap = Math.round(currentInnerGap * ratio);
         
         let gapSlider = document.getElementById('blockGapSlider');
@@ -239,7 +238,6 @@ function changeFontSize(delta) {
         if (gapSlider) gapSlider.value = currentBlockGap;
         if (gapVal) gapVal.innerText = currentBlockGap + 'px';
         
-        // 💡 [수정] 내부 간격 UI 동기화
         let innerGapSlider = document.getElementById('innerGapSlider');
         let innerGapVal = document.getElementById('innerGapVal');
         if (innerGapSlider) innerGapSlider.value = currentInnerGap;
@@ -254,7 +252,7 @@ function updateLayoutSetting(key, value) {
     if (key === 'lineHeight') currentLineHeight = parseFloat(value);
     if (key === 'letterSpacing') currentLetterSpacing = parseFloat(value);
     if (key === 'blockGap') currentBlockGap = parseInt(value, 10);
-    if (key === 'innerGap') currentInnerGap = parseInt(value, 10); // 💡 [추가] 내부 간격 상태 업데이트
+    if (key === 'innerGap') currentInnerGap = parseInt(value, 10);
     if (key === 'wordBreak') currentWordBreak = value;
     if (typeof updateOutput === 'function') updateOutput();
 }
@@ -550,12 +548,51 @@ function changeBlockType(index, newType) {
     saveState(); 
 }
 
-// 💡 소설용/말풍선용 색상 데이터를 모두 안전하게 보존하며 불러오는 동기화 로직
+// 💡 폰트, 모브, 커스텀 정보를 완벽하게 보존하며 불러오는 동기화 로직
 function importFromHtml() {
     const htmlText = document.getElementById('finalHtmlCode').value;
     if (!htmlText.trim()) {
         showToast('불러올 HTML 코드를 입력해주세요.');
         return;
+    }
+
+    // 💡 [추가] 폰트 및 글로벌 설정 추출
+    const styleMatch = htmlText.match(/\.tistory-post-wrapper\s*\{\s*([^}]+)\}/);
+    if (styleMatch) {
+        const styleRules = styleMatch[1];
+        
+        const fontMatch = styleRules.match(/font-family:\s*([^;]+);/);
+        if (fontMatch) {
+            currentFontFamily = fontMatch[1].trim();
+            const fontSelect = document.getElementById('fontSelect');
+            if (fontSelect) fontSelect.value = currentFontFamily;
+            document.body.style.fontFamily = currentFontFamily;
+        }
+
+        const sizeMatch = styleRules.match(/font-size:\s*(\d+)px;/);
+        if (sizeMatch) {
+            currentFontSize = parseInt(sizeMatch[1], 10);
+            const sizeDisplay = document.getElementById('fontSizeDisplay');
+            if (sizeDisplay) sizeDisplay.innerText = currentFontSize + 'px';
+        }
+
+        const lhMatch = styleRules.match(/line-height:\s*([\d.]+);/);
+        if (lhMatch) {
+            currentLineHeight = parseFloat(lhMatch[1]);
+            const lhInput = document.querySelector('input[oninput*="lineHeight"]');
+            const lhVal = document.getElementById('lineHeightVal');
+            if (lhInput) lhInput.value = currentLineHeight;
+            if (lhVal) lhVal.innerText = currentLineHeight;
+        }
+
+        const lsMatch = styleRules.match(/letter-spacing:\s*([-\d.]+)em;/);
+        if (lsMatch) {
+            currentLetterSpacing = parseFloat(lsMatch[1]);
+            const lsInput = document.querySelector('input[oninput*="letterSpacing"]');
+            const lsVal = document.getElementById('letterSpacingVal');
+            if (lsInput) lsInput.value = currentLetterSpacing;
+            if (lsVal) lsVal.innerText = currentLetterSpacing + 'em';
+        }
     }
 
     const tempDiv = document.createElement('div');
@@ -566,6 +603,7 @@ function importFromHtml() {
 
     let foundMint = false;
     let foundPink = false;
+    let foundMob = false; // 💡 모브 추적 변수 추가
     let foundNarr = false;
 
     function rgbToHex(rgb) {
@@ -671,6 +709,10 @@ function importFromHtml() {
                             if (m1) m1.value = textHex; if (m2) m2.value = textHex;
                         }
                     }
+                    // 💡 이름, 프사 동기화
+                    if (customName) { let el = document.getElementById('mintName'); if(el) el.value = customName; }
+                    if (customProfileUrl) { let el = document.getElementById('mintProfileUrl'); if(el) el.value = customProfileUrl; }
+                    
                     foundMint = true;
                 }
             } else if (type === 'pink') {
@@ -689,7 +731,33 @@ function importFromHtml() {
                             if (p1) p1.value = textHex; if (p2) p2.value = textHex;
                         }
                     }
+                    // 💡 이름, 프사 동기화
+                    if (customName) { let el = document.getElementById('pinkName'); if(el) el.value = customName; }
+                    if (customProfileUrl) { let el = document.getElementById('pinkProfileUrl'); if(el) el.value = customProfileUrl; }
+                    
                     foundPink = true;
+                }
+            } else if (type === 'mob') {
+                if (!foundMob) {
+                    if (textHex) {
+                        if (isBubbleMode) {
+                            let b1 = document.getElementById('mobBubbleTextColor');
+                            let b2 = document.getElementById('mobBubbleTextColorPicker');
+                            let bg1 = document.getElementById('mobBgColor');
+                            let bg2 = document.getElementById('mobBgColorPicker');
+                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
+                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
+                        } else {
+                            let m1 = document.getElementById('mobTextColor');
+                            let m2 = document.getElementById('mobTextColorPicker');
+                            if (m1) m1.value = textHex; if (m2) m2.value = textHex;
+                        }
+                    }
+                    // 💡 모브 이름, 프사 동기화
+                    if (customName) { let el = document.getElementById('mobName'); if(el) el.value = customName; }
+                    if (customProfileUrl) { let el = document.getElementById('mobProfileUrl'); if(el) el.value = customProfileUrl; }
+                    
+                    foundMob = true;
                 }
             } else if (type === 'custom') {
                 customTextColor = textHex || '#333333';
@@ -794,9 +862,8 @@ function copyHtml() {
     }
 }
 
-// 💡 전역 동기화 로직 (새롭게 분리된 소설/말풍선 색상 모두 포함)
+// 💡 전역 동기화 로직
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. 에디터 메인 설정의 모든 컬러 피커와 텍스트 박스 양방향 동기화 연결
     setupColorPicker('mintTextColorPicker', 'mintTextColor');
     setupColorPicker('mintBubbleTextColorPicker', 'mintBubbleTextColor');
     setupColorPicker('mintBgColorPicker', 'mintBgColor');
@@ -812,7 +879,6 @@ document.addEventListener("DOMContentLoaded", function() {
     setupColorPicker('narrColorPicker', 'narrColor');
     setupColorPicker('highlightColorPicker', 'highlightColor');
 
-    // 2. 글자색, 배경색, 이름, 프사 등 무엇이든 수정하면 실시간으로 미리보기가 변하도록 전체 이벤트 연결
     const inputsToSync = [
         'mintTextColor', 'mintBubbleTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
         'pinkTextColor', 'pinkBubbleTextColor', 'pinkBgColor', 'pinkName', 'pinkProfileUrl',
