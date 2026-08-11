@@ -602,6 +602,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     if (!isSameAsPrev) {
                         // 핑크일 때 프로필 사진 위치 반전
                         let avPos = isPink ? 'right: 0;' : 'left: 0;';
+                        // 💡 [수정] 말풍선 2버전 프로필 사진 border-radius: 0; 고정 (요청사항 반영)
                         avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 0; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                         
                         if (charName.trim() !== '') {
@@ -964,12 +965,51 @@ ${cleanInnerContent}
     document.getElementById('finalHtmlCode').value = finalHtml;
 }
 
-
+// 💡 폰트, 모브, 커스텀 정보를 완벽하게 보존하며 불러오는 동기화 로직
 function importFromHtml() {
     const htmlText = document.getElementById('finalHtmlCode').value;
     if (!htmlText.trim()) {
         showToast('불러올 HTML 코드를 입력해주세요.');
         return;
+    }
+
+    // 💡 [추가] 폰트 및 글로벌 설정 추출
+    const styleMatch = htmlText.match(/\.tistory-post-wrapper\s*\{\s*([^}]+)\}/);
+    if (styleMatch) {
+        const styleRules = styleMatch[1];
+        
+        const fontMatch = styleRules.match(/font-family:\s*([^;]+);/);
+        if (fontMatch) {
+            currentFontFamily = fontMatch[1].trim();
+            const fontSelect = document.getElementById('fontSelect');
+            if (fontSelect) fontSelect.value = currentFontFamily;
+            document.body.style.fontFamily = currentFontFamily;
+        }
+
+        const sizeMatch = styleRules.match(/font-size:\s*(\d+)px;/);
+        if (sizeMatch) {
+            currentFontSize = parseInt(sizeMatch[1], 10);
+            const sizeDisplay = document.getElementById('fontSizeDisplay');
+            if (sizeDisplay) sizeDisplay.innerText = currentFontSize + 'px';
+        }
+
+        const lhMatch = styleRules.match(/line-height:\s*([\d.]+);/);
+        if (lhMatch) {
+            currentLineHeight = parseFloat(lhMatch[1]);
+            const lhInput = document.querySelector('input[oninput*="lineHeight"]');
+            const lhVal = document.getElementById('lineHeightVal');
+            if (lhInput) lhInput.value = currentLineHeight;
+            if (lhVal) lhVal.innerText = currentLineHeight;
+        }
+
+        const lsMatch = styleRules.match(/letter-spacing:\s*([-\d.]+)em;/);
+        if (lsMatch) {
+            currentLetterSpacing = parseFloat(lsMatch[1]);
+            const lsInput = document.querySelector('input[oninput*="letterSpacing"]');
+            const lsVal = document.getElementById('letterSpacingVal');
+            if (lsInput) lsInput.value = currentLetterSpacing;
+            if (lsVal) lsVal.innerText = currentLetterSpacing + 'em';
+        }
     }
 
     const tempDiv = document.createElement('div');
@@ -980,6 +1020,7 @@ function importFromHtml() {
 
     let foundMint = false;
     let foundPink = false;
+    let foundMob = false; // 💡 모브 추적 변수 추가
     let foundNarr = false;
 
     function rgbToHex(rgb) {
@@ -1085,6 +1126,10 @@ function importFromHtml() {
                             if (m1) m1.value = textHex; if (m2) m2.value = textHex;
                         }
                     }
+                    // 💡 이름, 프사 동기화
+                    if (customName) { let el = document.getElementById('mintName'); if(el) el.value = customName; }
+                    if (customProfileUrl) { let el = document.getElementById('mintProfileUrl'); if(el) el.value = customProfileUrl; }
+                    
                     foundMint = true;
                 }
             } else if (type === 'pink') {
@@ -1103,7 +1148,33 @@ function importFromHtml() {
                             if (p1) p1.value = textHex; if (p2) p2.value = textHex;
                         }
                     }
+                    // 💡 이름, 프사 동기화
+                    if (customName) { let el = document.getElementById('pinkName'); if(el) el.value = customName; }
+                    if (customProfileUrl) { let el = document.getElementById('pinkProfileUrl'); if(el) el.value = customProfileUrl; }
+                    
                     foundPink = true;
+                }
+            } else if (type === 'mob') {
+                if (!foundMob) {
+                    if (textHex) {
+                        if (isBubbleMode) {
+                            let b1 = document.getElementById('mobBubbleTextColor');
+                            let b2 = document.getElementById('mobBubbleTextColorPicker');
+                            let bg1 = document.getElementById('mobBgColor');
+                            let bg2 = document.getElementById('mobBgColorPicker');
+                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
+                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
+                        } else {
+                            let m1 = document.getElementById('mobTextColor');
+                            let m2 = document.getElementById('mobTextColorPicker');
+                            if (m1) m1.value = textHex; if (m2) m2.value = textHex;
+                        }
+                    }
+                    // 💡 모브 이름, 프사 동기화
+                    if (customName) { let el = document.getElementById('mobName'); if(el) el.value = customName; }
+                    if (customProfileUrl) { let el = document.getElementById('mobProfileUrl'); if(el) el.value = customProfileUrl; }
+                    
+                    foundMob = true;
                 }
             } else if (type === 'custom') {
                 customTextColor = textHex || '#333333';
@@ -1198,6 +1269,7 @@ function importFromHtml() {
     }
 }
 
+// 💡 복사하기 함수
 function copyHtml() {
     const code = document.getElementById('finalHtmlCode');
     if(code) {
@@ -1207,6 +1279,7 @@ function copyHtml() {
     }
 }
 
+// 💡 전역 동기화 로직
 document.addEventListener("DOMContentLoaded", function() {
     setupColorPicker('mintTextColorPicker', 'mintTextColor');
     setupColorPicker('mintBubbleTextColorPicker', 'mintBubbleTextColor');
