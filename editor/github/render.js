@@ -603,7 +603,10 @@ function updateOutput(skipPreviewUpdate = false) {
                         // 핑크일 때 프로필 사진 위치 반전
                         let avPos = isPink ? 'right: 0;' : 'left: 0;';
                         // 💡 [수정] 말풍선 2버전 프로필 사진 border-radius: 0; 고정 (요청사항 반영)
-                        avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 0; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+<div class="av" style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 0 !important; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0; border-radius: 0 !important;">
+</div>
+
                         
                         if (charName.trim() !== '') {
                             // 핑크일 때 이름 텍스트 정렬 반전
