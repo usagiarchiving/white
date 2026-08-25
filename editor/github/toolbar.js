@@ -93,7 +93,7 @@ function applyQuickStyle(styleName) {
         wrapSelectionWithStyle({ color: '#9b3e61', backgroundColor: '#fdf2f6', padding: '0 2px', borderRadius: '3px' });
     } else if (styleName === 'highlight') {
         let hlColorEl = document.getElementById('highlightColor');
-        let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
+        let hlColor = hlColorEl ? hlColorEl.value : '#C4F0E9';
         wrapSelectionWithStyle({ backgroundColor: hlColor, color: 'inherit', padding: '0 2px', borderRadius: '2px' });
     }
     setTimeout(handleSelection, 10);
@@ -127,7 +127,7 @@ function changeInlineFontSize(delta) {
 function parseAdvancedMarkdown(text) {
     if (!text) return text;
     let hlColorEl = document.getElementById('highlightColor');
-    let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
+    let hlColor = hlColorEl ? hlColorEl.value : '#C4F0E9';
 
     let t = text;
     t = t.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
