@@ -177,7 +177,7 @@ function applyAutoCustomColor(safeKey) {
 function applyTextStyles(text) {
     if (!text) return text;
     let hlColorEl = document.getElementById('highlightColor');
-    let hlColor = hlColorEl ? hlColorEl.value : '#fef08a';
+    let hlColor = hlColorEl ? hlColorEl.value : '#C4F0E9';
 
     let styledText = text;
     styledText = styledText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
