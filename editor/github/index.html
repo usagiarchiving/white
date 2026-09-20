@@ -3,24 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
     <title>웹사이트 HTML 코드 생성기</title>
-    <!-- 기존 폰트 및 본고딕(Noto Sans KR) 추가 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    
-    <!-- 분리된 CSS 파일 연결 -->
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 💡 [신규] 캐릭터 프리셋 드롭다운 호버 효과 */
+        .preset-item:hover { background: var(--block-hover) !important; }
+    </style>
 </head>
 <body>
-
 <div class="page-wrapper">
     <!-- 전체 설정 (다크모드, 폰트, 크기) 패널 -->
     <div class="panel" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 15px 20px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
             <h2 class="panel-title" style="border: none; padding: 0; margin: 0; font-size: 16px;">디자인 설정</h2>
             <button id="darkModeBtn" class="btn-secondary" style="border-radius: 20px; padding: 6px 14px;" onclick="toggleDarkMode()">🌙 다크 모드</button>
+            <!-- 💡 [신규] 배경색 커스텀 체크박스 + 컬러피커 -->
+            <div style="display: flex; align-items: center; gap: 6px; margin-left: 4px;">
+                <input type="checkbox" id="customBgToggle" onchange="toggleCustomBg()" style="cursor: pointer;">
+                <label for="customBgToggle" style="font-size: 12px; color: var(--text-muted); cursor: pointer; user-select: none;">배경색 커스텀</label>
+                <input type="color" id="customBgColorPicker" value="#FAFAFA" style="width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff;">
+                <input type="text" id="customBgColor" value="#FAFAFA" placeholder="#FFFFFF" style="width: 70px; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+            </div>
         </div>
         <div style="display: flex; align-items: center; gap: 20px;">
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -42,6 +48,29 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 💡 [신규] 캐릭터 프리셋 (아코디언/드롭다운 방식)             -->
+    <!-- 검색용 주석 태그: #CHARACTER_PRESET_UI                       -->
+    <!-- 프리셋 내용 자체를 바꾸려면 render.js의                      -->
+    <!-- CHARACTER_PRESETS 객체(검색용 태그 #CHARACTER_PRESET_DATA)를 -->
+    <!-- 수정하세요. 프리셋을 새로 추가할 땐 아래 버튼도 추가해야 함.  -->
+    <!-- ========================================================= -->
+    <div class="panel" style="padding: 15px 20px; position: relative;">
+        <h2 class="panel-title" style="border: none; padding: 0; margin: 0 0 10px; font-size: 16px;">캐릭터 프리셋</h2>
+        <div style="position: relative; display: inline-block;">
+            <button id="presetToggleBtn" class="btn-secondary" onclick="togglePresetDropdown()" style="padding: 8px 16px; font-weight: 600;">
+                🎭 기본 ▾
+            </button>
+            <div id="presetDropdown" style="display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 500; background: var(--block-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 180px; overflow: hidden;">
+                <button class="preset-item" onclick="applyCharacterPreset('default1')" style="display:block; width:100%; text-align:left; padding:10px 14px; border:none; background:transparent; cursor:pointer; font-size:13px; color:var(--text-main);">기본1</button>
+                <button class="preset-item" onclick="applyCharacterPreset('default2')" style="display:block; width:100%; text-align:left; padding:10px 14px; border:none; background:transparent; cursor:pointer; font-size:13px; color:var(--text-main);">기본2</button>
+                <button class="preset-item" onclick="applyCharacterPreset('daily')" style="display:block; width:100%; text-align:left; padding:10px 14px; border:none; background:transparent; cursor:pointer; font-size:13px; color:var(--text-main);">일상</button>
+                <button class="preset-item" onclick="applyCharacterPreset('preset4basic')" style="display:block; width:100%; text-align:left; padding:10px 14px; border:none; background:transparent; cursor:pointer; font-size:13px; color:var(--text-main);">4기본</button>
+                <button class="preset-item" onclick="applyCharacterPreset('preset4daily')" style="display:block; width:100%; text-align:left; padding:10px 14px; border:none; background:transparent; cursor:pointer; font-size:13px; color:var(--text-main);">4일상</button>
+            </div>
+        </div>
+    </div>
+
     <div class="grid-2col">
         <div class="panel">
             <h2 class="panel-title">(1) 일괄 변환 (텍스트 입력)</h2>
@@ -58,11 +87,9 @@
             <textarea id="bulkInput" rows="5" placeholder="여기에 텍스트를 붙여넣으세요..."></textarea>
             <button onclick="parseBulkInput()" style="width: 100%;">규칙에 맞춰 변환하기</button>
         </div>
-
         <div class="panel">
             <h2 class="panel-title">(2) 캐릭터 설정 & 수동 블록 추가</h2>
             <div class="settings-grid">
-                
                 <!-- 민트 설정 (소설색/말풍선색 분리) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #237768;">민트 (Mint)</label>
@@ -97,12 +124,11 @@
                             </div>
                             <div style="flex: 2;">
                                 <label style="font-size: 10px; color: #237768;">프로필 이미지 URL</label>
-                                <input type="text" id="mintProfileUrl" value="[https://i.ibb.co/VYrHdHd8/IMG-6825.jpg](https://i.ibb.co/VYrHdHd8/IMG-6825.jpg)" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                                <input type="text" id="mintProfileUrl" value="https://i.ibb.co/VYrHdHd8/IMG-6825.jpg" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
                             </div>
                         </div>
                     </div>
                 </div>
-                
                 <!-- 핑크 설정 (소설색/말풍선색 분리) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
                     <label style="font-size: 12px; font-weight: bold; color: #9b3e61;">핑크 (Pink)</label>
@@ -137,12 +163,11 @@
                             </div>
                             <div style="flex: 2;">
                                 <label style="font-size: 10px; color: #9b3e61;">프로필 이미지 URL</label>
-                                <input type="text" id="pinkProfileUrl" value="[https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg](https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg)" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                                <input type="text" id="pinkProfileUrl" value="https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <!-- 모브 설정 (소설색/말풍선색 분리) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
                     <label style="font-size: 12px; font-weight: bold; color: #3a414d;">모브 (Mob)</label>
@@ -177,12 +202,11 @@
                             </div>
                             <div style="flex: 2;">
                                 <label style="font-size: 10px; color: #3a414d;">프로필 이미지 URL</label>
-                                <input type="text" id="mobProfileUrl" value="[https://i.ibb.co/jP5RR5gx/IMG-6832.jpg](https://i.ibb.co/jP5RR5gx/IMG-6832.jpg)" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                                <input type="text" id="mobProfileUrl" value="https://i.ibb.co/jP5RR5gx/IMG-6832.jpg" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <!-- 나레이션 설정 -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1;">
                     <label style="font-size: 12px; font-weight: bold; color: var(--text-main);">나레이션 (Narration)</label>
@@ -207,7 +231,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- 제3자 관리 안내 문구 -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: 1 / -1; outline: none;">
                     <summary style="font-size: 12px; font-weight: bold; color: var(--text-main); cursor: pointer; user-select: none; outline: none;">
@@ -221,11 +244,9 @@
                     </div>
                 </div>
             </div>
-
             <div style="margin-top: 15px; background: var(--block-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); transition: 0.3s ease;">
                 <label style="font-size: 12px; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 12px;">텍스트·간격 상세 설정</label>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
-                    <!-- 행간 -->
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">행간 (줄간격)</label>
@@ -233,7 +254,6 @@
                         </div>
                         <input type="range" min="1.1" max="2.5" step="0.05" value="1.6" oninput="document.getElementById('lineHeightVal').innerText = this.value; updateLayoutSetting('lineHeight', this.value);" style="accent-color: var(--primary); cursor: pointer;">
                     </div>
-                    <!-- 자간 -->
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">자간 (글자간격)</label>
@@ -241,25 +261,20 @@
                         </div>
                         <input type="range" min="-0.1" max="0.1" step="0.01" value="-0.02" oninput="document.getElementById('letterSpacingVal').innerText = this.value + 'em'; updateLayoutSetting('letterSpacing', this.value);" style="accent-color: var(--primary); cursor: pointer;">
                     </div>
-                    <!-- 지문/대사 간격 (기존 문단 간격) -->
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">지문/대사 간격</label>
                             <span id="blockGapVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">16px</span>
                         </div>
-                        <!-- 💡 수정된 부분: value를 16으로 변경 -->
                         <input type="range" min="0" max="40" step="1" value="16" id="blockGapSlider" oninput="document.getElementById('blockGapVal').innerText = this.value + 'px'; updateLayoutSetting('blockGap', this.value);" style="accent-color: var(--primary); cursor: pointer;">
                     </div>
-                    <!-- 내부 간격 (동일 화자/연속) -->
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">내부 간격 (연속)</label>
                             <span id="innerGapVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">5px</span>
                         </div>
-                        <!-- 💡 수정된 부분: value를 5로 변경 -->
                         <input type="range" min="0" max="40" step="1" value="5" id="innerGapSlider" oninput="document.getElementById('innerGapVal').innerText = this.value + 'px'; updateLayoutSetting('innerGap', this.value);" style="accent-color: var(--primary); cursor: pointer;">
                     </div>
-                    <!-- 줄바꿈 방식 -->
                     <div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
                         <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">줄바꿈 방식</label>
                         <select id="wordBreakSelect" onchange="updateLayoutSetting('wordBreak', this.value)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 11px; cursor: pointer; transition: 0.2s;">
@@ -269,7 +284,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="tool-buttons" style="margin-top: 15px;">
                 <button class="btn-secondary" onclick="addBlock('title')">+ 제목</button>
                 <button class="btn-secondary" onclick="addBlock('narration')">+ 나레이션</button>
@@ -289,19 +303,16 @@
             </div>
         </div>
     </div>
-
     <div class="grid-2col">
         <div class="panel">
             <h2 class="panel-title">(3) 내용 편집 공간</h2>
             <p class="help-text">텍스트를 쓰면 우측에 실시간 반영됩니다. 상태창은 미리보기 창에서 직접 편집하세요. <br>💡 <b>팁:</b> 에디터 창에서 <b>Enter</b>를 치면 단순 줄바꿈이 됩니다. (<b>Ctrl+Z</b> 로 전체 실행 취소)</p>
             <div id="editorList"></div>
         </div>
-
         <div class="panel">
             <h2 class="panel-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <span>(4) 미리보기 확인 및 직접 수정</span>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <!-- 출력 모드 3분할 토글 -->
                     <span style="display: flex; gap: 4px; background: var(--block-bg); padding: 3px; border-radius: 6px; font-weight: normal;">
                         <button id="btnModeNovel" onclick="setOutputMode('novel')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">📝 소설</button>
                         <button id="btnModeBubble1" onclick="setOutputMode('bubble1')" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: bold; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; transition: 0.2s;">💬 말풍선 1</button>
@@ -317,7 +328,6 @@
             <div class="preview-container" id="htmlPreview" contenteditable="true" oninput="debounceSyncPreviewToBlocks()"></div>
         </div>
     </div>
-
     <div class="panel" style="margin-bottom: 20px;">
         <h2 class="panel-title">(5) 최종 HTML 확인 및 복사</h2>
         <p class="help-text">이전에 복사했던 최종 HTML을 아래 빈 칸에 붙여넣고 <b>[동기화하기]</b>를 누르면 다시 편집할 수 있습니다.</p>
@@ -328,7 +338,6 @@
         </div>
     </div>
 </div>
-
 <!-- 애플 스타일 플로팅 툴바 (텍스트 드래그 시) -->
 <div id="floatingToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000;">
     <div class="tb-row">
@@ -367,7 +376,6 @@
         </div>
     </div>
 </div>
-
 <!-- 💡 [신규] 빠른 화자 전환 미니 툴바 (블록 클릭 시) -->
 <div id="quickSpeakerToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000; padding: 6px; flex-direction: row; gap: 6px;">
     <button type="button" class="tb-circle btn-quick-status" onclick="changeSpeakerFromPreview('narration')" title="나레이션으로 변경">N</button>
@@ -377,12 +385,9 @@
     <div class="tb-divider" style="opacity: 0.3; margin: 0 2px;"></div>
     <button type="button" class="tb-circle" style="background: #ffe5e5; color: #d70015;" onclick="deleteBlockFromPreview()" title="문단 삭제">🗑️</button>
 </div>
-
 <!-- 분할된 자바스크립트 파일 연결 (순서 엄수) -->
-
 <script src="script.js"></script>
 <script src="render.js"></script>
 <script src="toolbar.js"></script>
-
 </body>
 </html>
