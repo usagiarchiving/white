@@ -24,7 +24,231 @@ function debounceSyncPreviewToBlocks() {
 function extractVideoId(url) {
     if (!url) return '';
     let match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    return match ? match[1] : url.trim(); 
+    return match ? match[1] : url.trim();
+}
+
+// =========================================================================
+// 💡 [신규] 다크모드 토글 + 배경색 커스텀 기능 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+// -------------------------------------------------------------------------
+// - 라이트모드 기본 배경: #FAFAFA
+// - 다크모드 기본 배경: #121212
+// - 다크모드 진입 시 나레이션 기본색: #A0A0B4
+// - 다크모드 진입 시 민트(소설) 기본색: #50D2CB
+// - "배경색 커스텀" 체크박스가 켜져 있으면 #customBgColor 입력값을 우선 사용
+// =========================================================================
+function toggleDarkMode() {
+    isDarkMode = !isDarkMode;
+    document.body.classList.toggle('dark-mode', isDarkMode);
+    document.getElementById('darkModeBtn').innerText = isDarkMode ? '☀️ 라이트 모드' : '🌙 다크 모드';
+
+    if (isDarkMode) {
+        let elMint = document.getElementById('mintTextColor');
+        let elMintP = document.getElementById('mintTextColorPicker');
+        let elNarr = document.getElementById('narrColor');
+        let elNarrP = document.getElementById('narrColorPicker');
+        if (elMint) elMint.value = '#50D2CB';
+        if (elMintP) elMintP.value = '#50D2CB';
+        if (elNarr) elNarr.value = '#A0A0B4';
+        if (elNarrP) elNarrP.value = '#A0A0B4';
+    } else {
+        let elMint = document.getElementById('mintTextColor');
+        let elMintP = document.getElementById('mintTextColorPicker');
+        let elNarr = document.getElementById('narrColor');
+        let elNarrP = document.getElementById('narrColorPicker');
+        if (elMint) elMint.value = '#237768';
+        if (elMintP) elMintP.value = '#237768';
+        if (elNarr) elNarr.value = '#48484A';
+        if (elNarrP) elNarrP.value = '#48484A';
+    }
+
+    // 💡 다크모드 전환 시, 배경색 커스텀이 꺼져있다면 컬러피커 표시값도 기본값으로 동기화
+    const customBgToggleEl = document.getElementById('customBgToggle');
+    if (customBgToggleEl && !customBgToggleEl.checked) {
+        const bgColorEl = document.getElementById('customBgColor');
+        const bgColorPickerEl = document.getElementById('customBgColorPicker');
+        const defaultBg = isDarkMode ? '#121212' : '#FAFAFA';
+        if (bgColorEl) bgColorEl.value = defaultBg;
+        if (bgColorPickerEl) bgColorPickerEl.value = defaultBg;
+    }
+
+    if (typeof updateOutput === 'function') updateOutput();
+}
+
+// 💡 [신규] 배경색 커스텀 체크박스 토글 시 호출 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+function toggleCustomBg() {
+    if (typeof updateOutput === 'function') updateOutput();
+}
+
+// =========================================================================
+// 💡 [신규] 캐릭터 프리셋 데이터 정의 (검색용 주석 태그: #CHARACTER_PRESET_DATA)
+// -------------------------------------------------------------------------
+// 이 객체의 값만 직접 수정하면 각 프리셋의 색상/이름/프로필을 바꿀 수 있습니다.
+// novelColor        = 소설(V1) 모드에서 쓰이는 글자색 (mintTextColor / pinkTextColor)
+// bubbleTextColor   = 말풍선 모드 글자색 (mintBubbleTextColor / pinkBubbleTextColor)
+// bubbleBgColor     = 말풍선 모드 배경색 (mintBgColor / pinkBgColor)
+// name              = 캐릭터 이름 (mintName / pinkName)
+// profileUrl        = 프로필 이미지 URL (mintProfileUrl / pinkProfileUrl)
+//
+// 프리셋을 새로 추가하고 싶으면:
+// 1) 아래 객체에 키를 하나 추가하고 (예: preset5)
+// 2) index.html의 #presetDropdown 안에 버튼 한 줄 추가
+//    <button class="preset-item" onclick="applyCharacterPreset('preset5')">프리셋5</button>
+// 이 두 가지만 하면 끝입니다.
+//
+// [기록]
+// - default1 / default2 / daily : 모두 기존 앱 기본값과 동일하게 통일
+// - preset4basic / preset4daily : 사용자 제공 샘플 HTML(dieter/chloe 캐릭터) 기준으로 통일
+//   (novelColor는 샘플에 값이 없어 bubbleTextColor와 동일하게 채워둠 - 필요시 이 값만 수정)
+// =========================================================================
+const CHARACTER_PRESETS = {
+    default1: {
+        mint: {
+            novelColor: '#237768',
+            bubbleTextColor: '#1d6f60',
+            bubbleBgColor: '#eef8f3',
+            name: '하시온',
+            profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
+        },
+        pink: {
+            novelColor: '#f5bdcc',
+            bubbleTextColor: '#9b3e61',
+            bubbleBgColor: '#fdf2f6',
+            name: '김민정',
+            profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
+        }
+    },
+    default2: {
+        mint: {
+            novelColor: '#237768',
+            bubbleTextColor: '#1d6f60',
+            bubbleBgColor: '#eef8f3',
+            name: '하시온',
+            profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
+        },
+        pink: {
+            novelColor: '#f5bdcc',
+            bubbleTextColor: '#9b3e61',
+            bubbleBgColor: '#fdf2f6',
+            name: '김민정',
+            profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
+        }
+    },
+    daily: {
+        mint: {
+            novelColor: '#237768',
+            bubbleTextColor: '#1d6f60',
+            bubbleBgColor: '#eef8f3',
+            name: '하시온',
+            profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
+        },
+        pink: {
+            novelColor: '#f5bdcc',
+            bubbleTextColor: '#9b3e61',
+            bubbleBgColor: '#fdf2f6',
+            name: '김민정',
+            profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
+        }
+    },
+    preset4basic: {
+        mint: {
+            novelColor: '#1D6F7D',
+            bubbleTextColor: '#1D6F7D',
+            bubbleBgColor: '#E8F8F3',
+            name: 'dieter',
+            profileUrl: 'https://i.ibb.co/j9dVQJMP/IMG-5754.jpg'
+        },
+        pink: {
+            novelColor: '#9B3E61',
+            bubbleTextColor: '#9B3E61',
+            bubbleBgColor: '#FDF2F6',
+            name: 'chloe',
+            profileUrl: 'https://i.ibb.co/twf0JszX/IMG-2292.png'
+        }
+    },
+    preset4daily: {
+        mint: {
+            novelColor: '#1D6F7D',
+            bubbleTextColor: '#1D6F7D',
+            bubbleBgColor: '#E8F8F3',
+            name: 'dieter',
+            profileUrl: 'https://i.ibb.co/j9dVQJMP/IMG-5754.jpg'
+        },
+        pink: {
+            novelColor: '#9B3E61',
+            bubbleTextColor: '#9B3E61',
+            bubbleBgColor: '#FDF2F6',
+            name: 'chloe',
+            profileUrl: 'https://i.ibb.co/twf0JszX/IMG-2292.png'
+        }
+    }
+};
+
+// 💡 [신규] 드롭다운 토글 함수 (검색용 주석 태그: #CHARACTER_PRESET_UI)
+function togglePresetDropdown() {
+    const dropdown = document.getElementById('presetDropdown');
+    if (!dropdown) return;
+    dropdown.style.display = (dropdown.style.display === 'none' || !dropdown.style.display) ? 'block' : 'none';
+}
+
+// 💡 [신규] 바깥 클릭 시 드롭다운 자동 닫힘 (검색용 주석 태그: #CHARACTER_PRESET_UI)
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('presetDropdown');
+    const toggleBtn = document.getElementById('presetToggleBtn');
+    if (!dropdown || !toggleBtn) return;
+    if (dropdown.style.display === 'block' && !dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
+});
+
+// 💡 [신규] 프리셋 적용 함수 (검색용 주석 태그: #CHARACTER_PRESET_APPLY)
+function applyCharacterPreset(presetKey) {
+    const preset = CHARACTER_PRESETS[presetKey];
+    if (!preset) {
+        if (typeof showToast === 'function') showToast('존재하지 않는 프리셋입니다.');
+        return;
+    }
+
+    const mintNovel = document.getElementById('mintTextColor');
+    const mintNovelP = document.getElementById('mintTextColorPicker');
+    const mintBubbleText = document.getElementById('mintBubbleTextColor');
+    const mintBubbleTextP = document.getElementById('mintBubbleTextColorPicker');
+    const mintBg = document.getElementById('mintBgColor');
+    const mintBgP = document.getElementById('mintBgColorPicker');
+    const mintName = document.getElementById('mintName');
+    const mintProfile = document.getElementById('mintProfileUrl');
+
+    if (mintNovel) mintNovel.value = preset.mint.novelColor;
+    if (mintNovelP) mintNovelP.value = preset.mint.novelColor;
+    if (mintBubbleText) mintBubbleText.value = preset.mint.bubbleTextColor;
+    if (mintBubbleTextP) mintBubbleTextP.value = preset.mint.bubbleTextColor;
+    if (mintBg) mintBg.value = preset.mint.bubbleBgColor;
+    if (mintBgP) mintBgP.value = preset.mint.bubbleBgColor;
+    if (mintName) mintName.value = preset.mint.name;
+    if (mintProfile) mintProfile.value = preset.mint.profileUrl;
+
+    const pinkNovel = document.getElementById('pinkTextColor');
+    const pinkNovelP = document.getElementById('pinkTextColorPicker');
+    const pinkBubbleText = document.getElementById('pinkBubbleTextColor');
+    const pinkBubbleTextP = document.getElementById('pinkBubbleTextColorPicker');
+    const pinkBg = document.getElementById('pinkBgColor');
+    const pinkBgP = document.getElementById('pinkBgColorPicker');
+    const pinkName = document.getElementById('pinkName');
+    const pinkProfile = document.getElementById('pinkProfileUrl');
+
+    if (pinkNovel) pinkNovel.value = preset.pink.novelColor;
+    if (pinkNovelP) pinkNovelP.value = preset.pink.novelColor;
+    if (pinkBubbleText) pinkBubbleText.value = preset.pink.bubbleTextColor;
+    if (pinkBubbleTextP) pinkBubbleTextP.value = preset.pink.bubbleTextColor;
+    if (pinkBg) pinkBg.value = preset.pink.bubbleBgColor;
+    if (pinkBgP) pinkBgP.value = preset.pink.bubbleBgColor;
+    if (pinkName) pinkName.value = preset.pink.name;
+    if (pinkProfile) pinkProfile.value = preset.pink.profileUrl;
+
+    const dropdown = document.getElementById('presetDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+
+    if (typeof updateOutput === 'function') updateOutput();
+    if (typeof showToast === 'function') showToast(`캐릭터 프리셋 [${presetKey}] 적용 완료!`);
 }
 
 function scrollToPreview(index) {
@@ -150,8 +374,8 @@ function applyAutoCustomColor(safeKey) {
         }
     });
     if (count > 0) {
-        renderEditor(); 
-        saveState(); 
+        renderEditor();
+        saveState();
         showToast(`총 ${count}개의 대사에 캐릭터 설정이 일괄 적용되었습니다! 🚀`);
     } else {
         showToast("해당 캐릭터를 사용하는 대사가 없습니다.");
@@ -384,7 +608,7 @@ function formatBubbleText(text) {
 }
 
 function updateOutput(skipPreviewUpdate = false) {
-    const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#B2E4D4' : '#237768');
+    const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#50D2CB' : '#237768');
     const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
     const mobTextColor = document.getElementById('mobTextColor') ? document.getElementById('mobTextColor').value : '#3a414d';
     const mintBubbleTextColor = document.getElementById('mintBubbleTextColor') ? document.getElementById('mintBubbleTextColor').value : '#1d6f60';
@@ -393,7 +617,7 @@ function updateOutput(skipPreviewUpdate = false) {
     const pinkBgColor = document.getElementById('pinkBgColor') ? document.getElementById('pinkBgColor').value : '#fdf2f6';
     const mobBubbleTextColor = document.getElementById('mobBubbleTextColor') ? document.getElementById('mobBubbleTextColor').value : '#3a414d';
     const mobBgColor = document.getElementById('mobBgColor') ? document.getElementById('mobBgColor').value : '#eff1f5';
-    const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#48484A');
+    const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#A0A0B4' : '#48484A');
     const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
     const cTitle = isDarkMode ? '#F9F9F8' : '#1c1c1e';
     const cStatusBg = isDarkMode ? '#242424' : '#fdfdfd';
@@ -408,26 +632,34 @@ function updateOutput(skipPreviewUpdate = false) {
     const cAlertBg = isDarkMode ? '#2a2a2a' : '#fcfcfc';
     const cAlertBorder = isDarkMode ? '#555555' : '#cccccc';
     const cProgressBar = isDarkMode ? '#444444' : '#eeeeee';
+
+    // 💡 배경색 커스텀 계산 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+    const customBgToggleEl = document.getElementById('customBgToggle');
+    const customBgColorEl = document.getElementById('customBgColor');
+    const useCustomBg = customBgToggleEl ? customBgToggleEl.checked : false;
+    let wrapperBgColor;
+    if (useCustomBg && customBgColorEl && /^#[0-9A-Fa-f]{6}$/.test(customBgColorEl.value)) {
+        wrapperBgColor = customBgColorEl.value;
+    } else {
+        wrapperBgColor = isDarkMode ? '#121212' : '#FAFAFA';
+    }
+
     let innerContent = '';
     let hasBgm = false;
     let prevValidType = null;
     let lastCustomTextColor = null;
     let lastCustomName = null;
     let consecutivePostitCount = 0;
-    let consecutivePolaroidCount = 0; 
+    let consecutivePolaroidCount = 0;
     let gapBlock = currentBlockGap + 'px';
     let gapInner = currentInnerGap + 'px';
-
     blocks.forEach((block, index) => {
         if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid'].includes(block.type)) return;
-
         let curr = block.type;
         let isCurrDiag = ['mint', 'pink', 'mob', 'custom'].includes(curr);
         let isPrevDiag = prevValidType && ['mint', 'pink', 'mob', 'custom'].includes(prevValidType);
-        
         let isCurrNarration = ['narration', 'thought'].includes(curr);
         let isPrevNarration = prevValidType && ['narration', 'thought'].includes(prevValidType);
-
         let isSameAsPrev = false;
         if (isCurrDiag && prevValidType === curr) {
             if (curr === 'custom') {
@@ -436,32 +668,28 @@ function updateOutput(skipPreviewUpdate = false) {
                 isSameAsPrev = true;
             }
         }
-
         if (curr === 'postit') {
             consecutivePostitCount++;
         } else {
             consecutivePostitCount = 0;
         }
-
         if (curr === 'polaroid') {
             consecutivePolaroidCount++;
         } else {
             consecutivePolaroidCount = 0;
         }
-
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
                 if (isPrevDiag && isCurrDiag) {
-                    mt = isSameAsPrev ? gapInner : gapBlock; 
+                    mt = isSameAsPrev ? gapInner : gapBlock;
                 } else if (isPrevNarration && isCurrNarration) {
                     mt = gapInner;
                 } else {
-                    mt = gapBlock; 
+                    mt = gapBlock;
                 }
             }
         }
-
         let htmlStr = '';
         if (block.type === 'empty') {
             htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
@@ -601,7 +829,7 @@ function updateOutput(skipPreviewUpdate = false) {
                             let parts = sData.date.split('/');
                             let mainDate = parts[0]?.trim() || '';
                             let subDate = parts[1]?.trim() || '';
-                            dateHtml = `<div><div style="font-size: 12px; color: ${cMainText};">🗓️ ${mainDate}</div>${subDate ? ` <div style="font-size: 11px; color: ${cMuted}; margin-top: 2px;">${subDate}</div>` : ''}</div>`;
+                            dateHtml = `<div><div style="font-size: 12px; color: ${cMainText};">🗓️ ${mainDate}</div>${subDate ?` <div style="font-size: 11px; color: ${cMuted}; margin-top: 2px;">${subDate}</div>` : ''}</div>`;
                         }
                         let locHtml = '<div></div>';
                         if (sData.loc) {
@@ -646,7 +874,7 @@ function updateOutput(skipPreviewUpdate = false) {
                             let state = parts[1] || '';
                             let desc = parts[2] || '';
                             let num = val.replace(/[^0-9]/g, '');
-                            statusHtml += `<div style="margin-bottom: ${sData.affection ? '6px' : '0'};"><div style="display: flex; justify-content: space-between; font-size: 11px; color: ${cMuted}; margin-bottom: 3px;"><span>🚨 가이딩 필요 수치</span><span>${val} ${state ? ` (${state})` : ''}</span></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #A8E6CF;"></div></div>${desc ? `<div style="font-size: 10px; color: ${cMuted}; margin-top: 2px; text-align: right;">${desc}</div>` : ''}</div>`;
+                            statusHtml += `<div style="margin-bottom: ${sData.affection ? '6px' : '0'};"><div style="display: flex; justify-content: space-between; font-size: 11px; color: ${cMuted}; margin-bottom: 3px;"><span>🚨 가이딩 필요 수치</span><span>${val} ${state ?` (${state})` : ''}</span></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #A8E6CF;"></div></div>${desc ? `<div style="font-size: 10px; color: ${cMuted}; margin-top: 2px; text-align: right;">${desc}</div>` : ''}</div>`;
                         }
                         if (sData.affection) {
                             let val = sData.affection;
@@ -658,7 +886,7 @@ function updateOutput(skipPreviewUpdate = false) {
                                 bracketText = val.substring(parenIdx).trim();
                             }
                             let num = (mainVal === 'MAX' || mainVal.includes('∞')) ? '100' : mainVal.replace(/[^0-9]/g, '');
-                            statusHtml += `<div><div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: ${cMuted}; margin-bottom: 6px;"><span style="margin-bottom: 2px;">💕 호감도</span><div style="text-align: right;"><div style="color: #E598A6; font-weight: bold; font-size: 12px;">${mainVal}</div>${bracketText ? ` <div style="font-size: 10.5px; color: ${cMuted}; margin-top: 3px; font-weight: normal; word-break: break-all;">${bracketText}</div>` : ''}</div></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #FFB6C1;"></div></div></div>`;
+                            statusHtml += `<div><div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: ${cMuted}; margin-bottom: 6px;"><span style="margin-bottom: 2px;">💕 호감도</span><div style="text-align: right;"><div style="color: #E598A6; font-weight: bold; font-size: 12px;">${mainVal}</div>${bracketText ?` <div style="font-size: 10.5px; color: ${cMuted}; margin-top: 3px; font-weight: normal; word-break: break-all;">${bracketText}</div>` : ''}</div></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #FFB6C1;"></div></div></div>`;
                         }
                         statusHtml += `</div>`;
                     }
@@ -732,7 +960,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 let pCap = applyTextStyles(block.polaroidCaption || '');
                 let captionHtml = '';
                 if (pDate || pCap) {
-                    captionHtml = `<div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">${pDate ? ` <div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}</div>`;
+                    captionHtml = `<div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">${pDate ?` <div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}</div>`;
                 }
                 htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;"><div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div><div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;"><img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo"></div>${captionHtml}</div>\n`;
             }
@@ -752,7 +980,6 @@ function updateOutput(skipPreviewUpdate = false) {
             }
         }
     });
-
     if (hasBgm) {
         innerContent += `
 <iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
@@ -777,12 +1004,11 @@ function playBGM(videoId, title) {
 function stopBGM() {
     var frame = document.getElementById('bgmPlayerFrame');
     if (frame) {
-        frame.src = frame.src; 
+        frame.src = frame.src;
     }
 }
 <\/script>\n`;
     }
-
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
@@ -800,7 +1026,8 @@ function stopBGM() {
     box-sizing: border-box;
     max-width: 600px;
     margin: 0 auto;
-    ${isDarkMode ? 'background-color: #1B1B1B; color: #F9F9F8;' : ''}
+    background-color: ${wrapperBgColor};
+    ${isDarkMode ? 'color: #F9F9F8;' : ''}
 }
 .tistory-post-wrapper * { box-sizing: border-box; }
 /* 티스토리 스킨의 이미지 간섭 방지 및 아바타 고정 */
@@ -830,13 +1057,11 @@ function stopBGM() {
 .postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
 </style>
 `;
-
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
         .replace(/ onclick="focusAndScrollBlock\(\d+, true\)"/g, '');
-
     let finalHtml = '';
     if (outputVersion === 1) {
         finalHtml = `<!DOCTYPE html>
@@ -860,7 +1085,6 @@ ${cleanInnerContent}
     } else {
         finalHtml = globalStyle + `<div class="tistory-post-wrapper">\n${cleanInnerContent}\n</div>`;
     }
-
     if (!skipPreviewUpdate) {
         document.getElementById('htmlPreview').innerHTML = previewHtml;
     }
@@ -874,11 +1098,9 @@ function importFromHtml() {
         showToast('불러올 HTML 코드를 입력해주세요.');
         return;
     }
-
     const styleMatch = htmlText.match(/\.tistory-post-wrapper\s*\{\s*([^}]+)\}/);
     if (styleMatch) {
         const styleRules = styleMatch[1];
-        
         const fontMatch = styleRules.match(/font-family:\s*([^;]+);/);
         if (fontMatch) {
             currentFontFamily = fontMatch[1].trim();
@@ -908,8 +1130,17 @@ function importFromHtml() {
             if (lsInput) lsInput.value = currentLetterSpacing;
             if (lsVal) lsVal.innerText = currentLetterSpacing + 'em';
         }
+        // 💡 배경색 불러오기 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+        const bgMatch = styleRules.match(/background-color:\s*(#[0-9A-Fa-f]{6});/);
+        if (bgMatch) {
+            const bgColorEl = document.getElementById('customBgColor');
+            const bgColorPickerEl = document.getElementById('customBgColorPicker');
+            const bgToggleEl = document.getElementById('customBgToggle');
+            if (bgColorEl) bgColorEl.value = bgMatch[1].toUpperCase();
+            if (bgColorPickerEl) bgColorPickerEl.value = bgMatch[1].toUpperCase();
+            if (bgToggleEl) bgToggleEl.checked = true;
+        }
     }
-
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = htmlText;
     let container = tempDiv.querySelector('#content-wrapper') || tempDiv.querySelector('.tistory-post-wrapper') || tempDiv.querySelector('body') || tempDiv;
@@ -918,7 +1149,6 @@ function importFromHtml() {
     let foundPink = false;
     let foundMob = false;
     let foundNarr = false;
-
     function rgbToHex(rgb) {
         if (!rgb) return '';
         if (rgb.startsWith('#')) return rgb.toUpperCase();
@@ -926,7 +1156,6 @@ function importFromHtml() {
         if (!match) return rgb;
         return "#" + (1 << 24 | match[1] << 16 | match[2] << 8 | match[3]).toString(16).slice(1).toUpperCase();
     }
-
     Array.from(container.children).forEach(child => {
         if (['STYLE', 'SCRIPT', 'IFRAME', 'LINK', 'META', 'TITLE'].includes(child.tagName)) return;
         let type = child.getAttribute('data-type');
@@ -945,10 +1174,10 @@ function importFromHtml() {
             if (outerHtml.includes('playBGM')) {
                 type = 'bgm';
             } else if (outerHtml.includes('max-width: 500px') && (outerHtml.includes('#fdfdfd') || outerHtml.includes('상태창') || outerHtml.includes('INNER THOUGHT') || outerHtml.includes('#242424'))) {
-                type = 'status'; 
+                type = 'status';
             } else if (child.style.fontStyle === 'italic' && (child.style.color === 'rgb(119, 119, 119)' || child.style.color === 'rgb(142, 142, 147)')) {
                 type = 'thought';
-            } else if (child.style.color === 'rgb(69, 159, 165)' || child.style.color === 'rgb(178, 228, 212)' || child.style.color === 'rgb(35, 119, 104)' || child.style.color === 'rgb(29, 111, 96)') { 
+            } else if (child.style.color === 'rgb(69, 159, 165)' || child.style.color === 'rgb(178, 228, 212)' || child.style.color === 'rgb(35, 119, 104)' || child.style.color === 'rgb(29, 111, 96)') {
                 type = 'mint';
             } else if (child.style.color === 'rgb(245, 189, 204)' || child.style.color === 'rgb(155, 62, 97)') {
                 type = 'pink';
@@ -1122,8 +1351,7 @@ function importFromHtml() {
         } else if (type === 'empty') {
             content = '';
         }
-        if (type === 'narration' && !content) type = 'empty'; 
-
+        if (type === 'narration' && !content) type = 'empty';
         newBlocks.push({
             type: type,
             content: content || '',
@@ -1137,11 +1365,10 @@ function importFromHtml() {
             polaroidCaption: polaroidCaption
         });
     });
-
     if (newBlocks.length > 0) {
         blocks = newBlocks;
         if (typeof renderEditor === 'function') renderEditor();
-        saveState(); 
+        saveState();
     } else {
         showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
     }
@@ -1162,38 +1389,41 @@ document.addEventListener("DOMContentLoaded", function() {
     setupColorPicker('mintTextColorPicker', 'mintTextColor');
     setupColorPicker('mintBubbleTextColorPicker', 'mintBubbleTextColor');
     setupColorPicker('mintBgColorPicker', 'mintBgColor');
-    
     setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
     setupColorPicker('pinkBubbleTextColorPicker', 'pinkBubbleTextColor');
     setupColorPicker('pinkBgColorPicker', 'pinkBgColor');
-    
     setupColorPicker('mobTextColorPicker', 'mobTextColor');
     setupColorPicker('mobBubbleTextColorPicker', 'mobBubbleTextColor');
     setupColorPicker('mobBgColorPicker', 'mobBgColor');
-    
     setupColorPicker('narrColorPicker', 'narrColor');
     setupColorPicker('highlightColorPicker', 'highlightColor');
+    setupColorPicker('customBgColorPicker', 'customBgColor');
 
     const inputsToSync = [
         'mintTextColor', 'mintBubbleTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
         'pinkTextColor', 'pinkBubbleTextColor', 'pinkBgColor', 'pinkName', 'pinkProfileUrl',
         'mobTextColor', 'mobBubbleTextColor', 'mobBgColor', 'mobName', 'mobProfileUrl',
-        'narrColor', 'highlightColor'
+        'narrColor', 'highlightColor', 'customBgColor'
     ];
-
     inputsToSync.forEach(id => {
         let el = document.getElementById(id);
         if (el) {
-            el.addEventListener('input', () => { 
-                if(typeof updateOutput === 'function') updateOutput(); 
+            el.addEventListener('input', () => {
+                if(typeof updateOutput === 'function') updateOutput();
             });
         }
     });
-
     let elNarrItalic = document.getElementById('narrItalic');
     if (elNarrItalic) {
-        elNarrItalic.addEventListener('change', () => { 
-            if(typeof updateOutput === 'function') updateOutput(); 
+        elNarrItalic.addEventListener('change', () => {
+            if(typeof updateOutput === 'function') updateOutput();
+        });
+    }
+
+    let elCustomBgToggle = document.getElementById('customBgToggle');
+    if (elCustomBgToggle) {
+        elCustomBgToggle.addEventListener('change', () => {
+            if (typeof updateOutput === 'function') updateOutput();
         });
     }
 });
