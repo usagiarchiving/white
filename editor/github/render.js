@@ -329,11 +329,11 @@ function updateCustomCharacterPanel() {
             <div style="display: flex; gap: 8px;">
                 <div style="flex: 1;">
                     <label style="font-size: 10px; color: var(--text-muted);">이름</label>
-                    <input type="text" id="auto-name-${safeKey}" value="${escapeHtml(charData.name)}" placeholder="제3자" style="width: 100%; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); box-sizing: border-box;">
+                    <input type="text" id="auto-name-${safeKey}" value="${escapeHtml(charData.name)}" placeholder="제3자" style="width: 100%; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                 </div>
                 <div style="flex: 2;">
                     <label style="font-size: 10px; color: var(--text-muted);">프로필 URL</label>
-                    <input type="text" id="auto-profile-${safeKey}" value="${escapeHtml(charData.profileUrl)}" placeholder="https://..." style="width: 100%; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); box-sizing: border-box;">
+                    <input type="text" id="auto-profile-${safeKey}" value="${escapeHtml(charData.profileUrl)}" placeholder="https://..." style="width: 100%; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                 </div>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -653,6 +653,7 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePolaroidCount = 0;
     let gapBlock = currentBlockGap + 'px';
     let gapInner = currentInnerGap + 'px';
+    
     blocks.forEach((block, index) => {
         if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid'].includes(block.type)) return;
         let curr = block.type;
@@ -661,6 +662,7 @@ function updateOutput(skipPreviewUpdate = false) {
         let isCurrNarration = ['narration', 'thought'].includes(curr);
         let isPrevNarration = prevValidType && ['narration', 'thought'].includes(prevValidType);
         let isSameAsPrev = false;
+        
         if (isCurrDiag && prevValidType === curr) {
             if (curr === 'custom') {
                 if (lastCustomTextColor === block.customTextColor && lastCustomName === block.customName) isSameAsPrev = true;
@@ -668,16 +670,19 @@ function updateOutput(skipPreviewUpdate = false) {
                 isSameAsPrev = true;
             }
         }
+        
         if (curr === 'postit') {
             consecutivePostitCount++;
         } else {
             consecutivePostitCount = 0;
         }
+        
         if (curr === 'polaroid') {
             consecutivePolaroidCount++;
         } else {
             consecutivePolaroidCount = 0;
         }
+        
         let mt = '0px';
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
@@ -690,6 +695,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
             }
         }
+        
         let htmlStr = '';
         if (block.type === 'empty') {
             htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
@@ -705,14 +711,14 @@ function updateOutput(skipPreviewUpdate = false) {
             } else if (dStyle === 'dots') {
                 dividerInner = `<div style="display: flex; gap: 16px; align-items: center; justify-content: center;"><div style="width: 4px; height: 4px; background-color: ${isDarkMode ? '#666666' : '#aeaeb2'}; border-radius: 50%;"></div><div style="width: 4px; height: 4px; background-color: ${isDarkMode ? '#666666' : '#aeaeb2'}; border-radius: 50%;"></div><div style="width: 4px; height: 4px; background-color: ${isDarkMode ? '#666666' : '#aeaeb2'}; border-radius: 50%;"></div></div>`;
             } else if (dStyle === 'diamond') {
-                dividerInner = `<div style="display: flex; align-items: center; width: 100%;"><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div><div style="width: 9px; height: 9px; border: 1px solid ${isDarkMode ? '#666666' : '#c7c7cc'}; background-color: transparent; transform: rotate(45deg); margin: 0 15px; box-sizing: border-box;"></div><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div></div>`;
+                dividerInner = `<div style="display: flex; align-items: center; width: 100%;"><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div><div style="width: 9px; height: 9px; border: 1px solid ${isDarkMode ? '#666666' : '#c7c7cc'}; background-color: transparent; transform: rotate(45deg); margin: 0 15px;"></div><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div></div>`;
             }
-            htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">${dividerInner}</div>\n`;
+            htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; display: flex; justify-content: center; align-items: center;">${dividerInner}</div>\n`;
         } else {
             let lines = block.content.split('\n');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
             if (block.type === 'title') {
-                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">${applyTextStyles(block.content)}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 10px 0; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle};">${applyTextStyles(block.content)}</div>\n`;
             }
             else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && isCurrDiag) {
                 function extractProfileUrl(rawVal) {
@@ -728,6 +734,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 let mintUrlEl = document.getElementById('mintProfileUrl');
                 let pinkUrlEl = document.getElementById('pinkProfileUrl');
                 let mobUrlEl = document.getElementById('mobProfileUrl');
+                
                 if (curr === 'mint') {
                     bgColor = mintBgColor;
                     textColor = mintBubbleTextColor;
@@ -752,23 +759,24 @@ function updateOutput(skipPreviewUpdate = false) {
                     imageUrl = extractProfileUrl(block.customProfileUrl) || `ml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
                     charName = block.customName || '제3자';
                 }
+                
                 let isPink = (curr === 'pink');
                 if (outputMode === 'bubble1') {
                     let avatarHtml = '';
                     if (isSameAsPrev) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 0;"></div>`;
                     } else {
-                        avatarHtml = `<div class="av" style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                        avatarHtml = `<div class="av" style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor};"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
                     let alignStyle = isPink ? 'flex-direction: row-reverse;' : '';
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${mt}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${mt}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
                 } else if (outputMode === 'bubble2') {
                     let avatarHtml = '';
                     let nameHtml = '';
                     let tailHtml = '';
                     if (!isSameAsPrev) {
                         let avPos = isPink ? 'right: 0;' : 'left: 0;';
-                        avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 0; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
+                        avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 0; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor};"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                         if (charName.trim() !== '') {
                             let nameAlign = isPink ? 'text-align: right;' : 'text-align: left;';
                             nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
@@ -780,7 +788,7 @@ function updateOutput(skipPreviewUpdate = false) {
                     }
                     let containerPadding = isPink ? 'padding-right: 50px;' : 'padding-left: 50px;';
                     let containerFlex = isPink ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${mt}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; word-break: inherit; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${mt}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
             else if (isCurrDiag) {
@@ -789,16 +797,16 @@ function updateOutput(skipPreviewUpdate = false) {
                 else if (curr === 'pink') { textColor = pinkTextColor; }
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : mobTextColor; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${textColor}; text-align: left;">${divContent}</div>\n`;
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
                 let vid = extractVideoId(block.bgmUrl);
-                htmlStr = `<div id="preview-block-${index}" data-type="bgm" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 10px 0; text-align: center; box-sizing: border-box;"><div style="display: inline-flex; align-items: center; background-color: ${isDarkMode ? '#333' : '#ffffff'}; border: 1px solid ${isDarkMode ? '#444' : '#e5e5ea'}; border-radius: 20px; padding: 4px 12px; gap: 8px; font-size: 11px; color: ${isDarkMode ? '#ccc' : '#8e8e93'}; box-shadow: 0 1px 2px rgba(0,0,0,0.02); line-height: 1;"><span style="display: flex; align-items: center; color: ${isDarkMode ? '#888' : '#aeaeb2'};"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span><span style="max-width: 120px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isDarkMode ? '#F9F9F8' : '#3a3a3c'};">${block.bgmTitle || 'BGM'}</span><span style="color: ${isDarkMode ? '#555' : '#d1d1d6'};">|</span><div style="display: flex; align-items: center; gap: 4px;"><div onclick="playBGM('${vid}', '${block.bgmTitle}')" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="재생"><svg width="8" height="8" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M8 5v14l11-7z"/></svg></div><div onclick="stopBGM()" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="정지"><svg width="7" height="7" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M6 6h12v12H6z"/></svg></div></div></div></div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="bgm" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 10px 0; text-align: center;"><div style="display: inline-flex; align-items: center; background-color: ${isDarkMode ? '#333' : '#ffffff'}; border: 1px solid ${isDarkMode ? '#444' : '#e5e5ea'}; border-radius: 20px; padding: 4px 12px; gap: 8px; font-size: 11px; color: ${isDarkMode ? '#ccc' : '#8e8e93'}; box-shadow: 0 1px 2px rgba(0,0,0,0.02); line-height: 1;"><span style="display: flex; align-items: center; color: ${isDarkMode ? '#888' : '#aeaeb2'};"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span><span style="max-width: 120px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isDarkMode ? '#F9F9F8' : '#3a3a3c'};">${block.bgmTitle || 'BGM'}</span><span style="color: ${isDarkMode ? '#555' : '#d1d1d6'};">|</span><div style="display: flex; align-items: center; gap: 4px;"><div onclick="playBGM('${vid}', '${block.bgmTitle}')" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="재생"><svg width="8" height="8" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M8 5v14l11-7z"/></svg></div><div onclick="stopBGM()" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="정지"><svg width="7" height="7" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M6 6h12v12H6z"/></svg></div></div></div></div>\n`;
             }
             else if (block.type === 'status') {
                 if (block.content.trim().startsWith('<div')) {
-                    htmlStr = `<div id="preview-block-${index}" data-type="status" onclick="focusAndScrollBlock(${index}, true)" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: ${cStatusBg}; border: 1px solid ${cStatusBorder}; border-radius: 6px; box-sizing: border-box; color: ${cStatusText};">\n${block.content}\n</div>\n`;
+                    htmlStr = `<div id="preview-block-${index}" data-type="status" onclick="focusAndScrollBlock(${index}, true)" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: ${cStatusBg}; border: 1px solid ${cStatusBorder}; border-radius: 6px; color: ${cStatusText};">\n${block.content}\n</div>\n`;
                 } else {
                     let sData = {};
                     lines.forEach(line => {
@@ -822,7 +830,8 @@ function updateOutput(skipPreviewUpdate = false) {
                         else if (line.includes('📰')) sData.interview = getVal();
                         else if (line.includes('💘')) sData.relation = getVal();
                     });
-                    let statusHtml = `<div id="preview-block-${index}" data-type="status" onclick="focusAndScrollBlock(${index}, true)" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: ${cStatusBg}; border: 1px solid ${cStatusBorder}; border-radius: 6px; box-sizing: border-box; color: ${cStatusText};">`;
+                    
+                    let statusHtml = `<div id="preview-block-${index}" data-type="status" onclick="focusAndScrollBlock(${index}, true)" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: ${cStatusBg}; border: 1px solid ${cStatusBorder}; border-radius: 6px; color: ${cStatusText};">`;
                     if (sData.date || sData.loc) {
                         let dateHtml = '<div></div>';
                         if (sData.date) {
@@ -845,13 +854,13 @@ function updateOutput(skipPreviewUpdate = false) {
                             let parts = sData.outfit.split('/');
                             let p1 = parts[0].trim();
                             let p2 = parts.slice(1).join('/').trim();
-                            statusHtml += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p1}</div></div><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p2}</div></div></div>`;
+                            statusHtml += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p1}</div></div><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p2}</div></div></div>`;
                         } else {
-                            statusHtml += `<div style="margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.outfit}</div></div></div>`;
+                            statusHtml += `<div style="margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.outfit}</div></div></div>`;
                         }
                     }
                     if (sData.state || sData.thought) {
-                        statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; border-radius: 4px; padding: 10px; margin-bottom: 10px; box-sizing: border-box;">`;
+                        statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; border-radius: 4px; padding: 10px; margin-bottom: 10px;">`;
                         if (sData.state) {
                             statusHtml += `<div style="${sData.thought ? 'margin-bottom: 8px;' : ''}"><span style="font-size: 11px; background-color: ${cBadgeBg}; color: ${cBadgeText}; padding: 2px 4px; border-radius: 2px;">👥 STATE</span><div style="margin-top: 4px; font-size: 12px; color: ${cMainText}; line-height: 1.5;">${sData.state}</div></div>`;
                         }
@@ -864,7 +873,7 @@ function updateOutput(skipPreviewUpdate = false) {
                         statusHtml += `</div>`;
                     }
                     if (sData.alert || sData.guide || sData.affection) {
-                        statusHtml += `<div style="background-color: ${cAlertBg}; border-left: 3px solid ${cAlertBorder}; padding: 8px 10px; margin-bottom: 10px; box-sizing: border-box;">`;
+                        statusHtml += `<div style="background-color: ${cAlertBg}; border-left: 3px solid ${cAlertBorder}; padding: 8px 10px; margin-bottom: 10px;">`;
                         if (sData.alert) {
                             statusHtml += `<div style="font-size: 12px; color: ${cStatusText}; margin-bottom: ${(sData.guide || sData.affection) ? '6px' : '0'};"><span class="bell">🔔</span> ${sData.alert}</div>`;
                         }
@@ -894,10 +903,10 @@ function updateOutput(skipPreviewUpdate = false) {
                         let gridCols = (sData.nsfw && sData.tmi) ? '110px 1fr' : '1fr';
                         statusHtml += `<div style="display: grid; grid-template-columns: ${gridCols}; gap: 8px; margin-bottom: 10px;">`;
                         if (sData.nsfw) {
-                            statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">❤️‍🔥 NSFW COUNT</div><div style="font-size: 12px; color: ${cMainText};">${sData.nsfw}</div></div>`;
+                            statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">❤️‍🔥 NSFW COUNT</div><div style="font-size: 12px; color: ${cMainText};">${sData.nsfw}</div></div>`;
                         }
                         if (sData.tmi) {
-                            statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">🔫 TMI</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.tmi}</div></div>`;
+                            statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">🔫 TMI</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.tmi}</div></div>`;
                         }
                         statusHtml += `</div>`;
                     }
@@ -906,29 +915,29 @@ function updateOutput(skipPreviewUpdate = false) {
                         if (sData.interview) {
                             let ivText = sData.interview.replace(/^(PC에 대한 랜덤 인터뷰|랜덤 인터뷰|인터뷰)/i, '').replace(/^[|\s:]+/, '');
                             ivText = ivText.replace(/\s*(A\.)/g, '<br><br>$1').replace(/^(<br>)+/, '');
-                            statusHtml += `<div style="background-color: ${isDarkMode ? '#1e293b' : '#f8fafc'}; border: 1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}; padding: 10px 12px; border-radius: 4px; box-sizing: border-box; border-left: 3px solid ${isDarkMode ? '#475569' : '#94a3b8'};"><div style="font-size: 11px; color: ${isDarkMode ? '#94a3b8' : '#64748b'}; margin-bottom: 4px; font-weight: bold;">📰 INTERVIEW</div><div style="font-size: 12px; color: ${isDarkMode ? '#e2e8f0' : '#334155'}; line-height: 1.5; font-style: italic;">${ivText}</div></div>`;
+                            statusHtml += `<div style="background-color: ${isDarkMode ? '#1e293b' : '#f8fafc'}; border: 1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}; padding: 10px 12px; border-radius: 4px; border-left: 3px solid ${isDarkMode ? '#475569' : '#94a3b8'};"><div style="font-size: 11px; color: ${isDarkMode ? '#94a3b8' : '#64748b'}; margin-bottom: 4px; font-weight: bold;">📰 INTERVIEW</div><div style="font-size: 12px; color: ${isDarkMode ? '#e2e8f0' : '#334155'}; line-height: 1.5; font-style: italic;">${ivText}</div></div>`;
                         }
                         if (sData.relation) {
                             let relText = sData.relation.replace(/^(뱅이 생각하는 PC와의 관계|뱅이 생각하는 관계|PC와의 관계|관계)/i, '').replace(/^[|\s:]+/, '');
-                            statusHtml += `<div style="background-color: ${isDarkMode ? '#4c0519' : '#fff0f2'}; border: 1px solid ${isDarkMode ? '#881337' : '#ffe4e6'}; padding: 10px 12px; border-radius: 4px; box-sizing: border-box; border-left: 3px solid ${isDarkMode ? '#e11d48' : '#fecdd3'};"><div style="font-size: 11px; color: ${isDarkMode ? '#fda4af' : '#e11d48'}; margin-bottom: 4px; font-weight: bold;">💘</div><div style="font-size: 12px; color: ${isDarkMode ? '#ffe4e6' : '#4c0519'}; line-height: 1.5;">${relText}</div></div>`;
+                            statusHtml += `<div style="background-color: ${isDarkMode ? '#4c0519' : '#fff0f2'}; border: 1px solid ${isDarkMode ? '#881337' : '#ffe4e6'}; padding: 10px 12px; border-radius: 4px; border-left: 3px solid ${isDarkMode ? '#e11d48' : '#fecdd3'};"><div style="font-size: 11px; color: ${isDarkMode ? '#fda4af' : '#e11d48'}; margin-bottom: 4px; font-weight: bold;">💘</div><div style="font-size: 12px; color: ${isDarkMode ? '#ffe4e6' : '#4c0519'}; line-height: 1.5;">${relText}</div></div>`;
                         }
                         statusHtml += `</div>`;
                     }
                     if (sData.doodle) {
-                        statusHtml += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid ${cBoxBorder}; text-align: center; width: 100%; box-sizing: border-box;"><span style="font-size: 12px; color: ${cMuted}; display: inline-block;">${sData.doodle}</span></div>`;
+                        statusHtml += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid ${cBoxBorder}; text-align: center; width: 100%;"><span style="font-size: 12px; color: ${cMuted}; display: inline-block;">${sData.doodle}</span></div>`;
                     }
                     statusHtml += `</div>\n`;
                     htmlStr = statusHtml;
                 }
             }
             else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${narrColor}; font-style: ${narrItalic}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; font-style: ${narrItalic}; text-align: left;">${divContent}</div>\n`;
             }
             else if (block.type === 'thought') {
-                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; text-align: left;">${divContent}</div>\n`;
             }
             else if (block.type === 'dday') {
-                htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0; box-sizing: border-box;"><span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span></div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0;"><span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span></div>\n`;
             }
             else if (block.type === 'postit') {
                 let isEven = consecutivePostitCount % 2 === 0;
@@ -965,7 +974,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;"><div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div><div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;"><img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo"></div>${captionHtml}</div>\n`;
             }
             else if (block.type === 'image') {
-                htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center; box-sizing: border-box;"><img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image"></div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center;"><img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image"></div>\n`;
             }
             else if (block.type === 'html') {
                 htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">${block.content}</div>\n`;
@@ -980,6 +989,7 @@ function updateOutput(skipPreviewUpdate = false) {
             }
         }
     });
+    
     if (hasBgm) {
         innerContent += `
 <iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
@@ -1009,12 +1019,17 @@ function stopBGM() {
 }
 <\/script>\n`;
     }
+    
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+body {
+    background-color: ${wrapperBgColor} !important;
+    color: ${narrColor};
+}
 .tistory-post-wrapper {
     font-family: ${currentFontFamily};
     font-size: ${currentFontSize}px;
@@ -1027,7 +1042,7 @@ function stopBGM() {
     max-width: 600px;
     margin: 0 auto;
     background-color: ${wrapperBgColor};
-    ${isDarkMode ? 'color: #F9F9F8;' : ''}
+    color: ${narrColor};
 }
 .tistory-post-wrapper * { box-sizing: border-box; }
 /* 티스토리 스킨의 이미지 간섭 방지 및 아바타 고정 */
@@ -1063,6 +1078,7 @@ function stopBGM() {
         .replace(/ id="preview-block-\d+"/g, '')
         .replace(/ onclick="focusAndScrollBlock\(\d+, true\)"/g, '');
     let finalHtml = '';
+    
     if (outputVersion === 1) {
         finalHtml = `<!DOCTYPE html>
 <html lang="ko">
@@ -1071,7 +1087,7 @@ function stopBGM() {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🐇</title>
 <style>
-    body { margin: 0; padding: 0; background-color: transparent; overflow-x: hidden; }
+    body { margin: 0; padding: 0; background-color: ${wrapperBgColor}; color: ${narrColor}; overflow-x: hidden; }
     #content-wrapper { padding-top: 15px; padding-bottom: 50px; }
 </style>
 </head>
@@ -1130,8 +1146,8 @@ function importFromHtml() {
             if (lsInput) lsInput.value = currentLetterSpacing;
             if (lsVal) lsVal.innerText = currentLetterSpacing + 'em';
         }
-        // 💡 배경색 불러오기 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
-        const bgMatch = styleRules.match(/background-color:\s*(#[0-9A-Fa-f]{6});/);
+        // 💡 배경색 및 나레이션(글로벌) 글자색 불러오기 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+        const bgMatch = styleRules.match(/background-color:\s*(#[0-9A-Fa-f]{6});/i);
         if (bgMatch) {
             const bgColorEl = document.getElementById('customBgColor');
             const bgColorPickerEl = document.getElementById('customBgColorPicker');
@@ -1139,6 +1155,13 @@ function importFromHtml() {
             if (bgColorEl) bgColorEl.value = bgMatch[1].toUpperCase();
             if (bgColorPickerEl) bgColorPickerEl.value = bgMatch[1].toUpperCase();
             if (bgToggleEl) bgToggleEl.checked = true;
+        }
+        const colorMatch = styleRules.match(/color:\s*(#[0-9A-Fa-f]{6});/i);
+        if (colorMatch) {
+            const narrColorEl = document.getElementById('narrColor');
+            const narrColorPickerEl = document.getElementById('narrColorPicker');
+            if (narrColorEl) narrColorEl.value = colorMatch[1].toUpperCase();
+            if (narrColorPickerEl) narrColorPickerEl.value = colorMatch[1].toUpperCase();
         }
     }
     const tempDiv = document.createElement('div');
@@ -1370,7 +1393,7 @@ function importFromHtml() {
         if (typeof renderEditor === 'function') renderEditor();
         saveState();
     } else {
-        showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
+        showToast('유효한 블록이 없습니다. 코문을 확인해주세요.');
     }
 }
 
