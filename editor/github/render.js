@@ -30,29 +30,23 @@ function extractVideoId(url) {
 function scrollToPreview(index) {
     const target = document.getElementById(`preview-block-${index}`);
     const container = document.getElementById('htmlPreview');
-    
     if (target && container) {
         const scrollPos = target.offsetTop - (container.clientHeight / 2) + (target.clientHeight / 2);
         container.scrollTo({ top: scrollPos, behavior: 'smooth' });
-        
         if (target.dataset.focusTimeout) {
             clearTimeout(parseInt(target.dataset.focusTimeout));
         }
-        
         const originalTransition = target.style.transition || '';
         const originalBoxShadow = target.style.boxShadow || '';
-        
         target.style.transition = 'box-shadow 0.3s ease';
         target.style.boxShadow = '0 0 0 4px rgba(0, 122, 255, 0.3)';
         target.style.borderRadius = '8px';
-        
         const timeoutId = setTimeout(() => {
             target.style.boxShadow = originalBoxShadow;
             setTimeout(() => {
                 target.style.transition = originalTransition;
             }, 300);
-        }, 1000); 
-        
+        }, 1000);
         target.dataset.focusTimeout = timeoutId;
     }
 }
@@ -64,7 +58,6 @@ function focusAndScrollBlock(index, preventFocus = false) {
         if (item && list) {
             const scrollPos = item.offsetTop - (list.clientHeight / 2) + (item.clientHeight / 2);
             list.scrollTo({ top: scrollPos, behavior: 'smooth' });
-            
             item.style.boxShadow = '0 0 0 2px var(--primary)';
             item.style.backgroundColor = 'var(--input-bg)';
             setTimeout(() => {
@@ -82,13 +75,12 @@ function focusAndScrollBlock(index, preventFocus = false) {
 function updateCustomCharacterPanel() {
     const list = document.getElementById('customCharacterAutoList');
     if(!list) return;
-
     const uniqueChars = {};
     blocks.forEach(b => {
         if(b.type === 'custom') {
             const key = (b.customName || '제3자') + '|' + (b.customTextColor || '#333333');
             if(!uniqueChars[key]) {
-                uniqueChars[key] = { 
+                uniqueChars[key] = {
                     textColor: b.customTextColor || '#333333',
                     bgColor: b.customBgColor || '#E2E8F0',
                     name: b.customName || '',
@@ -97,18 +89,14 @@ function updateCustomCharacterPanel() {
             }
         }
     });
-
-    list.innerHTML = ''; 
-
+    list.innerHTML = '';
     Object.keys(uniqueChars).forEach(key => {
         const safeKey = getSafeId(key);
         const charData = uniqueChars[key];
-        
         let row = document.createElement('div');
         row.id = `auto-custom-${safeKey}`;
         row.dataset.originalKey = key;
         row.style.cssText = "display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--block-hover); border: 1px solid var(--border); border-radius: 6px;";
-        
         row.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; font-weight: bold; color: var(--primary);">[${escapeHtml(charData.name || '제3자')}] 일괄 설정</span>
@@ -136,7 +124,6 @@ function updateCustomCharacterPanel() {
             </div>
         `;
         list.appendChild(row);
-        
         setupColorPicker(`auto-text-picker-${safeKey}`, `auto-text-text-${safeKey}`);
         setupColorPicker(`auto-bg-picker-${safeKey}`, `auto-bg-text-${safeKey}`);
     });
@@ -145,12 +132,10 @@ function updateCustomCharacterPanel() {
 function applyAutoCustomColor(safeKey) {
     const row = document.getElementById(`auto-custom-${safeKey}`);
     const originalKey = row.dataset.originalKey;
-    
     const newName = document.getElementById(`auto-name-${safeKey}`).value.trim();
     const newProfile = document.getElementById(`auto-profile-${safeKey}`).value.trim();
     const newTextCol = document.getElementById(`auto-text-text-${safeKey}`).value.trim();
     const newBgCol = document.getElementById(`auto-bg-text-${safeKey}`).value.trim();
-
     let count = 0;
     blocks.forEach(b => {
         if (b.type === 'custom') {
@@ -164,7 +149,6 @@ function applyAutoCustomColor(safeKey) {
             }
         }
     });
-
     if (count > 0) {
         renderEditor(); 
         saveState(); 
@@ -178,7 +162,6 @@ function applyTextStyles(text) {
     if (!text) return text;
     let hlColorEl = document.getElementById('highlightColor');
     let hlColor = hlColorEl ? hlColorEl.value : '#C4F0E9';
-
     let styledText = text;
     styledText = styledText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     styledText = styledText.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
@@ -192,29 +175,24 @@ function applyTextStyles(text) {
 function renderEditor() {
     const list = document.getElementById('editorList');
     list.innerHTML = '';
-
     blocks.forEach((block, index) => {
         const item = document.createElement('div');
         item.className = 'block-item';
         item.id = `editor-block-${index}`;
-        
         item.addEventListener('click', () => {
             scrollToPreview(index);
         });
-        
         let customFields = '';
         let isBgm = false;
         let isEmpty = block.type === 'empty';
         let isDivider = block.type === 'divider';
         let isPolaroid = block.type === 'polaroid';
         let isNarration = block.type === 'narration';
-
         if (block.type === 'custom') {
             let validTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customTextColor) ? block.customTextColor : '#333333';
             let validBgHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customBgColor) ? block.customBgColor : '#E2E8F0';
             let cName = block.customName || '';
             let cProf = block.customProfileUrl || '';
-
             customFields = `
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
                     <div style="display: flex; gap: 8px;">
@@ -252,9 +230,7 @@ function renderEditor() {
                 </div>
             `;
         }
-
         let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
-
         let narrationToolbar = '';
         if (isNarration) {
             narrationToolbar = `
@@ -269,7 +245,6 @@ function renderEditor() {
                 </div>
             `;
         }
-
         item.innerHTML = `
             <div style="display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 5px;">
                 <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">#${index + 1}</span>
@@ -310,8 +285,8 @@ function renderEditor() {
                 </div>
             </div>
             ${customFields}
-            ${isEmpty ? `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px; background:var(--input-bg); border-radius:4px; border:1px solid var(--border);">[공백 줄 - 화면을 띄우는 용도]</div>` 
-                      : isBgm ? `` 
+            ${isEmpty ? `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px; background:var(--input-bg); border-radius:4px; border:1px solid var(--border);">[공백 줄 - 화면을 띄우는 용도]</div>`
+                      : isBgm ? ``
                       : isPolaroid ? ``
                       : isDivider ? `
                         <select onchange="updateBlockContent(${index}, this.value)" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-family: inherit; background: var(--input-bg); color: var(--text-main);">
@@ -332,7 +307,6 @@ function renderEditor() {
         `;
         list.appendChild(item);
     });
-
     updateCustomCharacterPanel();
     updateOutput();
 }
@@ -341,13 +315,11 @@ function syncPreviewToBlocks() {
     blocks.forEach((block, index) => {
         const el = document.getElementById(`preview-block-${index}`);
         if (!el) return;
-
         if (block.type === 'status' || block.type === 'html') {
             block.content = el.innerHTML;
         } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid'].includes(block.type)) {
-            
             if (block.type === 'postit') {
-                const txtDiv = el.querySelectorAll('div')[1]; 
+                const txtDiv = el.querySelectorAll('div')[1];
                 if (txtDiv) {
                     let htmlText = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
                     block.content = htmlText.replace(/^\n+|\n+$/g, '');
@@ -357,7 +329,6 @@ function syncPreviewToBlocks() {
             } else if (block.type === 'polaroid') {
                 const img = el.querySelector('img');
                 if (img) block.content = img.src;
-                
                 const textContainer = el.children[2];
                 if (textContainer) {
                     const txtDivs = textContainer.querySelectorAll('div');
@@ -374,13 +345,12 @@ function syncPreviewToBlocks() {
                     if (outputMode === 'bubble2') {
                         let clone = el.querySelector('.m-bubble').cloneNode(true);
                         let tail = clone.querySelector('.bubble-tail');
-                        if (tail) tail.remove(); 
+                        if (tail) tail.remove();
                         target = clone;
                     } else {
-                        target = el.children[1]; 
+                        target = el.children[1];
                     }
                 }
-
                 if (target) {
                     let htmlText = target.innerHTML;
                     htmlText = htmlText.replace(/<br\s*[\/]?>/gi, '\n');
@@ -389,10 +359,8 @@ function syncPreviewToBlocks() {
                     htmlText = htmlText.replace(/<p[^>]*>/gi, '\n');
                     htmlText = htmlText.replace(/<\/p>/gi, '');
                     htmlText = htmlText.replace(/&nbsp;/gi, ' ');
-                    htmlText = htmlText.replace(/^\n+|\n+$/g, ''); 
-                    
+                    htmlText = htmlText.replace(/^\n+|\n+$/g, '');
                     block.content = htmlText;
-                    
                     let ta = document.getElementById(`textarea-${index}`);
                     if (ta && document.activeElement !== ta && document.activeElement !== el) {
                         ta.value = block.content;
@@ -401,9 +369,8 @@ function syncPreviewToBlocks() {
             }
         }
     });
-    
-    updateOutput(true); 
-    debounceSaveState(); 
+    updateOutput(true);
+    debounceSaveState();
 }
 
 function formatBubbleText(text) {
@@ -420,19 +387,14 @@ function updateOutput(skipPreviewUpdate = false) {
     const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#B2E4D4' : '#237768');
     const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
     const mobTextColor = document.getElementById('mobTextColor') ? document.getElementById('mobTextColor').value : '#3a414d';
-    
     const mintBubbleTextColor = document.getElementById('mintBubbleTextColor') ? document.getElementById('mintBubbleTextColor').value : '#1d6f60';
     const mintBgColor = document.getElementById('mintBgColor') ? document.getElementById('mintBgColor').value : '#eef8f3';
-    
     const pinkBubbleTextColor = document.getElementById('pinkBubbleTextColor') ? document.getElementById('pinkBubbleTextColor').value : '#9b3e61';
     const pinkBgColor = document.getElementById('pinkBgColor') ? document.getElementById('pinkBgColor').value : '#fdf2f6';
-    
     const mobBubbleTextColor = document.getElementById('mobBubbleTextColor') ? document.getElementById('mobBubbleTextColor').value : '#3a414d';
     const mobBgColor = document.getElementById('mobBgColor') ? document.getElementById('mobBgColor').value : '#eff1f5';
-
     const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#F9F9F8' : '#48484A');
     const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
-
     const cTitle = isDarkMode ? '#F9F9F8' : '#1c1c1e';
     const cStatusBg = isDarkMode ? '#242424' : '#fdfdfd';
     const cStatusBorder = isDarkMode ? '#444444' : '#eeeeee';
@@ -446,18 +408,13 @@ function updateOutput(skipPreviewUpdate = false) {
     const cAlertBg = isDarkMode ? '#2a2a2a' : '#fcfcfc';
     const cAlertBorder = isDarkMode ? '#555555' : '#cccccc';
     const cProgressBar = isDarkMode ? '#444444' : '#eeeeee';
-
     let innerContent = '';
-    
     let hasBgm = false;
     let prevValidType = null;
     let lastCustomTextColor = null;
     let lastCustomName = null;
     let consecutivePostitCount = 0;
     let consecutivePolaroidCount = 0; 
-
-    // 강제 최소 여백 제거, 설정한 px 그대로 반영
-    // gapBlock은 이제 '지문/대사 간격' 및 '다른 화자간 간격'을 완벽하게 통제합니다.
     let gapBlock = currentBlockGap + 'px';
     let gapInner = currentInnerGap + 'px';
 
@@ -496,26 +453,21 @@ function updateOutput(skipPreviewUpdate = false) {
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
                 if (isPrevDiag && isCurrDiag) {
-                    // 동일 화자 연속일 때만 내부 간격(gapInner) 적용.
-                    // 다른 화자일 경우 지문/대사 간격(gapBlock)이 깔끔하게 적용됩니다.
                     mt = isSameAsPrev ? gapInner : gapBlock; 
                 } else if (isPrevNarration && isCurrNarration) {
-                    mt = gapInner; // 연속된 나레이션: 내부 간격
+                    mt = gapInner;
                 } else {
-                    // 나레이션-대사 교차 시 지문/대사 간격(gapBlock)이 정확히 적용됩니다.
                     mt = gapBlock; 
                 }
             }
         }
 
         let htmlStr = '';
-
         if (block.type === 'empty') {
             htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
         } else if (block.type === 'divider') {
             let dStyle = block.content || 'solid-gray';
             let dividerInner = '';
-            
             if (dStyle === 'solid-black') {
                 dividerInner = `<div style="width: 100%; height: 1px; background-color: ${isDarkMode ? '#F9F9F8' : '#333333'};"></div>`;
             } else if (dStyle === 'solid-gray') {
@@ -527,12 +479,10 @@ function updateOutput(skipPreviewUpdate = false) {
             } else if (dStyle === 'diamond') {
                 dividerInner = `<div style="display: flex; align-items: center; width: 100%;"><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div><div style="width: 9px; height: 9px; border: 1px solid ${isDarkMode ? '#666666' : '#c7c7cc'}; background-color: transparent; transform: rotate(45deg); margin: 0 15px; box-sizing: border-box;"></div><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div></div>`;
             }
-            
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; box-sizing: border-box; display: flex; justify-content: center; align-items: center;">${dividerInner}</div>\n`;
         } else {
             let lines = block.content.split('\n');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
-
             if (block.type === 'title') {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 10px 0; box-sizing: border-box; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle}; word-break: inherit;">${applyTextStyles(block.content)}</div>\n`;
             }
@@ -543,16 +493,13 @@ function updateOutput(skipPreviewUpdate = false) {
                     let match = cleaned.match(/\[.*?\]\((.*?)\)/);
                     return match && match[1] ? match[1].trim() : cleaned;
                 }
-
                 let bgColor = '';
                 let textColor = '';
                 let imageUrl = '';
                 let charName = '';
-
                 let mintUrlEl = document.getElementById('mintProfileUrl');
                 let pinkUrlEl = document.getElementById('pinkProfileUrl');
                 let mobUrlEl = document.getElementById('mobProfileUrl');
-
                 if (curr === 'mint') {
                     bgColor = mintBgColor;
                     textColor = mintBubbleTextColor;
@@ -574,13 +521,10 @@ function updateOutput(skipPreviewUpdate = false) {
                 } else {
                     bgColor = block.customBgColor || '#E2E8F0';
                     textColor = block.customTextColor || '#333333';
-                    imageUrl = extractProfileUrl(block.customProfileUrl) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
+                    imageUrl = extractProfileUrl(block.customProfileUrl) || `ml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
                     charName = block.customName || '제3자';
                 }
-
-                // 핑크 캐릭터 확인 플래그
                 let isPink = (curr === 'pink');
-
                 if (outputMode === 'bubble1') {
                     let avatarHtml = '';
                     if (isSameAsPrev) {
@@ -588,50 +532,35 @@ function updateOutput(skipPreviewUpdate = false) {
                     } else {
                         avatarHtml = `<div class="av" style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
-
-                    // 핑크일 때 우측 정렬 (flex-direction: row-reverse 적용)
                     let alignStyle = isPink ? 'flex-direction: row-reverse;' : '';
-
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${mt}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px; box-sizing: border-box;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; word-break: inherit; line-height: 1.5; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
-                
                 } else if (outputMode === 'bubble2') {
                     let avatarHtml = '';
                     let nameHtml = '';
                     let tailHtml = '';
-
                     if (!isSameAsPrev) {
-                        // 핑크일 때 프로필 사진 위치 반전
                         let avPos = isPink ? 'right: 0;' : 'left: 0;';
-                        // 💡 [수정] 말풍선 2버전 프로필 사진 border-radius: 0; 고정 (요청사항 반영)
                         avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 0; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor}; box-sizing: border-box;"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
-                        
                         if (charName.trim() !== '') {
-                            // 핑크일 때 이름 텍스트 정렬 반전
                             let nameAlign = isPink ? 'text-align: right;' : 'text-align: left;';
                             nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
                         }
-                        
-                        // 핑크일 때 꼬리 방향 반전
-                        let tailPos = isPink 
-                            ? `right: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-left: 12px solid ${bgColor};` 
+                        let tailPos = isPink
+                            ? `right: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-left: 12px solid ${bgColor};`
                             : `left: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor};`;
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; ${tailPos} z-index: -1;"></div>`;
                     }
-
-                    // 핑크일 때 전체 컨테이너 정렬 및 패딩 방향 변경
                     let containerPadding = isPink ? 'padding-right: 50px;' : 'padding-left: 50px;';
                     let containerFlex = isPink ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
-
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${mt}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; word-break: inherit; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
-            else if (isCurrDiag) { 
+            else if (isCurrDiag) {
                 let textColor;
                 if (curr === 'mint') { textColor = mintTextColor; }
                 else if (curr === 'pink') { textColor = pinkTextColor; }
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : mobTextColor; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
-
                 htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; box-sizing: border-box; color: ${textColor}; word-break: inherit; text-align: left; line-height: inherit;">${divContent}</div>\n`;
             }
             else if (block.type === 'bgm') {
@@ -665,16 +594,14 @@ function updateOutput(skipPreviewUpdate = false) {
                         else if (line.includes('📰')) sData.interview = getVal();
                         else if (line.includes('💘')) sData.relation = getVal();
                     });
-
                     let statusHtml = `<div id="preview-block-${index}" data-type="status" onclick="focusAndScrollBlock(${index}, true)" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: ${cStatusBg}; border: 1px solid ${cStatusBorder}; border-radius: 6px; box-sizing: border-box; color: ${cStatusText};">`;
-
                     if (sData.date || sData.loc) {
                         let dateHtml = '<div></div>';
                         if (sData.date) {
                             let parts = sData.date.split('/');
                             let mainDate = parts[0]?.trim() || '';
                             let subDate = parts[1]?.trim() || '';
-                            dateHtml = `<div><div style="font-size: 12px; color: ${cMainText};">🗓️ ${mainDate}</div>${subDate ? `<div style="font-size: 11px; color: ${cMuted}; margin-top: 2px;">${subDate}</div>` : ''}</div>`;
+                            dateHtml = `<div><div style="font-size: 12px; color: ${cMainText};">🗓️ ${mainDate}</div>${subDate ? ` <div style="font-size: 11px; color: ${cMuted}; margin-top: 2px;">${subDate}</div>` : ''}</div>`;
                         }
                         let locHtml = '<div></div>';
                         if (sData.loc) {
@@ -682,11 +609,9 @@ function updateOutput(skipPreviewUpdate = false) {
                         }
                         statusHtml += `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid ${cBoxBorder}; padding-bottom: 8px; margin-bottom: 8px;">${dateHtml}${locHtml}</div>`;
                     }
-
                     if (sData.ring) {
                         statusHtml += `<div style="font-size: 11px; color: ${cStatusText}; margin-bottom: 10px; line-height: 1.5; word-break: break-all;">${sData.ring}</div>`;
                     }
-
                     if (sData.outfit) {
                         if (sData.outfit.includes('/')) {
                             let parts = sData.outfit.split('/');
@@ -697,7 +622,6 @@ function updateOutput(skipPreviewUpdate = false) {
                             statusHtml += `<div style="margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px; box-sizing: border-box;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.outfit}</div></div></div>`;
                         }
                     }
-
                     if (sData.state || sData.thought) {
                         statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; border-radius: 4px; padding: 10px; margin-bottom: 10px; box-sizing: border-box;">`;
                         if (sData.state) {
@@ -711,7 +635,6 @@ function updateOutput(skipPreviewUpdate = false) {
                         }
                         statusHtml += `</div>`;
                     }
-
                     if (sData.alert || sData.guide || sData.affection) {
                         statusHtml += `<div style="background-color: ${cAlertBg}; border-left: 3px solid ${cAlertBorder}; padding: 8px 10px; margin-bottom: 10px; box-sizing: border-box;">`;
                         if (sData.alert) {
@@ -723,7 +646,7 @@ function updateOutput(skipPreviewUpdate = false) {
                             let state = parts[1] || '';
                             let desc = parts[2] || '';
                             let num = val.replace(/[^0-9]/g, '');
-                            statusHtml += `<div style="margin-bottom: ${sData.affection ? '6px' : '0'};"><div style="display: flex; justify-content: space-between; font-size: 11px; color: ${cMuted}; margin-bottom: 3px;"><span>🚨 가이딩 필요 수치</span><span>${val} ${state ? `(${state})` : ''}</span></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #A8E6CF;"></div></div>${desc ? `<div style="font-size: 10px; color: ${cMuted}; margin-top: 2px; text-align: right;">${desc}</div>` : ''}</div>`;
+                            statusHtml += `<div style="margin-bottom: ${sData.affection ? '6px' : '0'};"><div style="display: flex; justify-content: space-between; font-size: 11px; color: ${cMuted}; margin-bottom: 3px;"><span>🚨 가이딩 필요 수치</span><span>${val} ${state ? ` (${state})` : ''}</span></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #A8E6CF;"></div></div>${desc ? `<div style="font-size: 10px; color: ${cMuted}; margin-top: 2px; text-align: right;">${desc}</div>` : ''}</div>`;
                         }
                         if (sData.affection) {
                             let val = sData.affection;
@@ -735,12 +658,10 @@ function updateOutput(skipPreviewUpdate = false) {
                                 bracketText = val.substring(parenIdx).trim();
                             }
                             let num = (mainVal === 'MAX' || mainVal.includes('∞')) ? '100' : mainVal.replace(/[^0-9]/g, '');
-                            
-                            statusHtml += `<div><div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: ${cMuted}; margin-bottom: 6px;"><span style="margin-bottom: 2px;">💕 호감도</span><div style="text-align: right;"><div style="color: #E598A6; font-weight: bold; font-size: 12px;">${mainVal}</div>${bracketText ? `<div style="font-size: 10.5px; color: ${cMuted}; margin-top: 3px; font-weight: normal; word-break: break-all;">${bracketText}</div>` : ''}</div></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #FFB6C1;"></div></div></div>`;
+                            statusHtml += `<div><div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: ${cMuted}; margin-bottom: 6px;"><span style="margin-bottom: 2px;">💕 호감도</span><div style="text-align: right;"><div style="color: #E598A6; font-weight: bold; font-size: 12px;">${mainVal}</div>${bracketText ? ` <div style="font-size: 10.5px; color: ${cMuted}; margin-top: 3px; font-weight: normal; word-break: break-all;">${bracketText}</div>` : ''}</div></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #FFB6C1;"></div></div></div>`;
                         }
                         statusHtml += `</div>`;
                     }
-
                     if (sData.nsfw || sData.tmi) {
                         let gridCols = (sData.nsfw && sData.tmi) ? '110px 1fr' : '1fr';
                         statusHtml += `<div style="display: grid; grid-template-columns: ${gridCols}; gap: 8px; margin-bottom: 10px;">`;
@@ -752,7 +673,6 @@ function updateOutput(skipPreviewUpdate = false) {
                         }
                         statusHtml += `</div>`;
                     }
-
                     if (sData.interview || sData.relation) {
                         statusHtml += `<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">`;
                         if (sData.interview) {
@@ -766,11 +686,9 @@ function updateOutput(skipPreviewUpdate = false) {
                         }
                         statusHtml += `</div>`;
                     }
-
                     if (sData.doodle) {
                         statusHtml += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid ${cBoxBorder}; text-align: center; width: 100%; box-sizing: border-box;"><span style="font-size: 12px; color: ${cMuted}; display: inline-block;">${sData.doodle}</span></div>`;
                     }
-
                     statusHtml += `</div>\n`;
                     htmlStr = statusHtml;
                 }
@@ -786,45 +704,36 @@ function updateOutput(skipPreviewUpdate = false) {
             }
             else if (block.type === 'postit') {
                 let isEven = consecutivePostitCount % 2 === 0;
-                
                 let bgStr = isDarkMode ? (isEven ? '#333333' : '#2A2A2A') : (isEven ? '#F4F4F6' : '#FAFAFA');
                 let borderStr = isDarkMode ? '#555555' : (isEven ? '#D1D1D6' : '#E5E5EA');
                 let textStr = isDarkMode ? '#dddddd' : '#333333';
                 let rotStr = isEven ? 'rotate(1.2deg)' : 'rotate(-1.5deg)';
                 let zIdxStr = isEven ? 'z-index: 2;' : '';
                 let shadowStr = isDarkMode ? 'box-shadow: 2px 3px 8px rgba(0,0,0,0.3);' : (isEven ? 'box-shadow: 3px 4px 10px rgba(0,0,0,0.05);' : 'box-shadow: 2px 3px 8px rgba(0,0,0,0.04);');
-                
                 let tapeBg = isEven ? 'rgba(211, 211, 218, 0.5)' : 'rgba(229, 229, 234, 0.6)';
                 if (isDarkMode) tapeBg = isEven ? 'rgba(80, 80, 85, 0.5)' : 'rgba(100, 100, 105, 0.6)';
                 let tapeRot = isEven ? 'rotate(-3deg)' : 'rotate(1deg)';
                 let tapePos = isEven ? 'left: 45%; top: -10px; width: 75px; height: 20px;' : 'left: 50%; top: -12px; width: 70px; height: 22px;';
-
                 htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}"><div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div><div class="postit-scroll" style="line-height: 1.7; font-size: 14px;">${divContent}</div></div>\n`;
             }
             else if (block.type === 'polaroid') {
                 let isEvenPol = consecutivePolaroidCount % 2 === 0;
-
                 let bgStr = isDarkMode ? '#242424' : '#FFFFFF';
                 let borderStr = isDarkMode ? '#444444' : '#E5E5EA';
                 let imgBgStr = isDarkMode ? '#111111' : '#F2F2F7';
                 let dateColor = isDarkMode ? '#888888' : '#AFAFB4';
                 let capColor = isDarkMode ? '#eeeeee' : '#1C1C1E';
                 let tapeBg = isDarkMode ? 'rgba(80, 80, 85, 0.5)' : 'rgba(235, 235, 240, 0.7)';
-                
                 let rotStr = isEvenPol ? 'rotate(-1.8deg)' : 'rotate(1.5deg)';
                 let tapeRot = isEvenPol ? 'rotate(2deg)' : 'rotate(-2deg)';
                 let tapePos = isEvenPol ? 'left: 48%;' : 'left: 50%;';
-
-                let imgSrc = block.content || '[https://via.placeholder.com/380x380?text=Polaroid+Image](https://via.placeholder.com/380x380?text=Polaroid+Image)';
-                
+                let imgSrc = block.content || 'https://via.placeholder.com/380x380?text=Polaroid+Image';
                 let pDate = applyTextStyles(block.polaroidDate || '');
                 let pCap = applyTextStyles(block.polaroidCaption || '');
-
                 let captionHtml = '';
                 if (pDate || pCap) {
-                    captionHtml = `<div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">${pDate ? `<div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}</div>`;
+                    captionHtml = `<div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">${pDate ? ` <div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}</div>`;
                 }
-
                 htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;"><div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div><div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;"><img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo"></div>${captionHtml}</div>\n`;
             }
             else if (block.type === 'image') {
@@ -834,9 +743,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">${block.content}</div>\n`;
             }
         }
-
         innerContent += htmlStr;
-
         if (curr !== 'empty' && curr !== 'bgm' && curr !== 'html' && curr !== 'divider') {
             prevValidType = curr;
             if (curr === 'custom') {
@@ -845,10 +752,10 @@ function updateOutput(skipPreviewUpdate = false) {
             }
         }
     });
-    
+
     if (hasBgm) {
         innerContent += `
-<iframe id="bgmPlayerFrame" src="[https://loading-lovebullets.naru.pub/editor/bgm.html](https://loading-lovebullets.naru.pub/editor/bgm.html)" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
+<iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
 <script>
 window.addEventListener('message', function(e) {
     var frame = document.getElementById('bgmPlayerFrame');
@@ -861,14 +768,12 @@ window.addEventListener('message', function(e) {
         frame.style.height = '140px';
     }
 });
-
 function playBGM(videoId, title) {
     var frame = document.getElementById('bgmPlayerFrame');
     if (frame) {
         frame.contentWindow.postMessage({ action: 'playBGM', videoId: videoId, title: title }, '*');
     }
 }
-
 function stopBGM() {
     var frame = document.getElementById('bgmPlayerFrame');
     if (frame) {
@@ -884,7 +789,6 @@ function stopBGM() {
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
-
 .tistory-post-wrapper {
     font-family: ${currentFontFamily};
     font-size: ${currentFontSize}px;
@@ -899,10 +803,13 @@ function stopBGM() {
     ${isDarkMode ? 'background-color: #1B1B1B; color: #F9F9F8;' : ''}
 }
 .tistory-post-wrapper * { box-sizing: border-box; }
-
 /* 티스토리 스킨의 이미지 간섭 방지 및 아바타 고정 */
 .tistory-post-wrapper img {
     max-width: none !important;
+}
+.tistory-post-wrapper .av,
+.tistory-post-wrapper .av img {
+    border-radius: 0 !important;
 }
 .tistory-post-wrapper .av img {
     width: 100% !important;
@@ -911,7 +818,6 @@ function stopBGM() {
     display: block !important;
     margin: 0 !important;
 }
-
 /* 포스트잇 내부 내용 길어질 때 스크롤 */
 .postit-scroll {
     max-height: 350px;
@@ -926,14 +832,12 @@ function stopBGM() {
 `;
 
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
-    
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
-        .replace(/ onclick="focusAndScrollBlock\(\d+, true\)"/g, ''); 
-    
+        .replace(/ onclick="focusAndScrollBlock\(\d+, true\)"/g, '');
+
     let finalHtml = '';
-    
     if (outputVersion === 1) {
         finalHtml = `<!DOCTYPE html>
 <html lang="ko">
@@ -944,7 +848,6 @@ function stopBGM() {
 <style>
     body { margin: 0; padding: 0; background-color: transparent; overflow-x: hidden; }
     #content-wrapper { padding-top: 15px; padding-bottom: 50px; }
-
 </style>
 </head>
 <body>
@@ -955,7 +858,6 @@ ${cleanInnerContent}
 </body>
 </html>`;
     } else {
-        // 💡 해결 완료: V2에서도 CSS가 적용될 수 있도록 wrapper 껍데기를 완벽하게 씌웠습니다.
         finalHtml = globalStyle + `<div class="tistory-post-wrapper">\n${cleanInnerContent}\n</div>`;
     }
 
@@ -973,7 +875,6 @@ function importFromHtml() {
         return;
     }
 
-    // 💡 [추가] 폰트 및 글로벌 설정 추출
     const styleMatch = htmlText.match(/\.tistory-post-wrapper\s*\{\s*([^}]+)\}/);
     if (styleMatch) {
         const styleRules = styleMatch[1];
@@ -985,14 +886,12 @@ function importFromHtml() {
             if (fontSelect) fontSelect.value = currentFontFamily;
             document.body.style.fontFamily = currentFontFamily;
         }
-
         const sizeMatch = styleRules.match(/font-size:\s*(\d+)px;/);
         if (sizeMatch) {
             currentFontSize = parseInt(sizeMatch[1], 10);
             const sizeDisplay = document.getElementById('fontSizeDisplay');
             if (sizeDisplay) sizeDisplay.innerText = currentFontSize + 'px';
         }
-
         const lhMatch = styleRules.match(/line-height:\s*([\d.]+);/);
         if (lhMatch) {
             currentLineHeight = parseFloat(lhMatch[1]);
@@ -1001,7 +900,6 @@ function importFromHtml() {
             if (lhInput) lhInput.value = currentLineHeight;
             if (lhVal) lhVal.innerText = currentLineHeight;
         }
-
         const lsMatch = styleRules.match(/letter-spacing:\s*([-\d.]+)em;/);
         if (lsMatch) {
             currentLetterSpacing = parseFloat(lsMatch[1]);
@@ -1014,13 +912,11 @@ function importFromHtml() {
 
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = htmlText;
-
     let container = tempDiv.querySelector('#content-wrapper') || tempDiv.querySelector('.tistory-post-wrapper') || tempDiv.querySelector('body') || tempDiv;
     const newBlocks = [];
-
     let foundMint = false;
     let foundPink = false;
-    let foundMob = false; // 💡 모브 추적 변수 추가
+    let foundMob = false;
     let foundNarr = false;
 
     function rgbToHex(rgb) {
@@ -1033,7 +929,6 @@ function importFromHtml() {
 
     Array.from(container.children).forEach(child => {
         if (['STYLE', 'SCRIPT', 'IFRAME', 'LINK', 'META', 'TITLE'].includes(child.tagName)) return;
-
         let type = child.getAttribute('data-type');
         let content = '';
         let customTextColor = '#333333';
@@ -1044,10 +939,8 @@ function importFromHtml() {
         let bgmUrl = '';
         let polaroidDate = '';
         let polaroidCaption = '';
-        
         let outerHtml = child.outerHTML;
         let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
-
         if (!type) {
             if (outerHtml.includes('playBGM')) {
                 type = 'bgm';
@@ -1077,14 +970,12 @@ function importFromHtml() {
                 type = 'narration';
             }
         }
-
         if (type === 'divider') {
             let styleMatch = child.getAttribute('data-style');
             content = styleMatch || 'solid-gray';
         } else if (['mint', 'pink', 'mob', 'custom'].includes(type)) {
             let textTarget = child;
             let isBubbleMode = false;
-            
             if (child.classList && (child.classList.contains('scroll-msg-box') || child.classList.contains('m-msg'))) {
                 isBubbleMode = true;
                 let bubble2Target = child.querySelector('.m-bubble');
@@ -1102,14 +993,11 @@ function importFromHtml() {
                     customBgColor = rgbToHex(textTarget.style.backgroundColor) || '#E2E8F0';
                 }
             }
-
             let rawHtml = textTarget.innerHTML || '';
             rawHtml = rawHtml.replace(/<div class="bubble-tail"[^>]*>.*?<\/div>/gi, '');
             rawHtml = rawHtml.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
             content = rawHtml.replace(/^\n+|\n+$/g, '').trim();
-            
             let textHex = rgbToHex(textTarget.style.color || child.style.color);
-
             if (type === 'mint') {
                 if (!foundMint) {
                     if (textHex) {
@@ -1126,15 +1014,13 @@ function importFromHtml() {
                             if (m1) m1.value = textHex; if (m2) m2.value = textHex;
                         }
                     }
-                    // 💡 이름, 프사 동기화
                     if (customName) { let el = document.getElementById('mintName'); if(el) el.value = customName; }
                     if (customProfileUrl) { let el = document.getElementById('mintProfileUrl'); if(el) el.value = customProfileUrl; }
-                    
                     foundMint = true;
                 }
             } else if (type === 'pink') {
                 if (!foundPink) {
-                    if (textHex) { 
+                    if (textHex) {
                         if (isBubbleMode) {
                             let b1 = document.getElementById('pinkBubbleTextColor');
                             let b2 = document.getElementById('pinkBubbleTextColorPicker');
@@ -1148,10 +1034,8 @@ function importFromHtml() {
                             if (p1) p1.value = textHex; if (p2) p2.value = textHex;
                         }
                     }
-                    // 💡 이름, 프사 동기화
                     if (customName) { let el = document.getElementById('pinkName'); if(el) el.value = customName; }
                     if (customProfileUrl) { let el = document.getElementById('pinkProfileUrl'); if(el) el.value = customProfileUrl; }
-                    
                     foundPink = true;
                 }
             } else if (type === 'mob') {
@@ -1170,10 +1054,8 @@ function importFromHtml() {
                             if (m1) m1.value = textHex; if (m2) m2.value = textHex;
                         }
                     }
-                    // 💡 모브 이름, 프사 동기화
                     if (customName) { let el = document.getElementById('mobName'); if(el) el.value = customName; }
                     if (customProfileUrl) { let el = document.getElementById('mobProfileUrl'); if(el) el.value = customProfileUrl; }
-                    
                     foundMob = true;
                 }
             } else if (type === 'custom') {
@@ -1191,12 +1073,11 @@ function importFromHtml() {
             const txtDiv = child.querySelectorAll('div')[1];
             if (txtDiv) {
                 let rawHtml = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n');
-                content = rawHtml.replace(/^\n+|\n+$/g, '').replace(/<[^>]*>?/gm, ''); 
+                content = rawHtml.replace(/^\n+|\n+$/g, '').replace(/<[^>]*>?/gm, '');
             }
         } else if (type === 'polaroid') {
             const img = child.querySelector('img');
             if (img) content = img.src;
-            
             const textContainer = child.children[2];
             if (textContainer) {
                 const txtDivs = textContainer.querySelectorAll('div');
@@ -1208,7 +1089,6 @@ function importFromHtml() {
         } else if (type === 'narration') {
             let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
             content = rawHtml.replace(/^\n+|\n+$/g, '');
-
             if (!foundNarr) {
                 let nColor = rgbToHex(child.style.color);
                 if (nColor) {
@@ -1227,15 +1107,14 @@ function importFromHtml() {
             tDiv.innerHTML = rawHtml;
             content = (tDiv.textContent || tDiv.innerText || "").trim();
         } else if (type === 'status' || type === 'html') {
-            content = child.innerHTML.trim(); 
+            content = child.innerHTML.trim();
         } else if (type === 'bgm') {
             const titleSpan = child.querySelector('span[style*="max-width: 120px"]');
             if (titleSpan) bgmTitle = titleSpan.textContent.trim();
-            
             const playDiv = child.querySelector('div[onclick*="playBGM"]');
             if (playDiv) {
                 const match = playDiv.getAttribute('onclick').match(/playBGM\('([^']+)'/);
-                if (match) bgmUrl = '[https://youtu.be/](https://youtu.be/)' + match[1];
+                if (match) bgmUrl = 'https://youtu.be/' + match[1];
             }
         } else if (type === 'image') {
             const img = child.querySelector('img');
@@ -1243,7 +1122,6 @@ function importFromHtml() {
         } else if (type === 'empty') {
             content = '';
         }
-
         if (type === 'narration' && !content) type = 'empty'; 
 
         newBlocks.push({
