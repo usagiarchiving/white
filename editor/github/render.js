@@ -88,17 +88,6 @@ function toggleCustomBg() {
 // bubbleBgColor     = 말풍선 모드 배경색 (mintBgColor / pinkBgColor)
 // name              = 캐릭터 이름 (mintName / pinkName)
 // profileUrl        = 프로필 이미지 URL (mintProfileUrl / pinkProfileUrl)
-//
-// 프리셋을 새로 추가하고 싶으면:
-// 1) 아래 객체에 키를 하나 추가하고 (예: preset5)
-// 2) index.html의 #presetDropdown 안에 버튼 한 줄 추가
-//    <button class="preset-item" onclick="applyCharacterPreset('preset5')">프리셋5</button>
-// 이 두 가지만 하면 끝입니다.
-//
-// [기록]
-// - default1 / default2 / daily : 모두 기존 앱 기본값과 동일하게 통일
-// - preset4basic / preset4daily : 사용자 제공 샘플 HTML(dieter/chloe 캐릭터) 기준으로 통일
-//   (novelColor는 샘플에 값이 없어 bubbleTextColor와 동일하게 채워둠 - 필요시 이 값만 수정)
 // =========================================================================
 const CHARACTER_PRESETS = {
     default1: {
@@ -637,11 +626,11 @@ function updateOutput(skipPreviewUpdate = false) {
     const customBgToggleEl = document.getElementById('customBgToggle');
     const customBgColorEl = document.getElementById('customBgColor');
     const useCustomBg = customBgToggleEl ? customBgToggleEl.checked : false;
-    let wrapperBgColor;
+    
+    // [수정사항] 커스텀 배경색 OFF 시 '투명색(transparent)'을 기본으로 사용하여 블로그/웹사이트 기본 배경에 자연스럽게 스며들도록 함
+    let wrapperBgColor = 'transparent'; 
     if (useCustomBg && customBgColorEl && /^#[0-9A-Fa-f]{6}$/.test(customBgColorEl.value)) {
         wrapperBgColor = customBgColorEl.value;
-    } else {
-        wrapperBgColor = 'transparent';
     }
 
     let innerContent = '';
@@ -1393,7 +1382,7 @@ function importFromHtml() {
         if (typeof renderEditor === 'function') renderEditor();
         saveState();
     } else {
-        showToast('유효한 블록이 없습니다. 코문을 확인해주세요.');
+        showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
     }
 }
 
