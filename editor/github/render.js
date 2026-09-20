@@ -641,7 +641,7 @@ function updateOutput(skipPreviewUpdate = false) {
     if (useCustomBg && customBgColorEl && /^#[0-9A-Fa-f]{6}$/.test(customBgColorEl.value)) {
         wrapperBgColor = customBgColorEl.value;
     } else {
-        wrapperBgColor = isDarkMode ? '#121212' : '#FAFAFA';
+        wrapperBgColor = 'transparent';
     }
 
     let innerContent = '';
