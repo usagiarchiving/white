@@ -1038,11 +1038,8 @@ body {
 .tistory-post-wrapper img {
     max-width: none !important;
 }
-.tistory-post-wrapper .av,
 .tistory-post-wrapper .av img {
-    border-radius: 0 !important;
-}
-.tistory-post-wrapper .av img {
+    border-radius: inherit !important;
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
