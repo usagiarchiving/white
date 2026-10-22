@@ -57,6 +57,101 @@ function syncBgToggleDefaultByVersion() {
     toggleEl.checked = (outputVersion === 1);
 }
 
+// =========================================================================
+// 💡 [신규] 여백(패딩) 설정 + 불러오기 시 기존 값 그대로 보존 (검색용 주석 태그: #LAYOUT_PADDING_LOGIC)
+// -------------------------------------------------------------------------
+// - V1 기본값: 좌우 17px / 위 5px / 아래 5px (위+아래 합계 10px)
+// - V2 기본값: 좌우 0px (위아래 여백 없음)
+// - "HTML 불러오기(동기화)" 시, 불러온 코드 안의 여백 값(예: 좌우 25px, 아래 50px)을
+//   그대로 읽어와서 유지함 → 이전 버전 글을 불러와도 그 상태 그대로 보이고,
+//   에디터 위쪽(HTML 코드창 위)에 자동 생성되는 "여백 설정" 칸에서 언제든 수정 가능
+// =========================================================================
+const layoutPad = {
+    1: { x: 17, top: 5, bottom: 5 },
+    2: { x: 0 }
+};
+
+// "0 25px" / "10px 20px 30px" 같은 padding 축약형을 {top,right,bottom,left}로 변환
+function parsePaddingShorthand(str) {
+    if (!str) return null;
+    const tokens = str.trim().split(/\s+/);
+    if (tokens.length < 1 || tokens.length > 4) return null;
+    if (!tokens.every(t => /^-?[\d.]+(px)?$/i.test(t))) return null;
+    const n = tokens.map(t => parseFloat(t));
+    if (n.some(v => isNaN(v))) return null;
+    let t, r, b, l;
+    if (n.length === 1) { t = r = b = l = n[0]; }
+    else if (n.length === 2) { t = b = n[0]; r = l = n[1]; }
+    else if (n.length === 3) { t = n[0]; r = l = n[1]; b = n[2]; }
+    else { t = n[0]; r = n[1]; b = n[2]; l = n[3]; }
+    return { top: t, right: r, bottom: b, left: l };
+}
+
+function parsePxValue(str) {
+    if (!str) return null;
+    const m = String(str).trim().match(/^(-?[\d.]+)(px)?$/i);
+    if (!m) return null;
+    const v = parseFloat(m[1]);
+    return isNaN(v) ? null : v;
+}
+
+// 입력칸 값 → layoutPad 반영
+function onLayoutPadInput(key, el) {
+    if (!el || el.value === '') return;
+    const v = parseFloat(el.value);
+    if (isNaN(v) || v < 0) return;
+    if (key === 'x') {
+        layoutPad[outputVersion === 2 ? 2 : 1].x = v;
+    } else {
+        layoutPad[1][key] = v;
+    }
+    if (typeof updateOutput === 'function') updateOutput();
+}
+
+// layoutPad → 입력칸 표시 (타이핑 중인 칸은 건드리지 않음)
+function refreshLayoutPadUI() {
+    const isV2 = outputVersion === 2;
+    const map = {
+        layoutPadX: isV2 ? layoutPad[2].x : layoutPad[1].x,
+        layoutPadTop: layoutPad[1].top,
+        layoutPadBottom: layoutPad[1].bottom
+    };
+    Object.keys(map).forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (document.activeElement !== el) el.value = map[id];
+        if (id !== 'layoutPadX') {
+            el.disabled = isV2;
+            el.style.opacity = isV2 ? '0.4' : '1';
+        }
+    });
+    const label = document.getElementById('layoutPadVerLabel');
+    if (label) label.innerText = isV2 ? 'V2' : 'V1';
+}
+
+// HTML 코드창 바로 위에 "여백 설정" 칸을 자동 삽입
+function initLayoutPadUI() {
+    if (document.getElementById('layoutPadPanel')) return;
+    const codeEl = document.getElementById('finalHtmlCode');
+    if (!codeEl || !codeEl.parentNode) return;
+    const inputStyle = "width: 52px; font-size: 11px; padding: 3px 4px; border: 1px solid var(--border, #ccc); border-radius: 4px; background: var(--input-bg, #fff); color: var(--text-main, #333); text-align: center;";
+    const panel = document.createElement('div');
+    panel.id = 'layoutPadPanel';
+    panel.style.cssText = "display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; flex-basis: 100%; margin-bottom: 6px; font-size: 11px; color: var(--text-muted, #888);";
+    panel.innerHTML = `
+        <span style="font-weight: bold;">여백 설정 (<span id="layoutPadVerLabel">V1</span>)</span>
+        <label>좌우 <input type="number" min="0" id="layoutPadX" style="${inputStyle}"> px</label>
+        <label>위 <input type="number" min="0" id="layoutPadTop" style="${inputStyle}"> px</label>
+        <label>아래 <input type="number" min="0" id="layoutPadBottom" style="${inputStyle}"> px</label>
+        <span style="font-size: 10px;">(위/아래는 V1 전용)</span>
+    `;
+    codeEl.parentNode.insertBefore(panel, codeEl);
+    document.getElementById('layoutPadX').addEventListener('input', function() { onLayoutPadInput('x', this); });
+    document.getElementById('layoutPadTop').addEventListener('input', function() { onLayoutPadInput('top', this); });
+    document.getElementById('layoutPadBottom').addEventListener('input', function() { onLayoutPadInput('bottom', this); });
+    refreshLayoutPadUI();
+}
+
 function toggleDarkMode() {
     isDarkMode = !isDarkMode;
     document.body.classList.toggle('dark-mode', isDarkMode);
@@ -620,6 +715,11 @@ function formatBubbleText(text) {
 function updateOutput(skipPreviewUpdate = false) {
     // 💡 [신규] 출력 버전(V1/V2)이 바뀐 순간에만 배경색 체크박스 기본값 적용 (V1=체크, V2=해제)
     syncBgToggleDefaultByVersion();
+    // 💡 [신규] 여백 값 읽기 + 입력칸 동기화 (검색용 주석 태그: #LAYOUT_PADDING_LOGIC)
+    const padX = (outputVersion === 2) ? layoutPad[2].x : layoutPad[1].x;
+    const padTop = layoutPad[1].top;
+    const padBottom = layoutPad[1].bottom;
+    refreshLayoutPadUI();
 
     const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#50D2CB' : '#237768');
     const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
@@ -1050,7 +1150,7 @@ body {
     letter-spacing: ${currentLetterSpacing}em;
     word-break: ${currentWordBreak};
     overflow-wrap: ${currentWordBreak === 'break-all' ? 'anywhere' : 'break-word'};
-    padding: ${outputVersion === 2 ? '0 0px' : '0 17px'};
+    padding: 0 ${padX}px;
     box-sizing: border-box;
     max-width: 600px;
     margin: 0 auto;
@@ -1082,7 +1182,8 @@ body {
 .postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
 </style>
 `;
-    let previewHtml = globalStyle + `<div class="tistory-post-wrapper">\n` + innerContent + `</div>\n`;
+    let previewWrapperStyle = (outputVersion === 1) ? ` style="padding-top: ${padTop}px; padding-bottom: ${padBottom}px;"` : '';
+    let previewHtml = globalStyle + `<div class="tistory-post-wrapper"${previewWrapperStyle}>\n` + innerContent + `</div>\n`;
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
@@ -1098,7 +1199,7 @@ body {
 <title>🐇</title>
 <style>
     body { margin: 0; padding: 0; background-color: ${wrapperBgColor}; color: ${narrColor}; overflow-x: hidden; }
-    #content-wrapper { padding-top: 15px; padding-bottom: 50px; }
+    #content-wrapper { padding-top: ${padTop}px; padding-bottom: ${padBottom}px; }
 </style>
 </head>
 <body>
@@ -1155,6 +1256,24 @@ function importFromHtml() {
             const lsVal = document.getElementById('letterSpacingVal');
             if (lsInput) lsInput.value = currentLetterSpacing;
             if (lsVal) lsVal.innerText = currentLetterSpacing + 'em';
+        }
+        // 💡 [신규] 여백 불러오기 - 이전 버전 값(예: 좌우 25px, 아래 50px)을 그대로 보존 (검색용 주석 태그: #LAYOUT_PADDING_LOGIC)
+        const isV1Html = /id=["']content-wrapper["']/.test(htmlText);
+        const padMatch = styleRules.match(/(?:^|[;\s])padding:\s*([^;]+);/);
+        if (padMatch) {
+            const pv = parsePaddingShorthand(padMatch[1]);
+            if (pv) layoutPad[isV1Html ? 1 : 2].x = pv.right;
+        }
+        if (isV1Html) {
+            const cwMatch = htmlText.match(/#content-wrapper\s*\{([^}]*)\}/);
+            if (cwMatch) {
+                const topM = cwMatch[1].match(/padding-top:\s*([^;]+);?/);
+                const botM = cwMatch[1].match(/padding-bottom:\s*([^;]+);?/);
+                const tv = topM ? parsePxValue(topM[1]) : null;
+                const bv = botM ? parsePxValue(botM[1]) : null;
+                if (tv !== null) layoutPad[1].top = tv;
+                if (bv !== null) layoutPad[1].bottom = bv;
+            }
         }
         // 💡 배경색 및 나레이션(글로벌) 글자색 불러오기 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
         const bgMatch = styleRules.match(/background-color:\s*(#[0-9A-Fa-f]{6});/i);
@@ -1446,6 +1565,9 @@ document.addEventListener("DOMContentLoaded", function() {
             if (bgColorPickerEl) bgColorPickerEl.value = defaultBg;
         }
     })();
+
+    // 💡 [신규] 여백 설정 칸 자동 생성
+    initLayoutPadUI();
 
     // 💡 [신규] 사용자가 배경색을 직접 수정하면 기억 (다크모드 전환 시 덮어쓰기 방지)
     ['customBgColor', 'customBgColorPicker'].forEach(id => {
