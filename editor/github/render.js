@@ -1161,6 +1161,7 @@ body {
 /* 티스토리 스킨의 이미지 간섭 방지 및 아바타 고정 */
 .tistory-post-wrapper img {
     max-width: 100% !important;
+    height: auto !important;
 }
 .tistory-post-wrapper .av img {
     border-radius: inherit !important;
