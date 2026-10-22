@@ -30,12 +30,33 @@ function extractVideoId(url) {
 // =========================================================================
 // 💡 [신규] 다크모드 토글 + 배경색 커스텀 기능 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
 // -------------------------------------------------------------------------
-// - 라이트모드 기본 배경: #FAFAFA
+// - 라이트모드 기본 배경: #FFFFFF (완전 화이트)  ← [수정] 기존 #FAFAFA에서 변경
 // - 다크모드 기본 배경: #121212
 // - 다크모드 진입 시 나레이션 기본색: #A0A0B4
 // - 다크모드 진입 시 민트(소설) 기본색: #50D2CB
 // - "배경색 커스텀" 체크박스가 켜져 있으면 #customBgColor 입력값을 우선 사용
+// - [신규] 출력 버전별 체크박스 기본값:
+//     V1 → 체크된 상태가 기본 (이후 사용자가 해제 가능)
+//     V2 → 체크 해제된 상태가 기본 (사용자가 직접 눌러서 체크해야 적용)
 // =========================================================================
+
+// 💡 [신규] 라이트/다크 기본 배경색 상수 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+const DEFAULT_BG_LIGHT = '#FFFFFF';
+const DEFAULT_BG_DARK = '#121212';
+
+// 💡 [신규] 사용자가 배경색을 직접 건드렸는지 기억 (건드렸다면 다크모드 전환 시 덮어쓰지 않음)
+let bgColorUserEdited = false;
+
+// 💡 [신규] 출력 버전이 바뀐 순간에만 체크박스 기본값을 적용 (이후엔 사용자가 자유롭게 조작)
+let lastBgToggleVersion = null;
+function syncBgToggleDefaultByVersion() {
+    if (lastBgToggleVersion === outputVersion) return;
+    lastBgToggleVersion = outputVersion;
+    const toggleEl = document.getElementById('customBgToggle');
+    if (!toggleEl) return;
+    toggleEl.checked = (outputVersion === 1);
+}
+
 function toggleDarkMode() {
     isDarkMode = !isDarkMode;
     document.body.classList.toggle('dark-mode', isDarkMode);
@@ -61,12 +82,12 @@ function toggleDarkMode() {
         if (elNarrP) elNarrP.value = '#48484A';
     }
 
-    // 💡 다크모드 전환 시, 배경색 커스텀이 꺼져있다면 컬러피커 표시값도 기본값으로 동기화
-    const customBgToggleEl = document.getElementById('customBgToggle');
-    if (customBgToggleEl && !customBgToggleEl.checked) {
+    // 💡 다크모드 전환 시, 사용자가 배경색을 직접 바꾼 적이 없다면 컬러피커 표시값을 기본값으로 동기화
+    // (V1은 체크박스가 기본 ON이므로, 체크 여부와 상관없이 직접 수정하지 않았다면 모드에 맞는 기본 배경으로 맞춰줌)
+    if (!bgColorUserEdited) {
         const bgColorEl = document.getElementById('customBgColor');
         const bgColorPickerEl = document.getElementById('customBgColorPicker');
-        const defaultBg = isDarkMode ? '#121212' : '#FAFAFA';
+        const defaultBg = isDarkMode ? DEFAULT_BG_DARK : DEFAULT_BG_LIGHT;
         if (bgColorEl) bgColorEl.value = defaultBg;
         if (bgColorPickerEl) bgColorPickerEl.value = defaultBg;
     }
@@ -597,6 +618,9 @@ function formatBubbleText(text) {
 }
 
 function updateOutput(skipPreviewUpdate = false) {
+    // 💡 [신규] 출력 버전(V1/V2)이 바뀐 순간에만 배경색 체크박스 기본값 적용 (V1=체크, V2=해제)
+    syncBgToggleDefaultByVersion();
+
     const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#50D2CB' : '#237768');
     const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
     const mobTextColor = document.getElementById('mobTextColor') ? document.getElementById('mobTextColor').value : '#3a414d';
@@ -1141,6 +1165,7 @@ function importFromHtml() {
             if (bgColorEl) bgColorEl.value = bgMatch[1].toUpperCase();
             if (bgColorPickerEl) bgColorPickerEl.value = bgMatch[1].toUpperCase();
             if (bgToggleEl) bgToggleEl.checked = true;
+            bgColorUserEdited = true; // 불러온 배경색은 사용자 지정값으로 취급 (다크모드 전환 시 덮어쓰지 않음)
         }
         const colorMatch = styleRules.match(/color:\s*(#[0-9A-Fa-f]{6});/i);
         if (colorMatch) {
@@ -1407,6 +1432,26 @@ document.addEventListener("DOMContentLoaded", function() {
     setupColorPicker('narrColorPicker', 'narrColor');
     setupColorPicker('highlightColorPicker', 'highlightColor');
     setupColorPicker('customBgColorPicker', 'customBgColor');
+
+    // 💡 [신규] 배경색 기본값을 완전 화이트(#FFFFFF)로 설정 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+    // - 기존 기본값(#FAFAFA)이거나 비어 있을 때만 교체 → 사용자가 저장해둔 값은 건드리지 않음
+    (function initDefaultBgColor() {
+        const bgColorEl = document.getElementById('customBgColor');
+        const bgColorPickerEl = document.getElementById('customBgColorPicker');
+        if (!bgColorEl) return;
+        const cur = (bgColorEl.value || '').trim().toUpperCase();
+        if (cur === '' || cur === '#FAFAFA') {
+            const defaultBg = (typeof isDarkMode !== 'undefined' && isDarkMode) ? DEFAULT_BG_DARK : DEFAULT_BG_LIGHT;
+            bgColorEl.value = defaultBg;
+            if (bgColorPickerEl) bgColorPickerEl.value = defaultBg;
+        }
+    })();
+
+    // 💡 [신규] 사용자가 배경색을 직접 수정하면 기억 (다크모드 전환 시 덮어쓰기 방지)
+    ['customBgColor', 'customBgColorPicker'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', () => { bgColorUserEdited = true; });
+    });
 
     const inputsToSync = [
         'mintTextColor', 'mintBubbleTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
