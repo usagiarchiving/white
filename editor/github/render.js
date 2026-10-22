@@ -1098,7 +1098,7 @@ body {
 <title>🐇</title>
 <style>
     body { margin: 0; padding: 0; background-color: ${wrapperBgColor}; color: ${narrColor}; overflow-x: hidden; }
-    #content-wrapper { padding-top: 5px; padding-bottom: 5px; }
+    #content-wrapper { padding-top: 15px; padding-bottom: 50px; }
 </style>
 </head>
 <body>
