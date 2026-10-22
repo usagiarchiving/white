@@ -1050,7 +1050,7 @@ body {
     letter-spacing: ${currentLetterSpacing}em;
     word-break: ${currentWordBreak};
     overflow-wrap: ${currentWordBreak === 'break-all' ? 'anywhere' : 'break-word'};
-    padding: ${outputVersion === 2 ? '0 0px' : '0 25px'};
+    padding: ${outputVersion === 2 ? '0 0px' : '0 17px'};
     box-sizing: border-box;
     max-width: 600px;
     margin: 0 auto;
