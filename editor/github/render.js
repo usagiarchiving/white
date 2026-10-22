@@ -49,12 +49,51 @@ let bgColorUserEdited = false;
 
 // 💡 [신규] 출력 버전이 바뀐 순간에만 체크박스 기본값을 적용 (이후엔 사용자가 자유롭게 조작)
 let lastBgToggleVersion = null;
-function syncBgToggleDefaultByVersion() {
-    if (lastBgToggleVersion === outputVersion) return;
+
+// 체크박스를 현재 버전의 기본값으로 강제 세팅 (V1 = 체크 ON / V2 = 체크 OFF)
+function applyBgToggleDefault() {
     lastBgToggleVersion = outputVersion;
     const toggleEl = document.getElementById('customBgToggle');
     if (!toggleEl) return;
     toggleEl.checked = (outputVersion === 1);
+}
+
+function syncBgToggleDefaultByVersion() {
+    if (lastBgToggleVersion === outputVersion) return;
+    applyBgToggleDefault();
+}
+
+// 💡 [신규] 버전 전환을 어떤 경로로 하든(버튼 클릭/같은 버튼 재클릭/다른 파일 코드) 항상 기본값이 다시 적용되도록 감시
+// - (1) V1/V2 전환 버튼·셀렉트를 누를 때마다 기본값 재적용
+// - (2) outputVersion 값이 바뀐 걸 감지하면 기본값 재적용 (안전장치)
+function looksLikeVersionControl(node) {
+    for (let i = 0; node && node.nodeType === 1 && i < 4; i++, node = node.parentElement) {
+        const attrs = (node.getAttribute('onclick') || '') + ' ' + (node.getAttribute('onchange') || '') + ' ' +
+                      (node.id || '') + ' ' + (typeof node.className === 'string' ? node.className : '');
+        if (/version/i.test(attrs)) return true;
+        if (node.tagName === 'BUTTON' && /^\s*(V|v|버전\s*)\s*[12]\s*$/.test(node.textContent || '')) return true;
+    }
+    return false;
+}
+
+function initBgToggleVersionWatcher() {
+    const onVersionUiEvent = function(e) {
+        if (!looksLikeVersionControl(e.target)) return;
+        setTimeout(function() {
+            applyBgToggleDefault();
+            if (typeof updateOutput === 'function') updateOutput();
+        }, 50);
+    };
+    document.addEventListener('click', onVersionUiEvent, true);
+    document.addEventListener('change', onVersionUiEvent, true);
+
+    setInterval(function() {
+        if (typeof outputVersion === 'undefined') return;
+        if (outputVersion !== lastBgToggleVersion) {
+            applyBgToggleDefault();
+            if (typeof updateOutput === 'function') updateOutput();
+        }
+    }, 200);
 }
 
 // =========================================================================
@@ -1087,7 +1126,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;"><div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div><div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;"><img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo"></div>${captionHtml}</div>\n`;
             }
             else if (block.type === 'image') {
-                htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center;"><img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt="image"></div>\n`;
+                htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center;"><img src="${block.content}" style="max-width: 100%; width: auto; height: auto; display: inline-block; border-radius: 8px;" alt="image"></div>\n`;
             }
             else if (block.type === 'html') {
                 htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">${block.content}</div>\n`;
@@ -1158,7 +1197,7 @@ body {
     color: ${narrColor};
 }
 .tistory-post-wrapper * { box-sizing: border-box; }
-/* 티스토리 스킨의 이미지 간섭 방지 및 아바타 고정 */
+/* 티스토리 스킨의 이미지 간섭 방지 및 아바타 고정 (이미지가 본문 폭 밖으로 튀어나가지 않도록 max-width 100% 고정) */
 .tistory-post-wrapper img {
     max-width: 100% !important;
     height: auto !important;
@@ -1569,6 +1608,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // 💡 [신규] 여백 설정 칸 자동 생성
     initLayoutPadUI();
+
+    // 💡 [신규] 버전 전환 시 배경색 체크박스 기본값(V1=ON / V2=OFF) 항상 재적용
+    initBgToggleVersionWatcher();
 
     // 💡 [신규] 사용자가 배경색을 직접 수정하면 기억 (다크모드 전환 시 덮어쓰기 방지)
     ['customBgColor', 'customBgColorPicker'].forEach(id => {
