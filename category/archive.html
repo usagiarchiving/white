@@ -265,6 +265,9 @@
     // 팝업 더블클릭 오작동 방지를 위한 타이머 변수
     var archiveLightboxOpenTime = 0; 
 
+    // 날짜를 직접 바꿨는지 여부 (개별 업로드 시 사진별 날짜 유지용)
+    var archiveDateTouched = false;
+
     // 🚨 파일 업로드 전 알잘딱센 압축 엔진 (hasion.html 기능 이식)
     window.compressImage = async function(file, qualityType) {
         if (qualityType === 'original' || file.type === 'image/gif') {
@@ -307,6 +310,7 @@
         if (!e.target.files || e.target.files.length === 0) return;
 
         selectedFiles = Array.from(e.target.files);
+        archiveDateTouched = false; // 새로 고른 파일은 날짜 직접 변경 전 상태
         mainFileIndex = 0; // 초기값은 항상 0번 사진이 대표
 
         var fileDate = new Date(selectedFiles[0].lastModified);
@@ -319,6 +323,9 @@
         $('#initial-upload-wrapper').hide(); 
         $('#upload-container').slideDown(250); 
     });
+
+    // 날짜 칸을 직접 바꿨을 때만 기록
+    $('#archive-date-picker').on('change', function() { archiveDateTouched = true; });
 
     // 썸네일 생성 및 대표 사진 렌더링
     window.renderPreviews = function() {
@@ -359,6 +366,7 @@
     window.removePreview = function() {
         selectedFiles = [];
         mainFileIndex = 0;
+        archiveDateTouched = false;
         $('#archive-file-input').val('');
         $('#archive-title').val('');
         $('#archive-caption').val('');
@@ -433,7 +441,8 @@
                     var contentString = uploadedUrls[i] + "|||" + captionVal + "|||" + tagsVal;
                     var finalDate = new Date(fileDates[i]); 
                     
-                    if (dateVal) { 
+                    // 날짜 칸을 직접 바꿨을 때만 전체 덮어쓰기, 아니면 사진별 날짜 유지
+                    if (dateVal && archiveDateTouched) { 
                         var parts = dateVal.split('-');
                         finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
                     }
