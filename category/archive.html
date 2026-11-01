@@ -154,6 +154,59 @@
     .fav-btn.pop { animation: favPop 0.3s ease-out; }
     @keyframes favPop { 0% { transform: scale(1); } 50% { transform: scale(1.35); } 100% { transform: scale(1); } }
 
+    /* ✅ 선택 모드 */
+    #select-mode-btn {
+        cursor: pointer; color: var(--sub-color); font-size: 18px; transition: color 0.3s;
+    }
+    #select-mode-btn:hover, #select-mode-btn.active { color: var(--point-color); }
+
+    #select-menu {
+        display: none; position: absolute; right: 0; top: 38px; z-index: 60;
+        background: #fff; border: 1px solid var(--divider-bg); border-radius: 6px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: 6px; min-width: 130px;
+    }
+    .sm-item {
+        font-family: 'Noto Serif KR', serif; font-size: 12px; color: var(--main-color);
+        padding: 9px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap;
+    }
+    .sm-item:hover { color: var(--point-color); background: rgba(0,0,0,0.03); }
+    .sm-item.danger:hover { color: #ff3b30; }
+
+    .gallery-grid.select-mode { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .gallery-grid.select-mode .gallery-overlay { display: none; }
+    .gallery-grid.select-mode .gallery-item:hover img { transform: none; }
+    .gallery-grid.select-mode .gallery-item::after {
+        content: ''; position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; box-sizing: border-box;
+        border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.95); background: rgba(0,0,0,0.18);
+        z-index: 3; color: #fff; font-family: 'Noto Serif KR', serif; font-size: 11px;
+        line-height: 17px; text-align: center;
+    }
+    .gallery-grid.select-mode .gallery-item.is-selected::after {
+        content: attr(data-sel); background: var(--point-color); border-color: var(--point-color);
+    }
+    .gallery-grid.select-mode .gallery-item.is-selected { outline: 2px solid var(--point-color); outline-offset: -2px; }
+    .gallery-grid.select-mode .gallery-item.is-selected img { opacity: 0.8; }
+
+    /* 스크롤 따라오는 완료 바 */
+    #select-bar {
+        display: none; position: fixed; left: 50%; transform: translateX(-50%);
+        bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 10000;
+        align-items: center; gap: 14px; padding: 8px 10px 8px 18px;
+        background: #fff; border: 1px solid var(--divider-bg); border-radius: 30px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.14); font-family: 'Noto Serif KR', serif;
+        white-space: nowrap; max-width: calc(100vw - 24px); box-sizing: border-box;
+    }
+    #select-label { font-size: 12px; color: var(--main-color); overflow: hidden; text-overflow: ellipsis; }
+    .select-bar-btn { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 12px; padding: 6px 4px; }
+    #select-cancel { color: var(--sub-color); }
+    #select-done { color: #fff; background: var(--point-color); border-radius: 18px; padding: 7px 16px; font-weight: 600; }
+
+    /* 맨 아래 이미지 총 개수 (스크롤 안 따라옴) */
+    #archive-total-count {
+        text-align: right; font-family: 'Noto Serif KR', serif; font-size: 9px;
+        color: var(--sub-color); opacity: 0.4; padding: 0 2px 36px 0; margin-top: 6px; letter-spacing: 0.5px;
+    }
+
     /* 팝업 배경 및 카드 */
     .archive-lightbox {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -179,6 +232,13 @@
             <input type="text" id="archive-search" autocomplete="off" placeholder="Search">
             <i class="xi-search" id="search-icon" title="Search"></i>
         </div>
+        <i class="xi-check-circle-o" id="select-mode-btn" title="선택"></i>
+    </div>
+
+    <div id="select-menu">
+        <div class="sm-item danger" data-mode="delete">선택 삭제</div>
+        <div class="sm-item" data-mode="group">여러 개 묶기</div>
+        <div class="sm-item" data-mode="edit">일괄 수정</div>
     </div>
     
     <div id="tags-panel"></div>
@@ -227,7 +287,33 @@
 
     <div class="gallery-grid" id="gallery-feed"></div>
     <div id="gallery-sentinel" style="height: 1px;"></div>
+    <div id="archive-total-count"></div>
 
+</div>
+
+<div id="select-bar">
+    <span id="select-label"></span>
+    <button class="select-bar-btn" id="select-cancel" onclick="cancelSelectMode()">취소</button>
+    <button class="select-bar-btn" id="select-done" onclick="finishSelect()">완료</button>
+</div>
+
+<div id="bulk-edit-modal" class="archive-lightbox" onclick="if(event.target === this) closeBulkEditModal()">
+    <div class="archive-lightbox-card" style="max-width: 340px; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--divider-bg); padding-bottom: 8px;">
+            <div style="font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);">일괄 수정</div>
+            <div id="bulk-edit-sub" style="font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--sub-color);"></div>
+        </div>
+        <input type="text" id="bulk-title" autocomplete="off" placeholder="제목 (비워두면 그대로)" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+        <input type="text" id="bulk-tags" autocomplete="off" placeholder="태그 (비워두면 그대로) #daily #film" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+        <select id="bulk-tag-mode" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11.5px; cursor: pointer; align-self: flex-start;">
+            <option value="add" selected>태그: 기존에 추가</option>
+            <option value="replace">태그: 덮어쓰기</option>
+        </select>
+        <div style="display: flex; justify-content: flex-end; gap: 14px; margin-top: 2px;">
+            <button onclick="confirmBulkEdit()" style="background:none; border:none; color:var(--point-color); font-size: 12px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">확인</button>
+            <button onclick="closeBulkEditModal()" style="background:none; border:none; color:var(--sub-color); font-size: 12px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">취소</button>
+        </div>
+    </div>
 </div>
 
 <div id="archive-lightbox" class="archive-lightbox" onclick="if(event.target === this) closeArchiveLightbox()">
@@ -300,6 +386,11 @@
     var archiveFavDirty = false;
     var archiveFavChain = Promise.resolve();
 
+    // 선택 모드 상태
+    var selectMode = null;   // 'delete' | 'group' | 'edit'
+    var selectedIds = [];    // 선택한 순서 유지 (문자열 id)
+    var selectBusy = false;
+
     // 미리보기 상태
     var previewUrls = [];
     var previewBlobs = [];
@@ -357,7 +448,8 @@
             fav: flags.indexOf('f') > -1,
             hasThumb: flags.indexOf('t') > -1,
             displayDate: `${yyyy}.${mm}.${dd}`,
-            inputDate: `${yyyy}-${mm}-${dd}`
+            inputDate: `${yyyy}-${mm}-${dd}`,
+            imgCount: imageUrls.split(":::").filter(Boolean).length
         };
         p.gridImg = p.hasThumb ? thumbUrlOf(p.mainImg) : p.mainImg;
         p.searchLower = buildSearchText(p);
@@ -647,11 +739,16 @@
 
     // 3. 갤러리 로드 (⚡ 한 번에 다 그리지 않고 40개씩 스크롤하면서 추가)
     function archiveItemHtml(p) {
+        var selCls = '', selAttr = '';
+        if (selectMode) {
+            var si = selectedIds.indexOf(String(p.id));
+            if (si > -1) { selCls = ' is-selected'; selAttr = ` data-sel="${selectMode === 'group' ? (si + 1) : '✓'}"`; }
+        }
         var imgAttrs = p.hasThumb ? ` data-full="${escAttr(p.mainImg)}" onerror="this.onerror=null;this.src=this.dataset.full"` : '';
         var heart = p.fav ? '<i class="xi-heart gallery-fav-badge"></i>' : '';
         return `
             <div class="gallery-wrapper-item">
-                <div class="gallery-item fade-in-element" data-id="${p.id}">
+                <div class="gallery-item fade-in-element${selCls}" data-id="${p.id}"${selAttr}>
                     <img src="${escAttr(p.gridImg)}" alt="archive image" loading="lazy" decoding="async"${imgAttrs}>
                     <div class="gallery-overlay">
                         <div style="display: flex; justify-content: flex-end; align-items: flex-start; width: 100%;">
@@ -759,6 +856,7 @@
 
             buildTagsPanel();
             applyArchiveFilter();
+            updateTotalCount();
 
         } catch (error) {
             feedContainer.html('<p style="grid-column: 1 / -1; text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">Failed to load.</p>');
@@ -767,7 +865,9 @@
 
     // 썸네일 클릭 → 팝업 (이벤트 위임: 항목마다 onclick을 달지 않음)
     $('#gallery-feed').on('click', '.gallery-item', function() {
-        openArchiveLightbox($(this).attr('data-id'));
+        var id = $(this).attr('data-id');
+        if (selectMode) { toggleSelect(id); return; } // 선택 모드에서는 팝업 대신 선택
+        openArchiveLightbox(id);
     });
 
     // 4. 태그 및 검색 제어
@@ -984,6 +1084,270 @@
             alert('Failed to save.');
         }
     };
+
+
+    /* ==========================================================================
+       ✅ 선택 모드: 선택 삭제 / 여러 개 묶기 / 일괄 수정
+       ========================================================================== */
+    function updateTotalCount() {
+        var total = archivePosts.reduce(function(sum, p) { return sum + p.imgCount; }, 0);
+        $('#archive-total-count').text(total);
+    }
+
+    var SELECT_LABELS = { delete: '삭제', group: '묶기', edit: '수정' };
+
+    function updateSelectBar() {
+        var n = selectedIds.length;
+        var txt;
+        if (selectBusy) txt = '처리 중...';
+        else if (n > 0) txt = SELECT_LABELS[selectMode] + ' · ' + n + '개 선택';
+        else if (selectMode === 'group') txt = '묶기 · 먼저 고른 사진이 대표';
+        else txt = SELECT_LABELS[selectMode] + ' · 항목을 선택하세요';
+        $('#select-label').text(txt);
+        $('#select-done, #select-cancel').prop('disabled', selectBusy).css('opacity', selectBusy ? 0.5 : 1);
+    }
+
+    // 화면에 있는 항목들의 선택 표시를 한 번에 갱신
+    function repaintSelection() {
+        var map = {};
+        selectedIds.forEach(function(id, i) { map[id] = i + 1; });
+        var isGroup = selectMode === 'group';
+        $('#gallery-feed .gallery-item').each(function() {
+            var o = map[this.getAttribute('data-id')];
+            if (o) {
+                this.classList.add('is-selected');
+                this.setAttribute('data-sel', isGroup ? o : '✓');
+            } else if (this.classList.contains('is-selected')) {
+                this.classList.remove('is-selected');
+                this.removeAttribute('data-sel');
+            }
+        });
+        updateSelectBar();
+    }
+
+    window.toggleSelectMenu = function() {
+        if (selectMode) { cancelSelectMode(); return; } // 선택 중에 아이콘을 누르면 종료
+        $('#select-menu').fadeToggle(120);
+    };
+    $('#select-mode-btn').on('click', function(e) { e.stopPropagation(); toggleSelectMenu(); });
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#select-menu, #select-mode-btn').length) $('#select-menu').hide();
+    });
+    $('#select-menu').on('click', '.sm-item', function() { startSelectMode($(this).attr('data-mode')); });
+
+    window.startSelectMode = function(mode) {
+        $('#select-menu').hide();
+        selectMode = mode;
+        selectedIds = [];
+        selectBusy = false;
+        $('#gallery-feed').addClass('select-mode');
+        $('#select-mode-btn').addClass('active');
+        $('#select-bar').css('display', 'flex');
+        repaintSelection();
+    };
+
+    window.cancelSelectMode = function() {
+        if (selectBusy) return;
+        selectMode = null;
+        selectedIds = [];
+        $('#gallery-feed').removeClass('select-mode');
+        $('#select-mode-btn').removeClass('active');
+        $('#select-bar').hide();
+        $('#gallery-feed .gallery-item.is-selected').removeClass('is-selected').removeAttr('data-sel');
+    };
+
+    function toggleSelect(id) {
+        if (selectBusy) return;
+        var i = selectedIds.indexOf(id);
+        if (i > -1) selectedIds.splice(i, 1);
+        else selectedIds.push(id);
+        repaintSelection();
+    }
+
+    function selectedPosts() {
+        return selectedIds.map(function(id) { return archiveById[id]; }).filter(Boolean);
+    }
+
+    function setSelectBusy(b) { selectBusy = b; updateSelectBar(); }
+
+    // 완료 버튼
+    window.finishSelect = function() {
+        if (selectBusy || !selectMode) return;
+        var n = selectedIds.length;
+        if (n === 0) { alert('항목을 선택해 주세요.'); return; }
+
+        if (selectMode === 'delete') {
+            if (confirm(n + '개 항목을 삭제하시겠습니까?\n(사진도 완전히 삭제돼요)')) runBulkDelete();
+        } else if (selectMode === 'group') {
+            if (n < 2) { alert('묶으려면 2개 이상 선택해 주세요.'); return; }
+            if (confirm(n + '개 항목을 하나로 묶으시겠습니까?\n(먼저 선택한 사진이 대표가 돼요)')) runBulkGroup();
+        } else if (selectMode === 'edit') {
+            openBulkEditModal();
+        }
+    };
+
+    // 스토리지 파일 이름 (원본 + 썸네일)
+    function storageNamesOf(p, thumbOnly) {
+        var names = [];
+        if (!thumbOnly) {
+            p.imageUrls.split(":::").forEach(function(u) {
+                var nm = u.split('/').pop();
+                if (nm) names.push(nm);
+            });
+        }
+        if (p.hasThumb) {
+            var tn = thumbUrlOf(p.mainImg).split('/').pop();
+            if (tn) names.push(tn);
+        }
+        return names;
+    }
+
+    async function removeStorageFiles(names) {
+        for (var i = 0; i < names.length; i += 100) {
+            try { await archiveSupabase.storage.from('images').remove(names.slice(i, i + 100)); } catch (e) {}
+        }
+    }
+
+    async function deleteRowsByIds(ids) {
+        for (var i = 0; i < ids.length; i += 100) {
+            var res = await archiveSupabase.from('posts').delete().in('id', ids.slice(i, i + 100));
+            if (res.error) throw res.error;
+        }
+    }
+
+    // 🗑 선택 삭제: DB 행 + 스토리지 사진 모두 삭제
+    async function runBulkDelete() {
+        var posts = selectedPosts();
+        setSelectBusy(true);
+        try {
+            await deleteRowsByIds(posts.map(function(p) { return p.id; }));
+            var names = [];
+            posts.forEach(function(p) { names = names.concat(storageNamesOf(p, false)); });
+            await removeStorageFiles(names);
+            selectBusy = false;
+            cancelSelectMode();
+            loadGalleryPosts();
+        } catch (e) {
+            alert('삭제에 실패했어요.');
+            setSelectBusy(false);
+            loadGalleryPosts();
+        }
+    }
+
+    // 🔗 여러 개 묶기: 먼저 고른 항목에 합치고 나머지 행은 삭제 (사진 파일은 그대로 유지)
+    async function runBulkGroup() {
+        var posts = selectedPosts();
+        if (posts.length < 2) return;
+        setSelectBusy(true);
+        try {
+            var first = posts[0];
+
+            var urls = [], seenUrl = {};
+            posts.forEach(function(p) {
+                p.imageUrls.split(":::").forEach(function(u) {
+                    if (u && !seenUrl[u]) { seenUrl[u] = true; urls.push(u); }
+                });
+            });
+
+            var title = '';
+            for (var i = 0; i < posts.length; i++) { if (posts[i].title) { title = posts[i].title; break; } }
+
+            var caps = [], seenCap = {};
+            posts.forEach(function(p) {
+                var c = (p.caption || '').trim();
+                if (c && !seenCap[c]) { seenCap[c] = true; caps.push(c); }
+            });
+
+            var tags = [], seenTag = {};
+            posts.forEach(function(p) {
+                (p.tags || '').split(/\s+/).filter(Boolean).forEach(function(t) {
+                    if (!seenTag[t]) { seenTag[t] = true; tags.push(t); }
+                });
+            });
+
+            var anyFav = posts.some(function(p) { return p.fav; });
+            var flags = (first.hasThumb ? 't' : '') + (anyFav ? 'f' : '');
+            var content = buildArchiveContent(urls.join(":::"), caps.join("\n"), tags.join(' '), flags);
+
+            var upd = await archiveSupabase.from('posts').update({ title: title, content: content }).eq('id', first.id);
+            if (upd.error) throw upd.error;
+
+            var others = posts.slice(1);
+            await deleteRowsByIds(others.map(function(p) { return p.id; }));
+
+            // 합쳐진 항목들의 작은 썸네일은 더 이상 안 쓰니 정리 (원본 사진은 유지)
+            var thumbNames = [];
+            others.forEach(function(p) { thumbNames = thumbNames.concat(storageNamesOf(p, true)); });
+            await removeStorageFiles(thumbNames);
+
+            selectBusy = false;
+            cancelSelectMode();
+            loadGalleryPosts();
+        } catch (e) {
+            alert('묶기에 실패했어요.');
+            setSelectBusy(false);
+            loadGalleryPosts();
+        }
+    }
+
+    // ✏️ 일괄 수정 (제목 / 태그)
+    window.openBulkEditModal = function() {
+        $('#bulk-edit-sub').text(selectedIds.length + '개 항목');
+        $('#bulk-title').val('');
+        $('#bulk-tags').val('');
+        $('#bulk-tag-mode').val('add');
+        $('#bulk-edit-modal').css('display', 'flex').hide().fadeIn(150);
+    };
+    window.closeBulkEditModal = function() { $('#bulk-edit-modal').fadeOut(150); };
+
+    window.confirmBulkEdit = function() {
+        var newTitle = $('#bulk-title').val().trim();
+        var newTags = $('#bulk-tags').val().trim();
+        var mode = $('#bulk-tag-mode').val();
+        if (!newTitle && !newTags) { alert('수정할 제목이나 태그를 입력해 주세요.'); return; }
+
+        var n = selectedIds.length;
+        var msg = n + '개 항목을 수정하시겠습니까?';
+        if (newTitle) msg += '\n제목 → ' + newTitle;
+        if (newTags) msg += '\n태그 ' + (mode === 'add' ? '추가' : '덮어쓰기') + ' → ' + newTags;
+        if (!confirm(msg)) return;
+
+        closeBulkEditModal();
+        runBulkEdit(newTitle, newTags, mode);
+    };
+
+    async function runBulkEdit(newTitle, newTags, mode) {
+        var posts = selectedPosts();
+        setSelectBusy(true);
+        try {
+            var newTokens = newTags.split(/\s+/).filter(Boolean);
+            for (var i = 0; i < posts.length; i += 8) {
+                var batch = posts.slice(i, i + 8).map(function(p) {
+                    var title = newTitle ? newTitle : p.title;
+                    var tags = p.tags;
+                    if (newTokens.length) {
+                        if (mode === 'replace') tags = newTokens.join(' ');
+                        else {
+                            var cur = (p.tags || '').split(/\s+/).filter(Boolean);
+                            newTokens.forEach(function(t) { if (cur.indexOf(t) === -1) cur.push(t); });
+                            tags = cur.join(' ');
+                        }
+                    }
+                    var content = buildArchiveContent(p.imageUrls, p.caption, tags, p.flags);
+                    return archiveSupabase.from('posts').update({ title: title, content: content }).eq('id', p.id)
+                        .then(function(r) { if (r.error) throw r.error; });
+                });
+                await Promise.all(batch);
+            }
+            selectBusy = false;
+            cancelSelectMode();
+            loadGalleryPosts();
+        } catch (e) {
+            alert('수정에 실패했어요.');
+            setSelectBusy(false);
+            loadGalleryPosts();
+        }
+    }
 
     try { setupArchiveObserver(); } catch (e) { ARCHIVE_PAGE = Infinity; }
     setTimeout(() => { loadGalleryPosts(); }, 100);
