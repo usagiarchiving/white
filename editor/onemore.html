@@ -192,7 +192,7 @@ $('go').addEventListener('click',()=>{
   flash($('go'),'완료 ✓');
 });
 
-$('cp').addEventListener('click',async()=>{
+$('cp').addEventListener('click',async()=>{ 
   if(!raw)return;
   try{await navigator.clipboard.writeText(raw)}catch(e){const t=document.createElement('textarea');t.value=raw;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
   flash($('cp'),'복사됨 ✓');
