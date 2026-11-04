@@ -91,7 +91,7 @@ function parse(src){
       if(tr!==null)i=j;
       out.push({t:'d',n:m[1].trim(),l:m[2].replace(/(<br\s*\/?>\s*)+$/i,'').trim(),tr});continue;
     }
-    out.push({t:'x',s:/^\s*\*([^*].*[^*]|[^*])\*\s*$/.test(l)?l.replace(/^(\s*)\*(.*)\*(\s*)$/,'$1$2$3'):l.replace(/^(\s*)_(.*)_(\s*)$/,'$1$2$3')});
+    out.push({t:'x',nar:/^\s*(\*([^*].*[^*]|[^*])\*|_.*_)\s*$/.test(l),s:/^\s*\*([^*].*[^*]|[^*])\*\s*$/.test(l)?l.replace(/^(\s*)\*(.*)\*(\s*)$/,'$1$2$3'):l.replace(/^(\s*)_(.*)_(\s*)$/,'$1$2$3')});
   }
   return {out,st};
 }
@@ -132,12 +132,13 @@ function statusHtml(s){
 }
 
 function render(){
-  raw=blocks.map(b=>{
-    if(b.t==='x')return b.s;
+  let pk=null;
+  raw=blocks.map(b=>{const k=b.t==='d'?'d':(b.t==='x'&&b.nar?'n':null),g=(k&&pk&&k!==pk)?'\n':'';pk=k;
+    if(b.t==='x')return g+b.s;
     if(b.t==='st')return status?statusHtml(status):'';
     const c=chars.get(b.n);
-    return `**${c.label||b.n} | ${b.l}**`+(b.tr!==null?`\n{{${c.size}:{{\`${c.color}\`:**${b.tr}**}}}}`:'');return `**${c.label||b.n} | ${b.l}**`+(b.tr!==null?`\n{{${c.size}:{{\`${c.color}\`:**${b.tr}**}}}}`:'');
-        }).join('\n').trim();
+    return g+`**${c.label||b.n} | ${b.l}**`+(b.tr!==null?`\n{{${c.size}:{{\`${c.color}\`:**${b.tr}**}}}}`:'');
+  }).join('\n').trim();
   $('out').innerHTML=preview(raw);
 }
 
