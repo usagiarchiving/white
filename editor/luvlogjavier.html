@@ -46,16 +46,20 @@ button.done{background:var(--mint)!important;color:var(--mint-ink)!important}
 .ch{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}.ch .cn{margin:0}
 .add{border:0;font:inherit;font-weight:600;padding:5px 12px;border-radius:10px;background:var(--blue);color:var(--blue-ink);cursor:pointer;flex:none;transition:background .35s,color .35s,transform .2s;-webkit-tap-highlight-color:transparent}.add:active{transform:scale(.95)}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-.tb{position:absolute;right:16px;top:0;z-index:5;display:none;gap:4px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:0 4px 14px rgba(0,0,0,.12);max-width:calc(100% - 32px);overflow-x:auto;animation:fade .2s ease both}.tb.on{display:flex}
+.tb{position:absolute;left:0;top:0;z-index:5;display:none;gap:4px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:0 4px 14px rgba(0,0,0,.12);max-width:calc(100% - 32px);overflow-x:auto;animation:fade .2s ease both}.tb.on{display:flex}
 .tc{border:0;font:inherit;font-weight:700;min-width:28px;height:28px;padding:0 7px;border-radius:14px;color:#1d1d1f;background:#f1f1f5;cursor:pointer;flex:none;-webkit-tap-highlight-color:transparent;transition:transform .2s}.tc:active{transform:scale(.92)}.tc.cur{box-shadow:0 0 0 2px #1d1d1f}.tc.pl{color:#55555a}.tc.ok{background:var(--mint);color:var(--mint-ink)}
 .tb input[type=text]{width:110px;height:28px;padding:0 10px;border-radius:14px}
+.row label{min-width:0}
+.nt{display:inline-block;padding:1px 10px;border-radius:999px;margin-right:8px;color:#1d1d1f}
+textarea.tx{display:block;height:auto;min-height:0;padding:0;border:0;border-radius:0;background:transparent;resize:none;overflow:hidden;box-shadow:none;white-space:pre-wrap}
+textarea.tx:focus{border:0;box-shadow:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>텍스트 변환기</h1>
-    <p>붙여넣으면 바로 변환돼요. 대사를 드래그해서 선택하면 캐릭터 툴바가 떠요.</p>
+    <p>붙여넣으면 바로 변환돼요. 대사를 드래그해서 선택하면 캐릭터 툴바가 떠요. 변환 결과도 직접 고칠 수 있어요.</p>
   </header>
 
   <section class="menu">
@@ -64,21 +68,23 @@ button.done{background:var(--mint)!important;color:var(--mint-ink)!important}
   </section>
 
   <section class="grid">
-    <div class="pane s"><h2>변환 전</h2><div class="tb" id="tb"></div><textarea id="src" placeholder="변환할 텍스트를 붙여넣으세요"></textarea></div>
+    <div class="pane s"><h2>변환 전</h2><textarea id="src" placeholder="변환할 텍스트를 붙여넣으세요"></textarea></div>
     <div class="actions">
       <button id="go" type="button">변환하기</button>
       <button id="cp" type="button">복사</button>
     </div>
-    <div class="pane r"><h2>변환 후</h2><div class="out" id="out" data-ph="변환 결과가 여기에 표시돼요"></div></div>
+    <div class="pane r"><h2>변환 후 · 직접 수정 가능</h2><div class="out" id="out" data-ph="변환 결과가 여기에 표시돼요"></div></div>
   </section>
 </div>
+
+<div class="tb" id="tb"></div>
 
 <script>
 const $=id=>document.getElementById(id);
 const PAL=['#ffb07c','#9ec5fe','#b8e6c9','#d7b8f5','#ffc6d9','#f6dd8f'];
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const SRC=$('src'),TB=$('tb'),EMPTY=$('chars').innerHTML;
-let blocks=[],status=null,chars=new Map(),store=new Map(),raw='',sig=null,pos=null,tg=[],addMode=false,lastO=0,tm;
+const SRC=$('src'),TB=$('tb'),OUT=$('out'),EMPTY=$('chars').innerHTML;
+let blocks=[],status=null,chars=new Map(),store=new Map(),raw='',sig=null,pos=null,tg=[],addMode=false,lastO=0,tm,segs=[],ta=null,md='src';
 function parse(src){
   let st=null;
   src=src.replace(/<Apogee[\s\S]*?\/>/gi,m=>{st={};m.replace(/([A-Za-z]+)="([^"]*)"/g,(_,k,v)=>{st[k]=v});return '\n@@STATUS@@\n'});
@@ -137,23 +143,37 @@ function statusHtml(s){
   return `[html]\n<style>${APL_CSS}</style><div class="apl"><div class="apl-head"><div class="apl-top"><span class="apl-tag">APOGEE</span><span class="apl-hq">INTERNAL LEDGER</span></div>${card}</div><details class="apl-det"><summary class="apl-toggle"><span class="lc">▼ OPEN FULL LEDGER</span><span class="lo">▲ CLOSE LEDGER</span></summary><div class="apl-full">${body}<div class="apl-foot"><span>FULCRUM · A.D. 2320</span><span>◆ APOGEE INTERNAL</span></div></div></details></div>\n[/html]`;
 }
 
+/* ---- 변환 결과 렌더 (텍스트 구간은 직접 수정 가능한 textarea) ---- */
 function render(){
   let pk=null;
   raw=blocks.map(b=>{const k=b.t==='d'?'d':(b.t==='x'&&b.nar?'n':null),g=(k&&pk&&k!==pk)?'\n':'';pk=k;
     if(b.t==='x')return g+b.s;
     if(b.t==='st')return status?statusHtml(status):'';
-    const c=chars.get(b.n);
-    return g+(b.n?`**${c.label||b.n} | ${b.l}**`:b.l)+(b.tr!==null?`\n{{${c.size}:{{${c.color}:**${b.tr}**}}}}`:'');
+    const c=chars.get(b.n)||{label:'',color:'#1d1d1f',size:12},lb=c.label||b.n;
+    return g+(lb?`**${lb} | ${b.l}**`:b.l)+(b.tr!==null?`\n{{${c.size}:{{${c.color}:**${b.tr}**}}}}`:'');
   }).join('\n').trim();
-  $('out').innerHTML=preview(raw);
+  renderOut();
 }
-function preview(t){
-  return t.split(/(\[html\][\s\S]*?\[\/html\])/).map(p=>{
-    if(/^\[html\]/.test(p))return '<div class="hb">'+p.slice(6,-7)+'</div>';
-    const x=p.replace(/^\n+|\n+$/g,'');
-    return x?`<div class="tx">${esc(x)}</div>`:'';
-  }).join('');
+const fit=t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'};
+const syncRaw=()=>{raw=segs.map(s=>s.v.replace(/^\n+|\n+$/g,'')).filter(Boolean).join('\n')};
+const commit=t=>{const st=OUT.scrollTop;fit(t);OUT.scrollTop=st;segs[+t.dataset.i].v=t.value;syncRaw()};
+function renderOut(){
+  if(ta&&ta!==SRC)hideTb();
+  OUT.innerHTML='';segs=[];
+  raw.split(/(\[html\][\s\S]*?\[\/html\])/).forEach(p=>{
+    if(/^\[html\]/.test(p)){
+      segs.push({v:p});
+      const d=document.createElement('div');d.className='hb';d.innerHTML=p.slice(6,-7);OUT.appendChild(d);
+    }else{
+      const x=p.replace(/^\n+|\n+$/g,'');if(!x)return;
+      const i=segs.push({v:x})-1,t=document.createElement('textarea');
+      t.className='tx';t.dataset.i=i;t.value=x;t.spellcheck=false;t.rows=1;
+      OUT.appendChild(t);fit(t);
+    }
+  });
 }
+OUT.addEventListener('input',e=>{if(e.target.classList.contains('tx'))commit(e.target)});
+addEventListener('resize',()=>OUT.querySelectorAll('textarea.tx').forEach(fit));
 
 function buildOptions(){
   const box=$('chars'),keys=[...chars.keys()];
@@ -162,21 +182,24 @@ function buildOptions(){
   keys.forEach((k,i)=>{
     const c=chars.get(k),d=document.createElement('div');
     d.className='char';d.dataset.i=i;d.style.animationDelay=(i*60)+'ms';
-    d.innerHTML='<div class="ch"><div class="cn"></div><button type="button" class="add" aria-label="대사 추가">+ 대사</button></div><input type="text" class="f-name" aria-label="이름"><div class="row"><label>번역 색<input type="color" class="f-color"></label><label>번역 크기<input type="number" class="f-size" min="8" max="48" inputmode="numeric"></label></div><div class="pv">한국어 번역 미리보기</div>';
+    d.innerHTML='<div class="ch"><div class="cn"></div><button type="button" class="add" aria-label="대사 추가">+ 대사</button></div><input type="text" class="f-name" aria-label="이름"><div class="row"><label>네임택 색<input type="color" class="f-tag"></label><label>번역 색<input type="color" class="f-color"></label><label>번역 크기<input type="number" class="f-size" min="8" max="48" inputmode="numeric"></label></div><div class="pv"><span class="nt"></span><span class="pt">한국어 번역 미리보기</span></div>';
     d.querySelector('.cn').textContent=k?'원본 이름 · '+k:'이름 없는 대사';
-    if(!k)d.querySelector('.f-name').style.display='none';
-    d.querySelector('.f-name').value=c.label;
+    const fn=d.querySelector('.f-name');
+    fn.placeholder=k?'표시할 이름':'이름 입력 → 이름 없는 대사 전부에 적용';
+    fn.value=c.label;
+    d.querySelector('.f-tag').value=c.tag;
     d.querySelector('.f-color').value=c.color;
     d.querySelector('.f-size').value=c.size;
     box.appendChild(d);paint(d,c);
   });
 }
-function paint(d,c){d.querySelector('.pv').style.color=c.color}
+function paint(d,c){const n=d.querySelector('.nt');n.style.background=c.tag;n.textContent=c.label||'이름';d.querySelector('.pt').style.color=c.color}
 
 $('chars').addEventListener('input',e=>{
   const d=e.target.closest('.char');if(!d)return;
   const c=chars.get([...chars.keys()][d.dataset.i]);if(!c)return;
   c.label=d.querySelector('.f-name').value;
+  c.tag=d.querySelector('.f-tag').value.toLowerCase();
   c.color=d.querySelector('.f-color').value.toLowerCase();
   c.size=parseInt(d.querySelector('.f-size').value)||12;
   paint(d,c);render();
@@ -203,12 +226,12 @@ function flash(btn,text){
 }
 
 /* 캐릭터 설정은 store에 계속 보관 → 툴바에서 언제든 다시 고를 수 있음 */
-const reg=n=>{if(!store.has(n))store.set(n,{label:n,color:PAL[store.size%PAL.length],size:12});return store.get(n)};
+const reg=n=>{if(!store.has(n)){const i=store.size;store.set(n,{label:n,color:PAL[i%PAL.length],tag:PAL[(i+3)%PAL.length],size:12})}return store.get(n)};
 function convert(force){
   const v=SRC.value;
-  if(!v.trim()){blocks=[];status=null;chars=new Map();raw='';sig=null;$('chars').innerHTML=EMPTY;$('out').innerHTML='';return}
+  if(!v.trim()){blocks=[];status=null;chars=new Map();raw='';segs=[];sig=null;$('chars').innerHTML=EMPTY;OUT.innerHTML='';return}
   const r=parse(v),next=new Map();blocks=r.out;status=r.st;
-  blocks.forEach(b=>{if(b.t==='d'&&(b.n||b.tr!==null)&&!next.has(b.n))next.set(b.n,reg(b.n))});
+  blocks.forEach(b=>{if(b.t==='d'&&!next.has(b.n))next.set(b.n,reg(b.n))});
   if(force)[...store.keys()].forEach(k=>{if(!next.has(k))store.delete(k)});
   chars=next;
   const s=[...next.keys()].join('\u0001');
@@ -219,40 +242,53 @@ const queue=()=>{clearTimeout(tm);tm=setTimeout(()=>convert(),350)};
 SRC.addEventListener('input',queue);
 $('go').addEventListener('click',()=>{if(!SRC.value.trim())return;convert(true);flash($('go'),'완료 ✓')});
 
-/* ---- 대사를 드래그/선택하면 뜨는 캐릭터 툴바 ---- */
+/* ---- 대사 선택 → 캐릭터 툴바 (원문 / 변환 결과 둘 다) ---- */
 const sv=()=>{pos=[SRC.selectionStart,SRC.selectionEnd]};
+const inEd=t=>!!t&&(t===SRC||(t.classList&&t.classList.contains('tx')&&OUT.contains(t)));
 const NM=[/^(\s*)\*\*(.+?)\*\*\s*[|｜│]\s*(.*)$/,/^(\s*)([^|｜│"“*]{1,40}?)\s*[|｜│]\s*(["“].*)$/];
-function dlg(l){
+const NMO=/^(\s*)\*\*(.+?)\s*[|｜│]\s*(.*?)\s*\*\*\s*$/;
+function dlg(l,o){
   if(l===undefined)return null;
+  if(o==='out'){
+    const m=l.match(NMO);if(m)return{pre:m[1],name:m[2].trim(),rest:m[3]};
+    return /^\s*["“].*["”]\s*$/.test(l)?{pre:'',name:'',rest:l.trim()}:null;
+  }
   for(const r of NM){const m=l.match(r);if(m)return{pre:m[1],name:m[2].trim(),rest:m[3]}}
   if(/^\s*["“].*["”]\s*(<br\s*\/?>\s*)*$/i.test(l))return{pre:'',name:'',rest:l.trim()};
   return null;
 }
-const setName=(l,nm)=>{const d=dlg(l);return d?`${d.pre}**${nm}** | ${d.rest}`:null};
-const tl=l=>/^\s*(<br\s*\/?>\s*)?\(/.test(l||'');
+const setName=(l,nm,o)=>{const d=dlg(l,o);if(!d)return null;return o==='out'?`${d.pre}**${nm} | ${d.rest}**`:`${d.pre}**${nm}** | ${d.rest}`};
+const tl=(l,o)=>o==='out'?/^\s*\{\{\d+:\{\{/.test(l||''):/^\s*(<br\s*\/?>\s*)?\(/.test(l||'');
 const lineOf=(v,o)=>{let n=0;for(let i=0;i<o&&i<v.length;i++)if(v[i]==='\n')n++;return n};
-function yOf(o){
-  const cs=getComputedStyle(SRC),m=document.createElement('div'),k=document.createElement('span');
-  m.style.cssText='position:absolute;visibility:hidden;left:-9999px;top:0;white-space:pre-wrap;overflow-wrap:break-word;box-sizing:border-box;border:0;width:'+SRC.clientWidth+'px';
+function yOf(t,o){
+  const cs=getComputedStyle(t),m=document.createElement('div'),k=document.createElement('span');
+  m.style.cssText='position:absolute;visibility:hidden;left:-9999px;top:0;white-space:pre-wrap;overflow-wrap:break-word;box-sizing:border-box;border:0;width:'+t.clientWidth+'px';
   ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','lineHeight','tabSize','paddingTop','paddingRight','paddingBottom','paddingLeft'].forEach(p=>m.style[p]=cs[p]);
-  m.textContent=SRC.value.slice(0,o);k.textContent='\u200b';m.appendChild(k);
+  m.textContent=t.value.slice(0,o);k.textContent='\u200b';m.appendChild(k);
   document.body.appendChild(m);const y=k.offsetTop;m.remove();return y;
 }
 function place(){
-  const lh=parseFloat(getComputedStyle(SRC).lineHeight)||21,h=TB.offsetHeight||36;
-  const t=Math.max(4,Math.min(yOf(lastO)-SRC.scrollTop+lh+6,SRC.clientHeight-h-4));
-  TB.style.top=(SRC.offsetTop+t)+'px';
+  if(!ta)return;
+  const lh=parseFloat(getComputedStyle(ta).lineHeight)||21,h=TB.offsetHeight||36;
+  const box=(ta===SRC?SRC:OUT).getBoundingClientRect(),r=ta.getBoundingClientRect();
+  const y0=r.top+yOf(ta,lastO)-(ta===SRC?ta.scrollTop:0)+lh+6;
+  const y=Math.max(box.top+4,Math.min(y0,box.bottom-h-4));
+  TB.style.maxWidth=Math.max(120,box.width-32)+'px';
+  TB.style.top=(y+scrollY)+'px';
+  TB.style.left=(box.right-TB.offsetWidth-16+scrollX)+'px';
 }
 function hideTb(){TB.classList.remove('on');addMode=false;tg=[]}
 function checkSel(){
   if(TB.contains(document.activeElement))return;
-  const a=SRC.selectionStart,b=SRC.selectionEnd;
-  if(document.activeElement!==SRC||a===b){hideTb();return}
-  const v=SRC.value,L=v.split('\n'),s=lineOf(v,a),e=lineOf(v,Math.max(a,b-1));
-  let t=[];for(let i=s;i<=e;i++)if(dlg(L[i]))t.push(i);
-  if(!t.length&&s===e&&tl(L[s])){let j=s-1;while(j>=0&&!L[j].trim())j--;if(j>=0&&dlg(L[j]))t=[j]}
-  if(!t.length){hideTb();return}
-  tg=t;addMode=false;lastO=Math.max(a,b-1);drawTb();TB.classList.add('on');place();
+  const t=document.activeElement;
+  if(!inEd(t)){hideTb();return}
+  const a=t.selectionStart,b=t.selectionEnd;
+  if(a===b){hideTb();return}
+  const o=t===SRC?'src':'out',v=t.value,L=v.split('\n'),s=lineOf(v,a),e=lineOf(v,Math.max(a,b-1));
+  let x=[];for(let i=s;i<=e;i++)if(dlg(L[i],o))x.push(i);
+  if(!x.length&&s===e&&tl(L[s],o)){let j=s-1;while(j>=0&&!L[j].trim())j--;if(j>=0&&dlg(L[j],o))x=[j]}
+  if(!x.length){hideTb();return}
+  ta=t;md=o;tg=x;addMode=false;lastO=Math.max(a,b-1);drawTb();TB.classList.add('on');place();
 }
 function drawTb(){
   TB.innerHTML='';
@@ -266,28 +302,37 @@ function drawTb(){
     setTimeout(()=>i.focus(),0);return;
   }
   parse(SRC.value).out.forEach(b=>{if(b.t==='d'&&b.n)reg(b.n)});
-  const L=SRC.value.split('\n'),cn=new Set(tg.map(i=>(dlg(L[i])||{}).name));
-  const ks=[...store.keys()].filter(Boolean),ini=k=>[...(store.get(k).label||k)][0].toUpperCase();
+  const L=ta.value.split('\n'),cn=new Set(tg.map(i=>(dlg(L[i],md)||{}).name));
+  const ks=[...store.keys()].filter(Boolean),nmOf=k=>store.get(k).label||k,ini=k=>[...nmOf(k)][0].toUpperCase();
   ks.forEach(k=>{
-    const c=store.get(k),lb=c.label||k,dup=ks.filter(x=>ini(x)===ini(k)).length>1;
-    const b=mk(dup?[...lb].slice(0,2).join(''):ini(k),cn.size===1&&cn.has(k)?'cur':'',()=>applyName(k),lb);
-    b.style.background=c.color;TB.appendChild(b);
+    const c=store.get(k),lb=nmOf(k),val=md==='out'?lb:k,dup=ks.filter(x=>ini(x)===ini(k)).length>1;
+    const b=mk(dup?[...lb].slice(0,2).join(''):ini(k),cn.size===1&&cn.has(val)?'cur':'',()=>applyName(val),lb);
+    b.style.background=c.tag;TB.appendChild(b);
   });
   TB.appendChild(mk('+','pl',()=>{addMode=true;drawTb();place()},'새 캐릭터 추가'));
 }
 function applyName(nm){
-  nm=(nm||'').replace(/[|｜│*\n]/g,'').trim();if(!nm||!tg.length)return;
-  const L=SRC.value.split('\n'),st=SRC.scrollTop;
-  tg.forEach(i=>{const r=setName(L[i],nm);if(r!==null)L[i]=r});
+  nm=(nm||'').replace(/[|｜│*\n]/g,'').trim();if(!nm||!tg.length||!ta)return;
+  const t=ta,o=md,L=t.value.split('\n'),st=t.scrollTop;
+  const c=o==='out'?([...store.values()].find(x=>x.label===nm)||store.get(nm)||reg(nm)):null;
+  tg.forEach(i=>{
+    const r=setName(L[i],nm,o);if(r===null)return;L[i]=r;
+    if(!c)return;
+    let j=i+1;while(j<L.length&&!L[j].trim())j++;
+    const m=(L[j]||'').match(/^(\s*)\{\{\d+:\{\{`?#[0-9a-fA-F]{3,8}`?:([\s\S]*)\}\}\}\}\s*$/);
+    if(m)L[j]=`${m[1]}{{${c.size}:{{${c.color}:${m[2]}}}}}`;
+  });
   const p=L.slice(0,tg[tg.length-1]+1).join('\n').length;
-  SRC.value=L.join('\n');SRC.scrollTop=st;SRC.setSelectionRange(p,p);
-  hideTb();convert();
+  t.value=L.join('\n');t.scrollTop=st;t.setSelectionRange(p,p);
+  hideTb();
+  if(o==='out')commit(t);else convert();
 }
-let ct;const sel=()=>{sv();clearTimeout(ct);ct=setTimeout(checkSel,60)};
-['select','mouseup','touchend','keyup'].forEach(ev=>SRC.addEventListener(ev,sel));
-document.addEventListener('selectionchange',()=>{if(document.activeElement===SRC)sel()});
-SRC.addEventListener('scroll',()=>{if(TB.classList.contains('on'))requestAnimationFrame(place)});
-document.addEventListener('pointerdown',e=>{if(!TB.contains(e.target)&&e.target!==SRC)hideTb()});
+let ct;const sel=()=>{if(document.activeElement===SRC)sv();clearTimeout(ct);ct=setTimeout(checkSel,60)};
+['select','mouseup','touchend','keyup'].forEach(ev=>{SRC.addEventListener(ev,sel);OUT.addEventListener(ev,sel,true)});
+document.addEventListener('selectionchange',()=>{if(inEd(document.activeElement))sel()});
+const rep=()=>{if(TB.classList.contains('on'))requestAnimationFrame(place)};
+SRC.addEventListener('scroll',rep);OUT.addEventListener('scroll',rep);
+document.addEventListener('pointerdown',e=>{if(!TB.contains(e.target)&&!inEd(e.target))hideTb()});
 
 $('cp').addEventListener('click',async()=>{
   if(!raw)return;
