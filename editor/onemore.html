@@ -189,7 +189,7 @@ $('go').addEventListener('click',()=>{
   blocks.forEach(b=>{if(b.t==='d'&&!next.has(b.n)){next.set(b.n,chars.get(b.n)||{label:b.n,color:PAL[i%PAL.length],size:12});i++}});
   chars=next;buildOptions();render();
   flash($('go'),'완료 ✓');
-});
+}); 
 
 $('cp').addEventListener('click',async()=>{
   if(!raw)return;
