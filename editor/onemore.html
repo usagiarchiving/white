@@ -137,7 +137,7 @@ function render(){
     if(b.t==='x')return g+b.s;
     if(b.t==='st')return status?statusHtml(status):'';
     const c=chars.get(b.n);
-    return g+`**${c.label||b.n} | ${b.l}**`+(b.tr!==null?`\n{{${c.size}:{{\`${c.color}\`:**${b.tr}**}}}}`:'');
+    return g+`**${c.label||b.n} | ${b.l}**`+(b.tr!==null?`\n{{${c.size}:{{\`${c.color}\`:${b.tr}}}}}`:'');
   }).join('\n').trim();
   $('out').innerHTML=preview(raw);
 }
