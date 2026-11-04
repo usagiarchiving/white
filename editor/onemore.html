@@ -1,107 +1,401 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>텍스트 변환기</title>
-    <style>
-        body {
-            font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-            background-color: #f4f4f9;
-            display: flex; flex-direction: column; align-items: center;
-            padding-top: 50px; margin: 0; min-height: 100vh;
-            /* [가독성] 줄간격 및 자간 추가 */
-            line-height: 1.6; letter-spacing: -0.02em; 
-        }
-        .container {
-            background-color: white; padding: 2rem; border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 600px;
-        }
-        h2 { text-align: center; color: #333; margin-bottom: 1.5rem; }
-        textarea { 
-            width: 100%; height: 120px; padding: 12px; border: 1px solid #ddd; 
-            border-radius: 8px; box-sizing: border-box; resize: vertical; 
-            /* [가독성] 줄간격 및 폰트 사이즈 조정 */
-            line-height: 1.6; font-size: 15px; 
-        }
-        .btn-group { display: flex; gap: 10px; margin: 1.5rem 0; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; font-size: 16px; }
-        #convertBtn { background-color: #4a90e2; }
-        #copyBtn { background-color: #2ecc71; }
-        .breadcrumb { margin-bottom: 20px; align-self: flex-start; margin-left: max(5%, calc(50% - 300px)); }
-        .breadcrumb a { text-decoration: none; color: #666; font-size: 14px; }
-
-        /* [모바일 반응형] 992px 이하에서 버튼 1단으로 정렬 */
-        @media (max-width: 992px) {
-            .btn-group {
-                flex-direction: column;
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>텍스트 변환기</title>
+<style>
+:root{--ink:#1d1d1f;--sub:#86868b;--line:#ececf1;--card:#fafafc;--blue:#d3e3ff;--blue-ink:#3b5b9a;--mint:#c9f1dd;--mint-ink:#2c7653}
+*{box-sizing:border-box;font-size:12px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#fff;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;line-height:1.75;letter-spacing:-.01em;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:1120px;margin:0 auto;padding:32px 20px 72px}
+header{margin-bottom:22px}
+h1{font-weight:700;margin:0;letter-spacing:-.02em}
+header p{margin:4px 0 0;color:var(--sub)}
+h2{font-weight:600;color:var(--sub);margin:0 0 10px}
+.menu{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:20px}
+.chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.empty{color:var(--sub);padding:6px 2px}
+.char{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;animation:pop .45s ease both}
+.cn{color:var(--sub);margin-bottom:8px;word-break:break-all}
+.row{display:flex;gap:10px;margin-top:10px}
+.row label{flex:1;color:var(--sub);display:flex;flex-direction:column;gap:4px}
+input[type=text],input[type=number]{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);outline:none;transition:border-color .25s,box-shadow .25s}
+input[type=text]:focus,input[type=number]:focus,textarea:focus{border-color:#b9d0ff;box-shadow:0 0 0 4px #e8f0ff}
+input[type=color]{width:100%;height:42px;padding:3px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
+.pv{margin-top:10px;font-weight:700;transition:color .25s;word-break:break-all}
+.grid{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"s r" "a a";gap:16px}
+.s{grid-area:s}.r{grid-area:r}
+.pane{display:flex;flex-direction:column;min-width:0}
+textarea,.out{width:100%;height:56vh;min-height:300px;font:inherit;line-height:1.75;padding:16px;border:1px solid var(--line);border-radius:20px;background:#fff;color:var(--ink);outline:none;transition:border-color .25s,box-shadow .25s}
+textarea{resize:vertical}
+.out{background:#fff;overflow:auto;word-break:break-word}
+.out:empty::before{content:attr(data-ph);color:#a1a1a6}
+.tx{white-space:pre-wrap}
+.actions{grid-area:a;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.actions button{font:inherit;font-weight:600;border:0;border-radius:14px;padding:13px 30px;cursor:pointer;transition:background .35s,color .35s,transform .2s;-webkit-tap-highlight-color:transparent}
+.actions button:active{transform:scale(.97)}
+#go{background:var(--blue);color:var(--blue-ink);min-width:150px}
+#cp{background:#f1f1f5;color:#55555a}
+button.done{background:var(--mint)!important;color:var(--mint-ink)!important}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.wrap{padding:24px 16px 56px}.grid{grid-template-columns:1fr;grid-template-areas:"s" "a" "r"}textarea,.out{height:360px;min-height:320px}.actions button{flex:1}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.hb{margin:20px 0}.hb:first-child{margin-top:0}.hb:last-child{margin-bottom:0}
+</style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <h1>텍스트 변환기</h1>
+    <p>붙여넣고 변환하면 등장인물이 자동으로 분류돼요.</p>
+  </header>
 
-    <div class="breadcrumb">
-        <a href="index.html">메인</a> &gt; 
-        <a href="category.html">카테고리</a> &gt; 
-        <b>텍스트 변환기</b>
+  <section class="menu">
+    <h2>등장인물 옵션</h2>
+    <div class="chars" id="chars"><div class="empty">변환하기를 누르면 등장인물이 여기에 나타나요.</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="pane s"><h2>변환 전</h2><textarea id="src" placeholder="변환할 텍스트를 붙여넣으세요"></textarea></div>
+    <div class="actions">
+      <button id="go" type="button">변환하기</button>
+      <button id="cp" type="button">복사</button>
     </div>
-
-    <div class="container">
-        <h2>텍스트 클리너 (' 한 번 ' 제거)</h2>
-        
-        <label style="font-weight:bold; color:#555;">
-            입력 <span id="countDisplay" style="font-weight:normal; font-size:14px; color:#4a90e2; margin-left:8px;"></span>
-        </label>
-        <textarea id="inputText" placeholder="예: 그녀는 한 번 그를 보았다." oninput="updateCount()"></textarea>
-
-        <div class="btn-group">
-            <button id="convertBtn" onclick="convertText()">1. 변환하기</button>
-        </div>
-
-        <label style="font-weight:bold; color:#555;">결과</label>
-        <textarea id="outputText" readonly placeholder="결과가 여기에 나옵니다."></textarea>
-
-        <div class="btn-group">
-            <button id="copyBtn" onclick="copyText()">2. 전체 복사</button>
-        </div>
-    </div>
+    <div class="pane r"><h2>변환 후</h2><div class="out" id="out" data-ph="변환 결과가 여기에 표시돼요"></div></div>
+  </section>
+</div>
 
 <script>
-    // 1. 실시간 개수 카운팅 기능 (새로 추가)
-    function updateCount() {
-        const input = document.getElementById('inputText').value;
-        const matches = input.match(/ 한 번 /g);
-        const count = matches ? matches.length : 0;
-        
-        // 개수가 0개일 때는 비워두고, 1개 이상일 때만 표시하도록 처리
-        if (count > 0) {
-            document.getElementById('countDisplay').innerText = `(현재 개수: ${count}개)`;
-        } else {
-            document.getElementById('countDisplay').innerText = '';
-        }
-    }
+const $=id=>document.getElementById(id);
+const PAL=['#ffb07c','#9ec5fe','#b8e6c9','#d7b8f5','#ffc6d9','#f6dd8f'];
+let blocks=[],status=null,chars=new Map(),raw='';
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    // 2. 텍스트 변환
-    function convertText() {
-        const input = document.getElementById('inputText').value;
-        // 앞뒤 띄어쓰기가 포함된 " 한 번 "을 " " (띄어쓰기 하나)로 교체합니다.
-        const result = input.replace(/ 한 번 /g, ' ');
-        document.getElementById('outputText').value = result;
+function parse(src){
+  let st=null;
+  src=src.replace(/<Apogee[\s\S]*?\/>/gi,m=>{st={};m.replace(/([A-Za-z]+)="([^"]*)"/g,(_,k,v)=>{st[k]=v});return '\n@@STATUS@@\n'});
+  src=src.replace(/<br\s*\/?>\s*(?=\()/gi,'\n');
+  const L=src.replace(/\r/g,'').split('\n'),out=[];
+  for(let i=0;i<L.length;i++){
+    let l=L[i];
+    if(l.trim()==='@@STATUS@@'){out.push({t:'st'});continue}
+    if(/\{\{img::[^}]*\}\}/.test(l)){l=l.replace(/\{\{img::[^}]*\}\}/g,'');if(!l.trim())continue}
+    const m=l.match(/^\s*\*\*(.+?)\*\*\s*[|｜│]\s*(.*)$/);
+    if(m){
+      let j=i+1;while(j<L.length&&!L[j].trim())j++;
+      const n=L[j]||'';let tr=null,t;
+      if(t=n.match(/^\s*\(([\s\S]*)\)\s*$/))tr=t[1];
+      else if(t=n.match(/^\s*\{\{\d+:\{\{#[0-9a-fA-F]{3,8}:\*\*([\s\S]*?)\*\*\}\}\}\}\s*$/))tr=t[1];
+      if(tr!==null)i=j;
+      out.push({t:'d',n:m[1].trim(),l:m[2].replace(/(<br\s*\/?>\s*)+$/i,'').trim(),tr});continue;
     }
+    out.push({t:'x',s:/^\s*\*([^*].*[^*]|[^*])\*\s*$/.test(l)?l.replace(/^(\s*)\*(.*)\*(\s*)$/,'$1$2$3'):l.replace(/^(\s*)_(.*)_(\s*)$/,'$1$2$3')});
+  }
+  return {out,st};
+}
 
-    // 3. 복사 기능
-    function copyText() {
-        const outputText = document.getElementById('outputText');
-        // 복사할 내용이 없을 때 뜨던 팝업 제거
-        if (!outputText.value) { return; } 
-        outputText.select();
-        outputText.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(outputText.value).then(() => {
-            // 복사 완료 시 닫아야 하는 팝업(alert) 제거 완료
-        });
-    }
+const APL_CSS="\n  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');\n  .apl{--bg:#0e0b07;--bg2:#141009;--card:#1b1811;--card2:#201c14;--line:#4a4436;--line2:#2c2820;--line3:#6b6250;\n    --acc:#dfb840;--acc2:#f0cc55;--ink:#fdf6e6;--ink2:#ded9cc;--ink3:#cdc7b8;--soft:#f2e2b8;--mute:#9d9686;--red:#a33636;\n    max-width:440px;margin:0 auto;box-sizing:border-box;font-family:'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif;\n    font-size:12px;color:var(--ink2);background:var(--bg);border:1px solid #575044;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.7);\n    word-break:keep-all;overflow-wrap:break-word;text-align:left;letter-spacing:0;line-height:normal}\n  .apl *{box-sizing:border-box}\n  .apl-tag{display:inline-block;background:var(--acc);color:#14100a;font-weight:800;font-size:9.5px;letter-spacing:2px;padding:5px 11px}\n  .apl-head{background:linear-gradient(165deg,#1a1409 0%,var(--bg) 70%);padding:18px 16px;border-bottom:1px solid var(--line)}\n  .apl-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}\n  .apl-hq{font-size:9px;letter-spacing:2px;color:var(--mute)}\n  .apl-card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);padding:15px 16px}\n  .apl-rel{display:inline-block;background:var(--acc);color:#14100a;font-size:10px;font-weight:800;padding:3px 9px;margin-bottom:9px}\n  .apl-names{font-weight:800;font-size:19px;color:var(--ink);letter-spacing:-.3px;margin-bottom:6px}\n  .apl-names span{color:var(--acc);font-weight:400;margin:0 4px}\n  .apl-meta{font-size:11px;color:var(--mute);font-weight:500}\n  .apl-toggle{display:block;width:100%;border:0;background:var(--acc);color:#14100a;text-align:center;padding:11px;font-weight:800;letter-spacing:3px;font-size:11px;cursor:pointer;font-family:inherit}\n  .apl-sec{padding:18px 16px;border-top:1px solid var(--line2)}\n  .apl-sec.a{background:#100c07}.apl-sec.b{background:var(--bg2)}\n  .apl-sec .apl-tag{margin-bottom:13px}\n  .apl-row{display:flex;gap:7px}\n  .apl-stat{flex:1;background:var(--card);border:1px solid var(--line);padding:11px 4px;text-align:center}\n  .apl-stat-l{font-size:8.5px;font-weight:700;letter-spacing:1.5px;color:var(--mute)}\n  .apl-stat-v{font-weight:800;font-size:18px;color:var(--ink);margin-top:5px}\n  .apl-stat-v.g{color:var(--acc)}\n  .apl-aff{background:#221c12;border:1px solid var(--line3);padding:11px 14px;margin-top:7px}\n  .apl-aff-top{display:flex;justify-content:space-between;align-items:center}\n  .apl-aff-l{font-size:9px;font-weight:700;letter-spacing:2px;color:#a89467}\n  .apl-aff-v{font-weight:800;font-size:13px;color:var(--acc2)}\n  .apl-bar{height:4px;background:#2b2519;margin-top:8px}\n  .apl-bar i{display:block;height:100%;background:linear-gradient(90deg,#a8862a,var(--acc2))}\n  .apl-who{flex:1;min-width:0;background:var(--card2);border:1px solid var(--line);border-top:2px solid var(--acc);padding:12px 11px}\n  .apl-who.pc{border-top-color:#827d70}\n  .apl-who-n{text-align:center;font-weight:800;font-size:12.5px;color:var(--acc);margin-bottom:6px}\n  .apl-who.pc .apl-who-n{color:#e8ddc4}\n  .apl-kao{text-align:center;font-family:sans-serif;font-size:15px;color:var(--soft);border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:9px;overflow-wrap:anywhere}\n  .apl-k{font-size:9px;font-weight:700;color:var(--mute);letter-spacing:1.5px}\n  .apl-v{font-size:11.5px;font-weight:500;line-height:1.55;margin:2px 0 8px}\n  .apl-v:last-child{margin-bottom:0}\n  .apl-mind{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--acc);padding:13px 14px;font-size:12.5px;line-height:1.75;color:var(--soft);font-style:italic}\n  .apl-nsfw{background:var(--card2);border:1px solid var(--line3);padding:11px 13px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}\n  .apl-nk{font-size:8.5px;letter-spacing:1.5px;color:var(--mute);font-weight:700;margin-right:5px}\n  .apl-nv{font-weight:800;font-size:12px;color:var(--soft)}\n  .apl-nv.g{color:var(--acc)}\n  .apl-pill{font-weight:800;font-size:10px;letter-spacing:1px;padding:2px 9px;border:1px solid var(--line3);color:var(--mute)}\n  .apl-pill.on{border-color:var(--acc);color:var(--acc);background:rgba(223,184,64,.08)}\n  .apl-sfw{font-size:11px;color:var(--mute);letter-spacing:2px;font-weight:700}\n  .apl-tabs{display:flex;gap:3px;border-bottom:1px solid var(--line3)}\n  .apl-tab{text-align:center;user-select:none;flex:1 1 0;min-width:0;border:1px solid var(--line);border-bottom:0;background:var(--card);color:var(--mute);font-family:inherit;font-weight:800;font-size:10.5px;letter-spacing:2px;padding:8px 4px;cursor:pointer;position:relative;top:1px}\n  .apl-panel{background:var(--card);border:1px solid var(--line3);border-top:0;padding:14px;line-height:1.7;min-height:96px}\n  .apl-chip{display:inline-block;background:#2b2519;border:1px solid var(--line3);color:var(--acc);font-size:9px;font-weight:800;letter-spacing:1px;padding:2px 7px;margin-right:7px}\n  .apl-line{margin-bottom:8px}\n  .apl-dash{border-top:1px dashed #575044;margin:11px 0}\n  .apl-num{display:flex;gap:8px;padding:3px 0}\n  .apl-num b{color:var(--acc);font-size:11px;flex-shrink:0}\n  .apl-comm-t{font-weight:800;font-size:13.5px;line-height:1.5;color:var(--ink);margin:8px 0 10px}\n  .apl-cmt{border-top:1px dashed #575044;padding:9px 0 0;margin-top:9px}\n  .apl-cmt-h{font-size:9.5px;color:var(--acc);letter-spacing:.5px;font-weight:700;margin-bottom:2px}\n  .apl-cmt-b{font-size:11.5px;color:var(--ink3)}\n  .apl-red{display:inline-block;background:var(--red);color:var(--ink);font-size:9px;font-weight:800;letter-spacing:1px;padding:2px 8px}\n  .apl-q{font-size:11.5px;color:var(--mute);margin-bottom:8px}\n  .apl-q b{color:var(--acc);margin-right:6px}\n  .apl-a{font-size:12.5px;color:var(--soft);font-weight:600}\n  .apl-a b{color:var(--acc);margin-right:6px;font-style:normal}\n  .apl-atr{font-size:11.5px;color:var(--mute);margin-top:4px;padding-left:22px}\n  .apl-empty{color:#6e6a5c}\n  .apl-foot{background:#0a0805;border-top:1px solid var(--line);padding:11px 16px;display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#6e6a5c}\n  .apl-foot span:last-child{color:var(--mute)}\n  /* 토글(details) / 탭(radio+label): JS 없이 동작 */\n  .apl-det>summary{list-style:none}\n  .apl-det>summary::-webkit-details-marker{display:none}\n  .apl .lo{display:none}\n  .apl-det[open] .lo{display:inline}\n  .apl-det[open] .lc{display:none}\n  .apl-r{display:none}\n  .apl .pn{display:none}\n  .apl-r.r-schedule:checked~.apl-panel .pn-schedule{display:block}.apl-r.r-schedule:checked~.apl-tabs .tb-schedule{background:var(--acc);border-color:var(--acc);color:#14100a}.apl-r.r-promise:checked~.apl-panel .pn-promise{display:block}.apl-r.r-promise:checked~.apl-tabs .tb-promise{background:var(--acc);border-color:var(--acc);color:#14100a}.apl-r.r-tmi:checked~.apl-panel .pn-tmi{display:block}.apl-r.r-tmi:checked~.apl-tabs .tb-tmi{background:var(--acc);border-color:var(--acc);color:#14100a}.apl-r.r-community:checked~.apl-panel .pn-community{display:block}.apl-r.r-community:checked~.apl-tabs .tb-community{background:var(--acc);border-color:var(--acc);color:#14100a}.apl-r.r-interview:checked~.apl-panel .pn-interview{display:block}.apl-r.r-interview:checked~.apl-tabs .tb-interview{background:var(--acc);border-color:var(--acc);color:#14100a}";
+const E=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#039;');
+function statusHtml(s){
+  const v=k=>E((s[k]||'').trim()),L=k=>(s[k]||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const num=(k,st)=>L(k).map((x,i)=>`<div class="apl-num"><b>${String(i+1).padStart(2,'0')}</b><span${st||''}>${E(x)}</span></div>`).join('');
+  const rel=v('relation'),np=v('npc'),pc=v('pc'),meta=['date','time','location','temperature','weather'].map(k=>v(k)).filter(Boolean).join(' · ');
+  const names=np&&pc?`${np}<span>⨯</span>${pc}`:np||pc;
+  const card=(rel||names||meta)?`<div class="apl-card">${rel?`<div class="apl-rel">${rel}</div>`:''}${names?`<div class="apl-names">${names}</div>`:''}${meta?`<div class="apl-meta">${meta}</div>`:''}</div>`:'';
+  const secs=[];
+  const stat=(k,l,g)=>v(k)?`<div class="apl-stat"><div class="apl-stat-l">${l}</div><div class="apl-stat-v${g?' g':''}">${v(k)}</div></div>`:'';
+  const af=parseFloat(s.affection),sr=stat('daysMet','DAYS MET')+stat('daysTogether','TOGETHER',1);
+  const aff=v('affection')?`<div class="apl-aff"><div class="apl-aff-top"><span class="apl-aff-l">SENTIMENT</span><span class="apl-aff-v">${v('affection')}</span></div><div class="apl-bar"><i style="width:${isNaN(af)?0:Math.max(0,Math.min(100,af))}%"></i></div></div>`:'';
+  if(sr||aff)secs.push(c=>`<div class="apl-sec ${c}"><div class="apl-tag">STATUS</div>${sr?`<div class="apl-row">${sr}</div>`:''}${aff}</div>`);
+  const kv=(k,l)=>v(k)?`<div class="apl-k">${l}</div><div class="apl-v">${v(k)}</div>`:'';
+  const who=(n,kao,o,po,cl)=>{const b=(v(kao)?`<div class="apl-kao">${v(kao)}</div>`:'')+kv(o,'OUTFIT')+kv(po,'POSE');return(v(n)||b)?`<div class="apl-who${cl}">${v(n)?`<div class="apl-who-n">${v(n)}</div>`:''}${b}</div>`:''};
+  const wr=who('npc','npcKaomoji','npcOutfit','npcPose','')+who('pc','pcKaomoji','pcOutfit','pcPose',' pc');
+  if(wr)secs.push(c=>`<div class="apl-sec ${c}"><div class="apl-tag">PRESENT</div><div class="apl-row" style="gap:9px">${wr}</div></div>`);
+  if(v('npcMind'))secs.push(c=>`<div class="apl-sec ${c}"><div class="apl-tag">INNER VOICE</div><div class="apl-mind">"${v('npcMind')}"</div></div>`);
+  secs.push(c=>`<div class="apl-sec ${c}" style="background:linear-gradient(180deg,#160f08 0%,#0e0b07 100%)"><div class="apl-tag" style="background:#a8862a;color:#fdf6e6">NSFW</div><div class="apl-nsfw"><span class="apl-sfw">N/A · SFW</span></div></div>`);
+  const P={},now=v('scheduleNow'),nx=v('scheduleNext'),w=num('npcWants');
+  P.schedule=(now?`<div class="apl-line"><span class="apl-chip">NOW</span>${now}</div>`:'')+(nx?`<div class="apl-line"><span class="apl-chip">NEXT</span>${nx}</div>`:'')+((now||nx)&&w?'<div class="apl-dash"></div>':'')+(w?`<div class="apl-k" style="margin-bottom:4px">DESIRE</div>${w}`:'');
+  P.promise=num('promises',' style="color:var(--soft);font-weight:600"');
+  P.tmi=v('tmi')?`<div style="color:var(--ink3)">${v('tmi')}</div>`:'';
+  const cl=L('communityComments'),ct=v('communityTitle');let cm='';
+  for(let i=0;i<cl.length;i+=2)cm+=`<div class="apl-cmt"><div class="apl-cmt-h">${E(cl[i])}</div><div class="apl-cmt-b">${E(cl[i+1]||'')}</div></div>`;
+  P.community=(ct||cm)?`<span class="apl-red">BABYLON</span>${ct?`<div class="apl-comm-t">${ct}</div>`:''}${cm}`:'';
+  const q=v('interviewQ'),a=v('interviewA'),tr=v('interviewATr');
+  P.interview=(q?`<div class="apl-q"><b>Q.</b>${q}</div>`:'')+(a?`<div class="apl-a"><b>A.</b>${a}</div>`:'')+(tr?`<div class="apl-atr">(${tr})</div>`:'');
+  const tabs=[['schedule','SCH'],['promise','PRM'],['tmi','TMI'],['community','COM'],['interview','INT']].filter(t=>P[t[0]]);
+  const id=s._id||(s._id='apl'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+  if(tabs.length)secs.push(c=>`<div class="apl-sec ${c}">${tabs.map((t,i)=>`<input type="radio" name="${id}" id="${id}-${t[0]}" class="apl-r r-${t[0]}"${i?'':' checked'}>`).join('')}<div class="apl-tabs">${tabs.map(t=>`<label for="${id}-${t[0]}" class="apl-tab tb-${t[0]}">${t[1]}</label>`).join('')}</div><div class="apl-panel">${tabs.map(t=>`<div class="pn pn-${t[0]}">${P[t[0]]}</div>`).join('')}</div></div>`);
+  const body=secs.map((f,i)=>f(i%2?'b':'a')).join('');
+  return `[html]\n<style>${APL_CSS}</style><div class="apl"><div class="apl-head"><div class="apl-top"><span class="apl-tag">APOGEE</span><span class="apl-hq">INTERNAL LEDGER</span></div>${card}</div><details class="apl-det"><summary class="apl-toggle"><span class="lc">▼ OPEN FULL LEDGER</span><span class="lo">▲ CLOSE LEDGER</span></summary><div class="apl-full">${body}<div class="apl-foot"><span>FULCRUM · A.D. 2320</span><span>◆ APOGEE INTERNAL</span></div></div></details></div>\n[/html]`;
+}
+
+function render(){
+  raw=blocks.map(b=>{
+    if(b.t==='x')return b.s;
+    if(b.t==='st')return status?statusHtml(status):'';
+    const c=chars.get(b.n);
+    return `**${c.label||b.n}** | ${b.l}`+(b.tr!==null?`\n{{${c.size}:{{${c.color}:**${b.tr}**}}}}`:'');
+  }).join('\n').trim();
+  $('out').innerHTML=preview(raw);
+}
+
+function preview(t){
+  return t.split(/(\[html\][\s\S]*?\[\/html\])/).map(p=>{
+    if(/^\[html\]/.test(p))return '<div class="hb">'+p.slice(6,-7)+'</div>';
+    const x=p.replace(/^\n+|\n+$/g,'');
+    return x?`<div class="tx">${esc(x)}</div>`:'';
+  }).join('');
+}
+
+function buildOptions(){
+  const box=$('chars'),keys=[...chars.keys()];
+  box.innerHTML='';
+  if(!keys.length){box.innerHTML='<div class="empty">등장인물을 찾지 못했어요. **이름** | "대사" 형식인지 확인해 주세요.</div>';return}
+  keys.forEach((k,i)=>{
+    const c=chars.get(k),d=document.createElement('div');
+    d.className='char';d.dataset.i=i;d.style.animationDelay=(i*60)+'ms';
+    d.innerHTML='<div class="cn"></div><input type="text" class="f-name" aria-label="이름"><div class="row"><label>번역 색<input type="color" class="f-color"></label><label>번역 크기<input type="number" class="f-size" min="8" max="48" inputmode="numeric"></label></div><div class="pv">한국어 번역 미리보기</div>';
+    d.querySelector('.cn').textContent='원본 이름 · '+k;
+    d.querySelector('.f-name').value=c.label;
+    d.querySelector('.f-color').value=c.color;
+    d.querySelector('.f-size').value=c.size;
+    box.appendChild(d);paint(d,c);
+  });
+}
+function paint(d,c){const p=d.querySelector('.pv');p.style.color=c.color}
+
+$('chars').addEventListener('input',e=>{
+  const d=e.target.closest('.char');if(!d)return;
+  const c=chars.get([...chars.keys()][d.dataset.i]);
+  c.label=d.querySelector('.f-name').value;
+  c.color=d.querySelector('.f-color').value.toLowerCase();
+  c.size=parseInt(d.querySelector('.f-size').value)||12;
+  paint(d,c);render();
+});
+
+function flash(btn,text){
+  const o=btn.dataset.o||(btn.dataset.o=btn.textContent);
+  btn.textContent=text;btn.classList.add('done');
+  clearTimeout(btn._t);
+  btn._t=setTimeout(()=>{btn.textContent=o;btn.classList.remove('done')},1800);
+}
+
+$('go').addEventListener('click',()=>{
+  const src=$('src').value;if(!src.trim())return;
+  const r=parse(src);blocks=r.out;status=r.st;
+  const next=new Map();let i=0;
+  blocks.forEach(b=>{if(b.t==='d'&&!next.has(b.n)){next.set(b.n,chars.get(b.n)||{label:b.n,color:PAL[i%PAL.length],size:12});i++}});
+  chars=next;buildOptions();render();
+  flash($('go'),'완료 ✓');
+});
+
+$('cp').addEventListener('click',async()=>{
+  if(!raw)return;
+  try{await navigator.clipboard.writeText(raw)}catch(e){const t=document.createElement('textarea');t.value=raw;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
+  flash($('cp'),'복사됨 ✓');
+});
 </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>텍스트 변환기</title>
+<style>
+:root{--ink:#1d1d1f;--sub:#86868b;--line:#ececf1;--card:#fafafc;--blue:#d3e3ff;--blue-ink:#3b5b9a;--mint:#c9f1dd;--mint-ink:#2c7653}
+*{box-sizing:border-box;font-size:12px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#fff;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;line-height:1.75;letter-spacing:-.01em;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:1120px;margin:0 auto;padding:32px 20px 72px}
+header{margin-bottom:22px}
+h1{font-weight:700;margin:0;letter-spacing:-.02em}
+header p{margin:4px 0 0;color:var(--sub)}
+h2{font-weight:600;color:var(--sub);margin:0 0 10px}
+.menu{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:20px}
+.chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.empty{color:var(--sub);padding:6px 2px}
+.char{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;animation:pop .45s ease both}
+.cn{color:var(--sub);margin-bottom:8px;word-break:break-all}
+.row{display:flex;gap:10px;margin-top:10px}
+.row label{flex:1;color:var(--sub);display:flex;flex-direction:column;gap:4px}
+input[type=text],input[type=number]{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);outline:none;transition:border-color .25s,box-shadow .25s}
+input[type=text]:focus,input[type=number]:focus,textarea:focus{border-color:#b9d0ff;box-shadow:0 0 0 4px #e8f0ff}
+input[type=color]{width:100%;height:42px;padding:3px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
+.pv{margin-top:10px;font-weight:700;transition:color .25s;word-break:break-all}
+.grid{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"s r" "a a";gap:16px}
+.s{grid-area:s}.r{grid-area:r}
+.pane{display:flex;flex-direction:column;min-width:0}
+textarea,.out{width:100%;height:56vh;min-height:300px;font:inherit;line-height:1.75;padding:16px;border:1px solid var(--line);border-radius:20px;background:#fff;color:var(--ink);outline:none;transition:border-color .25s,box-shadow .25s}
+textarea{resize:vertical}
+.out{background:#fff;overflow:auto;word-break:break-word}
+.out:empty::before{content:attr(data-ph);color:#a1a1a6}
+.tx{white-space:pre-wrap}
+.actions{grid-area:a;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.actions button{font:inherit;font-weight:600;border:0;border-radius:14px;padding:13px 30px;cursor:pointer;transition:background .35s,color .35s,transform .2s;-webkit-tap-highlight-color:transparent}
+.actions button:active{transform:scale(.97)}
+#go{background:var(--blue);color:var(--blue-ink);min-width:150px}
+#cp{background:#f1f1f5;color:#55555a}
+button.done{background:var(--mint)!important;color:var(--mint-ink)!important}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.wrap{padding:24px 16px 56px}.grid{grid-template-columns:1fr;grid-template-areas:"s" "a" "r"}textarea,.out{height:360px;min-height:320px}.actions button{flex:1}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.hb{margin:20px 0}.hb:first-child{margin-top:0}.hb:last-child{margin-bottom:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>텍스트 변환기</h1>
+    <p>붙여넣고 변환하면 등장인물이 자동으로 분류돼요.</p>
+  </header>
 
+  <section class="menu">
+    <h2>등장인물 옵션</h2>
+    <div class="chars" id="chars"><div class="empty">변환하기를 누르면 등장인물이 여기에 나타나요.</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="pane s"><h2>변환 전</h2><textarea id="src" placeholder="변환할 텍스트를 붙여넣으세요"></textarea></div>
+    <div class="actions">
+      <button id="go" type="button">변환하기</button>
+      <button id="cp" type="button">복사</button>
+    </div>
+    <div class="pane r"><h2>변환 후</h2><div class="out" id="out" data-ph="변환 결과가 여기에 표시돼요"></div></div>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const PAL=['#ffb07c','#9ec5fe','#b8e6c9','#d7b8f5','#ffc6d9','#f6dd8f'];
+let blocks=[],status=null,chars=new Map(),raw='';
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function parse(src){
+  let st=null;
+  src=src.replace(/<Apogee[\s\S]*?\/>/gi,m=>{st={};m.replace(/([A-Za-z]+)="([^"]*)"/g,(_,k,v)=>{st[k]=v});return '\n@@STATUS@@\n'});
+  src=src.replace(/<br\s*\/?>\s*(?=\()/gi,'\n');
+  const L=src.replace(/\r/g,'').split('\n'),out=[];
+  for(let i=0;i<L.length;i++){
+    let l=L[i];
+    if(l.trim()==='@@STATUS@@'){out.push({t:'st'});continue}
+    if(/\{\{img::[^}]*\}\}/.test(l)){l=l.replace(/\{\{img::[^}]*\}\}/g,'');if(!l.trim())continue}
+    const m=l.match(/^\s*\*\*(.+?)\*\*\s*[|｜│]\s*(.*)$/);
+    if(m){
+      let j=i+1;while(j<L.length&&!L[j].trim())j++;
+      const n=L[j]||'';let tr=null,t;
+      if(t=n.match(/^\s*\(([\s\S]*)\)\s*$/))tr=t[1];
+      else if(t=n.match(/^\s*\{\{\d+:\{\{#[0-9a-fA-F]{3,8}:\*\*([\s\S]*?)\*\*\}\}\}\}\s*$/))tr=t[1];
+      if(tr!==null)i=j;
+      out.push({t:'d',n:m[1].trim(),l:m[2].replace(/(<br\s*\/?>\s*)+$/i,'').trim(),tr});continue;
+    }
+    out.push({t:'x',s:/^\s*\*([^*].*[^*]|[^*])\*\s*$/.test(l)?l.replace(/^(\s*)\*(.*)\*(\s*)$/,'$1$2$3'):l.replace(/^(\s*)_(.*)_(\s*)$/,'$1$2$3')});
+  }
+  return {out,st};
+}
+
+const APL_CSS="\n  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');\n  .apl{--bg:#0e0b07;--bg2:#141009;--card:#1b1811;--card2:#201c14;--line:#4a4436;--line2:#2c2820;--line3:#6b6250;\n    --acc:#dfb840;--acc2:#f0cc55;--ink:#fdf6e6;--ink2:#ded9cc;--ink3:#cdc7b8;--soft:#f2e2b8;--mute:#9d9686;--red:#a33636;\n    max-width:440px;margin:0 auto;box-sizing:border-box;font-family:'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif;\n    font-size:12px;color:var(--ink2);background:var(--bg);border:1px solid #575044;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.7);\n    word-break:keep-all;overflow-wrap:break-word;text-align:left;letter-spacing:0;line-height:normal}\n  .apl *{box-sizing:border-box}\n  .apl-tag{display:inline-block;background:var(--acc);color:#14100a;font-weight:800;font-size:9.5px;letter-spacing:2px;padding:5px 11px}\n  .apl-head{background:linear-gradient(165deg,#1a1409 0%,var(--bg) 70%);padding:18px 16px;border-bottom:1px solid var(--line)}\n  .apl-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}\n  .apl-hq{font-size:9px;letter-spacing:2px;color:var(--mute)}\n  .apl-card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);padding:15px 16px}\n  .apl-rel{display:inline-block;background:var(--acc);color:#14100a;font-size:10px;font-weight:800;padding:3px 9px;margin-bottom:9px}\n  .apl-names{font-weight:800;font-size:19px;color:var(--ink);letter-spacing:-.3px;margin-bottom:6px}\n  .apl-names span{color:var(--acc);font-weight:400;margin:0 4px}\n  .apl-meta{font-size:11px;color:var(--mute);font-weight:500}\n  .apl-toggle{display:block;width:100%;border:0;background:var(--acc);color:#14100a;text-align:center;padding:11px;font-weight:800;letter-spacing:3px;font-size:11px;cursor:pointer;font-family:inherit}\n  .apl-sec{padding:18px 16px;border-top:1px solid var(--line2)}\n  .apl-sec.a{background:#100c07}.apl-sec.b{background:var(--bg2)}\n  .apl-sec .apl-tag{margin-bottom:13px}\n  .apl-row{display:flex;gap:7px}\n  .apl-stat{flex:1;background:var(--card);border:1px solid var(--line);padding:11px 4px;text-align:center}\n  .apl-stat-l{font-size:8.5px;font-weight:700;letter-spacing:1.5px;color:var(--mute)}\n  .apl-stat-v{font-weight:800;font-size:18px;color:var(--ink);margin-top:5px}\n  .apl-stat-v.g{color:var(--acc)}\n  .apl-aff{background:#221c12;border:1px solid var(--line3);padding:11px 14px;margin-top:7px}\n  .apl-aff-top{display:flex;justify-content:space-between;align-items:center}\n  .apl-aff-l{font-size:9px;font-weight:700;letter-spacing:2px;color:#a89467}\n  .apl-aff-v{font-weight:800;font-size:13px;color:var(--acc2)}\n  .apl-bar{height:4px;background:#2b2519;margin-top:8px}\n  .apl-bar i{display:block;height:100%;background:linear-gradient(90deg,#a8862a,var(--acc2))}\n  .apl-who{flex:1;min-width:0;background:var(--card2);border:1px solid var(--line);border-top:2px solid var(--acc);padding:12px 11px}\n  .apl-who.pc{border-top-color:#827d70}\n  .apl-who-n{text-align:center;font-weight:800;font-size:12.5px;color:var(--acc);margin-bottom:6px}\n  .apl-who.pc .apl-who-n{color:#e8ddc4}\n  .apl-kao{text-align:center;font-family:sans-serif;font-size:15px;color:var(--soft);border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:9px;overflow-wrap:anywhere}\n  .apl-k{font-size:9px;font-weight:700;color:var(--mute);letter-spacing:1.5px}\n  .apl-v{font-size:11.5px;font-weight:500;line-height:1.55;margin:2px 0 8px}\n  .apl-v:last-child{margin-bottom:0}\n  .apl-mind{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--acc);padding:13px 14px;font-size:12.5px;line-height:1.75;color:var(--soft);font-style:italic}\n  .apl-nsfw{background:var(--card2);border:1px solid var(--line3);padding:11px 13px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}\n  .apl-nk{font-size:8.5px;letter-spacing:1.5px;color:var(--mute);font-weight:700;margin-right:5px}\n  .apl-nv{font-weight:800;font-size:12px;color:var(--soft)}\n  .apl-nv.g{color:var(--acc)}\n  .apl-pill{font-weight:800;font-size:10px;letter-spacing:1px;padding:2px 9px;border:1px solid var(--line3);color:var(--mute)}\n  .apl-pill.on{border-color:var(--acc);color:var(--acc);background:rgba(223,184,64,.08)}\n  .apl-sfw{font-size:11px;color:var(--mute);letter-spacing:2px;font-weight:700}\n  .apl-tabs{display:flex;gap:3px;border-bottom:1px solid var(--line3)}\n  .apl-tab{text-align:center;user-select:none;flex:1 1 0;min-width:0;border:1px solid var(--line);border-bottom:0;background:var(--card);color:var(--mute);font-family:inherit;font-weight:800;font-size:10.5px;letter-spacing:2px;padding:8px 4px;cursor:pointer;position:relative;top:1px}\n  .apl-panel{background:var(--card);border:1px solid var(--line3);border-top:0;padding:14px;line-height:1.7;min-height:96px}\n  .apl-chip{display:inline-block;background:#2b2519;border:1px solid var(--line3);color:var(--acc);font-size:9px;font-weight:800;letter-spacing:1px;padding:2px 7px;margin-right:7px}\n  .apl-line{margin-bottom:8px}\n  .apl-dash{border-top:1px dashed #575044;margin:11px 0}\n  .apl-num{display:flex;gap:8px;padding:3px 0}\n  .apl-num b{color:var(--acc);font-size:11px;flex-shrink:0}\n  .apl-comm-t{font-weight:800;font-size:13.5px;line-height:1.5;color:var(--ink);margin:8px 0 10px}\n  .apl-cmt{border-top:1px dashed #575044;padding:9px 0 0;margin-top:9px}\n  .apl-cmt-h{font-size:9.5px;color:var(--acc);letter-spacing:.5px;font-weight:700;margin-bottom:2px}\n  .apl-cmt-b{font-size:11.5px;color:var(--ink3)}\n  .apl-red{display:inline-block;background:var(--red);color:var(--ink);font-size:9px;font-weight:800;letter-spacing:1px;padding:2px 8px}\n  .apl-q{font-size:11.5px;color:var(--mute);margin-bottom:8px}\n  .apl-q b{color:var(--acc);margin-right:6px}\n  .apl-a{font-size:12.5px;color:var(--soft);font-weight:600}\n  .apl-a b{color:var(--acc);margin-right:6px;font-style:normal}\n  .apl-atr{font-size:11.5px;color:var(--mute);margin-top:4px;padding-left:22px}\n  .apl-empty{color:#6e6a5c}\n  .apl-foot{background:#0a0805;border-top:1px solid var(--line);padding:11px 16px;display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#6e6a5c}\n  .apl-foot span:last-child{color:var(--mute)}\n  /* 토글(details) / 탭(radio+label): JS 없이 동작 */\n  .apl-det>summary{list-style:none}\n  .apl-det>summary::-webkit-details-marker{display:none}\n  .apl .lo{display:none}\n  .apl-det[open] .lo{display:inline}\n  .apl-det[open] .lc{display:none}\n  .apl-r{display:none}\n  .apl .pn{display:none}\n  .apl-r.r-schedule:checked~.apl-panel .pn-schedule{display:block}.apl-r.r-schedule:checked~.apl-tabs .tb-schedule{background:var(--acc);border-color:var(--acc);color:#14100a}.apl-r.r-promise:checked~.apl-panel .pn-promise{display:block}.apl-r.r-promise:checked~.apl-tabs .tb-promise{background:var(--acc);border-color:var(--acc);color:#14100a}.apl-r.r-tmi:checked~.apl-panel .pn-tmi{display:block}.apl-r.r-tmi:checked~.apl-tabs .tb-tmi{background:var(--acc);border-color:var(--acc);color:#14100a}.apl-r.r-community:checked~.apl-panel .pn-community{display:block}.apl-r.r-community:checked~.apl-tabs .tb-community{background:var(--acc);border-color:var(--acc);color:#14100a}.apl-r.r-interview:checked~.apl-panel .pn-interview{display:block}.apl-r.r-interview:checked~.apl-tabs .tb-interview{background:var(--acc);border-color:var(--acc);color:#14100a}";
+const E=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#039;');
+function statusHtml(s){
+  const v=k=>E((s[k]||'').trim()),L=k=>(s[k]||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const num=(k,st)=>L(k).map((x,i)=>`<div class="apl-num"><b>${String(i+1).padStart(2,'0')}</b><span${st||''}>${E(x)}</span></div>`).join('');
+  const rel=v('relation'),np=v('npc'),pc=v('pc'),meta=['date','time','location','temperature','weather'].map(k=>v(k)).filter(Boolean).join(' · ');
+  const names=np&&pc?`${np}<span>⨯</span>${pc}`:np||pc;
+  const card=(rel||names||meta)?`<div class="apl-card">${rel?`<div class="apl-rel">${rel}</div>`:''}${names?`<div class="apl-names">${names}</div>`:''}${meta?`<div class="apl-meta">${meta}</div>`:''}</div>`:'';
+  const secs=[];
+  const stat=(k,l,g)=>v(k)?`<div class="apl-stat"><div class="apl-stat-l">${l}</div><div class="apl-stat-v${g?' g':''}">${v(k)}</div></div>`:'';
+  const af=parseFloat(s.affection),sr=stat('daysMet','DAYS MET')+stat('daysTogether','TOGETHER',1);
+  const aff=v('affection')?`<div class="apl-aff"><div class="apl-aff-top"><span class="apl-aff-l">SENTIMENT</span><span class="apl-aff-v">${v('affection')}</span></div><div class="apl-bar"><i style="width:${isNaN(af)?0:Math.max(0,Math.min(100,af))}%"></i></div></div>`:'';
+  if(sr||aff)secs.push(c=>`<div class="apl-sec ${c}"><div class="apl-tag">STATUS</div>${sr?`<div class="apl-row">${sr}</div>`:''}${aff}</div>`);
+  const kv=(k,l)=>v(k)?`<div class="apl-k">${l}</div><div class="apl-v">${v(k)}</div>`:'';
+  const who=(n,kao,o,po,cl)=>{const b=(v(kao)?`<div class="apl-kao">${v(kao)}</div>`:'')+kv(o,'OUTFIT')+kv(po,'POSE');return(v(n)||b)?`<div class="apl-who${cl}">${v(n)?`<div class="apl-who-n">${v(n)}</div>`:''}${b}</div>`:''};
+  const wr=who('npc','npcKaomoji','npcOutfit','npcPose','')+who('pc','pcKaomoji','pcOutfit','pcPose',' pc');
+  if(wr)secs.push(c=>`<div class="apl-sec ${c}"><div class="apl-tag">PRESENT</div><div class="apl-row" style="gap:9px">${wr}</div></div>`);
+  if(v('npcMind'))secs.push(c=>`<div class="apl-sec ${c}"><div class="apl-tag">INNER VOICE</div><div class="apl-mind">"${v('npcMind')}"</div></div>`);
+  secs.push(c=>`<div class="apl-sec ${c}" style="background:linear-gradient(180deg,#160f08 0%,#0e0b07 100%)"><div class="apl-tag" style="background:#a8862a;color:#fdf6e6">NSFW</div><div class="apl-nsfw"><span class="apl-sfw">N/A · SFW</span></div></div>`);
+  const P={},now=v('scheduleNow'),nx=v('scheduleNext'),w=num('npcWants');
+  P.schedule=(now?`<div class="apl-line"><span class="apl-chip">NOW</span>${now}</div>`:'')+(nx?`<div class="apl-line"><span class="apl-chip">NEXT</span>${nx}</div>`:'')+((now||nx)&&w?'<div class="apl-dash"></div>':'')+(w?`<div class="apl-k" style="margin-bottom:4px">DESIRE</div>${w}`:'');
+  P.promise=num('promises',' style="color:var(--soft);font-weight:600"');
+  P.tmi=v('tmi')?`<div style="color:var(--ink3)">${v('tmi')}</div>`:'';
+  const cl=L('communityComments'),ct=v('communityTitle');let cm='';
+  for(let i=0;i<cl.length;i+=2)cm+=`<div class="apl-cmt"><div class="apl-cmt-h">${E(cl[i])}</div><div class="apl-cmt-b">${E(cl[i+1]||'')}</div></div>`;
+  P.community=(ct||cm)?`<span class="apl-red">BABYLON</span>${ct?`<div class="apl-comm-t">${ct}</div>`:''}${cm}`:'';
+  const q=v('interviewQ'),a=v('interviewA'),tr=v('interviewATr');
+  P.interview=(q?`<div class="apl-q"><b>Q.</b>${q}</div>`:'')+(a?`<div class="apl-a"><b>A.</b>${a}</div>`:'')+(tr?`<div class="apl-atr">(${tr})</div>`:'');
+  const tabs=[['schedule','SCH'],['promise','PRM'],['tmi','TMI'],['community','COM'],['interview','INT']].filter(t=>P[t[0]]);
+  const id=s._id||(s._id='apl'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+  if(tabs.length)secs.push(c=>`<div class="apl-sec ${c}">${tabs.map((t,i)=>`<input type="radio" name="${id}" id="${id}-${t[0]}" class="apl-r r-${t[0]}"${i?'':' checked'}>`).join('')}<div class="apl-tabs">${tabs.map(t=>`<label for="${id}-${t[0]}" class="apl-tab tb-${t[0]}">${t[1]}</label>`).join('')}</div><div class="apl-panel">${tabs.map(t=>`<div class="pn pn-${t[0]}">${P[t[0]]}</div>`).join('')}</div></div>`);
+  const body=secs.map((f,i)=>f(i%2?'b':'a')).join('');
+  return `[html]\n<style>${APL_CSS}</style><div class="apl"><div class="apl-head"><div class="apl-top"><span class="apl-tag">APOGEE</span><span class="apl-hq">INTERNAL LEDGER</span></div>${card}</div><details class="apl-det"><summary class="apl-toggle"><span class="lc">▼ OPEN FULL LEDGER</span><span class="lo">▲ CLOSE LEDGER</span></summary><div class="apl-full">${body}<div class="apl-foot"><span>FULCRUM · A.D. 2320</span><span>◆ APOGEE INTERNAL</span></div></div></details></div>\n[/html]`;
+}
+
+function render(){
+  raw=blocks.map(b=>{
+    if(b.t==='x')return b.s;
+    if(b.t==='st')return status?statusHtml(status):'';
+    const c=chars.get(b.n);
+    return `**${c.label||b.n}** | ${b.l}`+(b.tr!==null?`\n{{${c.size}:{{${c.color}:**${b.tr}**}}}}`:'');
+  }).join('\n').trim();
+  $('out').innerHTML=preview(raw);
+}
+
+function preview(t){
+  return t.split(/(\[html\][\s\S]*?\[\/html\])/).map(p=>{
+    if(/^\[html\]/.test(p))return '<div class="hb">'+p.slice(6,-7)+'</div>';
+    const x=p.replace(/^\n+|\n+$/g,'');
+    return x?`<div class="tx">${esc(x)}</div>`:'';
+  }).join('');
+}
+
+function buildOptions(){
+  const box=$('chars'),keys=[...chars.keys()];
+  box.innerHTML='';
+  if(!keys.length){box.innerHTML='<div class="empty">등장인물을 찾지 못했어요. **이름** | "대사" 형식인지 확인해 주세요.</div>';return}
+  keys.forEach((k,i)=>{
+    const c=chars.get(k),d=document.createElement('div');
+    d.className='char';d.dataset.i=i;d.style.animationDelay=(i*60)+'ms';
+    d.innerHTML='<div class="cn"></div><input type="text" class="f-name" aria-label="이름"><div class="row"><label>번역 색<input type="color" class="f-color"></label><label>번역 크기<input type="number" class="f-size" min="8" max="48" inputmode="numeric"></label></div><div class="pv">한국어 번역 미리보기</div>';
+    d.querySelector('.cn').textContent='원본 이름 · '+k;
+    d.querySelector('.f-name').value=c.label;
+    d.querySelector('.f-color').value=c.color;
+    d.querySelector('.f-size').value=c.size;
+    box.appendChild(d);paint(d,c);
+  });
+}
+function paint(d,c){const p=d.querySelector('.pv');p.style.color=c.color}
+
+$('chars').addEventListener('input',e=>{
+  const d=e.target.closest('.char');if(!d)return;
+  const c=chars.get([...chars.keys()][d.dataset.i]);
+  c.label=d.querySelector('.f-name').value;
+  c.color=d.querySelector('.f-color').value.toLowerCase();
+  c.size=parseInt(d.querySelector('.f-size').value)||12;
+  paint(d,c);render();
+});
+
+function flash(btn,text){
+  const o=btn.dataset.o||(btn.dataset.o=btn.textContent);
+  btn.textContent=text;btn.classList.add('done');
+  clearTimeout(btn._t);
+  btn._t=setTimeout(()=>{btn.textContent=o;btn.classList.remove('done')},1800);
+}
+
+$('go').addEventListener('click',()=>{
+  const src=$('src').value;if(!src.trim())return;
+  const r=parse(src);blocks=r.out;status=r.st;
+  const next=new Map();let i=0;
+  blocks.forEach(b=>{if(b.t==='d'&&!next.has(b.n)){next.set(b.n,chars.get(b.n)||{label:b.n,color:PAL[i%PAL.length],size:12});i++}});
+  chars=next;buildOptions();render();
+  flash($('go'),'완료 ✓');
+});
+
+$('cp').addEventListener('click',async()=>{
+  if(!raw)return;
+  try{await navigator.clipboard.writeText(raw)}catch(e){const t=document.createElement('textarea');t.value=raw;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
+  flash($('cp'),'복사됨 ✓');
+});
+</script>
 </body>
 </html>
