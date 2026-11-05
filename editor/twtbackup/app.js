@@ -1,4 +1,5 @@
 // ===== Supabase Storage 설정 =====
+const MAX_THREAD_ITEMS = 40; // 한 번에 불러올 최대 트윗 수
 const SUPABASE_URL = "https://dvalxqujceuhfshatilq.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YWx4cXVqY2V1aGZzaGF0aWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzg3MTksImV4cCI6MjA5NzIxNDcxOX0.6ZabNquhVkOnboWyQPSybP6S5S5iGjjYcpspcLM0vr0";
 const SUPABASE_BUCKET = "images"; // Supabase 버킷 이름
@@ -199,7 +200,7 @@ function render() {
         ${tweet.media?.length ? `<div class="tweet-media">${tweet.media.map((src) => `<img src="${src}" alt="트윗 첨부 이미지" loading="lazy">`).join("")}</div>` : ""}
         <div class="tweet-media-tools"><label>원본 사진 ${tweet.media?.length ? "교체" : "추가"}<input type="file" accept="image/*" multiple data-media-i="${index}"></label>${tweet.media?.length ? `<button type="button" data-clear-media="${index}">사진 모두 지우기</button>` : ""}</div>
         <div class="tweet-actions"><button type="button" class="insert-toggle" data-open-insert="${index}" aria-label="이 게시글 다음에 트윗 추가">+</button>${index > 0 ? `<button type="button" class="delete-tweet" data-delete-tweet="${index}" aria-label="이 게시글 삭제">×</button>` : ""}</div>
-        <div class="thread-insert" data-insert-box="${index}" hidden><input data-insert-url="${index}" placeholder="이 다음에 넣을 누락 트윗 링크"><button type="button" data-insert-go="${index}">추가</button></div>
+        <div class="thread-insert" data-insert-box="${index}" hidden><input data-insert-url="${index}" placeholder="이 다음에 넣을 트윗 링크 (여기서부터 최대 40개)"><button type="button" data-insert-go="${index}">추가</button></div>
       </div>
     </article>`).join("");
   view.querySelectorAll("textarea").forEach((area) => {
@@ -241,7 +242,7 @@ function render() {
       const index = Number(button.dataset.insertGo);
       const input = view.querySelector(`[data-insert-url="${index}"]`);
       try { await importLinkedTweet(input.value.trim(), index); }
-      catch (error) { setImportStatus("error", error.message === "different author" ? "첫 트윗과 같은 계정의 링크만 추가할 수 있어요" : error.message === "invalid url" ? "올바른 누락 트윗 링크를 입력해 주세요" : "트윗을 불러오지 못했습니다"); }
+      catch (error) { setImportStatus("error", error.message === "different author" ? "첫 트윗과 같은 계정의 링크만 추가할 수 있어요" : error.message === "nothing new" ? "이미 목록에 있는 트윗이에요" : error.message === "invalid url" ? "올바른 누락 트윗 링크를 입력해 주세요" : "트윗을 불러오지 못했습니다"); }
     };
   });
   applyTypography();
@@ -383,22 +384,38 @@ async function importLinkedTweet(url, insertAfter = null) {
     const fx = await loadFxThread(url);
     importedAuthor = fx.author;
     if (inserting) {
-      const exact = fx.statuses.find((status) => status.id === tweetIdFromUrl(url)) || fx.status;
-      imported = [fxStatusToItem(exact)];
+      // 입력한 링크의 트윗부터 아래로 이어지는 같은 계정의 트윗을 최대 40개까지 가져옴
+      const startIndex = fx.statuses.findIndex((status) => status.id === tweetIdFromUrl(url));
+      const baseHandle = String(tweets[0]?.handle || "").replace(/^@/, "").toLowerCase();
+      const startAuthor = (startIndex >= 0 ? fx.statuses[startIndex] : fx.status)?.author?.screen_name?.toLowerCase();
+      if (startIndex < 0 || !baseHandle || startAuthor !== baseHandle) {
+        imported = [fxStatusToItem(startIndex >= 0 ? fx.statuses[startIndex] : fx.status)];
+      } else {
+        imported = fx.statuses.slice(startIndex)
+          .filter((status) => status.author?.screen_name?.toLowerCase() === baseHandle)
+          .slice(0, MAX_THREAD_ITEMS)
+          .map(fxStatusToItem);
+      }
     } else {
       const rootAuthor = fx.statuses[0]?.author?.screen_name?.toLowerCase();
-      imported = fx.statuses.filter((status) => status.author?.screen_name?.toLowerCase() === rootAuthor).slice(0, 30).map(fxStatusToItem);
+      imported = fx.statuses.filter((status) => status.author?.screen_name?.toLowerCase() === rootAuthor).slice(0, MAX_THREAD_ITEMS).map(fxStatusToItem);
     }
   } catch {
     const tweet = parseOEmbed(await loadOEmbed(url));
     imported = [{ name: tweet.name, handle: "@" + tweet.username, date: tweet.date, text: tweet.text, media: [] }];
   }
   if (inserting && tweets.length && tweets[0].handle.toLowerCase() !== imported[0].handle.toLowerCase()) throw new Error("different author");
+  if (inserting) {
+    // 이미 목록에 있는 트윗은 중복 추가하지 않음
+    const exists = (tweet) => tweets.some((item) => item.handle === tweet.handle && item.date === tweet.date && item.text === tweet.text);
+    imported = imported.filter((tweet) => !exists(tweet));
+    if (!imported.length) throw new Error("nothing new");
+  }
   imported = await Promise.all(imported.map(async (tweet) => ({
     ...tweet,
     media: await Promise.all((tweet.media || []).map(imageToLocalData))
   })));
-  if (inserting) tweets.splice(insertAfter + 1, 0, imported[0]);
+  if (inserting) tweets.splice(insertAfter + 1, 0, ...imported);
   else tweets.splice(0, tweets.length, ...imported);
   if (importedAuthor?.avatar_url) {
     avatarRemoteUrl = importedAuthor.avatar_url;
@@ -411,7 +428,7 @@ async function importLinkedTweet(url, insertAfter = null) {
   }
   render();
   draw();
-  setImportStatus("done", inserting ? `누락 트윗 추가 완료 · 총 ${tweets.length}개` : `타래 불러오기 완료 · ${tweets.length}개`, 100);
+  setImportStatus("done", inserting ? `트윗 ${imported.length}개 추가 완료 · 총 ${tweets.length}개` : `타래 불러오기 완료 · ${tweets.length}개`, 100);
   scheduleSave();
 }
 $("#load").onclick = async () => {
