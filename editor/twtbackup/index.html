@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BackUp-X</title>
+<meta name="description" content="내 X 계정의 트윗을 이미지와 티스토리용 서식으로 백업하세요.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BackUp-X">
+<meta property="og:title" content="BackUp-X — X Archive Studio">
+<meta property="og:description" content="내가 남긴 타래를 온전한 기록으로.">
+<meta property="og:url" content="https://unfail-human.github.io/BackUp-X/">
+<meta property="og:image" content="https://unfail-human.github.io/BackUp-X/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BackUp-X — X Archive Studio">
+<meta name="twitter:image" content="https://unfail-human.github.io/BackUp-X/og-image.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-active-font="Pretendard Variable">
+<header>
+<a class="brand" href="#" aria-label="BackUp-X"><span aria-hidden="true">✦</span><b>BackUp-X</b><small>X ARCHIVE STUDIO</small></a>
+<div class="header-state">
+<span id="saveState"><i></i> 자동 저장 준비</span>
+<span>내 계정 전용 백업 스튜디오</span>
+</div>
+</header>
+<main>
+<section class="app">
+<aside>
+<h3>01 · 내 타래 가져오기</h3>
+<label>첫 트윗 링크</label>
+<input id="url" placeholder="https://x.com/my_id/status/…">
+<button id="load" disabled>트윗 불러오기</button>
+<div id="status" class="import-status" aria-live="polite" hidden><i></i><span></span><b></b></div>
+<p class="archive-help">공개 트윗만 가져올 수 있어요. 누락된 트윗은 게시글 오른쪽의 + 버튼으로 추가하세요.</p>
+<hr>
+<h3>02 · 이미지 편집</h3>
+<label>폰트<select id="font">
+<option value="온글잎 박다현체">온글잎 박다현체</option>
+<option value="Pretendard Variable" selected>Pretendard</option>
+<option value="Noto Sans KR">Noto Sans KR</option>
+<option value="KoPub Dotum Medium">KoPubWorld 돋움</option>
+<option value="KoPub Batang Medium">KoPubWorld 바탕</option>
+<option value="system-ui">시스템 기본</option>
+<option value="Apple SD Gothic Neo">Apple SD Gothic Neo</option>
+<option value="Malgun Gothic">맑은 고딕</option>
+<option value="Arial">Arial</option>
+<option value="Georgia">Georgia</option>
+</select>
+</label>
+<label>게시글 글자 크기 <span id="textSizeValue">15px</span><input id="textSize" type="range" min="9" max="21" value="15"></label>
+<div class="theme-row">
+<label>메인 테마색<input id="mainColor" type="color" value="#9b8f7f"></label>
+<label class="auto-palette"><span><b>자동 추천 팔레트</b><small>메인 색상에 맞춰 배경·카드색을 자동 조정</small></span><input id="recommendColors" type="checkbox" checked></label>
+</div>
+<button id="resetColors" class="reset-colors" type="button">색상 초기화</button>
+<hr>
+<h3 class="image-card-title">03 · 이미지 카드 편집하기</h3>
+<p class="image-card-help">이미지 미리보기와 PNG 저장에만 적용됩니다.</p>
+<input id="bg" type="hidden" value="#f6f2eb">
+<input id="card" type="hidden" value="#eee8df">
+<input id="bgMode" type="hidden" value="gradient">
+<section id="gradientPanel" class="gradient-panel" hidden>
+<div class="gradient-preview" id="gradientPreview"></div>
+<div class="gradient-colors">
+<label>시작 색상<input id="gradientStart" type="color" value="#f6f2eb"></label>
+<label>끝 색상<input id="bg2" type="color" value="#ded4c7"></label>
+</div>
+<label class="gradient-angle"><span>그라데이션 방향 <b id="gradientAngleValue">135°</b></span><input id="gradientAngle" type="range" min="0" max="360" value="135"></label>
+</section>
+</aside>
+<section class="editor">
+<nav>
+<button data-tab="text" class="on">게시글 편집</button>
+<button data-tab="image">이미지 미리보기</button>
+<button id="png" class="save-png" type="button" hidden aria-live="polite">PNG 저장</button>
+<button id="rich" class="copy-rich" type="button" aria-live="polite">서식 복사</button>
+<button id="copyHelp" class="copy-help" type="button" aria-label="서식 복사 사용법" title="서식 복사 사용법">?</button>
+</nav>
+<div id="textView"></div>
+<div id="imageView" hidden>
+<div id="imageCapture" aria-label="이미지 미리보기"></div>
+<canvas id="canvas" hidden></canvas>
+</div>
+</section>
+</section>
+</main>
+<div class="notice-backdrop" id="noticeBackdrop" hidden>
+<section class="notice-modal" role="dialog" aria-modal="true" aria-labelledby="noticeTitle">
+<div class="notice-kicker">BACKUP-X UPDATE</div>
+<h2 id="noticeTitle">업데이트되었습니다.</h2>
+<div class="notice-content">
+BackUp-X의 기능과 화면이 새롭게 업데이트되었습니다.
+</div>
+<label class="notice-check"><input type="checkbox" id="noticeDismiss"> 이 버전의 공지 다시 보지 않기</label>
+<button id="noticeClose" type="button">확인</button>
+</section>
+</div>
+<div class="notice-backdrop" id="copyHelpBackdrop" hidden>
+<section class="notice-modal copy-help-modal" role="dialog" aria-modal="true" aria-labelledby="copyHelpTitle">
+<div class="notice-kicker">TISTORY HTML COPY</div>
+<h2 id="copyHelpTitle">서식 복사 사용법</h2>
+<div class="notice-content">
+<b>티스토리 HTML 모드에 붙여넣어 주세요.</b>
+<ol>
+<li>BackUp-X에서 트윗을 불러오고 내용을 편집합니다.</li>
+<li><strong>서식 복사</strong> 버튼을 누릅니다.</li>
+<li>티스토리 편집기 상단의 <strong>기본모드 → HTML</strong>을 선택합니다.</li>
+<li>원하는 위치에 붙여넣은 뒤 다시 기본모드로 돌아옵니다.</li>
+</ol>
+<p>복사되는 내용은 이미지가 아닌 HTML 서식이므로 티스토리에서 글을 수정할 수 있습니다. 프로필 사진은 티스토리의 이미지 보안 정책에 따라 표시되지 않을 수 있습니다.</p>
+</div>
+<button id="copyHelpClose" type="button">닫기</button>
+</section>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
