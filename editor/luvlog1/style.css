@@ -26,15 +26,22 @@ body.dark-mode {
     --preview-bg: #1B1B1B;
 }
 
+/* 💡 [수정] 폰트 크기 13px 고정 */
+* {
+    box-sizing: border-box;
+    font-size: 13px; 
+}
+
+/* 💡 [수정] Pretendard 폰트 최우선 적용 및 가독성(행간/자간) 최적화 */
 body {
-    font-family: 'Noto Serif KR', serif;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
     background-color: var(--bg-color);
     margin: 0;
     padding: 20px;
     color: var(--text-main);
-    line-height: 1.6;
-    letter-spacing: -0.02em;
-    word-break: break-all;
+    line-height: 1.65;
+    letter-spacing: -0.015em;
+    word-break: keep-all;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -139,12 +146,15 @@ button:hover { background-color: #005bb5; }
 .btn-secondary:hover { opacity: 0.8; }
 .btn-danger { background-color: #ff3b30; color: white; }
 .btn-danger:hover { background-color: #d70015; }
-.btn-quick-mint { background-color: #F2FCF7; color: #459fa5; border: 1px solid #bbf7d0; font-weight: bold; }
-.btn-quick-pink { background-color: #FFF6FA; color: #f5bdcc; border: 1px solid #fbcfe8; font-weight: bold; }
+
+/* 💡 [수정] 캐릭터 퀵 버튼 색상 (Javier 주황 / Ines 파랑) */
+.btn-quick-javier { background-color: #fff0e6; color: #d96b27; border: 1px solid #ffccab; font-weight: bold; }
+.btn-quick-ines { background-color: #eef4ff; color: #5b8ce0; border: 1px solid #c2daff; font-weight: bold; }
 .btn-quick-status { background-color: #f8f9fa; color: #495057; border: 1px solid #ced4da; font-weight: bold; }
 
-body.dark-mode .btn-quick-mint { background-color: #1a332a; color: #B2E4D4; border-color: #2e5c4d; }
-body.dark-mode .btn-quick-pink { background-color: #331f26; color: #f5bdcc; border-color: #5c3845; }
+/* 다크모드 대응 */
+body.dark-mode .btn-quick-javier { background-color: #3d2210; color: #ffb07c; border-color: #7a4623; }
+body.dark-mode .btn-quick-ines { background-color: #172942; color: #9ec5fe; border-color: #2b4f80; }
 body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-color: #555; }
 
 .btn-sync { background-color: #5856d6; color: white; }
@@ -206,12 +216,10 @@ body.dark-mode .btn-quick-status { background-color: #333; color: #ddd; border-c
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
 }
 
-/* 💡 [수정] 시각적 방해물 및 불필요한 여백 완전 제거 (숨김 처리) */
 .preview-gap {
     display: none !important;
 }
 
-/* 💡 [수정] 미리보기의 공백 줄 테두리와 텍스트를 제거하여 투명하게 처리 */
 .empty-line-preview {
     height: 30px;
     border: none;
@@ -286,8 +294,11 @@ body.dark-mode .tb-btn:hover { background-color: rgba(255,255,255,0.1); }
     font-size: 12px;
     cursor: pointer;
 }
-.tb-circle.mint-bg { background: #E1F9F1; color: #0E865E; }
-.tb-circle.pink-bg { background: #FDEDF4; color: #D04978; }
+
+/* 💡 [수정] 애플 스타일 플로팅 툴바 스피커 버튼 색상 */
+.tb-circle.javier-bg { background: #fff0e6; color: #d96b27; }
+.tb-circle.ines-bg { background: #eef4ff; color: #5b8ce0; }
+
 .tb-font-size {
     display: flex;
     align-items: center;
