@@ -20,7 +20,7 @@
         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
             <h2 class="panel-title" style="border: none; padding: 0; margin: 0; font-size: 16px;">디자인 설정</h2>
             <button id="darkModeBtn" class="btn-secondary" style="border-radius: 20px; padding: 6px 14px;" onclick="toggleDarkMode()">🌙 다크 모드</button>
-            <!-- 💡 [신규] 배경색 커스텀 체크박스 + 컬러피커 -->
+            <!-- 💡 배경색 커스텀 체크박스 + 컬러피커 -->
             <div style="display: flex; align-items: center; gap: 6px; margin-left: 4px;">
                 <input type="checkbox" id="customBgToggle" onchange="toggleCustomBg()" style="cursor: pointer;">
                 <label for="customBgToggle" style="font-size: 12px; color: var(--text-muted); cursor: pointer; user-select: none;">배경색 커스텀</label>
@@ -48,13 +48,7 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 💡 [신규] 캐릭터 프리셋 (아코디언/드롭다운 방식)             -->
-    <!-- 검색용 주석 태그: #CHARACTER_PRESET_UI                       -->
-    <!-- 프리셋 내용 자체를 바꾸려면 render.js의                      -->
-    <!-- CHARACTER_PRESETS 객체(검색용 태그 #CHARACTER_PRESET_DATA)를 -->
-    <!-- 수정하세요. 프리셋을 새로 추가할 땐 아래 버튼도 추가해야 함.  -->
-    <!-- ========================================================= -->
+    <!-- 캐릭터 프리셋 -->
     <div class="panel" style="padding: 15px 20px; position: relative;">
         <h2 class="panel-title" style="border: none; padding: 0; margin: 0 0 10px; font-size: 16px;">캐릭터 프리셋</h2>
         <div style="position: relative; display: inline-block;">
@@ -78,10 +72,10 @@
                 - <b>지문과 "대사"가 섞인 문단</b>을 넣으면 자동으로 분리됩니다.<br>
                 - <b>*내용*</b> 양쪽에 별표가 있으면 나레이션으로 자동 인식합니다.<br>
                 - <b>```</b> 마크다운 코드블록을 넣으면 HTML 블록으로 자동 변환됩니다.<br>
-                - 마크다운 이미지 <b>![이미지](링크)</b>는 깔끔하게 이미지 블록으로 빠집니다.<br>
+                - <b>{{img::tattoo}}</b> 처럼 입력하면 지정된 이미지 블록으로 빠집니다.<br>
+                - <b>&lt;Apogee... /&gt;</b> 코드를 넣으면 상태창으로 변환됩니다.<br>
                 - <b>---</b> 또는 <b>***</b> 를 입력하면 회색 실선 구분선이 추가됩니다.<br>
                 - 문장 맨 앞에 <b>이모티콘(🗓️, 💍 등)</b>이 오면 <b>[상태창]</b>이 됩니다.<br>
-                - <b>포스트잇: 내용</b> 또는 <b>폴라로이드: 링크|날짜|캡션</b> 을 입력하면 감성 블록이 생성됩니다.<br>
                 <span style="color: var(--primary);">+ <b>~~취소선~~</b>, <b>++밑줄++</b>, <b>==형광펜==</b> 등 특수 기호 변환도 지원합니다.</span>
             </p>
             <textarea id="bulkInput" rows="5" placeholder="여기에 텍스트를 붙여넣으세요..."></textarea>
@@ -90,80 +84,80 @@
         <div class="panel">
             <h2 class="panel-title">(2) 캐릭터 설정 & 수동 블록 추가</h2>
             <div class="settings-grid">
-                <!-- 민트 설정 (소설색/말풍선색 분리) -->
+                <!-- 💡 [수정] Javier 설정 (소설색/말풍선색 분리) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-                    <label style="font-size: 12px; font-weight: bold; color: #237768;">민트 (Mint)</label>
+                    <label style="font-size: 12px; font-weight: bold; color: #ffb07c;">하비에르 (Javier)</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                             <div style="flex: 1; min-width: 90px;">
-                                <label style="font-size: 10px; color: #237768;">소설 글자색</label>
+                                <label style="font-size: 10px; color: #ffb07c;">소설 글자색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="mintTextColorPicker" value="#237768" oninput="document.getElementById('mintTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                    <input type="text" id="mintTextColor" value="#237768" oninput="document.getElementById('mintTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                    <input type="color" id="javierTextColorPicker" value="#ffb07c" oninput="document.getElementById('javierTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="javierTextColor" value="#ffb07c" oninput="document.getElementById('javierTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
                             <div style="flex: 1; min-width: 90px;">
-                                <label style="font-size: 10px; color: #237768;">말풍선 글자색</label>
+                                <label style="font-size: 10px; color: #ffb07c;">말풍선 글자색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="mintBubbleTextColorPicker" value="#1d6f60" oninput="document.getElementById('mintBubbleTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                    <input type="text" id="mintBubbleTextColor" value="#1d6f60" oninput="document.getElementById('mintBubbleTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                    <input type="color" id="javierBubbleTextColorPicker" value="#d96b27" oninput="document.getElementById('javierBubbleTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="javierBubbleTextColor" value="#d96b27" oninput="document.getElementById('javierBubbleTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
                             <div style="flex: 1; min-width: 90px;">
-                                <label style="font-size: 10px; color: #237768;">말풍선 배경색</label>
+                                <label style="font-size: 10px; color: #ffb07c;">말풍선 배경색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="mintBgColorPicker" value="#eef8f3" oninput="document.getElementById('mintBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                    <input type="text" id="mintBgColor" value="#eef8f3" oninput="document.getElementById('mintBgColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                    <input type="color" id="javierBgColorPicker" value="#fff0e6" oninput="document.getElementById('javierBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="javierBgColor" value="#fff0e6" oninput="document.getElementById('javierBgColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <div style="flex: 1;">
-                                <label style="font-size: 10px; color: #237768;">이름</label>
-                                <input type="text" id="mintName" value="하시온" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                                <label style="font-size: 10px; color: #ffb07c;">이름</label>
+                                <input type="text" id="javierName" value="Javier Espinoza" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
                             </div>
                             <div style="flex: 2;">
-                                <label style="font-size: 10px; color: #237768;">프로필 이미지 URL</label>
-                                <input type="text" id="mintProfileUrl" value="https://i.ibb.co/VYrHdHd8/IMG-6825.jpg" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                                <label style="font-size: 10px; color: #ffb07c;">프로필 이미지 URL</label>
+                                <input type="text" id="javierProfileUrl" value="[https://i.ibb.co/VYrHdHd8/IMG-6825.jpg](https://i.ibb.co/VYrHdHd8/IMG-6825.jpg)" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- 핑크 설정 (소설색/말풍선색 분리) -->
+                <!-- 💡 [수정] Ines 설정 (소설색/말풍선색 분리) -->
                 <div style="background: var(--block-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-                    <label style="font-size: 12px; font-weight: bold; color: #9b3e61;">핑크 (Pink)</label>
+                    <label style="font-size: 12px; font-weight: bold; color: #9ec5fe;">이네스 (Ines)</label>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                             <div style="flex: 1; min-width: 90px;">
-                                <label style="font-size: 10px; color: #9b3e61;">소설 글자색</label>
+                                <label style="font-size: 10px; color: #9ec5fe;">소설 글자색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="pinkTextColorPicker" value="#f5bdcc" oninput="document.getElementById('pinkTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                    <input type="text" id="pinkTextColor" value="#f5bdcc" oninput="document.getElementById('pinkTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                    <input type="color" id="inesTextColorPicker" value="#9ec5fe" oninput="document.getElementById('inesTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="inesTextColor" value="#9ec5fe" oninput="document.getElementById('inesTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
                             <div style="flex: 1; min-width: 90px;">
-                                <label style="font-size: 10px; color: #9b3e61;">말풍선 글자색</label>
+                                <label style="font-size: 10px; color: #9ec5fe;">말풍선 글자색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="pinkBubbleTextColorPicker" value="#9b3e61" oninput="document.getElementById('pinkBubbleTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                    <input type="text" id="pinkBubbleTextColor" value="#9b3e61" oninput="document.getElementById('pinkBubbleTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                    <input type="color" id="inesBubbleTextColorPicker" value="#5b8ce0" oninput="document.getElementById('inesBubbleTextColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="inesBubbleTextColor" value="#5b8ce0" oninput="document.getElementById('inesBubbleTextColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
                             <div style="flex: 1; min-width: 90px;">
-                                <label style="font-size: 10px; color: #9b3e61;">말풍선 배경색</label>
+                                <label style="font-size: 10px; color: #9ec5fe;">말풍선 배경색</label>
                                 <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                    <input type="color" id="pinkBgColorPicker" value="#fdf2f6" oninput="document.getElementById('pinkBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                                    <input type="text" id="pinkBgColor" value="#fdf2f6" oninput="document.getElementById('pinkBgColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                                    <input type="color" id="inesBgColorPicker" value="#eef4ff" oninput="document.getElementById('inesBgColor').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
+                                    <input type="text" id="inesBgColor" value="#eef4ff" oninput="document.getElementById('inesBgColorPicker').value = this.value; if(typeof updateOutput === 'function') updateOutput();" style="flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                                 </div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <div style="flex: 1;">
-                                <label style="font-size: 10px; color: #9b3e61;">이름</label>
-                                <input type="text" id="pinkName" value="김민정" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                                <label style="font-size: 10px; color: #9ec5fe;">이름</label>
+                                <input type="text" id="inesName" value="Ines Hartmann" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
                             </div>
                             <div style="flex: 2;">
-                                <label style="font-size: 10px; color: #9b3e61;">프로필 이미지 URL</label>
-                                <input type="text" id="pinkProfileUrl" value="https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                                <label style="font-size: 10px; color: #9ec5fe;">프로필 이미지 URL</label>
+                                <input type="text" id="inesProfileUrl" value="[https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg](https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg)" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
                             </div>
                         </div>
                     </div>
@@ -202,7 +196,7 @@
                             </div>
                             <div style="flex: 2;">
                                 <label style="font-size: 10px; color: #3a414d;">프로필 이미지 URL</label>
-                                <input type="text" id="mobProfileUrl" value="https://i.ibb.co/jP5RR5gx/IMG-6832.jpg" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
+                                <input type="text" id="mobProfileUrl" value="[https://i.ibb.co/jP5RR5gx/IMG-6832.jpg](https://i.ibb.co/jP5RR5gx/IMG-6832.jpg)" oninput="if(typeof updateOutput === 'function') updateOutput()" style="margin-top: 4px; font-size: 11px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); width: 100%; box-sizing: border-box;">
                             </div>
                         </div>
                     </div>
@@ -250,16 +244,16 @@
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">행간 (줄간격)</label>
-                            <span id="lineHeightVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">1.6</span>
+                            <span id="lineHeightVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">1.65</span>
                         </div>
-                        <input type="range" min="1.1" max="2.5" step="0.05" value="1.6" oninput="document.getElementById('lineHeightVal').innerText = this.value; updateLayoutSetting('lineHeight', this.value);" style="accent-color: var(--primary); cursor: pointer;">
+                        <input type="range" min="1.1" max="2.5" step="0.05" value="1.65" oninput="document.getElementById('lineHeightVal').innerText = this.value; updateLayoutSetting('lineHeight', this.value);" style="accent-color: var(--primary); cursor: pointer;">
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">자간 (글자간격)</label>
-                            <span id="letterSpacingVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">-0.02em</span>
+                            <span id="letterSpacingVal" style="font-size: 11px; color: var(--primary); font-weight: bold; font-family: monospace;">-0.015em</span>
                         </div>
-                        <input type="range" min="-0.1" max="0.1" step="0.01" value="-0.02" oninput="document.getElementById('letterSpacingVal').innerText = this.value + 'em'; updateLayoutSetting('letterSpacing', this.value);" style="accent-color: var(--primary); cursor: pointer;">
+                        <input type="range" min="-0.1" max="0.1" step="0.005" value="-0.015" oninput="document.getElementById('letterSpacingVal').innerText = this.value + 'em'; updateLayoutSetting('letterSpacing', this.value);" style="accent-color: var(--primary); cursor: pointer;">
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -278,8 +272,8 @@
                     <div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
                         <label style="font-size: 11px; color: var(--text-muted); font-weight: 600;">줄바꿈 방식</label>
                         <select id="wordBreakSelect" onchange="updateLayoutSetting('wordBreak', this.value)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 11px; cursor: pointer; transition: 0.2s;">
-                            <option value="break-all" selected>글자 단위 (기본)</option>
-                            <option value="keep-all">단어 단위</option>
+                            <option value="keep-all" selected>단어 단위 (가독성 추천)</option>
+                            <option value="break-all">글자 단위 (기본)</option>
                         </select>
                     </div>
                 </div>
@@ -287,8 +281,8 @@
             <div class="tool-buttons" style="margin-top: 15px;">
                 <button class="btn-secondary" onclick="addBlock('title')">+ 제목</button>
                 <button class="btn-secondary" onclick="addBlock('narration')">+ 나레이션</button>
-                <button class="btn-secondary" onclick="addBlock('mint')">+ 민트 대사</button>
-                <button class="btn-secondary" onclick="addBlock('pink')">+ 핑크 대사</button>
+                <button class="btn-secondary" onclick="addBlock('javier')">+ Javier 대사</button>
+                <button class="btn-secondary" onclick="addBlock('ines')">+ Ines 대사</button>
                 <button class="btn-secondary" onclick="addBlock('mob')">+ 모브 대사</button>
                 <button class="btn-secondary" onclick="addBlock('custom')">+ 제3자 대사</button>
                 <button class="btn-secondary" onclick="addBlock('thought')">+ 속마음</button>
@@ -364,8 +358,8 @@
     </div>
     <div class="tb-row" style="margin-left: 56px;">
         <div class="tb-divider" style="opacity: 0.3;"></div>
-        <button type="button" class="tb-circle mint-bg" onclick="applyQuickStyle('mint')">M</button>
-        <button type="button" class="tb-circle pink-bg" onclick="applyQuickStyle('pink')">P</button>
+        <button type="button" class="tb-circle javier-bg" onclick="applyQuickStyle('javier')">J</button>
+        <button type="button" class="tb-circle ines-bg" onclick="applyQuickStyle('ines')">I</button>
         <button type="button" class="tb-circle" style="background: #C4F0E9; color: #b45309; font-size: 14px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);" onclick="applyQuickStyle('highlight')" title="형광펜 칠하기">✏️</button>
         <div class="tb-divider" style="opacity: 0.3;"></div>
         <div class="tb-font-size">
@@ -379,13 +373,14 @@
 <!-- 💡 [신규] 빠른 화자 전환 미니 툴바 (블록 클릭 시) -->
 <div id="quickSpeakerToolbar" class="apple-toolbar" style="display: none; position: absolute; z-index: 100000; padding: 6px; flex-direction: row; gap: 6px;">
     <button type="button" class="tb-circle btn-quick-status" onclick="changeSpeakerFromPreview('narration')" title="나레이션으로 변경">N</button>
-    <button type="button" class="tb-circle mint-bg" onclick="changeSpeakerFromPreview('mint')" title="민트로 변경">M</button>
-    <button type="button" class="tb-circle pink-bg" onclick="changeSpeakerFromPreview('pink')" title="핑크로 변경">P</button>
+    <button type="button" class="tb-circle javier-bg" onclick="changeSpeakerFromPreview('javier')" title="Javier로 변경">J</button>
+    <button type="button" class="tb-circle ines-bg" onclick="changeSpeakerFromPreview('ines')" title="Ines로 변경">I</button>
     <button type="button" class="tb-circle" style="background: #eff1f5; color: #3a414d;" onclick="changeSpeakerFromPreview('mob')" title="모브로 변경">모</button>
     <div class="tb-divider" style="opacity: 0.3; margin: 0 2px;"></div>
     <button type="button" class="tb-circle" style="background: #ffe5e5; color: #d70015;" onclick="deleteBlockFromPreview()" title="문단 삭제">🗑️</button>
 </div>
 <!-- 분할된 자바스크립트 파일 연결 (순서 엄수) -->
+<script src="parser.js"></script>
 <script src="script.js"></script>
 <script src="render.js"></script>
 <script src="toolbar.js"></script>
