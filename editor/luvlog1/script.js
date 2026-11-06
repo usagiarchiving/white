@@ -194,21 +194,21 @@ function toggleDarkMode() {
     document.getElementById('darkModeBtn').innerText = isDarkMode ? '☀️ 라이트 모드' : '🌙 다크 모드';
     
     if (isDarkMode) {
-        let elMint = document.getElementById('mintTextColor');
-        let elMintP = document.getElementById('mintTextColorPicker');
+        let elJavier = document.getElementById('javierTextColor');
+        let elJavierP = document.getElementById('javierTextColorPicker');
         let elNarr = document.getElementById('narrColor');
         let elNarrP = document.getElementById('narrColorPicker');
-        if(elMint) elMint.value = '#B2E4D4';
-        if(elMintP) elMintP.value = '#B2E4D4';
+        if(elJavier) elJavier.value = '#ffb07c';
+        if(elJavierP) elJavierP.value = '#ffb07c';
         if(elNarr) elNarr.value = '#F9F9F8';
         if(elNarrP) elNarrP.value = '#F9F9F8';
     } else {
-        let elMint = document.getElementById('mintTextColor');
-        let elMintP = document.getElementById('mintTextColorPicker');
+        let elJavier = document.getElementById('javierTextColor');
+        let elJavierP = document.getElementById('javierTextColorPicker');
         let elNarr = document.getElementById('narrColor');
         let elNarrP = document.getElementById('narrColorPicker');
-        if(elMint) elMint.value = '#237768';
-        if(elMintP) elMintP.value = '#237768';
+        if(elJavier) elJavier.value = '#ffb07c';
+        if(elJavierP) elJavierP.value = '#ffb07c';
         if(elNarr) elNarr.value = '#48484A';
         if(elNarrP) elNarrP.value = '#48484A';
     }
@@ -601,8 +601,8 @@ function importFromHtml() {
     let container = tempDiv.querySelector('#content-wrapper') || tempDiv.querySelector('body') || tempDiv;
     const newBlocks = [];
 
-    let foundMint = false;
-    let foundPink = false;
+    let foundJavier = false;
+    let foundInes = false;
     let foundMob = false; // 💡 모브 추적 변수 추가
     let foundNarr = false;
 
@@ -638,10 +638,10 @@ function importFromHtml() {
                 type = 'status'; 
             } else if (child.style.fontStyle === 'italic' && (child.style.color === 'rgb(119, 119, 119)' || child.style.color === 'rgb(142, 142, 147)')) {
                 type = 'thought';
-            } else if (child.style.color === 'rgb(69, 159, 165)' || child.style.color === 'rgb(178, 228, 212)' || child.style.color === 'rgb(35, 119, 104)' || child.style.color === 'rgb(29, 111, 96)') { 
-                type = 'mint';
-            } else if (child.style.color === 'rgb(245, 189, 204)' || child.style.color === 'rgb(155, 62, 97)') {
-                type = 'pink';
+            } else if (child.style.color === 'rgb(255, 176, 124)' || child.style.color === 'rgb(217, 107, 39)') { 
+                type = 'javier';
+            } else if (child.style.color === 'rgb(158, 197, 254)' || child.style.color === 'rgb(91, 140, 224)') {
+                type = 'ines';
             } else if (child.querySelector('img') && !outerHtml.includes('border-radius: 50%') && !outerHtml.includes('Polaroid') && !outerHtml.includes('av')) {
                 type = 'image';
             } else if (outerHtml.includes('font-weight: bold') && child.style.textAlign === 'left') {
@@ -664,7 +664,7 @@ function importFromHtml() {
         if (type === 'divider') {
             let styleMatch = child.getAttribute('data-style');
             content = styleMatch || 'solid-gray';
-        } else if (['mint', 'pink', 'mob', 'custom'].includes(type)) {
+        } else if (['javier', 'ines', 'mob', 'custom'].includes(type)) {
             let textTarget = child;
             let isBubbleMode = false;
             
@@ -693,49 +693,49 @@ function importFromHtml() {
             
             let textHex = rgbToHex(textTarget.style.color || child.style.color);
 
-            if (type === 'mint') {
-                if (!foundMint) {
+            if (type === 'javier') {
+                if (!foundJavier) {
                     if (textHex) {
                         if (isBubbleMode) {
-                            let b1 = document.getElementById('mintBubbleTextColor');
-                            let b2 = document.getElementById('mintBubbleTextColorPicker');
-                            let bg1 = document.getElementById('mintBgColor');
-                            let bg2 = document.getElementById('mintBgColorPicker');
+                            let b1 = document.getElementById('javierBubbleTextColor');
+                            let b2 = document.getElementById('javierBubbleTextColorPicker');
+                            let bg1 = document.getElementById('javierBgColor');
+                            let bg2 = document.getElementById('javierBgColorPicker');
                             if (b1) b1.value = textHex; if (b2) b2.value = textHex;
                             if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
                         } else {
-                            let m1 = document.getElementById('mintTextColor');
-                            let m2 = document.getElementById('mintTextColorPicker');
+                            let m1 = document.getElementById('javierTextColor');
+                            let m2 = document.getElementById('javierTextColorPicker');
                             if (m1) m1.value = textHex; if (m2) m2.value = textHex;
                         }
                     }
                     // 💡 이름, 프사 동기화
-                    if (customName) { let el = document.getElementById('mintName'); if(el) el.value = customName; }
-                    if (customProfileUrl) { let el = document.getElementById('mintProfileUrl'); if(el) el.value = customProfileUrl; }
+                    if (customName) { let el = document.getElementById('javierName'); if(el) el.value = customName; }
+                    if (customProfileUrl) { let el = document.getElementById('javierProfileUrl'); if(el) el.value = customProfileUrl; }
                     
-                    foundMint = true;
+                    foundJavier = true;
                 }
-            } else if (type === 'pink') {
-                if (!foundPink) {
+            } else if (type === 'ines') {
+                if (!foundInes) {
                     if (textHex) { 
                         if (isBubbleMode) {
-                            let b1 = document.getElementById('pinkBubbleTextColor');
-                            let b2 = document.getElementById('pinkBubbleTextColorPicker');
-                            let bg1 = document.getElementById('pinkBgColor');
-                            let bg2 = document.getElementById('pinkBgColorPicker');
+                            let b1 = document.getElementById('inesBubbleTextColor');
+                            let b2 = document.getElementById('inesBubbleTextColorPicker');
+                            let bg1 = document.getElementById('inesBgColor');
+                            let bg2 = document.getElementById('inesBgColorPicker');
                             if (b1) b1.value = textHex; if (b2) b2.value = textHex;
                             if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
                         } else {
-                            let p1 = document.getElementById('pinkTextColor');
-                            let p2 = document.getElementById('pinkTextColorPicker');
+                            let p1 = document.getElementById('inesTextColor');
+                            let p2 = document.getElementById('inesTextColorPicker');
                             if (p1) p1.value = textHex; if (p2) p2.value = textHex;
                         }
                     }
                     // 💡 이름, 프사 동기화
-                    if (customName) { let el = document.getElementById('pinkName'); if(el) el.value = customName; }
-                    if (customProfileUrl) { let el = document.getElementById('pinkProfileUrl'); if(el) el.value = customProfileUrl; }
+                    if (customName) { let el = document.getElementById('inesName'); if(el) el.value = customName; }
+                    if (customProfileUrl) { let el = document.getElementById('inesProfileUrl'); if(el) el.value = customProfileUrl; }
                     
-                    foundPink = true;
+                    foundInes = true;
                 }
             } else if (type === 'mob') {
                 if (!foundMob) {
@@ -864,13 +864,13 @@ function copyHtml() {
 
 // 💡 전역 동기화 로직
 document.addEventListener("DOMContentLoaded", function() {
-    setupColorPicker('mintTextColorPicker', 'mintTextColor');
-    setupColorPicker('mintBubbleTextColorPicker', 'mintBubbleTextColor');
-    setupColorPicker('mintBgColorPicker', 'mintBgColor');
+    setupColorPicker('javierTextColorPicker', 'javierTextColor');
+    setupColorPicker('javierBubbleTextColorPicker', 'javierBubbleTextColor');
+    setupColorPicker('javierBgColorPicker', 'javierBgColor');
     
-    setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
-    setupColorPicker('pinkBubbleTextColorPicker', 'pinkBubbleTextColor');
-    setupColorPicker('pinkBgColorPicker', 'pinkBgColor');
+    setupColorPicker('inesTextColorPicker', 'inesTextColor');
+    setupColorPicker('inesBubbleTextColorPicker', 'inesBubbleTextColor');
+    setupColorPicker('inesBgColorPicker', 'inesBgColor');
     
     setupColorPicker('mobTextColorPicker', 'mobTextColor');
     setupColorPicker('mobBubbleTextColorPicker', 'mobBubbleTextColor');
@@ -880,8 +880,8 @@ document.addEventListener("DOMContentLoaded", function() {
     setupColorPicker('highlightColorPicker', 'highlightColor');
 
     const inputsToSync = [
-        'mintTextColor', 'mintBubbleTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
-        'pinkTextColor', 'pinkBubbleTextColor', 'pinkBgColor', 'pinkName', 'pinkProfileUrl',
+        'javierTextColor', 'javierBubbleTextColor', 'javierBgColor', 'javierName', 'javierProfileUrl',
+        'inesTextColor', 'inesBubbleTextColor', 'inesBgColor', 'inesName', 'inesProfileUrl',
         'mobTextColor', 'mobBubbleTextColor', 'mobBgColor', 'mobName', 'mobProfileUrl',
         'narrColor', 'highlightColor'
     ];
