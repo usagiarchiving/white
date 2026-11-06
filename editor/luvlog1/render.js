@@ -897,13 +897,27 @@ function updateOutput(skipPreviewUpdate = false) {
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${mt}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
+            //수정
             else if (isCurrDiag) {
                 let textColor;
                 if (curr === 'javier') { textColor = javierTextColor; }
                 else if (curr === 'ines') { textColor = inesTextColor; }
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : mobTextColor; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${textColor}; text-align: left;">${divContent}</div>\n`;
+
+                // 💡 소설형 투톤: 2줄 이상 + 마지막 줄이 (번역) 형태일 때만 발동
+                let dlgLines = block.content.split('\n').map(s => s.trim()).filter(s => s !== '');
+                let lastDlg = dlgLines.length >= 2 ? dlgLines[dlgLines.length - 1] : '';
+                let hasTranslation = dlgLines.length >= 2 && /^[\(（].*[\)）]$/.test(lastDlg);
+
+                if (hasTranslation) {
+                    let topHtml = dlgLines.slice(0, -1).map(l => applyTextStyles(l)).join('<br>');
+                    let transHtml = applyTextStyles(lastDlg);
+                    let transSize = Math.max(currentFontSize - 1, 1);
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; text-align: left;"><span style="color: ${narrColor}; font-weight: bold;">${topHtml}</span><br><span style="color: ${textColor}; font-size: ${transSize}px;">${transHtml}</span></div>\n`;
+                } else {
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${textColor}; text-align: left;">${divContent}</div>\n`;
+                }
             }
             else if (block.type === 'bgm') {
                 hasBgm = true;
