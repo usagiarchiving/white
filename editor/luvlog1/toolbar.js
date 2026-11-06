@@ -1,185 +1,220 @@
 // ==========================================
 // toolbar.js
-// 드래그 툴바 및 텍스트 퀵 스타일 제어 (Javier / Ines)
+// 플로팅 툴바 전용 (파서 로직 분리 완료)
 // ==========================================
 
-let savedSelection = null;
-let activePreviewIndex = -1;
-
-// 💡 텍스트 드래그 시 플로팅 툴바 표시
-document.addEventListener('selectionchange', () => {
-    const sel = window.getSelection();
+function handleSelection() {
+    const selection = window.getSelection();
     const toolbar = document.getElementById('floatingToolbar');
-    const container = document.getElementById('htmlPreview');
-    if (!toolbar || !container) return;
-
-    if (!sel.isCollapsed && sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        if (container.contains(range.commonAncestorContainer)) {
-            const rect = range.getBoundingClientRect();
-            toolbar.style.display = 'flex';
-            let topPos = rect.top + window.scrollY - toolbar.offsetHeight - 10;
-            let leftPos = rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2);
-            if (topPos < 0) topPos = rect.bottom + window.scrollY + 10;
-            toolbar.style.top = topPos + 'px';
-            toolbar.style.left = Math.max(10, leftPos) + 'px';
-            return;
-        }
-    }
-    toolbar.style.display = 'none';
-});
-
-// 💡 프리뷰 블록 클릭 시 퀵 화자 변경 툴바 표시
-document.addEventListener('click', (e) => {
-    const sel = window.getSelection();
-    const quickToolbar = document.getElementById('quickSpeakerToolbar');
-    const container = document.getElementById('htmlPreview');
     
-    if (!sel.isCollapsed || !quickToolbar || !container) {
-        if (quickToolbar) quickToolbar.style.display = 'none';
+    if (!selection.rangeCount || selection.isCollapsed) {
+        toolbar.style.display = 'none';
+        return;
+    }
+    
+    const range = selection.getRangeAt(0);
+    const previewContainer = document.getElementById('htmlPreview');
+    if (!previewContainer.contains(range.commonAncestorContainer)) {
+        toolbar.style.display = 'none';
+        return;
+    }
+    
+    const rect = range.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+        toolbar.style.display = 'none';
+        return;
+    }
+    
+    toolbar.style.display = 'flex';
+    
+    const toolbarHeight = toolbar.offsetHeight || 80; 
+    const toolbarWidth = toolbar.offsetWidth || 340;
+    
+    let top = rect.top + window.scrollY - toolbarHeight - 12;
+    let left = rect.left + window.scrollX + (rect.width / 2) - (toolbarWidth / 2);
+    
+    if (top < window.scrollY) {
+        top = rect.bottom + window.scrollY + 12;
+    }
+    
+    if (left < window.scrollX + 10) left = window.scrollX + 10;
+    
+    toolbar.style.top = top + 'px';
+    toolbar.style.left = left + 'px';
+}
+
+function formatText(command) {
+    document.execCommand(command, false, null);
+    if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
+    setTimeout(handleSelection, 10);
+}
+
+function wrapSelectionWithStyle(styles) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) return;
+
+    if (Object.keys(styles).length === 1 && styles.color) {
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('foreColor', false, styles.color);
+        if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
+        return;
+    }
+    if (Object.keys(styles).length === 1 && styles.backgroundColor) {
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('hiliteColor', false, styles.backgroundColor);
+        if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
         return;
     }
 
+    const span = document.createElement('span');
+    for (let key in styles) {
+        span.style[key] = styles[key];
+    }
+    
+    try {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        selection.addRange(newRange);
+    } catch(e) {
+        console.error(e);
+    }
+    if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
+}
+
+function applyQuickStyle(styleName) {
+    // 💡 [수정] Mint/Pink를 Javier/Ines 색상으로 1:1 완벽 치환
+    if (styleName === 'javier') {
+        wrapSelectionWithStyle({ color: '#d96b27', backgroundColor: '#fff0e6', padding: '0 2px', borderRadius: '3px' });
+    } else if (styleName === 'ines') {
+        wrapSelectionWithStyle({ color: '#5b8ce0', backgroundColor: '#eef4ff', padding: '0 2px', borderRadius: '3px' });
+    } else if (styleName === 'highlight') {
+        let hlColorEl = document.getElementById('highlightColor');
+        let hlColor = hlColorEl ? hlColorEl.value : '#C4F0E9';
+        wrapSelectionWithStyle({ backgroundColor: hlColor, color: 'inherit', padding: '0 2px', borderRadius: '2px' });
+    }
+    setTimeout(handleSelection, 10);
+}
+
+function formatPalette(command, value) {
+    if (command === 'foreColor') {
+        wrapSelectionWithStyle({ color: value });
+    } else if (command === 'hiliteColor') {
+        wrapSelectionWithStyle({ backgroundColor: value });
+    }
+    setTimeout(handleSelection, 10);
+}
+
+function changeInlineFontSize(delta) {
+    currentInlineFontSize += delta;
+    if(currentInlineFontSize < 10) currentInlineFontSize = 10;
+    if(currentInlineFontSize > 40) currentInlineFontSize = 40;
+    
+    const display = document.getElementById('inlineFontSizeDisplay');
+    if(display) display.innerText = currentInlineFontSize;
+    
+    wrapSelectionWithStyle({ fontSize: currentInlineFontSize + 'px' });
+    setTimeout(handleSelection, 10);
+}
+
+// 드래그 센서 복구 (모바일 환경 호환)
+document.addEventListener('selectionchange', () => setTimeout(handleSelection, 10));
+document.addEventListener('mouseup', () => setTimeout(handleSelection, 10));
+document.addEventListener('keyup', () => setTimeout(handleSelection, 10));
+document.addEventListener('touchend', () => setTimeout(handleSelection, 10));
+
+// =========================================================
+// 💡 미리보기 내 블록 클릭 시 빠른 화자 전환 툴바
+// =========================================================
+let activePreviewIndex = -1;
+
+function handleBlockClick(e) {
     let target = e.target;
-    let blockDiv = null;
-    while (target && target !== container) {
+    let blockEl = null;
+    
+    while (target && target.id !== 'htmlPreview') {
         if (target.id && target.id.startsWith('preview-block-')) {
-            blockDiv = target;
+            blockEl = target;
             break;
         }
         target = target.parentNode;
     }
 
-    if (blockDiv) {
-        const idxStr = blockDiv.id.replace('preview-block-', '');
-        activePreviewIndex = parseInt(idxStr, 10);
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (!blockEl) {
+        if(speakerToolbar) speakerToolbar.style.display = 'none';
+        return;
+    }
+
+    const index = parseInt(blockEl.id.replace('preview-block-', ''));
+    activePreviewIndex = index;
+
+    const selection = window.getSelection();
+    if (selection.rangeCount && !selection.isCollapsed) {
+        if(speakerToolbar) speakerToolbar.style.display = 'none';
+        return;
+    }
+
+    if (speakerToolbar) {
+        speakerToolbar.style.display = 'flex';
+        const rect = blockEl.getBoundingClientRect();
         
-        const rect = blockDiv.getBoundingClientRect();
-        quickToolbar.style.display = 'flex';
+        const toolbarHeight = speakerToolbar.offsetHeight || 36; 
+        const toolbarWidth = speakerToolbar.offsetWidth || 180;
         
-        let tLeft = rect.right + window.scrollX - quickToolbar.offsetWidth;
-        let tTop = rect.top + window.scrollY - quickToolbar.offsetHeight - 5;
+        let top = rect.top + window.scrollY - toolbarHeight - 8;
+        let left = rect.left + window.scrollX + 10; 
         
-        if (tTop < window.scrollY) tTop = rect.bottom + window.scrollY + 5;
+        if (top < window.scrollY) {
+            top = rect.bottom + window.scrollY + 8;
+        }
         
-        quickToolbar.style.top = tTop + 'px';
-        quickToolbar.style.left = tLeft + 'px';
-    } else if (!e.target.closest('#quickSpeakerToolbar')) {
-        quickToolbar.style.display = 'none';
-        activePreviewIndex = -1;
+        speakerToolbar.style.top = top + 'px';
+        speakerToolbar.style.left = left + 'px';
+    }
+}
+
+function changeSpeakerFromPreview(newType) {
+    if (activePreviewIndex === -1) return;
+    
+    if (typeof changeBlockType === 'function') {
+        changeBlockType(activePreviewIndex, newType);
+    }
+    
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (speakerToolbar) speakerToolbar.style.display = 'none';
+    activePreviewIndex = -1;
+}
+
+function deleteBlockFromPreview() {
+    if (activePreviewIndex === -1) return;
+    
+    if (typeof deleteBlock === 'function') {
+        deleteBlock(activePreviewIndex);
+    }
+    
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (speakerToolbar) speakerToolbar.style.display = 'none';
+    activePreviewIndex = -1;
+    
+    if (typeof showToast === 'function') {
+        showToast('문단이 삭제되었습니다.');
+    }
+}
+
+document.addEventListener('click', (e) => {
+    const htmlPreview = document.getElementById('htmlPreview');
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    
+    if (speakerToolbar && speakerToolbar.contains(e.target)) return;
+
+    if (htmlPreview && htmlPreview.contains(e.target)) {
+        handleBlockClick(e);
+    } else {
+        if (speakerToolbar) speakerToolbar.style.display = 'none';
     }
 });
-
-// 💡 [수정] 퀵 화자 변경 기능
-function changeSpeakerFromPreview(type) {
-    if (activePreviewIndex !== -1 && blocks[activePreviewIndex]) {
-        blocks[activePreviewIndex].type = type;
-        document.getElementById('quickSpeakerToolbar').style.display = 'none';
-        if(typeof renderEditor === 'function') renderEditor();
-        saveState();
-    }
-}
-
-// 💡 퀵 블록 삭제 기능
-function deleteBlockFromPreview() {
-    if (activePreviewIndex !== -1 && blocks[activePreviewIndex]) {
-        blocks.splice(activePreviewIndex, 1);
-        document.getElementById('quickSpeakerToolbar').style.display = 'none';
-        if(typeof renderEditor === 'function') renderEditor();
-        saveState();
-    }
-}
-
-function formatText(command) {
-    document.execCommand(command, false, null);
-    if(typeof debounceSyncPreviewToBlocks === 'function') debounceSyncPreviewToBlocks();
-}
-
-function formatPalette(command, value) {
-    document.execCommand(command, false, value);
-    if(typeof debounceSyncPreviewToBlocks === 'function') debounceSyncPreviewToBlocks();
-}
-
-function changeInlineFontSize(delta) {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    let parent = range.commonAncestorContainer;
-    if (parent.nodeType === 3) parent = parent.parentNode;
-    
-    let currentSize = 13;
-    if (parent.style && parent.style.fontSize) {
-        currentSize = parseInt(parent.style.fontSize, 10);
-    }
-    
-    let newSize = currentSize + delta;
-    if (newSize < 10) newSize = 10;
-    if (newSize > 30) newSize = 30;
-    
-    document.getElementById('inlineFontSizeDisplay').innerText = newSize;
-    
-    let span = document.createElement('span');
-    span.style.fontSize = newSize + 'px';
-    range.surroundContents(span);
-    
-    sel.removeAllRanges();
-    sel.addRange(range);
-    
-    if(typeof debounceSyncPreviewToBlocks === 'function') debounceSyncPreviewToBlocks();
-}
-
-// 💡 [수정] 플로팅 툴바 빠른 색상 입히기 (Mint/Pink -> Javier/Ines)
-function applyQuickStyle(type) {
-    const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed) return;
-    const range = sel.getRangeAt(0);
-    let text = range.extractContents();
-    let span = document.createElement('span');
-    
-    if (type === 'javier') {
-        let color = document.getElementById('javierTextColor') ? document.getElementById('javierTextColor').value : '#ffb07c';
-        span.style.color = color;
-        span.style.fontWeight = 'bold';
-    } else if (type === 'ines') {
-        let color = document.getElementById('inesTextColor') ? document.getElementById('inesTextColor').value : '#9ec5fe';
-        span.style.color = color;
-        span.style.fontWeight = 'bold';
-    } else if (type === 'highlight') {
-        let hl = document.getElementById('highlightColor') ? document.getElementById('highlightColor').value : '#C4F0E9';
-        span.style.backgroundColor = hl;
-        span.style.padding = '0 2px';
-        span.style.borderRadius = '2px';
-        span.style.color = 'inherit';
-    }
-    
-    span.appendChild(text);
-    range.insertNode(span);
-    
-    sel.removeAllRanges();
-    if(typeof debounceSyncPreviewToBlocks === 'function') debounceSyncPreviewToBlocks();
-}
-
-// 💡 텍스트 마크다운 포맷 삽입 기능
-function insertFmt(index, tag) {
-    const ta = document.getElementById(`textarea-${index}`);
-    if (!ta) return;
-    
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const val = ta.value;
-    const selectedText = val.substring(start, end);
-    
-    let newText = '';
-    if (tag === '%%') {
-        newText = `%%${selectedText || '인용구 내용'}%%`;
-    } else {
-        newText = `${tag}${selectedText || '내용'}${tag}`;
-    }
-    
-    ta.value = val.substring(0, start) + newText + val.substring(end);
-    if(typeof updateBlockContent === 'function') updateBlockContent(index, ta.value);
-    saveState();
-    
-    ta.focus();
-    ta.setSelectionRange(start + tag.length, start + tag.length + (selectedText ? selectedText.length : 2));
-}
