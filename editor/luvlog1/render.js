@@ -502,6 +502,21 @@ function renderEditor() {
     const list = document.getElementById('editorList');
     list.innerHTML = '';
     blocks.forEach((block, index) => {
+        // 💡 대사 바로 뒤 나레이션의 첫 줄이 (번역)이면 대사에 붙이고 나레이션에서는 제외
+const stripBr = s => s.replace(/^(\s*<br\s*\/?>\s*)+/i, '').trim();
+const mergedTrans = {};
+const skipFirstLine = {};
+blocks.forEach((b, i) => {
+    if (!['javier', 'ines', 'mob', 'custom'].includes(b.type)) return;
+    const n = blocks[i + 1];
+    if (!n || n.type !== 'narration') return;
+    const firstLine = stripBr(n.content.split('\n')[0] || '');
+    if (/^[\(（].*[\)）]$/.test(firstLine)) {
+        mergedTrans[i] = firstLine;
+        skipFirstLine[i + 1] = true;
+    }
+});
+
         const item = document.createElement('div');
         item.className = 'block-item';
         item.id = `editor-block-${index}`;
@@ -822,7 +837,12 @@ function updateOutput(skipPreviewUpdate = false) {
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; display: flex; justify-content: center; align-items: center;">${dividerInner}</div>\n`;
         } else {
             let lines = block.content.split('\n');
-            let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
+if (skipFirstLine[index]) {
+    lines = lines.slice(1);
+    if (lines.join('').trim() === '') return;
+            }
+let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
+
             if (block.type === 'title') {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 10px 0; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle};">${applyTextStyles(block.content)}</div>\n`;
             }
@@ -906,7 +926,9 @@ function updateOutput(skipPreviewUpdate = false) {
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
                 // 💡 소설형 투톤: 2줄 이상 + 마지막 줄이 (번역) 형태일 때만 발동
-                let dlgLines = block.content.split('\n').map(s => s.trim()).filter(s => s !== '');
+                let dlgLines = block.content.split('\n').map(s => stripBr(s)).filter(s => s !== '');
+                if (mergedTrans[index]) dlgLines.push(mergedTrans[index]);
+
                 let lastDlg = dlgLines.length >= 2 ? dlgLines[dlgLines.length - 1] : '';
                 let hasTranslation = dlgLines.length >= 2 && /^[\(（].*[\)）]$/.test(lastDlg);
 
