@@ -254,6 +254,10 @@ function parseBulkInput() {
 
         const imgMap = {
             lowrider: 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2F1fc8d042-14e3-45e4-af75-03000fe8426a.webp?alt=media&token=e5d95796-8458-45ff-8f1b-3a5dfa10ea9d&v=1793377073787',
+            peek: 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2Fc91c63c9-8f91-477a-8800-4bb4816d43d7.webp?alt=media&token=0565f751-1a1d-4276-8c28-f373b55cf7bd&v=1793377073573'
+            cold: 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2Fb5693ccc-eb98-4929-9941-ce79e0b1a218.webp?alt=media&token=aa915222-668b-4cbc-acaa-108911a1568b&v=1793377073573'
+            poker: 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2Fc9426974-fc2d-4e32-8c2d-87f0b380d647.webp?alt=media&token=5816dd13-0b06-4062-9629-396b0a4ea8df&v=1793377073936'
+            chip: 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2Fca627f84-71c5-499d-8e92-215261da2600.webp?alt=media&token=abd31c93-536e-4358-84e9-0edb847b77fe&v=1793377073738'
             tattoo: 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2F4eed3b00-e45d-4f18-b496-3093d6fd89cd.webp?alt=media&token=fbcd8340-7571-43e6-9e7a-801118dfe3dd&v=1793377073946'
         };
 
