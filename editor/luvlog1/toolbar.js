@@ -1,6 +1,6 @@
 // ==========================================
 // toolbar.js
-// 플로팅 툴바 전용 (파서 로직 분리 완료)
+// 플로팅 툴바 전용 (겹침 방지 및 퀵 컬러 버튼)
 // ==========================================
 
 function handleSelection() {
@@ -87,7 +87,6 @@ function wrapSelectionWithStyle(styles) {
 }
 
 function applyQuickStyle(styleName) {
-    // 💡 [수정] Mint/Pink를 Javier/Ines 색상으로 1:1 완벽 치환
     if (styleName === 'javier') {
         wrapSelectionWithStyle({ color: '#d96b27', backgroundColor: '#fff0e6', padding: '0 2px', borderRadius: '3px' });
     } else if (styleName === 'ines') {
@@ -121,7 +120,7 @@ function changeInlineFontSize(delta) {
     setTimeout(handleSelection, 10);
 }
 
-// 드래그 센서 복구 (모바일 환경 호환)
+// 드래그 센서
 document.addEventListener('selectionchange', () => setTimeout(handleSelection, 10));
 document.addEventListener('mouseup', () => setTimeout(handleSelection, 10));
 document.addEventListener('keyup', () => setTimeout(handleSelection, 10));
@@ -153,6 +152,7 @@ function handleBlockClick(e) {
     const index = parseInt(blockEl.id.replace('preview-block-', ''));
     activePreviewIndex = index;
 
+    // 💡 [수정] 드래그 상태가 아닐 때만 노출하여 겹침 방지
     const selection = window.getSelection();
     if (selection.rangeCount && !selection.isCollapsed) {
         if(speakerToolbar) speakerToolbar.style.display = 'none';
@@ -164,13 +164,14 @@ function handleBlockClick(e) {
         const rect = blockEl.getBoundingClientRect();
         
         const toolbarHeight = speakerToolbar.offsetHeight || 36; 
-        const toolbarWidth = speakerToolbar.offsetWidth || 180;
+        const toolbarWidth = speakerToolbar.offsetWidth || 240; // 폭 늘림
         
-        let top = rect.top + window.scrollY - toolbarHeight - 8;
-        let left = rect.left + window.scrollX + 10; 
+        // 💡 [수정] 블록을 가리지 않도록 아예 왼쪽 상단 바깥쪽으로 위치 지정
+        let top = rect.top + window.scrollY - toolbarHeight - 15;
+        let left = rect.left + window.scrollX - 20; 
         
         if (top < window.scrollY) {
-            top = rect.bottom + window.scrollY + 8;
+            top = rect.bottom + window.scrollY + 10;
         }
         
         speakerToolbar.style.top = top + 'px';
@@ -180,11 +181,9 @@ function handleBlockClick(e) {
 
 function changeSpeakerFromPreview(newType) {
     if (activePreviewIndex === -1) return;
-    
     if (typeof changeBlockType === 'function') {
         changeBlockType(activePreviewIndex, newType);
     }
-    
     const speakerToolbar = document.getElementById('quickSpeakerToolbar');
     if (speakerToolbar) speakerToolbar.style.display = 'none';
     activePreviewIndex = -1;
@@ -192,19 +191,76 @@ function changeSpeakerFromPreview(newType) {
 
 function deleteBlockFromPreview() {
     if (activePreviewIndex === -1) return;
-    
     if (typeof deleteBlock === 'function') {
         deleteBlock(activePreviewIndex);
     }
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (speakerToolbar) speakerToolbar.style.display = 'none';
+    activePreviewIndex = -1;
+}
+
+// 💡 [추가] 블록 전체에 색상/형광펜 칠하기
+function applyFullColorToBlock(type) {
+    if (activePreviewIndex === -1) return;
+    let block = blocks[activePreviewIndex];
+    
+    if (type === 'javier') {
+        let color = document.getElementById('javierTextColor') ? document.getElementById('javierTextColor').value : '#ffb07c';
+        block.content = `<span style="color: ${color}; font-weight: bold;">${block.content}</span>`;
+    } else if (type === 'ines') {
+        let color = document.getElementById('inesTextColor') ? document.getElementById('inesTextColor').value : '#9ec5fe';
+        block.content = `<span style="color: ${color}; font-weight: bold;">${block.content}</span>`;
+    } else if (type === 'highlight') {
+        if (block.content.startsWith('==') && block.content.endsWith('==')) {
+            block.content = block.content.slice(2, -2); // 이미 칠해져 있으면 지우기
+        } else {
+            block.content = `==${block.content}==`; // 형광펜 마크다운 씌우기
+        }
+    }
+    
+    if (typeof renderEditor === 'function') renderEditor();
+    if (typeof saveState === 'function') saveState();
     
     const speakerToolbar = document.getElementById('quickSpeakerToolbar');
     if (speakerToolbar) speakerToolbar.style.display = 'none';
     activePreviewIndex = -1;
-    
-    if (typeof showToast === 'function') {
-        showToast('문단이 삭제되었습니다.');
-    }
 }
+
+// 💡 [추가] HTML 수정 없이 자바스크립트로 전체 색상 버튼 3개 자동 주입
+document.addEventListener("DOMContentLoaded", function() {
+    const tb = document.getElementById('quickSpeakerToolbar');
+    if (tb && !document.getElementById('btn-all-orange')) {
+        const divider = document.createElement('div');
+        divider.className = 'tb-divider';
+        divider.style.cssText = 'opacity: 0.3; margin: 0 4px;';
+        
+        const btnOr = document.createElement('button');
+        btnOr.id = 'btn-all-orange';
+        btnOr.title = '대사 전체 주황';
+        btnOr.innerHTML = '🎨';
+        btnOr.style.cssText = 'background: #fff0e6; color: #d96b27; border: 1px solid #ffccab; font-weight: bold; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;';
+        btnOr.onclick = () => applyFullColorToBlock('javier');
+        
+        const btnBl = document.createElement('button');
+        btnBl.id = 'btn-all-blue';
+        btnBl.title = '대사 전체 파랑';
+        btnBl.innerHTML = '🎨';
+        btnBl.style.cssText = 'background: #eef4ff; color: #5b8ce0; border: 1px solid #c2daff; font-weight: bold; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;';
+        btnBl.onclick = () => applyFullColorToBlock('ines');
+        
+        const btnHl = document.createElement('button');
+        btnHl.id = 'btn-all-hl';
+        btnHl.title = '전체 형광펜';
+        btnHl.innerHTML = '✏️';
+        btnHl.style.cssText = 'background: #C4F0E9; color: #b45309; border: 1px solid #a7dfd5; font-weight: bold; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;';
+        btnHl.onclick = () => applyFullColorToBlock('highlight');
+        
+        tb.appendChild(divider);
+        tb.appendChild(btnOr);
+        tb.appendChild(btnBl);
+        tb.appendChild(btnHl);
+    }
+});
 
 document.addEventListener('click', (e) => {
     const htmlPreview = document.getElementById('htmlPreview');
