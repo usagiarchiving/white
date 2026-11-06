@@ -483,7 +483,16 @@ function applyAutoCustomColor(safeKey) {
         showToast("해당 캐릭터를 사용하는 대사가 없습니다.");
     }
 }
-
+// 문단 전체가 *...* 한 쌍으로 감싸져 있으면 안쪽 텍스트를 반환, 아니면 null
+function unwrapWholeItalic(str) {
+    if (!str) return null;
+    const m = str.match(/^\s*\*(?!\*)([\s\S]+)\*\s*$/);   // 시작이 ** 이면 제외
+    if (!m) return null;
+    const inner = m[1];
+    // **굵게** 쌍을 제거했을 때 * 가 남아 있으면 (예: *a* b *c*) 전체 감싸기가 아님
+    if (/\*/.test(inner.replace(/\*\*[^*]+\*\*/g, ''))) return null;
+    return inner;
+}
 function applyTextStyles(text) {
     if (!text) return text;
     let hlColorEl = document.getElementById('highlightColor');
@@ -1072,9 +1081,23 @@ let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
                     htmlStr = statusHtml;
                 }
             }
-            else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; font-style: ${narrItalic}; text-align: left;">${divContent}</div>\n`;
-            }
+else if (block.type === 'narration') {
+    let narrHtml;
+    const wholeInner = unwrapWholeItalic(block.content);   // 여러 줄 전체가 *...* 인 경우
+    if (wholeInner !== null) {
+        narrHtml = `<span style="font-style: normal;">` +
+                   wholeInner.split('\n').map(l => applyTextStyles(l)).join('<br>') +
+                   `</span>`;
+    } else {
+        narrHtml = lines.map(l => {                         // 줄 단위로 전체가 *...* 인 경우
+            const inner = unwrapWholeItalic(l);
+            return inner !== null
+                ? `<span style="font-style: normal;">${applyTextStyles(inner)}</span>`
+                : applyTextStyles(l);
+        }).join('<br>');
+    }
+    htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; font-style: ${narrItalic}; text-align: left;">${narrHtml}</div>\n`;
+}
             else if (block.type === 'thought') {
                 htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; text-align: left;">${divContent}</div>\n`;
             }
