@@ -6,7 +6,7 @@
 // --------------------------------------------
 // Apogee 상태창 렌더러 (JSX 속성 → 정적 HTML)
 // --------------------------------------------
-const APOGEE_CSS = `
+const APOGEE_CSS = ` 
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
   .apl{--bg:#0e0b07;--bg2:#141009;--card:#1b1811;--card2:#201c14;--line:#4a4436;--line2:#2c2820;--line3:#6b6250;
     --acc:#dfb840;--acc2:#f0cc55;--ink:#fdf6e6;--ink2:#ded9cc;--ink3:#cdc7b8;--soft:#f2e2b8;--mute:#9d9686;--red:#a33636;
