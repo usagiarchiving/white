@@ -239,27 +239,212 @@ function parseAdvancedMarkdown(text) {
     return t;
 }
 
+
 // --------------------------------------------
 // 벌크 입력 파서
+// 본문: 한 줄 = 한 블록. 이전 블록에 병합하지 않음.
 // --------------------------------------------
 function parseBulkInput() {
     try {
         const bulkInput = document.getElementById('bulkInput');
+        if (!bulkInput) return;
+
         let text = bulkInput.value;
-        if (!text.trim()) return; // 💡 팝업창(Toast) 삭제
+        if (!text.trim()) return;
 
         const imgMap = {
-            'lowrider': 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2F1fc8d042-14e3-45e4-af75-03000fe8426a.webp?alt=media&token=e5d95796-8458-45ff-8f1b-3a5dfa10ea9d&v=[1793377073787](tel:1793377073787)',
-            'tattoo': 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2F4eed3b00-e45d-4f18-b496-3093d6fd89cd.webp?alt=media&token=fbcd8340-7571-43e6-9e7a-801118dfe3dd&v=[1793377073946](tel:1793377073946)'
+            lowrider: 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2F1fc8d042-14e3-45e4-af75-03000fe8426a.webp?alt=media&token=e5d95796-8458-45ff-8f1b-3a5dfa10ea9d&v=1793377073787',
+            tattoo: 'https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2Fcharacter_images%2Fcircumstances%2F4eed3b00-e45d-4f18-b496-3093d6fd89cd.webp?alt=media&token=fbcd8340-7571-43e6-9e7a-801118dfe3dd&v=1793377073946'
         };
 
-        // Apogee 전체를 먼저 보관하고, 본문에는 자리표시자만 남김.
-        // 여러 줄로 작성한 속성도 하나의 상태창으로 처리.
+        // 성공적으로 파싱한 뒤 기존 blocks에 추가.
+        const parsedBlocks = [];
+
+        let statusBuffer = [];
+        let codeBuffer = [];
+        let isCodeBlock = false;
+
+        function flushStatus() {
+            if (!statusBuffer.length) return;
+
+            parsedBlocks.push({
+                type: 'status',
+                content: statusBuffer.join('\n')
+            });
+
+            statusBuffer = [];
+        }
+
+        // 판별용 텍스트에서 줄 양 끝의 마크다운 강조 기호 제거.
+        // **"대사", (번역)**, **_문장_** 형식도 판별 가능.
+        function stripEdgeMarkers(value) {
+            return value.trim()
+                .replace(/^[*_]+/, '')
+                .replace(/[*_]+$/, '')
+                .trim();
+        }
+
+        function parseBodyLine(line) {
+            const original = line.trim();
+            if (!original) return;
+
+            const plain = stripEdgeMarkers(original);
+            if (!plain) return;
+
+            const mdImgMatch = original.match(/^!\[.*?\]\((.*?)\)$/);
+            if (mdImgMatch) {
+                flushStatus();
+                parsedBlocks.push({
+                    type: 'image',
+                    content: mdImgMatch[1].trim()
+                });
+                return;
+            }
+
+            const imgMatch = original.match(/\{\{img::([^}]+)\}\}/);
+            if (imgMatch) {
+                flushStatus();
+
+                const url = imgMap[imgMatch[1].trim()];
+                if (url) {
+                    parsedBlocks.push({
+                        type: 'image',
+                        content: url
+                    });
+                }
+                return;
+            }
+
+            if (
+                original === '---' ||
+                original === '***' ||
+                original.startsWith('구분선:')
+            ) {
+                flushStatus();
+                parsedBlocks.push({
+                    type: 'divider',
+                    content: 'solid-gray'
+                });
+                return;
+            }
+
+            // 기존 이모지 상태창만 묶음 유지.
+            const isEmojiStart =
+                /^(🗓|💍|📍|👕|👥|💭|🔔|🚨|💕|❤|🔥|🔫|✏|📰|💘)/.test(plain);
+
+            if (isEmojiStart) {
+                if (plain.startsWith('🗓')) flushStatus();
+                statusBuffer.push(plain);
+                return;
+            }
+
+            flushStatus();
+
+            // 이름 | "대사"
+            // 이름과 대사에 각각 **가 붙은 경우도 판별.
+            const named = plain.match(/^(.+?)\s*[|｜│]\s*(.+)$/);
+
+            if (named) {
+                const rawName = stripEdgeMarkers(named[1]);
+                const dialogue = stripEdgeMarkers(named[2]);
+
+                if (/^["“]/.test(dialogue)) {
+                    let type = 'custom';
+
+                    if (/javier|하비에르/i.test(rawName)) {
+                        type = 'javier';
+                    } else if (/ines|이네스/i.test(rawName)) {
+                        type = 'ines';
+                    }
+
+                    parsedBlocks.push({
+                        type: type,
+                        content: rawName + ' | ' + dialogue,
+                        customName: type === 'custom' ? rawName : '',
+                        customTextColor: '#8e8e93',
+                        customBgColor: '#E2E8F0'
+                    });
+                    return;
+                }
+            }
+
+            // 이름 없는 대사: **"대사"** 형식 포함.
+            // 이전 줄과 합치지 않고 매번 새 블록 생성.
+            if (/^["“]/.test(plain)) {
+                parsedBlocks.push({
+                    type: 'javier',
+                    content: plain
+                });
+                return;
+            }
+
+            // 번역도 별도 블록.
+            // 직전 대사의 캐릭터 타입/설정만 이어받고 내용은 합치지 않음.
+            const isTranslation =
+                /^\([\s\S]*\)$/.test(plain) ||
+                /^（[\s\S]*）$/.test(plain);
+
+            if (isTranslation) {
+                const previous = parsedBlocks[parsedBlocks.length - 1];
+
+                if (
+                    previous &&
+                    ['javier', 'ines', 'mob', 'custom'].includes(previous.type)
+                ) {
+                    parsedBlocks.push({
+                        type: previous.type,
+                        content: plain,
+                        customName: previous.customName || '',
+                        customTextColor: previous.customTextColor || '#8e8e93',
+                        customBgColor: previous.customBgColor || '#E2E8F0',
+                        customProfileUrl: previous.customProfileUrl || ''
+                    });
+                    return;
+                }
+            }
+
+            // 나레이션: 무조건 새 블록.
+            // 완결된 **볼드**는 유지하고 바깥 _만 제거.
+            let narration = original;
+
+            const boldUnderscore = original.match(/^\*\*_([\s\S]+)_\*\*$/);
+            const underscore = original.match(/^_([^_][\s\S]*?)_$/);
+
+            if (boldUnderscore) {
+                narration = '**' + boldUnderscore[1].trim() + '**';
+            } else if (underscore) {
+                narration = underscore[1].trim();
+            } else if (
+                !/^\*\*[\s\S]+\*\*$/.test(original) &&
+                /^[*_]|[*_]$/.test(original)
+            ) {
+                // 여러 줄을 통째로 감싼 강조 기호의 남은 조각 제거.
+                narration = plain;
+            }
+
+            parsedBlocks.push({
+                type: 'narration',
+                content: narration
+            });
+        }
+
+        // 코드블록 밖에서만 Apogee 태그를 임시 보관.
+        // 속성 내부 줄바꿈과 <br>는 본문 분리 대상에서 제외.
         const apogeeBlocks = [];
+        let protectingCode = false;
+        const tokenPrefix =
+            '@@APOGEE_' + Date.now().toString(36) + '_';
 
         text = text.replace(
-            /<Apogee\b((?:\s+[\w-]+\s*=\s*"[^"]*")*)\s*\/?>/gi,
+            /^[ \t]*```[^\r\n]*|<Apogee\b((?:\s+[\w-]+\s*=\s*"[^"]*")*)\s*\/?>/gim,
             function (match, attrsText) {
+                if (/^[ \t]*```/.test(match)) {
+                    protectingCode = !protectingCode;
+                    return match;
+                }
+
+                if (protectingCode) return match;
+
                 const attrs = Object.create(null);
 
                 attrsText.replace(
@@ -271,164 +456,88 @@ function parseBulkInput() {
                 );
 
                 const index = apogeeBlocks.length;
+                apogeeBlocks.push(attrs);
 
-                apogeeBlocks.push({
-                    raw: match,
-                    attrs: attrs
-                });
-
-                return '\n@@APOGEE_BLOCK_' + index + '@@\n';
+                return '\n' + tokenPrefix + index + '@@\n';
             }
         );
 
-        const lines = text.split(/\n/);
-        let statusBuffer = [];
-        let isCodeBlock = false;
-        let codeBuffer = [];
+        const sourceLines = text.replace(/\r\n?/g, '\n').split('\n');
 
-        lines.forEach(line => {
-            let seg = line.trim();
+        sourceLines.forEach(function (line) {
+            const trimmed = line.trim();
 
-            // Apogee 자리표시자 → HTML 상태창
-            const apogeeMatch = seg.match(/^@@APOGEE_BLOCK_(\d+)@@$/);
-            if (apogeeMatch) {
-                const apogee = apogeeBlocks[Number(apogeeMatch[1])];
-
-                // 코드블록 안에서는 상태창으로 변환하지 않고 원문 보존
+            if (trimmed.startsWith('```')) {
                 if (isCodeBlock) {
-                    codeBuffer.push(apogee.raw);
-                    return;
-                }
+                    parsedBlocks.push({
+                        type: 'html',
+                        content: codeBuffer.join('\n')
+                    });
 
-                // 앞서 모은 이모지 상태창이 있으면 먼저 저장하여 순서 유지
-                if (statusBuffer.length > 0) {
-                    blocks.push({ type: 'status', content: statusBuffer.join('\n') });
-                    statusBuffer = [];
-                }
-
-                if (typeof window.apogeeToHtml !== 'function') {
-                    throw new Error('Apogee 렌더러가 없습니다. apogeeToHtml 코드를 먼저 추가해주세요.');
-                }
-
-                blocks.push({
-                    type: 'html',
-                    content: window.apogeeToHtml(apogee.attrs)
-                });
-                return;
-            }
-
-            if (seg.startsWith('```')) {
-                if (isCodeBlock) {
-                    blocks.push({ type: 'html', content: codeBuffer.join('\n') });
                     codeBuffer = [];
                     isCodeBlock = false;
                 } else {
-                    if (statusBuffer.length > 0) {
-                        blocks.push({ type: 'status', content: statusBuffer.join('\n') });
-                        statusBuffer = [];
-                    }
+                    flushStatus();
                     isCodeBlock = true;
                     codeBuffer = [];
                 }
                 return;
             }
+
+            // HTML 코드 내부의 <br>나 줄바꿈은 그대로 유지.
             if (isCodeBlock) {
                 codeBuffer.push(line);
                 return;
             }
-            if (!seg) return;
 
-            let mdImgMatch = seg.match(/^!\[.*?\]\((.*?)\)$/);
-            if (mdImgMatch) {
-                blocks.push({ type: 'image', content: mdImgMatch[1].trim() });
-                return;
-            }
+            if (
+                trimmed.startsWith(tokenPrefix) &&
+                trimmed.endsWith('@@')
+            ) {
+                const indexText = trimmed.slice(tokenPrefix.length, -2);
 
-            const imgMatch = seg.match(/\{\{img::([^}]+)\}\}/);
-            if (imgMatch) {
-                const imgKey = imgMatch[1].trim();
-                const imgUrl = imgMap[imgKey] || '';
-                if (imgUrl) {
-                    blocks.push({ type: 'image', content: imgUrl });
-                }
-                return;
-            }
+                if (/^\d+$/.test(indexText)) {
+                    const attrs = apogeeBlocks[Number(indexText)];
 
-            if (seg === '---' || seg === '***' || seg.startsWith('구분선:')) {
-                blocks.push({ type: 'divider', content: 'solid-gray' });
-                return;
-            }
+                    if (attrs) {
+                        flushStatus();
 
-            const isEmojiStart = /^(🗓|💍|📍|👕|👥|💭|🔔|🚨|💕|❤|🔥|🔫|✏|📰|💘)/.test(seg);
-            if (isEmojiStart) {
-                if (seg.startsWith('🗓') && statusBuffer.length > 0) {
-                    blocks.push({ type: 'status', content: statusBuffer.join('\n') });
-                    statusBuffer = [];
-                }
-                statusBuffer.push(seg);
-            } else {
-                if (statusBuffer.length > 0) {
-                    blocks.push({ type: 'status', content: statusBuffer.join('\n') });
-                    statusBuffer = [];
-                }
+                        if (typeof window.apogeeToHtml !== 'function') {
+                            throw new Error('Apogee 렌더러가 없습니다.');
+                        }
 
-                // 💡 [추가] 인물 대사 인식 (이름 | "대사") -> 제3자(회색) 처리
-                const nameDialogMatch = seg.match(/^(.*?)\s*[|｜│]\s*(["“].*)$/);
-                if (nameDialogMatch) {
-                    let rawName = nameDialogMatch[1].replace(/^\*\*?|\*\*?$/g, '').trim();
-                    let blockType = 'custom';
-                    let textColor = '#8e8e93';
-                    if (rawName.toLowerCase().includes('javier') || rawName.includes('하비에르')) {
-                        blockType = 'javier';
-                    } else if (rawName.toLowerCase().includes('ines') || rawName.includes('이네스')) {
-                        blockType = 'ines';
-                    }
-                    blocks.push({
-                        type: blockType,
-                        content: seg, // **Javier Espinoza | "..." 형태 보존 (소설 렌더링용)
-                        customName: blockType === 'custom' ? rawName : '',
-                        customTextColor: textColor,
-                        customBgColor: '#E2E8F0'
-                    });
-                    return;
-                }
-
-                // 💡 [추가] 이름 없는 대사 ("대사") -> 기본 Javier로 할당 (나중에 모브 변경 가능)
-                if (/^["“].*?["”]/.test(seg)) {
-                    blocks.push({ type: 'javier', content: seg });
-                    return;
-                }
-
-                // 💡 [추가] 번역 괄호 (...) -> 직전 대사 블록에 병합
-                if (seg.startsWith('(') && seg.endsWith(')')) {
-                    let lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
-                    if (lastBlock && ['javier', 'ines', 'mob', 'custom'].includes(lastBlock.type)) {
-                        lastBlock.content += '\n' + seg;
+                        parsedBlocks.push({
+                            type: 'html',
+                            content: window.apogeeToHtml(attrs)
+                        });
                         return;
                     }
                 }
-
-                // 💡 [추가] 연속된 문장은 하나의 나레이션 블록으로 합치기
-                let lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
-                if (lastBlock && lastBlock.type === 'narration') {
-                    lastBlock.content += '\n' + seg;
-                } else {
-                    blocks.push({ type: 'narration', content: seg });
-                }
             }
+
+            // 실제 줄바꿈은 이미 sourceLines에서 분리됨.
+            // <br>, <br/>, <br />도 각각 새 블록 경계로 처리.
+            line.split(/<br\s*\/?>/gi).forEach(parseBodyLine);
         });
 
-        if (statusBuffer.length > 0) {
-            blocks.push({ type: 'status', content: statusBuffer.join('\n') });
+        flushStatus();
+
+        if (isCodeBlock && codeBuffer.length) {
+            parsedBlocks.push({
+                type: 'html',
+                content: codeBuffer.join('\n')
+            });
         }
-        if (isCodeBlock && codeBuffer.length > 0) {
-            blocks.push({ type: 'html', content: codeBuffer.join('\n') });
-        }
+
+        parsedBlocks.forEach(function (block) {
+            blocks.push(block);
+        });
 
         if (typeof renderEditor === 'function') renderEditor();
         if (typeof saveState === 'function') saveState();
+
         bulkInput.value = '';
-    } catch(e) {
+    } catch (e) {
         console.error(e);
     }
 }
