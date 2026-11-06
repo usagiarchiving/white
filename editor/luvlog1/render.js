@@ -1450,7 +1450,7 @@ function updateOutput(skipPreviewUpdate = false) {
                 // 외부 래퍼의 padding이므로 미리보기와 최종 HTML에 동일하게 적용되고,
                 // 본문 저장/불러오기 시 상태창 내부에 중복으로 쌓이지 않음.
                 const apogeeSpacing = isApogeeHtmlContent(block.content)
-                    ? ' style="width: 100%; padding-top: 30px;"'
+                    ? ' style="width: 100%; padding-top: 30px;padding-bottom: 30px;"'
                     : '';
 
                 htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)"${apogeeSpacing}>${block.content}</div>\n`;
