@@ -380,6 +380,8 @@ function parseBulkInput() {
 
             // 번역도 별도 블록.
             // 직전 대사의 캐릭터 타입/설정만 이어받고 내용은 합치지 않음.
+            // 번역: 새 블록을 만들지 않고 직전 대사 블록의 둘째 줄로 병합.
+            // 예) 이름 | "원문"  ->  같은 블록에 (번역)이 다음 줄로 들어감.
             const isTranslation =
                 /^\([\s\S]*\)$/.test(plain) ||
                 /^（[\s\S]*）$/.test(plain);
@@ -391,14 +393,7 @@ function parseBulkInput() {
                     previous &&
                     ['javier', 'ines', 'mob', 'custom'].includes(previous.type)
                 ) {
-                    parsedBlocks.push({
-                        type: previous.type,
-                        content: plain,
-                        customName: previous.customName || '',
-                        customTextColor: previous.customTextColor || '#8e8e93',
-                        customBgColor: previous.customBgColor || '#E2E8F0',
-                        customProfileUrl: previous.customProfileUrl || ''
-                    });
+                    previous.content = previous.content + '\n' + plain;
                     return;
                 }
             }
