@@ -28,7 +28,7 @@ function extractVideoId(url) {
 }
 
 // =========================================================================
-// 💡 다크모드 토글 + 배경색 커스텀 기능 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+// 💡 다크모드 토글 + 배경색 커스텀 기능 
 // =========================================================================
 const DEFAULT_BG_LIGHT = '#FFFFFF';
 const DEFAULT_BG_DARK = '#121212';
@@ -78,7 +78,7 @@ function initBgToggleVersionWatcher() {
 }
 
 // =========================================================================
-// 💡 여백(패딩) 설정 + 불러오기 시 기존 값 그대로 보존 (검색용 주석 태그: #LAYOUT_PADDING_LOGIC)
+// 💡 여백(패딩) 설정 + 불러오기 시 기존 값 그대로 보존
 // =========================================================================
 const layoutPad = {
     1: { x: 17, top: 5, bottom: 5 },
@@ -203,88 +203,28 @@ function toggleCustomBg() {
 }
 
 // =========================================================================
-// 💡 [수정] 캐릭터 프리셋 데이터 정의 (Javier / Ines)
+// 캐릭터 프리셋 데이터 정의 (Javier / Ines)
 // =========================================================================
 const CHARACTER_PRESETS = {
     default1: {
-        javier: {
-            novelColor: '#ffb07c',
-            bubbleTextColor: '#d96b27',
-            bubbleBgColor: '#fff0e6',
-            name: 'Javier Espinoza',
-            profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
-        },
-        ines: {
-            novelColor: '#9ec5fe',
-            bubbleTextColor: '#5b8ce0',
-            bubbleBgColor: '#eef4ff',
-            name: 'Ines Hartmann',
-            profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
-        }
+        javier: { novelColor: '#ffb07c', bubbleTextColor: '#d96b27', bubbleBgColor: '#fff0e6', name: 'Javier Espinoza', profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg' },
+        ines: { novelColor: '#9ec5fe', bubbleTextColor: '#5b8ce0', bubbleBgColor: '#eef4ff', name: 'Ines Hartmann', profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg' }
     },
     default2: {
-        javier: {
-            novelColor: '#ffb07c',
-            bubbleTextColor: '#d96b27',
-            bubbleBgColor: '#fff0e6',
-            name: 'Javier Espinoza',
-            profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
-        },
-        ines: {
-            novelColor: '#9ec5fe',
-            bubbleTextColor: '#5b8ce0',
-            bubbleBgColor: '#eef4ff',
-            name: 'Ines Hartmann',
-            profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
-        }
+        javier: { novelColor: '#ffb07c', bubbleTextColor: '#d96b27', bubbleBgColor: '#fff0e6', name: 'Javier Espinoza', profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg' },
+        ines: { novelColor: '#9ec5fe', bubbleTextColor: '#5b8ce0', bubbleBgColor: '#eef4ff', name: 'Ines Hartmann', profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg' }
     },
     daily: {
-        javier: {
-            novelColor: '#ffb07c',
-            bubbleTextColor: '#d96b27',
-            bubbleBgColor: '#fff0e6',
-            name: 'Javier Espinoza',
-            profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
-        },
-        ines: {
-            novelColor: '#9ec5fe',
-            bubbleTextColor: '#5b8ce0',
-            bubbleBgColor: '#eef4ff',
-            name: 'Ines Hartmann',
-            profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
-        }
+        javier: { novelColor: '#ffb07c', bubbleTextColor: '#d96b27', bubbleBgColor: '#fff0e6', name: 'Javier Espinoza', profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg' },
+        ines: { novelColor: '#9ec5fe', bubbleTextColor: '#5b8ce0', bubbleBgColor: '#eef4ff', name: 'Ines Hartmann', profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg' }
     },
     preset4basic: {
-        javier: {
-            novelColor: '#ffb07c',
-            bubbleTextColor: '#d96b27',
-            bubbleBgColor: '#fff0e6',
-            name: 'Javier Espinoza',
-            profileUrl: 'https://i.ibb.co/j9dVQJMP/IMG-5754.jpg'
-        },
-        ines: {
-            novelColor: '#9ec5fe',
-            bubbleTextColor: '#5b8ce0',
-            bubbleBgColor: '#eef4ff',
-            name: 'Ines Hartmann',
-            profileUrl: 'https://i.ibb.co/twf0JszX/IMG-2292.png'
-        }
+        javier: { novelColor: '#ffb07c', bubbleTextColor: '#d96b27', bubbleBgColor: '#fff0e6', name: 'Javier Espinoza', profileUrl: 'https://i.ibb.co/j9dVQJMP/IMG-5754.jpg' },
+        ines: { novelColor: '#9ec5fe', bubbleTextColor: '#5b8ce0', bubbleBgColor: '#eef4ff', name: 'Ines Hartmann', profileUrl: 'https://i.ibb.co/twf0JszX/IMG-2292.png' }
     },
     preset4daily: {
-        javier: {
-            novelColor: '#ffb07c',
-            bubbleTextColor: '#d96b27',
-            bubbleBgColor: '#fff0e6',
-            name: 'Javier Espinoza',
-            profileUrl: 'https://i.ibb.co/j9dVQJMP/IMG-5754.jpg'
-        },
-        ines: {
-            novelColor: '#9ec5fe',
-            bubbleTextColor: '#5b8ce0',
-            bubbleBgColor: '#eef4ff',
-            name: 'Ines Hartmann',
-            profileUrl: 'https://i.ibb.co/twf0JszX/IMG-2292.png'
-        }
+        javier: { novelColor: '#ffb07c', bubbleTextColor: '#d96b27', bubbleBgColor: '#fff0e6', name: 'Javier Espinoza', profileUrl: 'https://i.ibb.co/j9dVQJMP/IMG-5754.jpg' },
+        ines: { novelColor: '#9ec5fe', bubbleTextColor: '#5b8ce0', bubbleBgColor: '#eef4ff', name: 'Ines Hartmann', profileUrl: 'https://i.ibb.co/twf0JszX/IMG-2292.png' }
     }
 };
 
@@ -305,52 +245,27 @@ document.addEventListener('click', function(e) {
 
 function applyCharacterPreset(presetKey) {
     const preset = CHARACTER_PRESETS[presetKey];
-    if (!preset) {
-        if (typeof showToast === 'function') showToast('존재하지 않는 프리셋입니다.');
-        return;
-    }
+    if (!preset) return;
 
-    const javierNovel = document.getElementById('javierTextColor');
-    const javierNovelP = document.getElementById('javierTextColorPicker');
-    const javierBubbleText = document.getElementById('javierBubbleTextColor');
-    const javierBubbleTextP = document.getElementById('javierBubbleTextColorPicker');
-    const javierBg = document.getElementById('javierBgColor');
-    const javierBgP = document.getElementById('javierBgColorPicker');
-    const javierName = document.getElementById('javierName');
-    const javierProfile = document.getElementById('javierProfileUrl');
+    const mapIds = [
+        ['javierTextColor', preset.javier.novelColor], ['javierTextColorPicker', preset.javier.novelColor],
+        ['javierBubbleTextColor', preset.javier.bubbleTextColor], ['javierBubbleTextColorPicker', preset.javier.bubbleTextColor],
+        ['javierBgColor', preset.javier.bubbleBgColor], ['javierBgColorPicker', preset.javier.bubbleBgColor],
+        ['javierName', preset.javier.name], ['javierProfileUrl', preset.javier.profileUrl],
+        ['inesTextColor', preset.ines.novelColor], ['inesTextColorPicker', preset.ines.novelColor],
+        ['inesBubbleTextColor', preset.ines.bubbleTextColor], ['inesBubbleTextColorPicker', preset.ines.bubbleTextColor],
+        ['inesBgColor', preset.ines.bubbleBgColor], ['inesBgColorPicker', preset.ines.bubbleBgColor],
+        ['inesName', preset.ines.name], ['inesProfileUrl', preset.ines.profileUrl]
+    ];
 
-    if (javierNovel) javierNovel.value = preset.javier.novelColor;
-    if (javierNovelP) javierNovelP.value = preset.javier.novelColor;
-    if (javierBubbleText) javierBubbleText.value = preset.javier.bubbleTextColor;
-    if (javierBubbleTextP) javierBubbleTextP.value = preset.javier.bubbleTextColor;
-    if (javierBg) javierBg.value = preset.javier.bubbleBgColor;
-    if (javierBgP) javierBgP.value = preset.javier.bubbleBgColor;
-    if (javierName) javierName.value = preset.javier.name;
-    if (javierProfile) javierProfile.value = preset.javier.profileUrl;
-
-    const inesNovel = document.getElementById('inesTextColor');
-    const inesNovelP = document.getElementById('inesTextColorPicker');
-    const inesBubbleText = document.getElementById('inesBubbleTextColor');
-    const inesBubbleTextP = document.getElementById('inesBubbleTextColorPicker');
-    const inesBg = document.getElementById('inesBgColor');
-    const inesBgP = document.getElementById('inesBgColorPicker');
-    const inesName = document.getElementById('inesName');
-    const inesProfile = document.getElementById('inesProfileUrl');
-
-    if (inesNovel) inesNovel.value = preset.ines.novelColor;
-    if (inesNovelP) inesNovelP.value = preset.ines.novelColor;
-    if (inesBubbleText) inesBubbleText.value = preset.ines.bubbleTextColor;
-    if (inesBubbleTextP) inesBubbleTextP.value = preset.ines.bubbleTextColor;
-    if (inesBg) inesBg.value = preset.ines.bubbleBgColor;
-    if (inesBgP) inesBgP.value = preset.ines.bubbleBgColor;
-    if (inesName) inesName.value = preset.ines.name;
-    if (inesProfile) inesProfile.value = preset.ines.profileUrl;
+    mapIds.forEach(item => {
+        let el = document.getElementById(item[0]);
+        if(el) el.value = item[1];
+    });
 
     const dropdown = document.getElementById('presetDropdown');
     if (dropdown) dropdown.style.display = 'none';
-
     if (typeof updateOutput === 'function') updateOutput();
-    if (typeof showToast === 'function') showToast(`캐릭터 프리셋 [${presetKey}] 적용 완료!`);
 }
 
 function scrollToPreview(index) {
@@ -478,21 +393,9 @@ function applyAutoCustomColor(safeKey) {
     if (count > 0) {
         renderEditor();
         saveState();
-        showToast(`총 ${count}개의 대사에 캐릭터 설정이 일괄 적용되었습니다! 🚀`);
-    } else {
-        showToast("해당 캐릭터를 사용하는 대사가 없습니다.");
     }
 }
-// 문단 전체가 *...* 한 쌍으로 감싸져 있으면 안쪽 텍스트를 반환, 아니면 null
-function unwrapWholeItalic(str) {
-    if (!str) return null;
-    const m = str.match(/^\s*\*(?!\*)([\s\S]+)\*\s*$/);   // 시작이 ** 이면 제외
-    if (!m) return null;
-    const inner = m[1];
-    // **굵게** 쌍을 제거했을 때 * 가 남아 있으면 (예: *a* b *c*) 전체 감싸기가 아님
-    if (/\*/.test(inner.replace(/\*\*[^*]+\*\*/g, ''))) return null;
-    return inner;
-}
+
 function applyTextStyles(text) {
     if (!text) return text;
     let hlColorEl = document.getElementById('highlightColor');
@@ -511,21 +414,6 @@ function renderEditor() {
     const list = document.getElementById('editorList');
     list.innerHTML = '';
     blocks.forEach((block, index) => {
-        // 💡 대사 바로 뒤 나레이션의 첫 줄이 (번역)이면 대사에 붙이고 나레이션에서는 제외
-const stripBr = s => s.replace(/^(\s*<br\s*\/?>\s*)+/i, '').trim();
-const mergedTrans = {};
-const skipFirstLine = {};
-blocks.forEach((b, i) => {
-    if (!['javier', 'ines', 'mob', 'custom'].includes(b.type)) return;
-    const n = blocks[i + 1];
-    if (!n || n.type !== 'narration') return;
-    const firstLine = stripBr(n.content.split('\n')[0] || '');
-    if (/^[\(（].*[\)）]$/.test(firstLine)) {
-        mergedTrans[i] = firstLine;
-        skipFirstLine[i + 1] = true;
-    }
-});
-
         const item = document.createElement('div');
         item.className = 'block-item';
         item.id = `editor-block-${index}`;
@@ -580,7 +468,6 @@ blocks.forEach((b, i) => {
                 </div>
             `;
         }
-        let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
         let narrationToolbar = '';
         if (isNarration) {
             narrationToolbar = `
@@ -846,12 +733,7 @@ function updateOutput(skipPreviewUpdate = false) {
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; display: flex; justify-content: center; align-items: center;">${dividerInner}</div>\n`;
         } else {
             let lines = block.content.split('\n');
-if (skipFirstLine[index]) {
-    lines = lines.slice(1);
-    if (lines.join('').trim() === '') return;
-            }
-let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
-
+            let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
             if (block.type === 'title') {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 10px 0; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle};">${applyTextStyles(block.content)}</div>\n`;
             }
@@ -891,7 +773,7 @@ let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
                 } else {
                     bgColor = block.customBgColor || '#E2E8F0';
                     textColor = block.customTextColor || '#333333';
-                    imageUrl = extractProfileUrl(block.customProfileUrl) || `ml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
+                    imageUrl = extractProfileUrl(block.customProfileUrl) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
                     charName = block.customName || '제3자';
                 }
                 
@@ -926,7 +808,6 @@ let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
                     htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${mt}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
                 }
             }
-            //수정
             else if (isCurrDiag) {
                 let textColor;
                 if (curr === 'javier') { textColor = javierTextColor; }
@@ -934,10 +815,8 @@ let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
                 else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : mobTextColor; }
                 else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
 
-                // 💡 소설형 투톤: 2줄 이상 + 마지막 줄이 (번역) 형태일 때만 발동
-                let dlgLines = block.content.split('\n').map(s => stripBr(s)).filter(s => s !== '');
-                if (mergedTrans[index]) dlgLines.push(mergedTrans[index]);
-
+                // 💡 [수정] 소설형 투톤: 2줄 이상 + 마지막 줄이 (번역) 형태일 때만 발동
+                let dlgLines = block.content.split('\n').map(s => s.trim()).filter(s => s !== '');
                 let lastDlg = dlgLines.length >= 2 ? dlgLines[dlgLines.length - 1] : '';
                 let hasTranslation = dlgLines.length >= 2 && /^[\(（].*[\)）]$/.test(lastDlg);
 
@@ -1081,23 +960,9 @@ let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
                     htmlStr = statusHtml;
                 }
             }
-else if (block.type === 'narration') {
-    let narrHtml;
-    const wholeInner = unwrapWholeItalic(block.content);   // 여러 줄 전체가 *...* 인 경우
-    if (wholeInner !== null) {
-        narrHtml = `<span style="font-style: normal;">` +
-                   wholeInner.split('\n').map(l => applyTextStyles(l)).join('<br>') +
-                   `</span>`;
-    } else {
-        narrHtml = lines.map(l => {                         // 줄 단위로 전체가 *...* 인 경우
-            const inner = unwrapWholeItalic(l);
-            return inner !== null
-                ? `<span style="font-style: normal;">${applyTextStyles(inner)}</span>`
-                : applyTextStyles(l);
-        }).join('<br>');
-    }
-    htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; font-style: ${narrItalic}; text-align: left;">${narrHtml}</div>\n`;
-}
+            else if (block.type === 'narration') {
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; font-style: ${narrItalic}; text-align: left;">${divContent}</div>\n`;
+            }
             else if (block.type === 'thought') {
                 htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; text-align: left;">${divContent}</div>\n`;
             }
@@ -1231,6 +1096,7 @@ body {
 .postit-scroll::-webkit-scrollbar { width: 5px; }
 .postit-scroll::-webkit-scrollbar-track { background: transparent; }
 .postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+body.dark-mode .postit-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
 </style>
 `;
     let previewWrapperStyle = (outputVersion === 1) ? ` style="padding-top: ${padTop}px; padding-bottom: ${padBottom}px;"` : '';
@@ -1268,381 +1134,3 @@ ${cleanInnerContent}
     }
     document.getElementById('finalHtmlCode').value = finalHtml;
 }
-
-function importFromHtml() {
-    const htmlText = document.getElementById('finalHtmlCode').value;
-    if (!htmlText.trim()) {
-        showToast('불러올 HTML 코드를 입력해주세요.');
-        return;
-    }
-    const styleMatch = htmlText.match(/\.tistory-post-wrapper\s*\{\s*([^}]+)\}/);
-    if (styleMatch) {
-        const styleRules = styleMatch[1];
-        const fontMatch = styleRules.match(/font-family:\s*([^;]+);/);
-        if (fontMatch) {
-            currentFontFamily = fontMatch[1].trim();
-            const fontSelect = document.getElementById('fontSelect');
-            if (fontSelect) fontSelect.value = currentFontFamily;
-            document.body.style.fontFamily = currentFontFamily;
-        }
-        const sizeMatch = styleRules.match(/font-size:\s*(\d+)px;/);
-        if (sizeMatch) {
-            currentFontSize = parseInt(sizeMatch[1], 10);
-            const sizeDisplay = document.getElementById('fontSizeDisplay');
-            if (sizeDisplay) sizeDisplay.innerText = currentFontSize + 'px';
-        }
-        const lhMatch = styleRules.match(/line-height:\s*([\d.]+);/);
-        if (lhMatch) {
-            currentLineHeight = parseFloat(lhMatch[1]);
-            const lhInput = document.querySelector('input[oninput*="lineHeight"]');
-            const lhVal = document.getElementById('lineHeightVal');
-            if (lhInput) lhInput.value = currentLineHeight;
-            if (lhVal) lhVal.innerText = currentLineHeight;
-        }
-        const lsMatch = styleRules.match(/letter-spacing:\s*([-\d.]+)em;/);
-        if (lsMatch) {
-            currentLetterSpacing = parseFloat(lsMatch[1]);
-            const lsInput = document.querySelector('input[oninput*="letterSpacing"]');
-            const lsVal = document.getElementById('letterSpacingVal');
-            if (lsInput) lsInput.value = currentLetterSpacing;
-            if (lsVal) lsVal.innerText = currentLetterSpacing + 'em';
-        }
-        const isV1Html = /id=["']content-wrapper["']/.test(htmlText);
-        const padMatch = styleRules.match(/(?:^|[;\s])padding:\s*([^;]+);/);
-        if (padMatch) {
-            const pv = parsePaddingShorthand(padMatch[1]);
-            if (pv) layoutPad[isV1Html ? 1 : 2].x = pv.right;
-        }
-        if (isV1Html) {
-            const cwMatch = htmlText.match(/#content-wrapper\s*\{([^}]*)\}/);
-            if (cwMatch) {
-                const topM = cwMatch[1].match(/padding-top:\s*([^;]+);?/);
-                const botM = cwMatch[1].match(/padding-bottom:\s*([^;]+);?/);
-                const tv = topM ? parsePxValue(topM[1]) : null;
-                const bv = botM ? parsePxValue(botM[1]) : null;
-                if (tv !== null) layoutPad[1].top = tv;
-                if (bv !== null) layoutPad[1].bottom = bv;
-            }
-        }
-        const bgMatch = styleRules.match(/background-color:\s*(#[0-9A-Fa-f]{6});/i);
-        if (bgMatch) {
-            const bgColorEl = document.getElementById('customBgColor');
-            const bgColorPickerEl = document.getElementById('customBgColorPicker');
-            const bgToggleEl = document.getElementById('customBgToggle');
-            if (bgColorEl) bgColorEl.value = bgMatch[1].toUpperCase();
-            if (bgColorPickerEl) bgColorPickerEl.value = bgMatch[1].toUpperCase();
-            if (bgToggleEl) bgToggleEl.checked = true;
-            bgColorUserEdited = true; 
-        }
-        const colorMatch = styleRules.match(/color:\s*(#[0-9A-Fa-f]{6});/i);
-        if (colorMatch) {
-            const narrColorEl = document.getElementById('narrColor');
-            const narrColorPickerEl = document.getElementById('narrColorPicker');
-            if (narrColorEl) narrColorEl.value = colorMatch[1].toUpperCase();
-            if (narrColorPickerEl) narrColorPickerEl.value = colorMatch[1].toUpperCase();
-        }
-    }
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlText;
-    let container = tempDiv.querySelector('#content-wrapper') || tempDiv.querySelector('.tistory-post-wrapper') || tempDiv.querySelector('body') || tempDiv;
-    const newBlocks = [];
-    let foundJavier = false;
-    let foundInes = false;
-    let foundMob = false;
-    let foundNarr = false;
-    function rgbToHex(rgb) {
-        if (!rgb) return '';
-        if (rgb.startsWith('#')) return rgb.toUpperCase();
-        let match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-        if (!match) return rgb;
-        return "#" + (1 << 24 | match[1] << 16 | match[2] << 8 | match[3]).toString(16).slice(1).toUpperCase();
-    }
-    Array.from(container.children).forEach(child => {
-        if (['STYLE', 'SCRIPT', 'IFRAME', 'LINK', 'META', 'TITLE'].includes(child.tagName)) return;
-        let type = child.getAttribute('data-type');
-        let content = '';
-        let customTextColor = '#333333';
-        let customBgColor = '#E2E8F0';
-        let customName = '';
-        let customProfileUrl = '';
-        let bgmTitle = '';
-        let bgmUrl = '';
-        let polaroidDate = '';
-        let polaroidCaption = '';
-        let outerHtml = child.outerHTML;
-        let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
-        if (!type) {
-            if (outerHtml.includes('playBGM')) {
-                type = 'bgm';
-            } else if (outerHtml.includes('max-width: 500px') && (outerHtml.includes('#fdfdfd') || outerHtml.includes('상태창') || outerHtml.includes('INNER THOUGHT') || outerHtml.includes('#242424'))) {
-                type = 'status';
-            } else if (child.style.fontStyle === 'italic' && (child.style.color === 'rgb(119, 119, 119)' || child.style.color === 'rgb(142, 142, 147)')) {
-                type = 'thought';
-            } else if (child.style.color === 'rgb(255, 176, 124)' || child.style.color === 'rgb(217, 107, 39)') {
-                type = 'javier';
-            } else if (child.style.color === 'rgb(158, 197, 254)' || child.style.color === 'rgb(91, 140, 224)') {
-                type = 'ines';
-            } else if (child.querySelector('img') && !outerHtml.includes('border-radius: 50%') && !outerHtml.includes('Polaroid') && !outerHtml.includes('av')) {
-                type = 'image';
-            } else if (outerHtml.includes('font-weight: bold') && child.style.textAlign === 'left') {
-                type = 'title';
-            } else if (outerHtml.includes('color: #8e8e93') || outerHtml.includes('0.8em') || outerHtml.includes('13px')) {
-                type = 'dday';
-            } else if (outerHtml.includes('background-color: #333333') || outerHtml.includes('background-color: #e5e5ea') || outerHtml.includes('rotate(45deg)') || outerHtml.includes('dashed')) {
-                type = 'divider';
-            } else if (outerHtml.includes('data-type="postit"') || (outerHtml.includes('max-width: 450px') && outerHtml.includes('rotate(') && !outerHtml.includes('Polaroid'))) {
-                type = 'postit';
-            } else if (outerHtml.includes('data-type="polaroid"') || outerHtml.includes('Polaroid')) {
-                type = 'polaroid';
-            } else if (innerTextClean === '' && !child.querySelector('img')) {
-                type = 'empty';
-            } else {
-                type = 'narration';
-            }
-        }
-        if (type === 'divider') {
-            let styleMatch = child.getAttribute('data-style');
-            content = styleMatch || 'solid-gray';
-        } else if (['javier', 'ines', 'mob', 'custom'].includes(type)) {
-            let textTarget = child;
-            let isBubbleMode = false;
-            if (child.classList && (child.classList.contains('scroll-msg-box') || child.classList.contains('m-msg'))) {
-                isBubbleMode = true;
-                let bubble2Target = child.querySelector('.m-bubble');
-                if (bubble2Target) {
-                    textTarget = bubble2Target;
-                    let nameEl = child.querySelector('.m-name');
-                    if (nameEl) customName = nameEl.textContent.trim();
-                    let imgEl = child.querySelector('.av img');
-                    if (imgEl) customProfileUrl = imgEl.src;
-                    customBgColor = rgbToHex(bubble2Target.style.backgroundColor) || '#E2E8F0';
-                } else if (child.children.length > 1) {
-                    textTarget = child.children[1];
-                    let imgEl = child.querySelector('img');
-                    if (imgEl) customProfileUrl = imgEl.src;
-                    customBgColor = rgbToHex(textTarget.style.backgroundColor) || '#E2E8F0';
-                }
-            }
-            let rawHtml = textTarget.innerHTML || '';
-            rawHtml = rawHtml.replace(/<div class="bubble-tail"[^>]*>.*?<\/div>/gi, '');
-            rawHtml = rawHtml.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
-            content = rawHtml.replace(/^\n+|\n+$/g, '').trim();
-            let textHex = rgbToHex(textTarget.style.color || child.style.color);
-            if (type === 'javier') {
-                if (!foundJavier) {
-                    if (textHex) {
-                        if (isBubbleMode) {
-                            let b1 = document.getElementById('javierBubbleTextColor');
-                            let b2 = document.getElementById('javierBubbleTextColorPicker');
-                            let bg1 = document.getElementById('javierBgColor');
-                            let bg2 = document.getElementById('javierBgColorPicker');
-                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
-                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
-                        } else {
-                            let m1 = document.getElementById('javierTextColor');
-                            let m2 = document.getElementById('javierTextColorPicker');
-                            if (m1) m1.value = textHex; if (m2) m2.value = textHex;
-                        }
-                    }
-                    if (customName) { let el = document.getElementById('javierName'); if(el) el.value = customName; }
-                    if (customProfileUrl) { let el = document.getElementById('javierProfileUrl'); if(el) el.value = customProfileUrl; }
-                    foundJavier = true;
-                }
-            } else if (type === 'ines') {
-                if (!foundInes) {
-                    if (textHex) {
-                        if (isBubbleMode) {
-                            let b1 = document.getElementById('inesBubbleTextColor');
-                            let b2 = document.getElementById('inesBubbleTextColorPicker');
-                            let bg1 = document.getElementById('inesBgColor');
-                            let bg2 = document.getElementById('inesBgColorPicker');
-                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
-                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
-                        } else {
-                            let p1 = document.getElementById('inesTextColor');
-                            let p2 = document.getElementById('inesTextColorPicker');
-                            if (p1) p1.value = textHex; if (p2) p2.value = textHex;
-                        }
-                    }
-                    if (customName) { let el = document.getElementById('inesName'); if(el) el.value = customName; }
-                    if (customProfileUrl) { let el = document.getElementById('inesProfileUrl'); if(el) el.value = customProfileUrl; }
-                    foundInes = true;
-                }
-            } else if (type === 'mob') {
-                if (!foundMob) {
-                    if (textHex) {
-                        if (isBubbleMode) {
-                            let b1 = document.getElementById('mobBubbleTextColor');
-                            let b2 = document.getElementById('mobBubbleTextColorPicker');
-                            let bg1 = document.getElementById('mobBgColor');
-                            let bg2 = document.getElementById('mobBgColorPicker');
-                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
-                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
-                        } else {
-                            let m1 = document.getElementById('mobTextColor');
-                            let m2 = document.getElementById('mobTextColorPicker');
-                            if (m1) m1.value = textHex; if (m2) m2.value = textHex;
-                        }
-                    }
-                    if (customName) { let el = document.getElementById('mobName'); if(el) el.value = customName; }
-                    if (customProfileUrl) { let el = document.getElementById('mobProfileUrl'); if(el) el.value = customProfileUrl; }
-                    foundMob = true;
-                }
-            } else if (type === 'custom') {
-                customTextColor = textHex || '#333333';
-            }
-        } else if (type === 'thought') {
-            let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
-            content = rawHtml.replace(/^\n+|\n+$/g, '');
-        } else if (type === 'title') {
-            let rawHtml = child.innerHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
-            let tDiv = document.createElement('div');
-            tDiv.innerHTML = rawHtml;
-            content = (tDiv.textContent || tDiv.innerText || "").trim();
-        } else if (type === 'postit') {
-            const txtDiv = child.querySelectorAll('div')[1];
-            if (txtDiv) {
-                let rawHtml = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n');
-                content = rawHtml.replace(/^\n+|\n+$/g, '').replace(/<[^>]*>?/gm, '');
-            }
-        } else if (type === 'polaroid') {
-            const img = child.querySelector('img');
-            if (img) content = img.src;
-            const textContainer = child.children[2];
-            if (textContainer) {
-                const txtDivs = textContainer.querySelectorAll('div');
-                if (txtDivs.length >= 2) {
-                    polaroidDate = txtDivs[0].textContent || '';
-                    polaroidCaption = txtDivs[1].textContent || '';
-                }
-            }
-        } else if (type === 'narration') {
-            let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
-            content = rawHtml.replace(/^\n+|\n+$/g, '');
-            if (!foundNarr) {
-                let nColor = rgbToHex(child.style.color);
-                if (nColor) {
-                    let n1 = document.getElementById('narrColor');
-                    let n2 = document.getElementById('narrColorPicker');
-                    if (n1) n1.value = nColor;
-                    if (n2) n2.value = nColor;
-                }
-                let italicCheck = document.getElementById('narrItalic');
-                if (italicCheck) italicCheck.checked = child.style.fontStyle === 'italic';
-                foundNarr = true;
-            }
-        } else if (type === 'dday') {
-            let rawHtml = child.innerHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
-            let tDiv = document.createElement('div');
-            tDiv.innerHTML = rawHtml;
-            content = (tDiv.textContent || tDiv.innerText || "").trim();
-        } else if (type === 'status' || type === 'html') {
-            content = child.innerHTML.trim();
-        } else if (type === 'bgm') {
-            const titleSpan = child.querySelector('span[style*="max-width: 120px"]');
-            if (titleSpan) bgmTitle = titleSpan.textContent.trim();
-            const playDiv = child.querySelector('div[onclick*="playBGM"]');
-            if (playDiv) {
-                const match = playDiv.getAttribute('onclick').match(/playBGM\('([^']+)'/);
-                if (match) bgmUrl = 'https://youtu.be/' + match[1];
-            }
-        } else if (type === 'image') {
-            const img = child.querySelector('img');
-            if (img) content = img.src;
-        } else if (type === 'empty') {
-            content = '';
-        }
-        if (type === 'narration' && !content) type = 'empty';
-        newBlocks.push({
-            type: type,
-            content: content || '',
-            customTextColor: customTextColor,
-            customBgColor: customBgColor,
-            customName: customName,
-            customProfileUrl: customProfileUrl,
-            bgmTitle: bgmTitle,
-            bgmUrl: bgmUrl,
-            polaroidDate: polaroidDate,
-            polaroidCaption: polaroidCaption
-        });
-    });
-    if (newBlocks.length > 0) {
-        blocks = newBlocks;
-        if (typeof renderEditor === 'function') renderEditor();
-        saveState();
-    } else {
-        showToast('유효한 블록이 없습니다. 코드를 확인해주세요.');
-    }
-}
-
-function copyHtml() {
-    const code = document.getElementById('finalHtmlCode');
-    if(code) {
-        code.select();
-        document.execCommand('copy');
-        showToast('최종 HTML이 복사되었습니다!');
-    }
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    setupColorPicker('javierTextColorPicker', 'javierTextColor');
-    setupColorPicker('javierBubbleTextColorPicker', 'javierBubbleTextColor');
-    setupColorPicker('javierBgColorPicker', 'javierBgColor');
-    setupColorPicker('inesTextColorPicker', 'inesTextColor');
-    setupColorPicker('inesBubbleTextColorPicker', 'inesBubbleTextColor');
-    setupColorPicker('inesBgColorPicker', 'inesBgColor');
-    setupColorPicker('mobTextColorPicker', 'mobTextColor');
-    setupColorPicker('mobBubbleTextColorPicker', 'mobBubbleTextColor');
-    setupColorPicker('mobBgColorPicker', 'mobBgColor');
-    setupColorPicker('narrColorPicker', 'narrColor');
-    setupColorPicker('highlightColorPicker', 'highlightColor');
-    setupColorPicker('customBgColorPicker', 'customBgColor');
-
-    (function initDefaultBgColor() {
-        const bgColorEl = document.getElementById('customBgColor');
-        const bgColorPickerEl = document.getElementById('customBgColorPicker');
-        if (!bgColorEl) return;
-        const cur = (bgColorEl.value || '').trim().toUpperCase();
-        if (cur === '' || cur === '#FAFAFA') {
-            const defaultBg = (typeof isDarkMode !== 'undefined' && isDarkMode) ? DEFAULT_BG_DARK : DEFAULT_BG_LIGHT;
-            bgColorEl.value = defaultBg;
-            if (bgColorPickerEl) bgColorPickerEl.value = defaultBg;
-        }
-    })();
-
-    initLayoutPadUI();
-    initBgToggleVersionWatcher();
-
-    ['customBgColor', 'customBgColorPicker'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', () => { bgColorUserEdited = true; });
-    });
-
-    const inputsToSync = [
-        'javierTextColor', 'javierBubbleTextColor', 'javierBgColor', 'javierName', 'javierProfileUrl',
-        'inesTextColor', 'inesBubbleTextColor', 'inesBgColor', 'inesName', 'inesProfileUrl',
-        'mobTextColor', 'mobBubbleTextColor', 'mobBgColor', 'mobName', 'mobProfileUrl',
-        'narrColor', 'highlightColor', 'customBgColor'
-    ];
-    inputsToSync.forEach(id => {
-        let el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('input', () => {
-                if(typeof updateOutput === 'function') updateOutput();
-            });
-        }
-    });
-    let elNarrItalic = document.getElementById('narrItalic');
-    if (elNarrItalic) {
-        elNarrItalic.addEventListener('change', () => {
-            if(typeof updateOutput === 'function') updateOutput();
-        });
-    }
-
-    let elCustomBgToggle = document.getElementById('customBgToggle');
-    if (elCustomBgToggle) {
-        elCustomBgToggle.addEventListener('change', () => {
-            if (typeof updateOutput === 'function') updateOutput();
-        });
-    }
-});
