@@ -848,42 +848,36 @@
     }
 
     function cleanNarration(value) {
-        let text = String(value || '').trim();
+        const text = String(value || '').trim();
+        if (!text) return '';
 
-        // **_문장_** → **문장**
-        const boldUnderscore = text.match(/^\*\*_([\s\S]+)_\*\*$/);
+        // 1) 문단 전체가 별표 "하나"로만 감싸진 경우 → 별표 제거
+        //    *나레이션*  →  나레이션
+        //    (** 로 시작하는 줄은 여기에 걸리지 않음)
+        const single = text.match(/^\*(?!\*)([\s\S]*?)(?<!\*)\*$/);
 
-        if (boldUnderscore) {
-            return '**' + boldUnderscore[1].trim() + '**';
+        if (single) {
+            const inner = single[1];
+
+            // 안쪽의 **강조** 쌍을 제외하고 별표가 남아 있으면
+            // *a* b *c* 처럼 따로 닫힌 기울임이므로 건드리지 않음.
+            const leftover = inner.replace(/\*\*[^*\n]+\*\*/g, '');
+
+            if (inner.trim() && !leftover.includes('*')) {
+                return inner.trim();
+            }
         }
 
-        // _문장_ → 문장
-        if (
-            text.startsWith('_') &&
-            !text.startsWith('__') &&
-            text.endsWith('_') &&
-            !text.endsWith('__') &&
-            text.length > 2
-        ) {
-            text = text.slice(1, -1).trim();
+        // 2) 문단 전체가 밑줄 하나로 감싸진 경우 → 밑줄 제거
+        //    _나레이션_  →  나레이션
+        const underscore = text.match(/^_(?!_)([\s\S]*?)(?<!_)_$/);
+
+        if (underscore && underscore[1].trim()) {
+            return underscore[1].trim();
         }
 
-        // 한 줄에서 완결된 볼드 / 기울임은 보존.
-        if (
-            /^\*\*[\s\S]+\*\*$/.test(text) ||
-            /^\*[^*][\s\S]*\*$/.test(text)
-        ) {
-            return text;
-        }
-
-        // __문장__은 렌더러가 지원하는 **문장**으로 변환.
-        if (/^__[\s\S]+__$/.test(text)) {
-            return '**' + text.slice(2, -2) + '**';
-        }
-
-        // 여러 줄 전체를 감싼 강조 기호가
-        // 줄 분리 후 끝에 남았을 경우 제거.
-        return stripEdgeMarkers(text);
+        // 3) 그 외(**강조**나레이션, **강조**, 중간 강조 등)는 그대로 유지
+        return text;
     }
 
     // ==========================================
