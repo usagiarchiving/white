@@ -8,9 +8,9 @@ let blocks = [];
 let outputVersion = 1; 
 let outputMode = 'novel'; // 💡 기본 출력 모드 (novel / bubble1 / bubble2)
 let isDarkMode = false;
-let currentFontSize = 14;
+let currentFontSize = 13;
 let currentFontFamily = "'Noto Serif KR', serif";
-let currentInlineFontSize = 13; 
+let currentInlineFontSize = 12; 
 
 // == 텍스트·간격 설정을 위한 전역 변수 ==
 let currentLineHeight = 1.6;
