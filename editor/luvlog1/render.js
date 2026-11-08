@@ -2161,4 +2161,4 @@ document.addEventListener("DOMContentLoaded", function() {
             if (typeof updateOutput === 'function') updateOutput();
         });
     }
-});
+}); 
