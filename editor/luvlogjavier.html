@@ -75,14 +75,15 @@ button.done{background:var(--mint)!important;color:var(--mint-ink)!important}
 
 <script>
 const $=id=>document.getElementById(id);
-const PAL=['#ffb07c','#9ec5fe','#b8e6c9','#d7b8f5','#ffc6d9','#f6dd8f'];
+// 엑스트라용 파스텔 톤 팔레트 (하비에르, 이네스 전용 색상 제외, 핑크 및 초록 계열 추가)
+const PAL=['#b8e6c9','#d7b8f5','#ffc6d9','#f6dd8f','#ffb3c6','#a8e6cf'];
 let blocks=[],status=null,chars=new Map(),raw='';
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 function parse(src){
   let st=null;
   src=src.replace(/<Apogee[\s\S]*?\/>/gi,m=>{st={};m.replace(/([A-Za-z]+)="([^"]*)"/g,(_,k,v)=>{st[k]=v});return '\n@@STATUS@@\n'});
-  src=src.replace(/<br\s*\/?>\s*(?=\()/gi,'\n'); // <br>(번역) 형태를 자동 줄바꿈으로 통일
+  src=src.replace(/<br\s*\/?>\s*(?=\()/gi,'\n'); 
   const L=src.replace(/\r/g,'').split('\n'),out=[];
   for(let i=0;i<L.length;i++){
     let l=L[i];
@@ -91,13 +92,11 @@ function parse(src){
     
     let trm = l.trim();
     
-    // 1. 닫히지 않은 헛별표(* ) 제거
     if(trm.startsWith('*') && !trm.endsWith('*') && !trm.startsWith('**')) {
       l = l.replace(/^\s*\*\s*/, '');
       trm = l.trim();
     }
 
-    // 2. '속마음' 형태 이탤릭체(*'속마음'*)로 변환
     if(trm.startsWith("'") && trm.endsWith("'") && trm.length > 1) {
       out.push({t:'x', s:'*' + trm + '*'});
       continue;
@@ -106,7 +105,6 @@ function parse(src){
       continue;
     }
 
-    // 3. 이름 있는 대사 처리
     const m=l.match(/^\s*\*\*(.+?)\*\*\s*[|｜│]\s*(.*)$/);
     if(m){
       let j=i+1;while(j<L.length&&!L[j].trim())j++;
@@ -117,7 +115,6 @@ function parse(src){
       out.push({t:'d',n:m[1].trim(),l:m[2].replace(/(<br\s*\/?>\s*)+$/i,'').trim(),tr});continue;
     }
 
-    // 4. 이름 없는 대사 + 번역 처리 (옵션 A)
     let j=i+1;while(j<L.length&&!L[j].trim())j++;
     const n=L[j]||'';let tr=null,t;
     if(t=n.match(/^\s*\(([\s\S]*)\)\s*$/))tr=t[1];
@@ -128,7 +125,6 @@ function parse(src){
       continue;
     }
 
-    // 5. 일반 텍스트 처리
     out.push({t:'x',s:/^\s*\*([^*].*[^*]|[^*])\*\s*$/.test(l)?l.replace(/^(\s*)\*(.*)\*(\s*)$/,'$1$2$3'):l.replace(/^(\s*)_(.*)_(\s*)$/,'$1$2$3')});
   }
   return {out,st};
@@ -257,14 +253,30 @@ $('go').addEventListener('click',()=>{
   const src=$('src').value;if(!src.trim())return;
   const r=parse(src);blocks=r.out;status=r.st;
   const next=new Map();let i=0;
+  
+  // 주인공 고유 색상 및 모브 전용 색상 배정 로직
   blocks.forEach(b=>{
     if(b.t==='d'&&!next.has(b.n)){
-      next.set(b.n,chars.get(b.n)||{label:b.n,color:PAL[i%PAL.length],size:12});i++;
+      let cColor = PAL[i%PAL.length];
+      
+      // 하비에르, 이네스는 고정 색상. 모브일 때만 팔레트 인덱스 증가
+      if(b.n === 'Javier Espinoza' || b.n === '하비에르') {
+        cColor = '#ffb07c';
+      } else if (b.n === 'Ines Hartmann' || b.n === '이네스') {
+        cColor = '#9ec5fe';
+      } else {
+        i++;
+      }
+      
+      next.set(b.n,chars.get(b.n)||{label:b.n,color:cColor,size:12});
     }
+    
+    // 이름 없는 대사는 하비에르로 기본 배정 (라벨: Javier Espinoza, 색상: #ffb07c)
     if(b.t==='nd'&&!next.has('__NAMELESS__')){
-      next.set('__NAMELESS__',chars.get('__NAMELESS__')||{label:'이름 없는 대사 (공통)',color:'#86868b',size:12});
+      next.set('__NAMELESS__',chars.get('__NAMELESS__')||{label:'Javier Espinoza',color:'#ffb07c',size:12});
     }
   });
+  
   chars=next;buildOptions();render();
   flash($('go'),'완료 ✓');
 });
