@@ -3,7 +3,7 @@
 // 화면 출력(미리보기 HTML 생성) 및 에디터 UI 조작 전용
 // ==========================================
 
-// 💡 [수정사항] 타자 칠 때 발생하는 렉(버벅거림)을 없애기 위한 디바운싱 함수 추가
+// 타자 입력 디바운싱
 let renderTimer = null;
 let syncTimer = null;
 
@@ -28,29 +28,17 @@ function extractVideoId(url) {
 }
 
 // =========================================================================
-// 💡 [신규] 다크모드 토글 + 배경색 커스텀 기능 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
-// -------------------------------------------------------------------------
-// - 라이트모드 기본 배경: #FFFFFF (완전 화이트)  ← [수정] 기존 #FAFAFA에서 변경
-// - 다크모드 기본 배경: #121212
-// - 다크모드 진입 시 나레이션 기본색: #A0A0B4
-// - 다크모드 진입 시 민트(소설) 기본색: #50D2CB
-// - "배경색 커스텀" 체크박스가 켜져 있으면 #customBgColor 입력값을 우선 사용
-// - [신규] 출력 버전별 체크박스 기본값:
-//     V1 → 체크된 상태가 기본 (이후 사용자가 해제 가능)
-//     V2 → 체크 해제된 상태가 기본 (사용자가 직접 눌러서 체크해야 적용)
+// 다크모드 토글 + 배경색 커스텀
+// #DARKMODE_BG_LOGIC
 // =========================================================================
 
-// 💡 [신규] 라이트/다크 기본 배경색 상수 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
 const DEFAULT_BG_LIGHT = '#FFFFFF';
 const DEFAULT_BG_DARK = '#121212';
-
-// 💡 [신규] 사용자가 배경색을 직접 건드렸는지 기억 (건드렸다면 다크모드 전환 시 덮어쓰지 않음)
+const SHOW_BUBBLE_NAME = false;        // true로 바꾸면 말풍선2에 이름 다시 표시
+const BUBBLE_TRANSLATION_MIX = 0.6;    // 번역색 = 글자색 60% + 배경색 40%
 let bgColorUserEdited = false;
-
-// 💡 [신규] 출력 버전이 바뀐 순간에만 체크박스 기본값을 적용 (이후엔 사용자가 자유롭게 조작)
 let lastBgToggleVersion = null;
 
-// 체크박스를 현재 버전의 기본값으로 강제 세팅 (V1 = 체크 ON / V2 = 체크 OFF)
 function applyBgToggleDefault() {
     lastBgToggleVersion = outputVersion;
     const toggleEl = document.getElementById('customBgToggle');
@@ -63,13 +51,14 @@ function syncBgToggleDefaultByVersion() {
     applyBgToggleDefault();
 }
 
-// 💡 [신규] 버전 전환을 어떤 경로로 하든(버튼 클릭/같은 버튼 재클릭/다른 파일 코드) 항상 기본값이 다시 적용되도록 감시
-// - (1) V1/V2 전환 버튼·셀렉트를 누를 때마다 기본값 재적용
-// - (2) outputVersion 값이 바뀐 걸 감지하면 기본값 재적용 (안전장치)
 function looksLikeVersionControl(node) {
     for (let i = 0; node && node.nodeType === 1 && i < 4; i++, node = node.parentElement) {
-        const attrs = (node.getAttribute('onclick') || '') + ' ' + (node.getAttribute('onchange') || '') + ' ' +
-                      (node.id || '') + ' ' + (typeof node.className === 'string' ? node.className : '');
+        const attrs =
+            (node.getAttribute('onclick') || '') + ' ' +
+            (node.getAttribute('onchange') || '') + ' ' +
+            (node.id || '') + ' ' +
+            (typeof node.className === 'string' ? node.className : '');
+
         if (/version/i.test(attrs)) return true;
         if (node.tagName === 'BUTTON' && /^\s*(V|v|버전\s*)\s*[12]\s*$/.test(node.textContent || '')) return true;
     }
@@ -84,6 +73,7 @@ function initBgToggleVersionWatcher() {
             if (typeof updateOutput === 'function') updateOutput();
         }, 50);
     };
+
     document.addEventListener('click', onVersionUiEvent, true);
     document.addEventListener('change', onVersionUiEvent, true);
 
@@ -97,32 +87,40 @@ function initBgToggleVersionWatcher() {
 }
 
 // =========================================================================
-// 💡 [신규] 여백(패딩) 설정 + 불러오기 시 기존 값 그대로 보존 (검색용 주석 태그: #LAYOUT_PADDING_LOGIC)
-// -------------------------------------------------------------------------
-// - V1 기본값: 좌우 17px / 위 5px / 아래 5px (위+아래 합계 10px)
-// - V2 기본값: 좌우 0px (위아래 여백 없음)
-// - "HTML 불러오기(동기화)" 시, 불러온 코드 안의 여백 값(예: 좌우 25px, 아래 50px)을
-//   그대로 읽어와서 유지함 → 이전 버전 글을 불러와도 그 상태 그대로 보이고,
-//   에디터 위쪽(HTML 코드창 위)에 자동 생성되는 "여백 설정" 칸에서 언제든 수정 가능
+// 여백 설정 + 불러오기 시 값 보존
+// #LAYOUT_PADDING_LOGIC
 // =========================================================================
+
 const layoutPad = {
     1: { x: 17, top: 5, bottom: 5 },
     2: { x: 0 }
 };
 
-// "0 25px" / "10px 20px 30px" 같은 padding 축약형을 {top,right,bottom,left}로 변환
 function parsePaddingShorthand(str) {
     if (!str) return null;
     const tokens = str.trim().split(/\s+/);
     if (tokens.length < 1 || tokens.length > 4) return null;
     if (!tokens.every(t => /^-?[\d.]+(px)?$/i.test(t))) return null;
+
     const n = tokens.map(t => parseFloat(t));
     if (n.some(v => isNaN(v))) return null;
+
     let t, r, b, l;
-    if (n.length === 1) { t = r = b = l = n[0]; }
-    else if (n.length === 2) { t = b = n[0]; r = l = n[1]; }
-    else if (n.length === 3) { t = n[0]; r = l = n[1]; b = n[2]; }
-    else { t = n[0]; r = n[1]; b = n[2]; l = n[3]; }
+    if (n.length === 1) {
+        t = r = b = l = n[0];
+    } else if (n.length === 2) {
+        t = b = n[0];
+        r = l = n[1];
+    } else if (n.length === 3) {
+        t = n[0];
+        r = l = n[1];
+        b = n[2];
+    } else {
+        t = n[0];
+        r = n[1];
+        b = n[2];
+        l = n[3];
+    }
     return { top: t, right: r, bottom: b, left: l };
 }
 
@@ -134,20 +132,20 @@ function parsePxValue(str) {
     return isNaN(v) ? null : v;
 }
 
-// 입력칸 값 → layoutPad 반영
 function onLayoutPadInput(key, el) {
     if (!el || el.value === '') return;
     const v = parseFloat(el.value);
     if (isNaN(v) || v < 0) return;
+
     if (key === 'x') {
         layoutPad[outputVersion === 2 ? 2 : 1].x = v;
     } else {
         layoutPad[1][key] = v;
     }
+
     if (typeof updateOutput === 'function') updateOutput();
 }
 
-// layoutPad → 입력칸 표시 (타이핑 중인 칸은 건드리지 않음)
 function refreshLayoutPadUI() {
     const isV2 = outputVersion === 2;
     const map = {
@@ -155,26 +153,31 @@ function refreshLayoutPadUI() {
         layoutPadTop: layoutPad[1].top,
         layoutPadBottom: layoutPad[1].bottom
     };
+
     Object.keys(map).forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         if (document.activeElement !== el) el.value = map[id];
+
         if (id !== 'layoutPadX') {
             el.disabled = isV2;
             el.style.opacity = isV2 ? '0.4' : '1';
         }
     });
+
     const label = document.getElementById('layoutPadVerLabel');
     if (label) label.innerText = isV2 ? 'V2' : 'V1';
 }
 
-// HTML 코드창 바로 위에 "여백 설정" 칸을 자동 삽입
 function initLayoutPadUI() {
     if (document.getElementById('layoutPadPanel')) return;
+
     const codeEl = document.getElementById('finalHtmlCode');
     if (!codeEl || !codeEl.parentNode) return;
+
     const inputStyle = "width: 52px; font-size: 11px; padding: 3px 4px; border: 1px solid var(--border, #ccc); border-radius: 4px; background: var(--input-bg, #fff); color: var(--text-main, #333); text-align: center;";
     const panel = document.createElement('div');
+
     panel.id = 'layoutPadPanel';
     panel.style.cssText = "display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; flex-basis: 100%; margin-bottom: 6px; font-size: 11px; color: var(--text-muted, #888);";
     panel.innerHTML = `
@@ -184,10 +187,19 @@ function initLayoutPadUI() {
         <label>아래 <input type="number" min="0" id="layoutPadBottom" style="${inputStyle}"> px</label>
         <span style="font-size: 10px;">(위/아래는 V1 전용)</span>
     `;
+
     codeEl.parentNode.insertBefore(panel, codeEl);
-    document.getElementById('layoutPadX').addEventListener('input', function() { onLayoutPadInput('x', this); });
-    document.getElementById('layoutPadTop').addEventListener('input', function() { onLayoutPadInput('top', this); });
-    document.getElementById('layoutPadBottom').addEventListener('input', function() { onLayoutPadInput('bottom', this); });
+
+    document.getElementById('layoutPadX').addEventListener('input', function() {
+        onLayoutPadInput('x', this);
+    });
+    document.getElementById('layoutPadTop').addEventListener('input', function() {
+        onLayoutPadInput('top', this);
+    });
+    document.getElementById('layoutPadBottom').addEventListener('input', function() {
+        onLayoutPadInput('bottom', this);
+    });
+
     refreshLayoutPadUI();
 }
 
@@ -197,31 +209,32 @@ function toggleDarkMode() {
     document.getElementById('darkModeBtn').innerText = isDarkMode ? '☀️ 라이트 모드' : '🌙 다크 모드';
 
     if (isDarkMode) {
-        let elMint = document.getElementById('mintTextColor');
-        let elMintP = document.getElementById('mintTextColorPicker');
+        let elJavier = document.getElementById('javierTextColor');
+        let elJavierP = document.getElementById('javierTextColorPicker');
         let elNarr = document.getElementById('narrColor');
         let elNarrP = document.getElementById('narrColorPicker');
-        if (elMint) elMint.value = '#50D2CB';
-        if (elMintP) elMintP.value = '#50D2CB';
+
+        if (elJavier) elJavier.value = '#ffb07c';
+        if (elJavierP) elJavierP.value = '#ffb07c';
         if (elNarr) elNarr.value = '#A0A0B4';
         if (elNarrP) elNarrP.value = '#A0A0B4';
     } else {
-        let elMint = document.getElementById('mintTextColor');
-        let elMintP = document.getElementById('mintTextColorPicker');
+        let elJavier = document.getElementById('javierTextColor');
+        let elJavierP = document.getElementById('javierTextColorPicker');
         let elNarr = document.getElementById('narrColor');
         let elNarrP = document.getElementById('narrColorPicker');
-        if (elMint) elMint.value = '#237768';
-        if (elMintP) elMintP.value = '#237768';
+
+        if (elJavier) elJavier.value = '#ffb07c';
+        if (elJavierP) elJavierP.value = '#ffb07c';
         if (elNarr) elNarr.value = '#48484A';
         if (elNarrP) elNarrP.value = '#48484A';
     }
 
-    // 💡 다크모드 전환 시, 사용자가 배경색을 직접 바꾼 적이 없다면 컬러피커 표시값을 기본값으로 동기화
-    // (V1은 체크박스가 기본 ON이므로, 체크 여부와 상관없이 직접 수정하지 않았다면 모드에 맞는 기본 배경으로 맞춰줌)
     if (!bgColorUserEdited) {
         const bgColorEl = document.getElementById('customBgColor');
         const bgColorPickerEl = document.getElementById('customBgColorPicker');
         const defaultBg = isDarkMode ? DEFAULT_BG_DARK : DEFAULT_BG_LIGHT;
+
         if (bgColorEl) bgColorEl.value = defaultBg;
         if (bgColorPickerEl) bgColorPickerEl.value = defaultBg;
     }
@@ -229,122 +242,113 @@ function toggleDarkMode() {
     if (typeof updateOutput === 'function') updateOutput();
 }
 
-// 💡 [신규] 배경색 커스텀 체크박스 토글 시 호출 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
 function toggleCustomBg() {
     if (typeof updateOutput === 'function') updateOutput();
 }
 
 // =========================================================================
-// 💡 [신규] 캐릭터 프리셋 데이터 정의 (검색용 주석 태그: #CHARACTER_PRESET_DATA)
-// -------------------------------------------------------------------------
-// 이 객체의 값만 직접 수정하면 각 프리셋의 색상/이름/프로필을 바꿀 수 있습니다.
-// novelColor        = 소설(V1) 모드에서 쓰이는 글자색 (mintTextColor / pinkTextColor)
-// bubbleTextColor   = 말풍선 모드 글자색 (mintBubbleTextColor / pinkBubbleTextColor)
-// bubbleBgColor     = 말풍선 모드 배경색 (mintBgColor / pinkBgColor)
-// name              = 캐릭터 이름 (mintName / pinkName)
-// profileUrl        = 프로필 이미지 URL (mintProfileUrl / pinkProfileUrl)
+// 캐릭터 프리셋
 // =========================================================================
+
 const CHARACTER_PRESETS = {
     default1: {
-        mint: {
-            novelColor: '#237768',
-            bubbleTextColor: '#1d6f60',
-            bubbleBgColor: '#eef8f3',
-            name: '하시온',
+        javier: {
+            novelColor: '#ffb07c',
+            bubbleTextColor: '#d96b27',
+            bubbleBgColor: '#fff0e6',
+            name: 'Javier Espinoza',
             profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
         },
-        pink: {
-            novelColor: '#f5bdcc',
-            bubbleTextColor: '#9b3e61',
-            bubbleBgColor: '#fdf2f6',
-            name: '김민정',
+        ines: {
+            novelColor: '#9ec5fe',
+            bubbleTextColor: '#5b8ce0',
+            bubbleBgColor: '#eef4ff',
+            name: 'Ines Hartmann',
             profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
         }
     },
     default2: {
-        mint: {
-            novelColor: '#237768',
-            bubbleTextColor: '#1d6f60',
-            bubbleBgColor: '#eef8f3',
-            name: '하시온',
+        javier: {
+            novelColor: '#ffb07c',
+            bubbleTextColor: '#d96b27',
+            bubbleBgColor: '#fff0e6',
+            name: 'Javier Espinoza',
             profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
         },
-        pink: {
-            novelColor: '#f5bdcc',
-            bubbleTextColor: '#9b3e61',
-            bubbleBgColor: '#fdf2f6',
-            name: '김민정',
+        ines: {
+            novelColor: '#9ec5fe',
+            bubbleTextColor: '#5b8ce0',
+            bubbleBgColor: '#eef4ff',
+            name: 'Ines Hartmann',
             profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
         }
     },
     daily: {
-        mint: {
-            novelColor: '#237768',
-            bubbleTextColor: '#1d6f60',
-            bubbleBgColor: '#eef8f3',
-            name: '하시온',
+        javier: {
+            novelColor: '#ffb07c',
+            bubbleTextColor: '#d96b27',
+            bubbleBgColor: '#fff0e6',
+            name: 'Javier Espinoza',
             profileUrl: 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg'
         },
-        pink: {
-            novelColor: '#f5bdcc',
-            bubbleTextColor: '#9b3e61',
-            bubbleBgColor: '#fdf2f6',
-            name: '김민정',
+        ines: {
+            novelColor: '#9ec5fe',
+            bubbleTextColor: '#5b8ce0',
+            bubbleBgColor: '#eef4ff',
+            name: 'Ines Hartmann',
             profileUrl: 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg'
         }
     },
     preset4basic: {
-        mint: {
-            novelColor: '#1D6F7D',
-            bubbleTextColor: '#1D6F7D',
-            bubbleBgColor: '#E8F8F3',
-            name: 'dieter',
+        javier: {
+            novelColor: '#ffb07c',
+            bubbleTextColor: '#d96b27',
+            bubbleBgColor: '#fff0e6',
+            name: 'Javier Espinoza',
             profileUrl: 'https://i.ibb.co/j9dVQJMP/IMG-5754.jpg'
         },
-        pink: {
-            novelColor: '#9B3E61',
-            bubbleTextColor: '#9B3E61',
-            bubbleBgColor: '#FDF2F6',
-            name: 'chloe',
+        ines: {
+            novelColor: '#9ec5fe',
+            bubbleTextColor: '#5b8ce0',
+            bubbleBgColor: '#eef4ff',
+            name: 'Ines Hartmann',
             profileUrl: 'https://i.ibb.co/twf0JszX/IMG-2292.png'
         }
     },
     preset4daily: {
-        mint: {
-            novelColor: '#1D6F7D',
-            bubbleTextColor: '#1D6F7D',
-            bubbleBgColor: '#E8F8F3',
-            name: 'dieter',
+        javier: {
+            novelColor: '#ffb07c',
+            bubbleTextColor: '#d96b27',
+            bubbleBgColor: '#fff0e6',
+            name: 'Javier Espinoza',
             profileUrl: 'https://i.ibb.co/j9dVQJMP/IMG-5754.jpg'
         },
-        pink: {
-            novelColor: '#9B3E61',
-            bubbleTextColor: '#9B3E61',
-            bubbleBgColor: '#FDF2F6',
-            name: 'chloe',
+        ines: {
+            novelColor: '#9ec5fe',
+            bubbleTextColor: '#5b8ce0',
+            bubbleBgColor: '#eef4ff',
+            name: 'Ines Hartmann',
             profileUrl: 'https://i.ibb.co/twf0JszX/IMG-2292.png'
         }
     }
 };
 
-// 💡 [신규] 드롭다운 토글 함수 (검색용 주석 태그: #CHARACTER_PRESET_UI)
 function togglePresetDropdown() {
     const dropdown = document.getElementById('presetDropdown');
     if (!dropdown) return;
     dropdown.style.display = (dropdown.style.display === 'none' || !dropdown.style.display) ? 'block' : 'none';
 }
 
-// 💡 [신규] 바깥 클릭 시 드롭다운 자동 닫힘 (검색용 주석 태그: #CHARACTER_PRESET_UI)
 document.addEventListener('click', function(e) {
     const dropdown = document.getElementById('presetDropdown');
     const toggleBtn = document.getElementById('presetToggleBtn');
     if (!dropdown || !toggleBtn) return;
+
     if (dropdown.style.display === 'block' && !dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
         dropdown.style.display = 'none';
     }
 });
 
-// 💡 [신규] 프리셋 적용 함수 (검색용 주석 태그: #CHARACTER_PRESET_APPLY)
 function applyCharacterPreset(presetKey) {
     const preset = CHARACTER_PRESETS[presetKey];
     if (!preset) {
@@ -352,41 +356,41 @@ function applyCharacterPreset(presetKey) {
         return;
     }
 
-    const mintNovel = document.getElementById('mintTextColor');
-    const mintNovelP = document.getElementById('mintTextColorPicker');
-    const mintBubbleText = document.getElementById('mintBubbleTextColor');
-    const mintBubbleTextP = document.getElementById('mintBubbleTextColorPicker');
-    const mintBg = document.getElementById('mintBgColor');
-    const mintBgP = document.getElementById('mintBgColorPicker');
-    const mintName = document.getElementById('mintName');
-    const mintProfile = document.getElementById('mintProfileUrl');
+    const javierNovel = document.getElementById('javierTextColor');
+    const javierNovelP = document.getElementById('javierTextColorPicker');
+    const javierBubbleText = document.getElementById('javierBubbleTextColor');
+    const javierBubbleTextP = document.getElementById('javierBubbleTextColorPicker');
+    const javierBg = document.getElementById('javierBgColor');
+    const javierBgP = document.getElementById('javierBgColorPicker');
+    const javierName = document.getElementById('javierName');
+    const javierProfile = document.getElementById('javierProfileUrl');
 
-    if (mintNovel) mintNovel.value = preset.mint.novelColor;
-    if (mintNovelP) mintNovelP.value = preset.mint.novelColor;
-    if (mintBubbleText) mintBubbleText.value = preset.mint.bubbleTextColor;
-    if (mintBubbleTextP) mintBubbleTextP.value = preset.mint.bubbleTextColor;
-    if (mintBg) mintBg.value = preset.mint.bubbleBgColor;
-    if (mintBgP) mintBgP.value = preset.mint.bubbleBgColor;
-    if (mintName) mintName.value = preset.mint.name;
-    if (mintProfile) mintProfile.value = preset.mint.profileUrl;
+    if (javierNovel) javierNovel.value = preset.javier.novelColor;
+    if (javierNovelP) javierNovelP.value = preset.javier.novelColor;
+    if (javierBubbleText) javierBubbleText.value = preset.javier.bubbleTextColor;
+    if (javierBubbleTextP) javierBubbleTextP.value = preset.javier.bubbleTextColor;
+    if (javierBg) javierBg.value = preset.javier.bubbleBgColor;
+    if (javierBgP) javierBgP.value = preset.javier.bubbleBgColor;
+    if (javierName) javierName.value = preset.javier.name;
+    if (javierProfile) javierProfile.value = preset.javier.profileUrl;
 
-    const pinkNovel = document.getElementById('pinkTextColor');
-    const pinkNovelP = document.getElementById('pinkTextColorPicker');
-    const pinkBubbleText = document.getElementById('pinkBubbleTextColor');
-    const pinkBubbleTextP = document.getElementById('pinkBubbleTextColorPicker');
-    const pinkBg = document.getElementById('pinkBgColor');
-    const pinkBgP = document.getElementById('pinkBgColorPicker');
-    const pinkName = document.getElementById('pinkName');
-    const pinkProfile = document.getElementById('pinkProfileUrl');
+    const inesNovel = document.getElementById('inesTextColor');
+    const inesNovelP = document.getElementById('inesTextColorPicker');
+    const inesBubbleText = document.getElementById('inesBubbleTextColor');
+    const inesBubbleTextP = document.getElementById('inesBubbleTextColorPicker');
+    const inesBg = document.getElementById('inesBgColor');
+    const inesBgP = document.getElementById('inesBgColorPicker');
+    const inesName = document.getElementById('inesName');
+    const inesProfile = document.getElementById('inesProfileUrl');
 
-    if (pinkNovel) pinkNovel.value = preset.pink.novelColor;
-    if (pinkNovelP) pinkNovelP.value = preset.pink.novelColor;
-    if (pinkBubbleText) pinkBubbleText.value = preset.pink.bubbleTextColor;
-    if (pinkBubbleTextP) pinkBubbleTextP.value = preset.pink.bubbleTextColor;
-    if (pinkBg) pinkBg.value = preset.pink.bubbleBgColor;
-    if (pinkBgP) pinkBgP.value = preset.pink.bubbleBgColor;
-    if (pinkName) pinkName.value = preset.pink.name;
-    if (pinkProfile) pinkProfile.value = preset.pink.profileUrl;
+    if (inesNovel) inesNovel.value = preset.ines.novelColor;
+    if (inesNovelP) inesNovelP.value = preset.ines.novelColor;
+    if (inesBubbleText) inesBubbleText.value = preset.ines.bubbleTextColor;
+    if (inesBubbleTextP) inesBubbleTextP.value = preset.ines.bubbleTextColor;
+    if (inesBg) inesBg.value = preset.ines.bubbleBgColor;
+    if (inesBgP) inesBgP.value = preset.ines.bubbleBgColor;
+    if (inesName) inesName.value = preset.ines.name;
+    if (inesProfile) inesProfile.value = preset.ines.profileUrl;
 
     const dropdown = document.getElementById('presetDropdown');
     if (dropdown) dropdown.style.display = 'none';
@@ -398,23 +402,29 @@ function applyCharacterPreset(presetKey) {
 function scrollToPreview(index) {
     const target = document.getElementById(`preview-block-${index}`);
     const container = document.getElementById('htmlPreview');
+
     if (target && container) {
         const scrollPos = target.offsetTop - (container.clientHeight / 2) + (target.clientHeight / 2);
         container.scrollTo({ top: scrollPos, behavior: 'smooth' });
+
         if (target.dataset.focusTimeout) {
             clearTimeout(parseInt(target.dataset.focusTimeout));
         }
+
         const originalTransition = target.style.transition || '';
         const originalBoxShadow = target.style.boxShadow || '';
+
         target.style.transition = 'box-shadow 0.3s ease';
         target.style.boxShadow = '0 0 0 4px rgba(0, 122, 255, 0.3)';
         target.style.borderRadius = '8px';
+
         const timeoutId = setTimeout(() => {
             target.style.boxShadow = originalBoxShadow;
             setTimeout(() => {
                 target.style.transition = originalTransition;
             }, 300);
         }, 1000);
+
         target.dataset.focusTimeout = timeoutId;
     }
 }
@@ -423,16 +433,19 @@ function focusAndScrollBlock(index, preventFocus = false) {
     setTimeout(() => {
         const item = document.getElementById(`editor-block-${index}`);
         const list = document.getElementById('editorList');
+
         if (item && list) {
             const scrollPos = item.offsetTop - (list.clientHeight / 2) + (item.clientHeight / 2);
             list.scrollTo({ top: scrollPos, behavior: 'smooth' });
             item.style.boxShadow = '0 0 0 2px var(--primary)';
             item.style.backgroundColor = 'var(--input-bg)';
+
             setTimeout(() => {
                 item.style.boxShadow = 'none';
                 item.style.backgroundColor = 'var(--block-bg)';
             }, 800);
         }
+
         if (!preventFocus) {
             const ta = document.getElementById(`textarea-${index}`);
             if (ta) ta.focus();
@@ -442,14 +455,15 @@ function focusAndScrollBlock(index, preventFocus = false) {
 
 function updateCustomCharacterPanel() {
     const list = document.getElementById('customCharacterAutoList');
-    if(!list) return;
+    if (!list) return;
+
     const uniqueChars = {};
     blocks.forEach(b => {
-        if(b.type === 'custom') {
-            const key = (b.customName || '제3자') + '|' + (b.customTextColor || '#333333');
-            if(!uniqueChars[key]) {
+        if (b.type === 'custom') {
+            const key = (b.customName || '제3자') + '|' + (b.customTextColor || '#8e8e93');
+            if (!uniqueChars[key]) {
                 uniqueChars[key] = {
-                    textColor: b.customTextColor || '#333333',
+                    textColor: b.customTextColor || '#8e8e93',
                     bgColor: b.customBgColor || '#E2E8F0',
                     name: b.customName || '',
                     profileUrl: b.customProfileUrl || ''
@@ -457,11 +471,14 @@ function updateCustomCharacterPanel() {
             }
         }
     });
+
     list.innerHTML = '';
+
     Object.keys(uniqueChars).forEach(key => {
         const safeKey = getSafeId(key);
         const charData = uniqueChars[key];
         let row = document.createElement('div');
+
         row.id = `auto-custom-${safeKey}`;
         row.dataset.originalKey = key;
         row.style.cssText = "display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--block-hover); border: 1px solid var(--border); border-radius: 6px;";
@@ -491,6 +508,7 @@ function updateCustomCharacterPanel() {
                 </div>
             </div>
         `;
+
         list.appendChild(row);
         setupColorPicker(`auto-text-picker-${safeKey}`, `auto-text-text-${safeKey}`);
         setupColorPicker(`auto-bg-picker-${safeKey}`, `auto-bg-text-${safeKey}`);
@@ -505,9 +523,10 @@ function applyAutoCustomColor(safeKey) {
     const newTextCol = document.getElementById(`auto-text-text-${safeKey}`).value.trim();
     const newBgCol = document.getElementById(`auto-bg-text-${safeKey}`).value.trim();
     let count = 0;
+
     blocks.forEach(b => {
         if (b.type === 'custom') {
-            const bKey = (b.customName || '제3자') + '|' + (b.customTextColor || '#333333');
+            const bKey = (b.customName || '제3자') + '|' + (b.customTextColor || '#8e8e93');
             if (bKey === originalKey) {
                 b.customName = newName;
                 b.customProfileUrl = newProfile;
@@ -517,6 +536,7 @@ function applyAutoCustomColor(safeKey) {
             }
         }
     });
+
     if (count > 0) {
         renderEditor();
         saveState();
@@ -528,45 +548,209 @@ function applyAutoCustomColor(safeKey) {
 
 function applyTextStyles(text) {
     if (!text) return text;
+
     let hlColorEl = document.getElementById('highlightColor');
     let hlColor = hlColorEl ? hlColorEl.value : '#C4F0E9';
     let styledText = text;
+
     styledText = styledText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     styledText = styledText.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
     styledText = styledText.replace(/~~([^~]+)~~/g, '<s style="text-decoration: line-through;">$1</s>');
     styledText = styledText.replace(/\+\+([^+]+)\+\+/g, '<u style="text-decoration: underline;">$1</u>');
-    styledText = styledText.replace(/==([^=]+)==/g, `<mark style="background-color: ${hlColor}; color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>`);
+    styledText = styledText.replace(/==([^=]+)==/g, `<mark style="background-color: ${hlColor}; color: inherit !important; font-size: inherit !important; line-height: inherit !important; padding: 0 2px; border-radius: 2px;">$1</mark>`);
     styledText = styledText.replace(/%%([^%]+)%%/g, '<span style="border-left: 3px solid #8e8e93; padding-left: 8px; margin-left: 4px; color: #8e8e93; display: inline-block;">$1</span>');
+
     return styledText;
 }
+
+// =========================================================================
+// [수정] 소설형 투톤 출력 / 재편집 / HTML 불러오기 공통 헬퍼
+// #NOVEL_TWO_TONE_LOGIC
+// =========================================================================
+
+function isDialogueBlockType(type) {
+    return ['javier', 'ines', 'mob', 'custom'].includes(type);
+}
+
+// 반각/전각 괄호가 각각 맞게 닫힌 번역 줄인지 확인.
+function isNovelTranslationLine(text) {
+    const value = String(text || '').trim();
+    return /^\([\s\S]*\)$/.test(value) || /^（[\s\S]*）$/.test(value);
+}
+
+// 판별할 때만 HTML/마크다운 볼드 포장을 제외.
+// 실제 원문 내용은 별도로 보존한다.
+function novelVisibleText(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = String(html || '');
+
+    let text = (temp.textContent || '').trim();
+    if (/^\*\*[\s\S]*\*\*$/.test(text)) {
+        text = text.slice(2, -2).trim();
+    }
+    return text;
+}
+
+// 새 투톤 출력과 이전 코드에서 생성한 투톤 출력 모두 인식.
+function findNovelToneElements(root) {
+    if (!root) return null;
+
+    const original = root.querySelector('[data-novel-part="original"]');
+    const translation = root.querySelector('[data-novel-part="translation"]');
+
+    if (original && translation) {
+        return { original, translation };
+    }
+
+    // 이전 출력:
+    // <span style="...font-weight:bold">원문</span><br>
+    // <span style="...font-size:12px">번역</span>
+    const children = Array.from(root.children);
+    if (
+        children.length === 3 &&
+        children[0].tagName === 'SPAN' &&
+        children[1].tagName === 'BR' &&
+        children[2].tagName === 'SPAN'
+    ) {
+        const top = children[0];
+        const bottom = children[2];
+        const weight = top.style.fontWeight;
+
+        const hasOutsideText = Array.from(root.childNodes).some(node =>
+            node.nodeType === 3 && node.textContent.trim() !== ''
+        );
+
+        if (
+            !hasOutsideText &&
+            (weight === 'bold' || Number(weight) >= 600) &&
+            bottom.style.fontSize &&
+            isNovelTranslationLine(novelVisibleText(bottom.innerHTML))
+        ) {
+            return { original: top, translation: bottom };
+        }
+    }
+
+    return null;
+}
+
+function novelHtmlToEditableText(html) {
+    return String(html || '')
+        .replace(/<strong\b[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**')
+        .replace(/<b\b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**')
+        .replace(/<em\b[^>]*>([\s\S]*?)<\/em>/gi, '*$1*')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<div\b[^>]*>/gi, '\n')
+        .replace(/<\/div>/gi, '')
+        .replace(/<p\b[^>]*>/gi, '\n')
+        .replace(/<\/p>/gi, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/^\n+|\n+$/g, '');
+}
+
+// 출력용 색상/크기 span만 제거.
+// 사용자가 작성한 본문 및 내부 서식은 남긴다.
+function readNovelToneContent(root) {
+    const tone = findNovelToneElements(root);
+    if (!tone) return null;
+
+    const clone = root.cloneNode(true);
+    clone.querySelectorAll('.bubble-tail').forEach(n => n.remove());
+    const clonedTone = findNovelToneElements(clone);
+    if (!clonedTone) return null;
+
+    [clonedTone.original, clonedTone.translation].forEach(el => {
+        const parent = el.parentNode;
+        if (!parent) return;
+
+        while (el.firstChild) {
+            parent.insertBefore(el.firstChild, el);
+        }
+        parent.removeChild(el);
+    });
+
+    return novelHtmlToEditableText(clone.innerHTML);
+}
+
+function splitNovelDialogue(content) {
+    let source = String(content || '');
+
+    // 이미 출력용 span이 저장된 이전 데이터도 투톤 포장만 벗겨 처리.
+    if (/<span\b/i.test(source)) {
+        const temp = document.createElement('div');
+        temp.innerHTML = source;
+
+        const restored = readNovelToneContent(temp);
+        if (restored !== null) source = restored;
+    }
+
+    const lines = source
+        .replace(/\r\n?/g, '\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean);
+
+    if (lines.length < 2) return null;
+
+    const lastLine = lines[lines.length - 1];
+    if (!isNovelTranslationLine(novelVisibleText(lastLine))) return null;
+
+    return {
+        original: lines.slice(0, -1),
+        translation: lastLine
+    };
+}
+
+// _문단 전체_의 바깥 밑줄만 제거.
+// 내부 일부의 밑줄이나 **볼드** 및 별표 기울임은 건드리지 않음.
+function stripNarrationParagraphUnderscores(content) {
+    return String(content || '').replace(
+        /(^|\n)([ \t]*)_(?!_)([^\n]+?)(?<!_)_([ \t]*)(?=\n|$)/g,
+        '$1$2$3$4'
+    );
+}
+
+// Apogee만 식별하여 일반 HTML 블록에는 여백을 추가하지 않음.
+function isApogeeHtmlContent(content) {
+    return /<div\b[^>]*\bclass\s*=\s*["'][^"']*\bapl\b[^"']*["']/i.test(String(content || ''));
+}
+
+// =========================================================================
+// 에디터 UI
+// =========================================================================
 
 function renderEditor() {
     const list = document.getElementById('editorList');
     list.innerHTML = '';
+
     blocks.forEach((block, index) => {
         const item = document.createElement('div');
         item.className = 'block-item';
         item.id = `editor-block-${index}`;
+
         item.addEventListener('click', () => {
             scrollToPreview(index);
         });
+
         let customFields = '';
         let isBgm = false;
         let isEmpty = block.type === 'empty';
         let isDivider = block.type === 'divider';
         let isPolaroid = block.type === 'polaroid';
         let isNarration = block.type === 'narration';
+
         if (block.type === 'custom') {
-            let validTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customTextColor) ? block.customTextColor : '#333333';
+            let validTextHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customTextColor) ? block.customTextColor : '#8e8e93';
             let validBgHex = /^#[0-9A-Fa-f]{6}$/i.test(block.customBgColor) ? block.customBgColor : '#E2E8F0';
             let cName = block.customName || '';
             let cProf = block.customProfileUrl || '';
+
             customFields = `
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
                     <div style="display: flex; gap: 8px;">
                         <div style="flex: 1; display: flex; align-items: center; gap: 4px;">
                             <input type="color" value="${validTextHex}" oninput="document.getElementById('custom-textcolor-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'textColor', this.value.toUpperCase());" style="width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
-                            <input type="text" id="custom-textcolor-text-${index}" placeholder="글자색" value="${escapeHtml(block.customTextColor)}" oninput="updateBlockCustom(${index}, 'textColor', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
+                            <input type="text" id="custom-textcolor-text-${index}" placeholder="글자색" value="${escapeHtml(block.customTextColor || '#8e8e93')}" oninput="updateBlockCustom(${index}, 'textColor', this.value); if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) { this.previousElementSibling.value = this.value; }" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text-main);">
                         </div>
                         <div style="flex: 1; display: flex; align-items: center; gap: 4px;">
                             <input type="color" value="${validBgHex}" oninput="document.getElementById('custom-bgcolor-text-${index}').value = this.value.toUpperCase(); updateBlockCustom(${index}, 'bgColor', this.value.toUpperCase());" style="width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: #fff; flex-shrink: 0;">
@@ -598,8 +782,10 @@ function renderEditor() {
                 </div>
             `;
         }
+
         let hideTextarea = ['empty', 'bgm', 'polaroid'].includes(block.type);
         let narrationToolbar = '';
+
         if (isNarration) {
             narrationToolbar = `
                 <div style="display: flex; gap: 4px; margin-bottom: 6px; padding: 4px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto;">
@@ -613,6 +799,7 @@ function renderEditor() {
                 </div>
             `;
         }
+
         item.innerHTML = `
             <div style="display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 5px;">
                 <span style="font-size:11px; font-weight:bold; color:var(--text-muted);">#${index + 1}</span>
@@ -627,25 +814,25 @@ function renderEditor() {
             <div class="block-header">
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <select class="block-type" onchange="changeBlockType(${index}, this.value)" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px;">
-                        <option value="title" ${block.type==='title'?'selected':''}>제목</option>
-                        <option value="narration" ${block.type==='narration'?'selected':''}>나레이션</option>
-                        <option value="mint" ${block.type==='mint'?'selected':''}>민트 대사</option>
-                        <option value="pink" ${block.type==='pink'?'selected':''}>핑크 대사</option>
-                        <option value="mob" ${block.type==='mob'?'selected':''}>모브 대사</option>
-                        <option value="custom" ${block.type==='custom'?'selected':''}>제3자 대사</option>
-                        <option value="bgm" ${block.type==='bgm'?'selected':''}>BGM 재생</option>
-                        <option value="thought" ${block.type==='thought'?'selected':''}>속마음</option>
-                        <option value="status" ${block.type==='status'?'selected':''}>상태창</option>
-                        <option value="postit" ${block.type==='postit'?'selected':''}>포스트잇</option>
-                        <option value="polaroid" ${block.type==='polaroid'?'selected':''}>폴라로이드</option>
-                        <option value="divider" ${block.type==='divider'?'selected':''}>구분선</option>
-                        <option value="dday" ${block.type==='dday'?'selected':''}>작은 텍스트</option>
-                        <option value="image" ${block.type==='image'?'selected':''}>이미지</option>
-                        <option value="html" ${block.type==='html'?'selected':''}>HTML</option>
-                        <option value="empty" ${block.type==='empty'?'selected':''}>공백 줄</option>
+                        <option value="title" ${block.type === 'title' ? 'selected' : ''}>제목</option>
+                        <option value="narration" ${block.type === 'narration' ? 'selected' : ''}>나레이션</option>
+                        <option value="javier" ${block.type === 'javier' ? 'selected' : ''}>Javier 대사</option>
+                        <option value="ines" ${block.type === 'ines' ? 'selected' : ''}>Ines 대사</option>
+                        <option value="mob" ${block.type === 'mob' ? 'selected' : ''}>모브 대사</option>
+                        <option value="custom" ${block.type === 'custom' ? 'selected' : ''}>제3자 대사</option>
+                        <option value="bgm" ${block.type === 'bgm' ? 'selected' : ''}>BGM 재생</option>
+                        <option value="thought" ${block.type === 'thought' ? 'selected' : ''}>속마음</option>
+                        <option value="status" ${block.type === 'status' ? 'selected' : ''}>상태창</option>
+                        <option value="postit" ${block.type === 'postit' ? 'selected' : ''}>포스트잇</option>
+                        <option value="polaroid" ${block.type === 'polaroid' ? 'selected' : ''}>폴라로이드</option>
+                        <option value="divider" ${block.type === 'divider' ? 'selected' : ''}>구분선</option>
+                        <option value="dday" ${block.type === 'dday' ? 'selected' : ''}>작은 텍스트</option>
+                        <option value="image" ${block.type === 'image' ? 'selected' : ''}>이미지</option>
+                        <option value="html" ${block.type === 'html' ? 'selected' : ''}>HTML</option>
+                        <option value="empty" ${block.type === 'empty' ? 'selected' : ''}>공백 줄</option>
                     </select>
-                    <button class="btn-small btn-quick-mint" onclick="changeBlockType(${index}, 'mint')">민트</button>
-                    <button class="btn-small btn-quick-pink" onclick="changeBlockType(${index}, 'pink')">핑크</button>
+                    <button class="btn-small btn-quick-javier" onclick="changeBlockType(${index}, 'javier')">Javier</button>
+                    <button class="btn-small btn-quick-ines" onclick="changeBlockType(${index}, 'ines')">Ines</button>
                     <button class="btn-small btn-quick-status" onclick="changeBlockType(${index}, 'narration')">나레이션</button>
                 </div>
                 <div class="block-actions">
@@ -654,27 +841,29 @@ function renderEditor() {
             </div>
             ${customFields}
             ${isEmpty ? `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px; background:var(--input-bg); border-radius:4px; border:1px solid var(--border);">[공백 줄 - 화면을 띄우는 용도]</div>`
-                      : isBgm ? ``
-                      : isPolaroid ? ``
-                      : isDivider ? `
-                        <select onchange="updateBlockContent(${index}, this.value)" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-family: inherit; background: var(--input-bg); color: var(--text-main);">
-                            <option value="solid-black" ${block.content === 'solid-black' ? 'selected' : ''}>검은 1자선</option>
-                            <option value="solid-gray" ${block.content === 'solid-gray' ? 'selected' : ''}>회색 1자선</option>
-                            <option value="dashed-gray" ${block.content === 'dashed-gray' ? 'selected' : ''}>회색 점선</option>
-                            <option value="dots" ${block.content === 'dots' ? 'selected' : ''}>점점점 (···)</option>
-                            <option value="diamond" ${block.content === 'diamond' ? 'selected' : ''}>다이아몬드 (─ ◇ ─)</option>
-                        </select>
-                      `
-                      : `
-                        ${narrationToolbar}
-                        <textarea id="textarea-${index}" rows="2" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockContent(${index}, this.value)" onchange="updateBlockContent(${index}, this.value); saveState();" onkeydown="handleTextareaKeydown(event, ${index})">${escapeHtml(block.content)}</textarea>
-                      `}
+                : isBgm ? ``
+                : isPolaroid ? ``
+                : isDivider ? `
+                    <select onchange="updateBlockContent(${index}, this.value)" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-family: inherit; background: var(--input-bg); color: var(--text-main);">
+                        <option value="solid-black" ${block.content === 'solid-black' ? 'selected' : ''}>검은 1자선</option>
+                        <option value="solid-gray" ${block.content === 'solid-gray' ? 'selected' : ''}>회색 1자선</option>
+                        <option value="dashed-gray" ${block.content === 'dashed-gray' ? 'selected' : ''}>회색 점선</option>
+                        <option value="dots" ${block.content === 'dots' ? 'selected' : ''}>점점점 (···)</option>
+                        <option value="diamond" ${block.content === 'diamond' ? 'selected' : ''}>다이아몬드 (─ ◇ ─)</option>
+                    </select>
+                `
+                : `
+                    ${narrationToolbar}
+                    <textarea id="textarea-${index}" rows="2" onclick="scrollToPreview(${index})" onfocus="scrollToPreview(${index})" oninput="updateBlockContent(${index}, this.value)" onchange="updateBlockContent(${index}, this.value); saveState();" onkeydown="handleTextareaKeydown(event, ${index})">${escapeHtml(block.content)}</textarea>
+                `}
             <div style="text-align: center; margin-top: 5px;">
                 <button class="btn-small btn-secondary" onclick="addBlock('narration', ${index + 1})">⬇ 이 아래에 추가</button>
             </div>
         `;
+
         list.appendChild(item);
     });
+
     updateCustomCharacterPanel();
     updateOutput();
 }
@@ -683,20 +872,33 @@ function syncPreviewToBlocks() {
     blocks.forEach((block, index) => {
         const el = document.getElementById(`preview-block-${index}`);
         if (!el) return;
+
         if (block.type === 'status' || block.type === 'html') {
             block.content = el.innerHTML;
-        } else if (['mint', 'pink', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid'].includes(block.type)) {
+        } else if (['javier', 'ines', 'mob', 'custom', 'narration', 'thought', 'title', 'dday', 'postit', 'polaroid'].includes(block.type)) {
             if (block.type === 'postit') {
                 const txtDiv = el.querySelectorAll('div')[1];
+
                 if (txtDiv) {
-                    let htmlText = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+                    let htmlText = txtDiv.innerHTML
+                        .replace(/<br\s*[\/]?>/gi, '\n')
+                        .replace(/<div[^>]*>/gi, '\n')
+                        .replace(/<\/div>/gi, '')
+                        .replace(/<p[^>]*>/gi, '\n')
+                        .replace(/<\/p>/gi, '')
+                        .replace(/&nbsp;/gi, ' ');
+
                     block.content = htmlText.replace(/^\n+|\n+$/g, '');
+
                     let ta = document.getElementById(`textarea-${index}`);
-                    if (ta && document.activeElement !== ta && document.activeElement !== el) { ta.value = block.content; }
+                    if (ta && document.activeElement !== ta && document.activeElement !== el) {
+                        ta.value = block.content;
+                    }
                 }
             } else if (block.type === 'polaroid') {
                 const img = el.querySelector('img');
                 if (img) block.content = img.src;
+
                 const textContainer = el.children[2];
                 if (textContainer) {
                     const txtDivs = textContainer.querySelectorAll('div');
@@ -707,6 +909,7 @@ function syncPreviewToBlocks() {
                 }
             } else {
                 let target = el;
+
                 if (block.type === 'dday') {
                     target = el.querySelector('span');
                 } else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && el.classList.contains('scroll-msg-box')) {
@@ -719,16 +922,30 @@ function syncPreviewToBlocks() {
                         target = el.children[1];
                     }
                 }
+
                 if (target) {
-                    let htmlText = target.innerHTML;
-                    htmlText = htmlText.replace(/<br\s*[\/]?>/gi, '\n');
-                    htmlText = htmlText.replace(/<div[^>]*>/gi, '\n');
-                    htmlText = htmlText.replace(/<\/div>/gi, '');
-                    htmlText = htmlText.replace(/<p[^>]*>/gi, '\n');
-                    htmlText = htmlText.replace(/<\/p>/gi, '');
-                    htmlText = htmlText.replace(/&nbsp;/gi, ' ');
-                    htmlText = htmlText.replace(/^\n+|\n+$/g, '');
+                    // [수정] 투톤 출력용 span을 본문에 다시 저장하지 않음.
+                    const restoredNovelText = isDialogueBlockType(block.type)
+                        ? readNovelToneContent(target)
+                        : null;
+
+                    let htmlText;
+
+                    if (restoredNovelText !== null) {
+                        htmlText = restoredNovelText;
+                    } else {
+                        htmlText = target.innerHTML;
+                        htmlText = htmlText.replace(/<br\s*[\/]?>/gi, '\n');
+                        htmlText = htmlText.replace(/<div[^>]*>/gi, '\n');
+                        htmlText = htmlText.replace(/<\/div>/gi, '');
+                        htmlText = htmlText.replace(/<p[^>]*>/gi, '\n');
+                        htmlText = htmlText.replace(/<\/p>/gi, '');
+                        htmlText = htmlText.replace(/&nbsp;/gi, ' ');
+                        htmlText = htmlText.replace(/^\n+|\n+$/g, '');
+                    }
+
                     block.content = htmlText;
+
                     let ta = document.getElementById(`textarea-${index}`);
                     if (ta && document.activeElement !== ta && document.activeElement !== el) {
                         ta.value = block.content;
@@ -737,6 +954,7 @@ function syncPreviewToBlocks() {
             }
         }
     });
+
     updateOutput(true);
     debounceSaveState();
 }
@@ -744,6 +962,7 @@ function syncPreviewToBlocks() {
 function formatBubbleText(text) {
     if (!text) return '';
     let lines = text.split('\n');
+
     return lines.map(l => {
         let t = l.replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 600;">$1</strong>');
         t = t.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
@@ -751,26 +970,58 @@ function formatBubbleText(text) {
     }).join('<br>');
 }
 
+function mixHexColor(fg, bg, fgRatio) {
+    const parse = h => /^#[0-9A-Fa-f]{6}$/i.test(h || '')
+        ? [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16))
+        : null;
+    const a = parse(fg);
+    const b = parse(bg);
+    if (!a || !b) return fg; // 형식이 잘못되면 원문색 그대로
+    const m = a.map((v, i) => Math.round(v * fgRatio + b[i] * (1 - fgRatio)));
+    return '#' + m.map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function formatBubbleBody(content, textColor, bgColor) {
+    const parts = splitNovelDialogue(content);
+    if (!parts) return formatBubbleText(content);
+
+    const base = Number(currentFontSize);
+    const transSize = Math.max((Number.isFinite(base) ? base : 13) - 2, 1);
+    const transColor = mixHexColor(textColor, bgColor, BUBBLE_TRANSLATION_MIX);
+
+    return `<span data-novel-part="original">${formatBubbleText(parts.original.join('\n'))}</span><br>` +
+           `<span data-novel-part="translation" style="display: inline-block; margin-top: 4px; font-size: ${transSize}px; font-weight: normal; color: ${transColor};">${formatBubbleText(parts.translation)}</span>`;
+}
+
+// =========================================================================
+// 출력
+// =========================================================================
+
 function updateOutput(skipPreviewUpdate = false) {
-    // 💡 [신규] 출력 버전(V1/V2)이 바뀐 순간에만 배경색 체크박스 기본값 적용 (V1=체크, V2=해제)
     syncBgToggleDefaultByVersion();
-    // 💡 [신규] 여백 값 읽기 + 입력칸 동기화 (검색용 주석 태그: #LAYOUT_PADDING_LOGIC)
+
     const padX = (outputVersion === 2) ? layoutPad[2].x : layoutPad[1].x;
     const padTop = layoutPad[1].top;
     const padBottom = layoutPad[1].bottom;
     refreshLayoutPadUI();
 
-    const mintTextColor = document.getElementById('mintTextColor').value || (isDarkMode ? '#50D2CB' : '#237768');
-    const pinkTextColor = document.getElementById('pinkTextColor').value || '#f5bdcc';
-    const mobTextColor = document.getElementById('mobTextColor') ? document.getElementById('mobTextColor').value : '#3a414d';
-    const mintBubbleTextColor = document.getElementById('mintBubbleTextColor') ? document.getElementById('mintBubbleTextColor').value : '#1d6f60';
-    const mintBgColor = document.getElementById('mintBgColor') ? document.getElementById('mintBgColor').value : '#eef8f3';
-    const pinkBubbleTextColor = document.getElementById('pinkBubbleTextColor') ? document.getElementById('pinkBubbleTextColor').value : '#9b3e61';
-    const pinkBgColor = document.getElementById('pinkBgColor') ? document.getElementById('pinkBgColor').value : '#fdf2f6';
+    const javierTextColor = document.getElementById('javierTextColor').value || (isDarkMode ? '#ffb07c' : '#ffb07c');
+    const inesTextColor = document.getElementById('inesTextColor').value || '#9ec5fe';
+
+    // 모브는 사용자가 지정한 색상을 다크모드에서도 그대로 사용.
+    const mobTextColorEl = document.getElementById('mobTextColor');
+    const mobTextColor = (mobTextColorEl ? mobTextColorEl.value : '') || '#8e8e93';
+
+    const javierBubbleTextColor = document.getElementById('javierBubbleTextColor') ? document.getElementById('javierBubbleTextColor').value : '#d96b27';
+    const javierBgColor = document.getElementById('javierBgColor') ? document.getElementById('javierBgColor').value : '#fff0e6';
+    const inesBubbleTextColor = document.getElementById('inesBubbleTextColor') ? document.getElementById('inesBubbleTextColor').value : '#5b8ce0';
+    const inesBgColor = document.getElementById('inesBgColor') ? document.getElementById('inesBgColor').value : '#eef4ff';
     const mobBubbleTextColor = document.getElementById('mobBubbleTextColor') ? document.getElementById('mobBubbleTextColor').value : '#3a414d';
     const mobBgColor = document.getElementById('mobBgColor') ? document.getElementById('mobBgColor').value : '#eff1f5';
+
     const narrColor = document.getElementById('narrColor').value || (isDarkMode ? '#A0A0B4' : '#48484A');
     const narrItalic = document.getElementById('narrItalic').checked ? 'italic' : 'normal';
+
     const cTitle = isDarkMode ? '#F9F9F8' : '#1c1c1e';
     const cStatusBg = isDarkMode ? '#242424' : '#fdfdfd';
     const cStatusBorder = isDarkMode ? '#444444' : '#eeeeee';
@@ -785,13 +1036,11 @@ function updateOutput(skipPreviewUpdate = false) {
     const cAlertBorder = isDarkMode ? '#555555' : '#cccccc';
     const cProgressBar = isDarkMode ? '#444444' : '#eeeeee';
 
-    // 💡 배경색 커스텀 계산 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
     const customBgToggleEl = document.getElementById('customBgToggle');
     const customBgColorEl = document.getElementById('customBgColor');
     const useCustomBg = customBgToggleEl ? customBgToggleEl.checked : false;
-    
-    // [수정사항] 커스텀 배경색 OFF 시 '투명색(transparent)'을 기본으로 사용하여 블로그/웹사이트 기본 배경에 자연스럽게 스며들도록 함
-    let wrapperBgColor = 'transparent'; 
+
+    let wrapperBgColor = 'transparent';
     if (useCustomBg && customBgColorEl && /^#[0-9A-Fa-f]{6}$/.test(customBgColorEl.value)) {
         wrapperBgColor = customBgColorEl.value;
     }
@@ -805,37 +1054,41 @@ function updateOutput(skipPreviewUpdate = false) {
     let consecutivePolaroidCount = 0;
     let gapBlock = currentBlockGap + 'px';
     let gapInner = currentInnerGap + 'px';
-    
+
     blocks.forEach((block, index) => {
         if (!block.content.trim() && !['html', 'bgm', 'empty', 'divider', 'polaroid'].includes(block.type)) return;
+
         let curr = block.type;
-        let isCurrDiag = ['mint', 'pink', 'mob', 'custom'].includes(curr);
-        let isPrevDiag = prevValidType && ['mint', 'pink', 'mob', 'custom'].includes(prevValidType);
+        let isCurrDiag = ['javier', 'ines', 'mob', 'custom'].includes(curr);
+        let isPrevDiag = prevValidType && ['javier', 'ines', 'mob', 'custom'].includes(prevValidType);
         let isCurrNarration = ['narration', 'thought'].includes(curr);
         let isPrevNarration = prevValidType && ['narration', 'thought'].includes(prevValidType);
         let isSameAsPrev = false;
-        
+
         if (isCurrDiag && prevValidType === curr) {
             if (curr === 'custom') {
-                if (lastCustomTextColor === block.customTextColor && lastCustomName === block.customName) isSameAsPrev = true;
+                if (lastCustomTextColor === block.customTextColor && lastCustomName === block.customName) {
+                    isSameAsPrev = true;
+                }
             } else {
                 isSameAsPrev = true;
             }
         }
-        
+
         if (curr === 'postit') {
             consecutivePostitCount++;
         } else {
             consecutivePostitCount = 0;
         }
-        
+
         if (curr === 'polaroid') {
             consecutivePolaroidCount++;
         } else {
             consecutivePolaroidCount = 0;
         }
-        
+
         let mt = '0px';
+
         if (curr !== 'empty' && curr !== 'divider') {
             if (prevValidType) {
                 if (isPrevDiag && isCurrDiag) {
@@ -847,13 +1100,15 @@ function updateOutput(skipPreviewUpdate = false) {
                 }
             }
         }
-        
+
         let htmlStr = '';
+
         if (block.type === 'empty') {
             htmlStr = `<div id="preview-block-${index}" data-type="empty" onclick="focusAndScrollBlock(${index}, true)" style="height: 30px; width: 100%; cursor: pointer;"></div>\n`;
         } else if (block.type === 'divider') {
             let dStyle = block.content || 'solid-gray';
             let dividerInner = '';
+
             if (dStyle === 'solid-black') {
                 dividerInner = `<div style="width: 100%; height: 1px; background-color: ${isDarkMode ? '#F9F9F8' : '#333333'};"></div>`;
             } else if (dStyle === 'solid-gray') {
@@ -865,40 +1120,43 @@ function updateOutput(skipPreviewUpdate = false) {
             } else if (dStyle === 'diamond') {
                 dividerInner = `<div style="display: flex; align-items: center; width: 100%;"><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div><div style="width: 9px; height: 9px; border: 1px solid ${isDarkMode ? '#666666' : '#c7c7cc'}; background-color: transparent; transform: rotate(45deg); margin: 0 15px;"></div><div style="flex: 1; height: 1px; background-color: ${isDarkMode ? '#555555' : '#e5e5ea'};"></div></div>`;
             }
+
             htmlStr = `<div id="preview-block-${index}" data-type="divider" data-style="${dStyle}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 30px 0; padding: 0; display: flex; justify-content: center; align-items: center;">${dividerInner}</div>\n`;
         } else {
             let lines = block.content.split('\n');
             let divContent = lines.map(l => applyTextStyles(l)).join('<br>');
+
             if (block.type === 'title') {
                 htmlStr = `<div id="preview-block-${index}" data-type="title" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 10px 0; font-size: 18pt; font-weight: bold; text-align: left; color: ${cTitle};">${applyTextStyles(block.content)}</div>\n`;
-            }
-            else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && isCurrDiag) {
+            } else if ((outputMode === 'bubble1' || outputMode === 'bubble2') && isCurrDiag) {
                 function extractProfileUrl(rawVal) {
                     if (!rawVal) return '';
                     let cleaned = rawVal.trim();
                     let match = cleaned.match(/\[.*?\]\((.*?)\)/);
                     return match && match[1] ? match[1].trim() : cleaned;
                 }
+
                 let bgColor = '';
                 let textColor = '';
                 let imageUrl = '';
                 let charName = '';
-                let mintUrlEl = document.getElementById('mintProfileUrl');
-                let pinkUrlEl = document.getElementById('pinkProfileUrl');
+
+                let javierUrlEl = document.getElementById('javierProfileUrl');
+                let inesUrlEl = document.getElementById('inesProfileUrl');
                 let mobUrlEl = document.getElementById('mobProfileUrl');
-                
-                if (curr === 'mint') {
-                    bgColor = mintBgColor;
-                    textColor = mintBubbleTextColor;
-                    imageUrl = extractProfileUrl(mintUrlEl ? mintUrlEl.value : '') || 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
-                    let nameEl = document.getElementById('mintName');
-                    charName = nameEl ? nameEl.value : '하시온';
-                } else if (curr === 'pink') {
-                    bgColor = pinkBgColor;
-                    textColor = pinkBubbleTextColor;
-                    imageUrl = extractProfileUrl(pinkUrlEl ? pinkUrlEl.value : '') || 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
-                    let nameEl = document.getElementById('pinkName');
-                    charName = nameEl ? nameEl.value : '김민정';
+
+                if (curr === 'javier') {
+                    bgColor = javierBgColor;
+                    textColor = javierBubbleTextColor;
+                    imageUrl = extractProfileUrl(javierUrlEl ? javierUrlEl.value : '') || 'https://i.ibb.co/VYrHdHd8/IMG-6825.jpg';
+                    let nameEl = document.getElementById('javierName');
+                    charName = nameEl ? nameEl.value : 'Javier Espinoza';
+                } else if (curr === 'ines') {
+                    bgColor = inesBgColor;
+                    textColor = inesBubbleTextColor;
+                    imageUrl = extractProfileUrl(inesUrlEl ? inesUrlEl.value : '') || 'https://i.ibb.co/Rkb6NzhF/IMG-0550.jpg';
+                    let nameEl = document.getElementById('inesName');
+                    charName = nameEl ? nameEl.value : 'Ines Hartmann';
                 } else if (curr === 'mob') {
                     bgColor = mobBgColor;
                     textColor = mobBubbleTextColor;
@@ -908,65 +1166,106 @@ function updateOutput(skipPreviewUpdate = false) {
                 } else {
                     bgColor = block.customBgColor || '#E2E8F0';
                     textColor = block.customTextColor || '#333333';
-                    imageUrl = extractProfileUrl(block.customProfileUrl) || `ml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
+                    imageUrl = extractProfileUrl(block.customProfileUrl) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='${escapeHtml(bgColor).replace('#', '%23')}'/%3E%3C/svg%3E`;
                     charName = block.customName || '제3자';
                 }
-                
-                let isPink = (curr === 'pink');
+
+                let isInes = (curr === 'ines');
+
                 if (outputMode === 'bubble1') {
                     let avatarHtml = '';
+
                     if (isSameAsPrev) {
                         avatarHtml = `<div style="flex-shrink: 0; width: 36px; height: 0;"></div>`;
                     } else {
                         avatarHtml = `<div class="av" style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor};"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
                     }
-                    let alignStyle = isPink ? 'flex-direction: row-reverse;' : '';
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 600px; margin-top: ${mt}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; margin: 0 !important;">${formatBubbleText(block.content)}</div></div>\n`;
+
+                    let alignStyle = isInes ? 'flex-direction: row-reverse;' : '';
+
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" data-char-name="${escapeHtml(charName)}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="width: 100%; max-width: 93%; margin-top: ${mt}; margin-bottom: 0px; display: flex; ${alignStyle} align-items: flex-start; gap: 15px;">${avatarHtml}<div style="background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: fit-content; margin: 0 !important;">${formatBubbleBody(block.content, textColor, bgColor)}</div></div>\n`;
                 } else if (outputMode === 'bubble2') {
                     let avatarHtml = '';
                     let nameHtml = '';
                     let tailHtml = '';
+
                     if (!isSameAsPrev) {
-                        let avPos = isPink ? 'right: 0;' : 'left: 0;';
+                        let avPos = isInes ? 'right: 0;' : 'left: 0;';
                         avatarHtml = `<div class="av" style="position: absolute; ${avPos} top: 0; width: 36px; height: 36px; border-radius: 0; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid ${bgColor};"><img src="${imageUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: block; background-color: #f0f0f0;"></div>`;
-                        if (charName.trim() !== '') {
-                            let nameAlign = isPink ? 'text-align: right;' : 'text-align: left;';
+
+                        if (SHOW_BUBBLE_NAME && charName.trim() !== '') {
+                            let nameAlign = isInes ? 'text-align: right;' : 'text-align: left;';
                             nameHtml = `<div class="m-name" style="font-size: 11.5px; font-weight: 600; margin: 0 3px 4px; color: ${textColor}; ${nameAlign}">${escapeHtml(charName)}</div>`;
                         }
-                        let tailPos = isPink
+
+                        let tailPos = isInes
                             ? `right: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-left: 12px solid ${bgColor};`
                             : `left: -8px; border-top: 2px solid transparent; border-bottom: 14px solid transparent; border-right: 12px solid ${bgColor};`;
+
                         tailHtml = `<div class="bubble-tail" style="position: absolute; top: 8px; ${tailPos} z-index: -1;"></div>`;
                     }
-                    let containerPadding = isPink ? 'padding-right: 50px;' : 'padding-left: 50px;';
-                    let containerFlex = isPink ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
-                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${mt}; margin-bottom: 0px; ${containerFlex}">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleText(block.content)}</div></div>\n`;
+
+                    let containerPadding = isInes ? 'padding-right: 50px;' : 'padding-left: 50px;';
+                    let containerFlex = isInes ? 'display: flex; flex-direction: column; align-items: flex-end;' : '';
+
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}" data-char-name="${escapeHtml(charName)}" onclick="focusAndScrollBlock(${index}, true)" class="scroll-msg-box" style="position: relative; ${containerPadding} margin-top: ${mt}; margin-bottom: 0px; ${containerFlex} width: 100%; max-width: 93%;">${avatarHtml}${nameHtml}<div class="m-bubble" style="position: relative; display: block; isolation: isolate; background-color: ${bgColor}; color: ${textColor}; padding: 12px 18px; border-radius: 14px; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-align: left; margin: 0 !important;">${tailHtml}${formatBubbleBody(block.content, textColor, bgColor)}</div></div>\n`;
                 }
-            }
-            else if (isCurrDiag) {
+            } else if (isCurrDiag) {
                 let textColor;
-                if (curr === 'mint') { textColor = mintTextColor; }
-                else if (curr === 'pink') { textColor = pinkTextColor; }
-                else if (curr === 'mob') { textColor = isDarkMode ? '#aaaaaa' : mobTextColor; }
-                else { textColor = block.customTextColor || (isDarkMode ? '#F9F9F8' : '#333333'); }
-                htmlStr = `<div id="preview-block-${index}" data-type="${curr}" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${textColor}; text-align: left;">${divContent}</div>\n`;
-            }
-            else if (block.type === 'bgm') {
+
+                if (curr === 'javier') {
+                    textColor = javierTextColor;
+                } else if (curr === 'ines') {
+                    textColor = inesTextColor;
+                } else if (curr === 'mob') {
+                    textColor = mobTextColor;
+                } else {
+                    textColor = block.customTextColor || '#8e8e93';
+                }
+
+                // [수정] 소설 모드에서만 원문/번역 투톤 적용.
+                // 출력용 span은 data-novel-part로 구별하여 재편집 시 제거.
+                const dialogueParts = outputMode === 'novel'
+                    ? splitNovelDialogue(block.content)
+                    : null;
+
+                // 소설형 제3자 설정도 HTML 재불러오기 시 보존.
+                const customAttrs = curr === 'custom'
+                    ? ` data-custom-name="${escapeHtml(block.customName || '')}" data-custom-bg="${escapeHtml(block.customBgColor || '#E2E8F0')}" data-custom-profile="${escapeHtml(block.customProfileUrl || '')}"`
+                    : '';
+
+                if (dialogueParts) {
+                    const topHtml = dialogueParts.original
+                        .map(line => applyTextStyles(line))
+                        .join('<br>');
+
+                    const transHtml = applyTextStyles(dialogueParts.translation);
+                    const baseSize = Number(currentFontSize);
+                    const transSize = Math.max((Number.isFinite(baseSize) ? baseSize : 13) - 1, 1);
+
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}"${customAttrs} data-novel-tone="1" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; text-align: left;"><span data-novel-part="original" style="color: ${narrColor}; font-weight: bold;">${topHtml}</span><br><span data-novel-part="translation" style="color: ${textColor}; font-size: ${transSize}px; font-weight: normal;">${transHtml}</span></div>\n`;
+                } else {
+                    // 번역 없는 대사는 기존의 캐릭터 색상 출력 유지.
+                    htmlStr = `<div id="preview-block-${index}" data-type="${curr}"${customAttrs} onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${textColor}; text-align: left;">${divContent}</div>\n`;
+                }
+            } else if (block.type === 'bgm') {
                 hasBgm = true;
                 let vid = extractVideoId(block.bgmUrl);
+
                 htmlStr = `<div id="preview-block-${index}" data-type="bgm" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 10px 0; text-align: center;"><div style="display: inline-flex; align-items: center; background-color: ${isDarkMode ? '#333' : '#ffffff'}; border: 1px solid ${isDarkMode ? '#444' : '#e5e5ea'}; border-radius: 20px; padding: 4px 12px; gap: 8px; font-size: 11px; color: ${isDarkMode ? '#ccc' : '#8e8e93'}; box-shadow: 0 1px 2px rgba(0,0,0,0.02); line-height: 1;"><span style="display: flex; align-items: center; color: ${isDarkMode ? '#888' : '#aeaeb2'};"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span><span style="max-width: 120px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isDarkMode ? '#F9F9F8' : '#3a3a3c'};">${block.bgmTitle || 'BGM'}</span><span style="color: ${isDarkMode ? '#555' : '#d1d1d6'};">|</span><div style="display: flex; align-items: center; gap: 4px;"><div onclick="playBGM('${vid}', '${block.bgmTitle}')" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="재생"><svg width="8" height="8" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M8 5v14l11-7z"/></svg></div><div onclick="stopBGM()" style="cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background-color: ${isDarkMode ? '#444' : '#f2f2f7'}; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="정지"><svg width="7" height="7" viewBox="0 0 24 24" fill="${isDarkMode ? '#F9F9F8' : '#3a3a3c'}"><path d="M6 6h12v12H6z"/></svg></div></div></div></div>\n`;
-            }
-            else if (block.type === 'status') {
+            } else if (block.type === 'status') {
                 if (block.content.trim().startsWith('<div')) {
                     htmlStr = `<div id="preview-block-${index}" data-type="status" onclick="focusAndScrollBlock(${index}, true)" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: ${cStatusBg}; border: 1px solid ${cStatusBorder}; border-radius: 6px; color: ${cStatusText};">\n${block.content}\n</div>\n`;
                 } else {
                     let sData = {};
+
                     lines.forEach(line => {
                         let getVal = () => {
                             let idx = line.search(/[|:]/);
-                            let rawText = idx !== -1 ? line.substring(idx+1).trim() : line.replace(/^.*? /, '').trim();
+                            let rawText = idx !== -1 ? line.substring(idx + 1).trim() : line.replace(/^.*? /, '').trim();
                             return applyTextStyles(rawText);
-                        }
+                        };
+
                         if (line.includes('🗓')) sData.date = getVal();
                         else if (line.includes('💍')) sData.ring = getVal();
                         else if (line.includes('📍')) sData.loc = getVal();
@@ -982,116 +1281,158 @@ function updateOutput(skipPreviewUpdate = false) {
                         else if (line.includes('📰')) sData.interview = getVal();
                         else if (line.includes('💘')) sData.relation = getVal();
                     });
-                    
+
                     let statusHtml = `<div id="preview-block-${index}" data-type="status" onclick="focusAndScrollBlock(${index}, true)" style="max-width: 500px; width: 100%; margin: 40px auto; padding: 15px 12px; background-color: ${cStatusBg}; border: 1px solid ${cStatusBorder}; border-radius: 6px; color: ${cStatusText};">`;
+
                     if (sData.date || sData.loc) {
                         let dateHtml = '<div></div>';
+
                         if (sData.date) {
                             let parts = sData.date.split('/');
                             let mainDate = parts[0]?.trim() || '';
                             let subDate = parts[1]?.trim() || '';
-                            dateHtml = `<div><div style="font-size: 12px; color: ${cMainText};">🗓️ ${mainDate}</div>${subDate ?` <div style="font-size: 11px; color: ${cMuted}; margin-top: 2px;">${subDate}</div>` : ''}</div>`;
+
+                            dateHtml = `<div><div style="font-size: 12px; color: ${cMainText};">🗓️ ${mainDate}</div>${subDate ? `<div style="font-size: 11px; color: ${cMuted}; margin-top: 2px;">${subDate}</div>` : ''}</div>`;
                         }
+
                         let locHtml = '<div></div>';
                         if (sData.loc) {
                             locHtml = `<div style="text-align: right; font-size: 12px; color: ${cMainText};">📍 ${sData.loc}</div>`;
                         }
+
                         statusHtml += `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid ${cBoxBorder}; padding-bottom: 8px; margin-bottom: 8px;">${dateHtml}${locHtml}</div>`;
                     }
+
                     if (sData.ring) {
                         statusHtml += `<div style="font-size: 11px; color: ${cStatusText}; margin-bottom: 10px; line-height: 1.5; word-break: break-all;">${sData.ring}</div>`;
                     }
+
                     if (sData.outfit) {
                         if (sData.outfit.includes('/')) {
                             let parts = sData.outfit.split('/');
                             let p1 = parts[0].trim();
                             let p2 = parts.slice(1).join('/').trim();
+
                             statusHtml += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p1}</div></div><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${p2}</div></div></div>`;
                         } else {
                             statusHtml += `<div style="margin-bottom: 10px;"><div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">👕 OUTFIT</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.outfit}</div></div></div>`;
                         }
                     }
+
                     if (sData.state || sData.thought) {
                         statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; border-radius: 4px; padding: 10px; margin-bottom: 10px;">`;
+
                         if (sData.state) {
                             statusHtml += `<div style="${sData.thought ? 'margin-bottom: 8px;' : ''}"><span style="font-size: 11px; background-color: ${cBadgeBg}; color: ${cBadgeText}; padding: 2px 4px; border-radius: 2px;">👥 STATE</span><div style="margin-top: 4px; font-size: 12px; color: ${cMainText}; line-height: 1.5;">${sData.state}</div></div>`;
                         }
+
                         if (sData.state && sData.thought) {
                             statusHtml += `<hr style="border: 0; border-top: 1px dashed ${cBoxBorder}; margin: 8px 0;">`;
                         }
+
                         if (sData.thought) {
                             statusHtml += `<div><span style="font-size: 11px; background-color: ${cBadgeBg}; color: ${cBadgeText}; padding: 2px 4px; border-radius: 2px;">💭 INNER THOUGHT</span><div style="margin-top: 4px; font-size: 12px; color: ${cStatusText}; font-style: italic; line-height: 1.5;">${sData.thought}</div></div>`;
                         }
+
                         statusHtml += `</div>`;
                     }
+
                     if (sData.alert || sData.guide || sData.affection) {
                         statusHtml += `<div style="background-color: ${cAlertBg}; border-left: 3px solid ${cAlertBorder}; padding: 8px 10px; margin-bottom: 10px;">`;
+
                         if (sData.alert) {
                             statusHtml += `<div style="font-size: 12px; color: ${cStatusText}; margin-bottom: ${(sData.guide || sData.affection) ? '6px' : '0'};"><span class="bell">🔔</span> ${sData.alert}</div>`;
                         }
+
                         if (sData.guide) {
-                            let parts = sData.guide.split('|').map(s=>s.trim());
+                            let parts = sData.guide.split('|').map(s => s.trim());
                             let val = parts[0] || '0%';
                             let state = parts[1] || '';
                             let desc = parts[2] || '';
                             let num = val.replace(/[^0-9]/g, '');
-                            statusHtml += `<div style="margin-bottom: ${sData.affection ? '6px' : '0'};"><div style="display: flex; justify-content: space-between; font-size: 11px; color: ${cMuted}; margin-bottom: 3px;"><span>🚨 가이딩 필요 수치</span><span>${val} ${state ?` (${state})` : ''}</span></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #A8E6CF;"></div></div>${desc ? `<div style="font-size: 10px; color: ${cMuted}; margin-top: 2px; text-align: right;">${desc}</div>` : ''}</div>`;
+
+                            statusHtml += `<div style="margin-bottom: ${sData.affection ? '6px' : '0'};"><div style="display: flex; justify-content: space-between; font-size: 11px; color: ${cMuted}; margin-bottom: 3px;"><span>🚨 가이딩 필요 수치</span><span>${val} ${state ? ` (${state})` : ''}</span></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #A8E6CF;"></div></div>${desc ? `<div style="font-size: 10px; color: ${cMuted}; margin-top: 2px; text-align: right;">${desc}</div>` : ''}</div>`;
                         }
+
                         if (sData.affection) {
                             let val = sData.affection;
                             let mainVal = val;
                             let bracketText = '';
+
                             if (val.includes('(')) {
                                 let parenIdx = val.indexOf('(');
                                 mainVal = val.substring(0, parenIdx).trim();
                                 bracketText = val.substring(parenIdx).trim();
                             }
+
                             let num = (mainVal === 'MAX' || mainVal.includes('∞')) ? '100' : mainVal.replace(/[^0-9]/g, '');
-                            statusHtml += `<div><div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: ${cMuted}; margin-bottom: 6px;"><span style="margin-bottom: 2px;">💕 호감도</span><div style="text-align: right;"><div style="color: #E598A6; font-weight: bold; font-size: 12px;">${mainVal}</div>${bracketText ?` <div style="font-size: 10.5px; color: ${cMuted}; margin-top: 3px; font-weight: normal; word-break: break-all;">${bracketText}</div>` : ''}</div></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #FFB6C1;"></div></div></div>`;
+
+                            statusHtml += `<div><div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: ${cMuted}; margin-bottom: 6px;"><span style="margin-bottom: 2px;">💕 호감도</span><div style="text-align: right;"><div style="color: #E598A6; font-weight: bold; font-size: 12px;">${mainVal}</div>${bracketText ? `<div style="font-size: 10.5px; color: ${cMuted}; margin-top: 3px; font-weight: normal; word-break: break-all;">${bracketText}</div>` : ''}</div></div><div style="background-color: ${cProgressBar}; height: 4px; border-radius: 2px; overflow: hidden;"><div style="width: ${num}%; height: 100%; background-color: #FFB6C1;"></div></div></div>`;
                         }
+
                         statusHtml += `</div>`;
                     }
+
                     if (sData.nsfw || sData.tmi) {
                         let gridCols = (sData.nsfw && sData.tmi) ? '110px 1fr' : '1fr';
                         statusHtml += `<div style="display: grid; grid-template-columns: ${gridCols}; gap: 8px; margin-bottom: 10px;">`;
+
                         if (sData.nsfw) {
                             statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">❤️‍🔥 NSFW COUNT</div><div style="font-size: 12px; color: ${cMainText};">${sData.nsfw}</div></div>`;
                         }
+
                         if (sData.tmi) {
                             statusHtml += `<div style="background-color: ${cBoxBg}; border: 1px solid ${cBoxBorder}; padding: 8px 10px; border-radius: 4px;"><div style="font-size: 11px; color: ${cMuted}; margin-bottom: 2px;">🔫 TMI</div><div style="font-size: 12px; color: ${cMainText}; line-height: 1.4;">${sData.tmi}</div></div>`;
                         }
+
                         statusHtml += `</div>`;
                     }
+
                     if (sData.interview || sData.relation) {
                         statusHtml += `<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">`;
+
                         if (sData.interview) {
-                            let ivText = sData.interview.replace(/^(PC에 대한 랜덤 인터뷰|랜덤 인터뷰|인터뷰)/i, '').replace(/^[|\s:]+/, '');
+                            let ivText = sData.interview
+                                .replace(/^(PC에 대한 랜덤 인터뷰|랜덤 인터뷰|인터뷰)/i, '')
+                                .replace(/^[|\s:]+/, '');
+
                             ivText = ivText.replace(/\s*(A\.)/g, '<br><br>$1').replace(/^(<br>)+/, '');
+
                             statusHtml += `<div style="background-color: ${isDarkMode ? '#1e293b' : '#f8fafc'}; border: 1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}; padding: 10px 12px; border-radius: 4px; border-left: 3px solid ${isDarkMode ? '#475569' : '#94a3b8'};"><div style="font-size: 11px; color: ${isDarkMode ? '#94a3b8' : '#64748b'}; margin-bottom: 4px; font-weight: bold;">📰 INTERVIEW</div><div style="font-size: 12px; color: ${isDarkMode ? '#e2e8f0' : '#334155'}; line-height: 1.5; font-style: italic;">${ivText}</div></div>`;
                         }
+
                         if (sData.relation) {
-                            let relText = sData.relation.replace(/^(뱅이 생각하는 PC와의 관계|뱅이 생각하는 관계|PC와의 관계|관계)/i, '').replace(/^[|\s:]+/, '');
+                            let relText = sData.relation
+                                .replace(/^(뱅이 생각하는 PC와의 관계|뱅이 생각하는 관계|PC와의 관계|관계)/i, '')
+                                .replace(/^[|\s:]+/, '');
+
                             statusHtml += `<div style="background-color: ${isDarkMode ? '#4c0519' : '#fff0f2'}; border: 1px solid ${isDarkMode ? '#881337' : '#ffe4e6'}; padding: 10px 12px; border-radius: 4px; border-left: 3px solid ${isDarkMode ? '#e11d48' : '#fecdd3'};"><div style="font-size: 11px; color: ${isDarkMode ? '#fda4af' : '#e11d48'}; margin-bottom: 4px; font-weight: bold;">💘</div><div style="font-size: 12px; color: ${isDarkMode ? '#ffe4e6' : '#4c0519'}; line-height: 1.5;">${relText}</div></div>`;
                         }
+
                         statusHtml += `</div>`;
                     }
+
                     if (sData.doodle) {
                         statusHtml += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid ${cBoxBorder}; text-align: center; width: 100%;"><span style="font-size: 12px; color: ${cMuted}; display: inline-block;">${sData.doodle}</span></div>`;
                     }
+
                     statusHtml += `</div>\n`;
                     htmlStr = statusHtml;
                 }
-            }
-            else if (block.type === 'narration') {
-                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; font-style: ${narrItalic}; text-align: left;">${divContent}</div>\n`;
-            }
-            else if (block.type === 'thought') {
+            } else if (block.type === 'narration') {
+                // [수정] 문단 전체를 감싼 _만 제거.
+                // 기울임 여부는 기존 narrItalic 설정으로만 결정.
+                const narrationContent = stripNarrationParagraphUnderscores(block.content)
+                    .split('\n')
+                    .map(line => applyTextStyles(line))
+                    .join('<br>');
+
+                htmlStr = `<div id="preview-block-${index}" data-type="narration" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; font-style: ${narrItalic}; text-align: left;">${narrationContent}</div>\n`;
+            } else if (block.type === 'thought') {
                 htmlStr = `<div id="preview-block-${index}" data-type="thought" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: ${mt} 0 0; padding: 5px 0; color: ${isDarkMode ? '#8e8e93' : '#8e8e93'}; font-style: italic; text-align: left;">${divContent}</div>\n`;
-            }
-            else if (block.type === 'dday') {
+            } else if (block.type === 'dday') {
                 htmlStr = `<div id="preview-block-${index}" data-type="dday" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 20px 0; text-align: left; padding: 0;"><span style="font-size: 13px; color: ${cMuted}; font-weight: 600;"> ${applyTextStyles(block.content)}</span></div>\n`;
-            }
-            else if (block.type === 'postit') {
+            } else if (block.type === 'postit') {
                 let isEven = consecutivePostitCount % 2 === 0;
                 let bgStr = isDarkMode ? (isEven ? '#333333' : '#2A2A2A') : (isEven ? '#F4F4F6' : '#FAFAFA');
                 let borderStr = isDarkMode ? '#555555' : (isEven ? '#D1D1D6' : '#E5E5EA');
@@ -1100,12 +1441,14 @@ function updateOutput(skipPreviewUpdate = false) {
                 let zIdxStr = isEven ? 'z-index: 2;' : '';
                 let shadowStr = isDarkMode ? 'box-shadow: 2px 3px 8px rgba(0,0,0,0.3);' : (isEven ? 'box-shadow: 3px 4px 10px rgba(0,0,0,0.05);' : 'box-shadow: 2px 3px 8px rgba(0,0,0,0.04);');
                 let tapeBg = isEven ? 'rgba(211, 211, 218, 0.5)' : 'rgba(229, 229, 234, 0.6)';
+
                 if (isDarkMode) tapeBg = isEven ? 'rgba(80, 80, 85, 0.5)' : 'rgba(100, 100, 105, 0.6)';
+
                 let tapeRot = isEven ? 'rotate(-3deg)' : 'rotate(1deg)';
                 let tapePos = isEven ? 'left: 45%; top: -10px; width: 75px; height: 20px;' : 'left: 50%; top: -12px; width: 70px; height: 22px;';
+
                 htmlStr = `<div id="preview-block-${index}" data-type="postit" onclick="focusAndScrollBlock(${index}, true)" style="margin: 25px auto 40px; max-width: 450px; background: ${bgStr}; color: ${textStr}; padding: 24px 24px 20px; ${shadowStr} border-radius: 1px; transform: ${rotStr}; position: relative; border-top: 1px solid ${borderStr}; word-break: break-all; ${zIdxStr}"><div style="position: absolute; ${tapePos} transform: translateX(-50%) ${tapeRot}; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.05); border-right: 1px dashed rgba(0,0,0,0.05); pointer-events: none;"></div><div class="postit-scroll" style="line-height: 1.7; font-size: 14px;">${divContent}</div></div>\n`;
-            }
-            else if (block.type === 'polaroid') {
+            } else if (block.type === 'polaroid') {
                 let isEvenPol = consecutivePolaroidCount % 2 === 0;
                 let bgStr = isDarkMode ? '#242424' : '#FFFFFF';
                 let borderStr = isDarkMode ? '#444444' : '#E5E5EA';
@@ -1120,28 +1463,38 @@ function updateOutput(skipPreviewUpdate = false) {
                 let pDate = applyTextStyles(block.polaroidDate || '');
                 let pCap = applyTextStyles(block.polaroidCaption || '');
                 let captionHtml = '';
+
                 if (pDate || pCap) {
-                    captionHtml = `<div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">${pDate ?` <div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}</div>`;
+                    captionHtml = `<div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 4px 0;">${pDate ? `<div style="font-size: 11px; color: ${dateColor}; font-weight: 600; letter-spacing: 0.02em;">${pDate}</div>` : ''}${pCap ? `<div style="font-size: 13px; color: ${capColor}; line-height: 1.5; font-style: italic; word-break: break-all;">${pCap}</div>` : ''}</div>`;
                 }
+
                 htmlStr = `<div id="preview-block-${index}" data-type="polaroid" onclick="focusAndScrollBlock(${index}, true)" style="margin: 45px auto 25px; max-width: 380px; background: ${bgStr}; border: 1px solid ${borderStr}; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 16px 16px 24px 16px; border-radius: 1px; display: flex; flex-direction: column; gap: 14px; transform: ${rotStr}; position: relative;"><div style="position: absolute; top: -10px; ${tapePos} transform: translateX(-50%) ${tapeRot}; width: 80px; height: 20px; background: ${tapeBg}; border-left: 1px dashed rgba(0,0,0,0.04); border-right: 1px dashed rgba(0,0,0,0.04); pointer-events: none;"></div><div style="width: 100%; overflow: hidden; background-color: ${imgBgStr}; display: flex; justify-content: center; align-items: center;"><img src="${imgSrc}" style="width: 100%; height: auto; display: block; object-fit: contain;" alt="Polaroid Photo"></div>${captionHtml}</div>\n`;
-            }
-            else if (block.type === 'image') {
+            } else if (block.type === 'image') {
                 htmlStr = `<div id="preview-block-${index}" data-type="image" onclick="focusAndScrollBlock(${index}, true)" style="width: 100%; margin: 15px 0; text-align: center;"><img src="${block.content}" style="max-width: 100%; width: auto; height: auto; display: inline-block; border-radius: 8px;" alt="image"></div>\n`;
-            }
-            else if (block.type === 'html') {
-                htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)">${block.content}</div>\n`;
+            } else if (block.type === 'html') {
+                // [수정] Apogee 상태창 위에만 30px 여백.
+                // 외부 래퍼의 padding이므로 미리보기와 최종 HTML에 동일하게 적용되고,
+                // 본문 저장/불러오기 시 상태창 내부에 중복으로 쌓이지 않음.
+                const apogeeSpacing = isApogeeHtmlContent(block.content)
+                    ? ' style="width: 100%; padding-top: 30px;padding-bottom: 35px;"'
+                    : '';
+
+                htmlStr = `<div id="preview-block-${index}" data-type="html" onclick="focusAndScrollBlock(${index}, true)"${apogeeSpacing}>${block.content}</div>\n`;
             }
         }
+
         innerContent += htmlStr;
+
         if (curr !== 'empty' && curr !== 'bgm' && curr !== 'html' && curr !== 'divider') {
             prevValidType = curr;
+
             if (curr === 'custom') {
                 lastCustomTextColor = block.customTextColor;
                 lastCustomName = block.customName;
             }
         }
     });
-    
+
     if (hasBgm) {
         innerContent += `
 <iframe id="bgmPlayerFrame" src="https://loading-lovebullets.naru.pub/editor/bgm.html" style="position: fixed; bottom: 20px; right: 20px; width: 32px; height: 32px; border: none; z-index: 9999; background: transparent; transition: 0.3s;" allow="autoplay"></iframe>
@@ -1171,7 +1524,7 @@ function stopBGM() {
 }
 <\/script>\n`;
     }
-    
+
     let globalStyle = `
 <style>
 /* 폰트 및 전체 스타일 일괄 설정 */
@@ -1197,7 +1550,6 @@ body {
     color: ${narrColor};
 }
 .tistory-post-wrapper * { box-sizing: border-box; }
-/* 티스토리 스킨의 이미지 간섭 방지 및 아바타 고정 (이미지가 본문 폭 밖으로 튀어나가지 않도록 max-width 100% 고정) */
 .tistory-post-wrapper img {
     max-width: 100% !important;
     height: auto !important;
@@ -1210,7 +1562,6 @@ body {
     display: block !important;
     margin: 0 !important;
 }
-/* 포스트잇 내부 내용 길어질 때 스크롤 */
 .postit-scroll {
     max-height: 350px;
     overflow-y: auto;
@@ -1222,14 +1573,20 @@ body {
 .postit-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
 </style>
 `;
-    let previewWrapperStyle = (outputVersion === 1) ? ` style="padding-top: ${padTop}px; padding-bottom: ${padBottom}px;"` : '';
+
+    let previewWrapperStyle = (outputVersion === 1)
+        ? `style="padding-top: ${padTop}px; padding-bottom: ${padBottom}px;"`
+        : '';
+
     let previewHtml = globalStyle + `<div class="tistory-post-wrapper"${previewWrapperStyle}>\n` + innerContent + `</div>\n`;
+
     let cleanInnerContent = innerContent
         .replace(/<div id="preview-block-\d+" data-type="empty"[^>]*>.*?<\/div>\n?/g, '<div style="height: 30px;"></div>\n')
         .replace(/ id="preview-block-\d+"/g, '')
         .replace(/ onclick="focusAndScrollBlock\(\d+, true\)"/g, '');
+
     let finalHtml = '';
-    
+
     if (outputVersion === 1) {
         finalHtml = `<!DOCTYPE html>
 <html lang="ko">
@@ -1252,108 +1609,143 @@ ${cleanInnerContent}
     } else {
         finalHtml = globalStyle + `<div class="tistory-post-wrapper">\n${cleanInnerContent}\n</div>`;
     }
+
     if (!skipPreviewUpdate) {
         document.getElementById('htmlPreview').innerHTML = previewHtml;
     }
+
     document.getElementById('finalHtmlCode').value = finalHtml;
 }
 
-// 💡 폰트, 모브, 커스텀 정보를 완벽하게 보존하며 불러오는 동기화 로직
+// =========================================================================
+// HTML 불러오기
+// =========================================================================
+
 function importFromHtml() {
     const htmlText = document.getElementById('finalHtmlCode').value;
+
     if (!htmlText.trim()) {
         showToast('불러올 HTML 코드를 입력해주세요.');
         return;
     }
+
     const styleMatch = htmlText.match(/\.tistory-post-wrapper\s*\{\s*([^}]+)\}/);
+
     if (styleMatch) {
         const styleRules = styleMatch[1];
         const fontMatch = styleRules.match(/font-family:\s*([^;]+);/);
+
         if (fontMatch) {
             currentFontFamily = fontMatch[1].trim();
             const fontSelect = document.getElementById('fontSelect');
             if (fontSelect) fontSelect.value = currentFontFamily;
             document.body.style.fontFamily = currentFontFamily;
         }
+
         const sizeMatch = styleRules.match(/font-size:\s*(\d+)px;/);
         if (sizeMatch) {
             currentFontSize = parseInt(sizeMatch[1], 10);
             const sizeDisplay = document.getElementById('fontSizeDisplay');
             if (sizeDisplay) sizeDisplay.innerText = currentFontSize + 'px';
         }
+
         const lhMatch = styleRules.match(/line-height:\s*([\d.]+);/);
         if (lhMatch) {
             currentLineHeight = parseFloat(lhMatch[1]);
             const lhInput = document.querySelector('input[oninput*="lineHeight"]');
             const lhVal = document.getElementById('lineHeightVal');
+
             if (lhInput) lhInput.value = currentLineHeight;
             if (lhVal) lhVal.innerText = currentLineHeight;
         }
+
         const lsMatch = styleRules.match(/letter-spacing:\s*([-\d.]+)em;/);
         if (lsMatch) {
             currentLetterSpacing = parseFloat(lsMatch[1]);
             const lsInput = document.querySelector('input[oninput*="letterSpacing"]');
             const lsVal = document.getElementById('letterSpacingVal');
+
             if (lsInput) lsInput.value = currentLetterSpacing;
             if (lsVal) lsVal.innerText = currentLetterSpacing + 'em';
         }
-        // 💡 [신규] 여백 불러오기 - 이전 버전 값(예: 좌우 25px, 아래 50px)을 그대로 보존 (검색용 주석 태그: #LAYOUT_PADDING_LOGIC)
+
         const isV1Html = /id=["']content-wrapper["']/.test(htmlText);
         const padMatch = styleRules.match(/(?:^|[;\s])padding:\s*([^;]+);/);
+
         if (padMatch) {
             const pv = parsePaddingShorthand(padMatch[1]);
             if (pv) layoutPad[isV1Html ? 1 : 2].x = pv.right;
         }
+
         if (isV1Html) {
             const cwMatch = htmlText.match(/#content-wrapper\s*\{([^}]*)\}/);
+
             if (cwMatch) {
                 const topM = cwMatch[1].match(/padding-top:\s*([^;]+);?/);
                 const botM = cwMatch[1].match(/padding-bottom:\s*([^;]+);?/);
                 const tv = topM ? parsePxValue(topM[1]) : null;
                 const bv = botM ? parsePxValue(botM[1]) : null;
+
                 if (tv !== null) layoutPad[1].top = tv;
                 if (bv !== null) layoutPad[1].bottom = bv;
             }
         }
-        // 💡 배경색 및 나레이션(글로벌) 글자색 불러오기 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
+
         const bgMatch = styleRules.match(/background-color:\s*(#[0-9A-Fa-f]{6});/i);
         if (bgMatch) {
             const bgColorEl = document.getElementById('customBgColor');
             const bgColorPickerEl = document.getElementById('customBgColorPicker');
             const bgToggleEl = document.getElementById('customBgToggle');
+
             if (bgColorEl) bgColorEl.value = bgMatch[1].toUpperCase();
             if (bgColorPickerEl) bgColorPickerEl.value = bgMatch[1].toUpperCase();
             if (bgToggleEl) bgToggleEl.checked = true;
-            bgColorUserEdited = true; // 불러온 배경색은 사용자 지정값으로 취급 (다크모드 전환 시 덮어쓰지 않음)
+            bgColorUserEdited = true;
         }
-        const colorMatch = styleRules.match(/color:\s*(#[0-9A-Fa-f]{6});/i);
+
+        // [수정] background-color를 나레이션 color로 잘못 읽지 않도록 속성 경계 지정.
+        // 투톤 원문의 narrColor 복원에도 사용됨.
+        const colorMatch = styleRules.match(/(?:^|;)\s*color:\s*(#[0-9A-Fa-f]{6});/i);
         if (colorMatch) {
             const narrColorEl = document.getElementById('narrColor');
             const narrColorPickerEl = document.getElementById('narrColorPicker');
+
             if (narrColorEl) narrColorEl.value = colorMatch[1].toUpperCase();
             if (narrColorPickerEl) narrColorPickerEl.value = colorMatch[1].toUpperCase();
         }
     }
+
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = htmlText;
-    let container = tempDiv.querySelector('#content-wrapper') || tempDiv.querySelector('.tistory-post-wrapper') || tempDiv.querySelector('body') || tempDiv;
+
+    let container =
+        tempDiv.querySelector('#content-wrapper') ||
+        tempDiv.querySelector('.tistory-post-wrapper') ||
+        tempDiv.querySelector('body') ||
+        tempDiv;
+
     const newBlocks = [];
-    let foundMint = false;
-    let foundPink = false;
+    let foundJavier = false;
+    let foundInes = false;
     let foundMob = false;
     let foundNarr = false;
+
     function rgbToHex(rgb) {
         if (!rgb) return '';
         if (rgb.startsWith('#')) return rgb.toUpperCase();
+
         let match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
         if (!match) return rgb;
+
         return "#" + (1 << 24 | match[1] << 16 | match[2] << 8 | match[3]).toString(16).slice(1).toUpperCase();
     }
+
     Array.from(container.children).forEach(child => {
         if (['STYLE', 'SCRIPT', 'IFRAME', 'LINK', 'META', 'TITLE'].includes(child.tagName)) return;
+
         let type = child.getAttribute('data-type');
         let content = '';
-        let customTextColor = '#333333';
+        let customTextColor = '#8e8e93';
         let customBgColor = '#E2E8F0';
         let customName = '';
         let customProfileUrl = '';
@@ -1363,6 +1755,7 @@ function importFromHtml() {
         let polaroidCaption = '';
         let outerHtml = child.outerHTML;
         let innerTextClean = (child.textContent || "").replace(/\s+/g, '');
+
         if (!type) {
             if (outerHtml.includes('playBGM')) {
                 type = 'bgm';
@@ -1370,10 +1763,10 @@ function importFromHtml() {
                 type = 'status';
             } else if (child.style.fontStyle === 'italic' && (child.style.color === 'rgb(119, 119, 119)' || child.style.color === 'rgb(142, 142, 147)')) {
                 type = 'thought';
-            } else if (child.style.color === 'rgb(69, 159, 165)' || child.style.color === 'rgb(178, 228, 212)' || child.style.color === 'rgb(35, 119, 104)' || child.style.color === 'rgb(29, 111, 96)') {
-                type = 'mint';
-            } else if (child.style.color === 'rgb(245, 189, 204)' || child.style.color === 'rgb(155, 62, 97)') {
-                type = 'pink';
+            } else if (child.style.color === 'rgb(255, 176, 124)' || child.style.color === 'rgb(217, 107, 39)') {
+                type = 'javier';
+            } else if (child.style.color === 'rgb(158, 197, 254)' || child.style.color === 'rgb(91, 140, 224)') {
+                type = 'ines';
             } else if (child.querySelector('img') && !outerHtml.includes('border-radius: 50%') && !outerHtml.includes('Polaroid') && !outerHtml.includes('av')) {
                 type = 'image';
             } else if (outerHtml.includes('font-weight: bold') && child.style.textAlign === 'left') {
@@ -1392,73 +1785,152 @@ function importFromHtml() {
                 type = 'narration';
             }
         }
+
         if (type === 'divider') {
             let styleMatch = child.getAttribute('data-style');
             content = styleMatch || 'solid-gray';
-        } else if (['mint', 'pink', 'mob', 'custom'].includes(type)) {
+        } else if (['javier', 'ines', 'mob', 'custom'].includes(type)) {
             let textTarget = child;
             let isBubbleMode = false;
+
             if (child.classList && (child.classList.contains('scroll-msg-box') || child.classList.contains('m-msg'))) {
                 isBubbleMode = true;
                 let bubble2Target = child.querySelector('.m-bubble');
+
                 if (bubble2Target) {
                     textTarget = bubble2Target;
+
                     let nameEl = child.querySelector('.m-name');
                     if (nameEl) customName = nameEl.textContent.trim();
+
                     let imgEl = child.querySelector('.av img');
                     if (imgEl) customProfileUrl = imgEl.src;
+
                     customBgColor = rgbToHex(bubble2Target.style.backgroundColor) || '#E2E8F0';
                 } else if (child.children.length > 1) {
                     textTarget = child.children[1];
+
                     let imgEl = child.querySelector('img');
                     if (imgEl) customProfileUrl = imgEl.src;
+
                     customBgColor = rgbToHex(textTarget.style.backgroundColor) || '#E2E8F0';
                 }
-            }
-            let rawHtml = textTarget.innerHTML || '';
-            rawHtml = rawHtml.replace(/<div class="bubble-tail"[^>]*>.*?<\/div>/gi, '');
-            rawHtml = rawHtml.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
-            content = rawHtml.replace(/^\n+|\n+$/g, '').trim();
-            let textHex = rgbToHex(textTarget.style.color || child.style.color);
-            if (type === 'mint') {
-                if (!foundMint) {
-                    if (textHex) {
-                        if (isBubbleMode) {
-                            let b1 = document.getElementById('mintBubbleTextColor');
-                            let b2 = document.getElementById('mintBubbleTextColorPicker');
-                            let bg1 = document.getElementById('mintBgColor');
-                            let bg2 = document.getElementById('mintBgColorPicker');
-                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
-                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
-                        } else {
-                            let m1 = document.getElementById('mintTextColor');
-                            let m2 = document.getElementById('mintTextColorPicker');
-                            if (m1) m1.value = textHex; if (m2) m2.value = textHex;
-                        }
-                    }
-                    if (customName) { let el = document.getElementById('mintName'); if(el) el.value = customName; }
-                    if (customProfileUrl) { let el = document.getElementById('mintProfileUrl'); if(el) el.value = customProfileUrl; }
-                    foundMint = true;
+
+                if (child.hasAttribute('data-char-name')) {
+                    customName = child.getAttribute('data-char-name') || customName;
                 }
-            } else if (type === 'pink') {
-                if (!foundPink) {
+            }
+
+            const tone = findNovelToneElements(textTarget);
+            const restoredNovelText = tone ? readNovelToneContent(textTarget) : null;
+
+            if (restoredNovelText !== null) {
+                content = restoredNovelText.trim();
+            } else {
+                let rawHtml = textTarget.innerHTML || '';
+
+                rawHtml = rawHtml.replace(/<div class="bubble-tail"[^>]*>.*?<\/div>/gi, '');
+                rawHtml = rawHtml
+                    .replace(/<br\s*[\/]?>/gi, '\n')
+                    .replace(/<div[^>]*>/gi, '\n')
+                    .replace(/<\/div>/gi, '')
+                    .replace(/<p[^>]*>/gi, '\n')
+                    .replace(/<\/p>/gi, '')
+                    .replace(/&nbsp;/gi, ' ');
+
+                content = rawHtml.replace(/^\n+|\n+$/g, '').trim();
+            }
+
+            // [수정] 투톤 대사는 번역 span의 색상이 캐릭터 색상.
+            let textHex = rgbToHex(
+                (tone && !isBubbleMode)
+                    ? tone.translation.style.color
+                    : (textTarget.style.color || child.style.color)
+            );
+
+            if (!isBubbleMode && type === 'custom') {
+                if (child.hasAttribute('data-custom-name')) {
+                    customName = child.getAttribute('data-custom-name') || '';
+                }
+                if (child.hasAttribute('data-custom-bg')) {
+                    customBgColor = child.getAttribute('data-custom-bg') || '#E2E8F0';
+                }
+                if (child.hasAttribute('data-custom-profile')) {
+                    customProfileUrl = child.getAttribute('data-custom-profile') || '';
+                }
+            }
+
+            if (type === 'javier') {
+                if (!foundJavier) {
                     if (textHex) {
                         if (isBubbleMode) {
-                            let b1 = document.getElementById('pinkBubbleTextColor');
-                            let b2 = document.getElementById('pinkBubbleTextColorPicker');
-                            let bg1 = document.getElementById('pinkBgColor');
-                            let bg2 = document.getElementById('pinkBgColorPicker');
-                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
-                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
+                            let b1 = document.getElementById('javierBubbleTextColor');
+                            let b2 = document.getElementById('javierBubbleTextColorPicker');
+                            let bg1 = document.getElementById('javierBgColor');
+                            let bg2 = document.getElementById('javierBgColorPicker');
+
+                            if (b1) b1.value = textHex;
+                            if (b2) b2.value = textHex;
+                            if (customBgColor) {
+                                if (bg1) bg1.value = customBgColor;
+                                if (bg2) bg2.value = customBgColor;
+                            }
                         } else {
-                            let p1 = document.getElementById('pinkTextColor');
-                            let p2 = document.getElementById('pinkTextColorPicker');
-                            if (p1) p1.value = textHex; if (p2) p2.value = textHex;
+                            let m1 = document.getElementById('javierTextColor');
+                            let m2 = document.getElementById('javierTextColorPicker');
+
+                            if (m1) m1.value = textHex;
+                            if (m2) m2.value = textHex;
                         }
                     }
-                    if (customName) { let el = document.getElementById('pinkName'); if(el) el.value = customName; }
-                    if (customProfileUrl) { let el = document.getElementById('pinkProfileUrl'); if(el) el.value = customProfileUrl; }
-                    foundPink = true;
+
+                    if (customName) {
+                        let el = document.getElementById('javierName');
+                        if (el) el.value = customName;
+                    }
+
+                    if (customProfileUrl) {
+                        let el = document.getElementById('javierProfileUrl');
+                        if (el) el.value = customProfileUrl;
+                    }
+
+                    foundJavier = true;
+                }
+            } else if (type === 'ines') {
+                if (!foundInes) {
+                    if (textHex) {
+                        if (isBubbleMode) {
+                            let b1 = document.getElementById('inesBubbleTextColor');
+                            let b2 = document.getElementById('inesBubbleTextColorPicker');
+                            let bg1 = document.getElementById('inesBgColor');
+                            let bg2 = document.getElementById('inesBgColorPicker');
+
+                            if (b1) b1.value = textHex;
+                            if (b2) b2.value = textHex;
+                            if (customBgColor) {
+                                if (bg1) bg1.value = customBgColor;
+                                if (bg2) bg2.value = customBgColor;
+                            }
+                        } else {
+                            let p1 = document.getElementById('inesTextColor');
+                            let p2 = document.getElementById('inesTextColorPicker');
+
+                            if (p1) p1.value = textHex;
+                            if (p2) p2.value = textHex;
+                        }
+                    }
+
+                    if (customName) {
+                        let el = document.getElementById('inesName');
+                        if (el) el.value = customName;
+                    }
+
+                    if (customProfileUrl) {
+                        let el = document.getElementById('inesProfileUrl');
+                        if (el) el.value = customProfileUrl;
+                    }
+
+                    foundInes = true;
                 }
             } else if (type === 'mob') {
                 if (!foundMob) {
@@ -1468,31 +1940,58 @@ function importFromHtml() {
                             let b2 = document.getElementById('mobBubbleTextColorPicker');
                             let bg1 = document.getElementById('mobBgColor');
                             let bg2 = document.getElementById('mobBgColorPicker');
-                            if (b1) b1.value = textHex; if (b2) b2.value = textHex;
-                            if (customBgColor) { if (bg1) bg1.value = customBgColor; if (bg2) bg2.value = customBgColor; }
+
+                            if (b1) b1.value = textHex;
+                            if (b2) b2.value = textHex;
+                            if (customBgColor) {
+                                if (bg1) bg1.value = customBgColor;
+                                if (bg2) bg2.value = customBgColor;
+                            }
                         } else {
                             let m1 = document.getElementById('mobTextColor');
                             let m2 = document.getElementById('mobTextColorPicker');
-                            if (m1) m1.value = textHex; if (m2) m2.value = textHex;
+
+                            if (m1) m1.value = textHex;
+                            if (m2) m2.value = textHex;
                         }
                     }
-                    if (customName) { let el = document.getElementById('mobName'); if(el) el.value = customName; }
-                    if (customProfileUrl) { let el = document.getElementById('mobProfileUrl'); if(el) el.value = customProfileUrl; }
+
+                    if (customName) {
+                        let el = document.getElementById('mobName');
+                        if (el) el.value = customName;
+                    }
+
+                    if (customProfileUrl) {
+                        let el = document.getElementById('mobProfileUrl');
+                        if (el) el.value = customProfileUrl;
+                    }
+
                     foundMob = true;
                 }
             } else if (type === 'custom') {
-                customTextColor = textHex || '#333333';
+                customTextColor = textHex || '#8e8e93';
             }
         } else if (type === 'thought') {
-            let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+            let rawHtml = child.innerHTML
+                .replace(/<br\s*[\/]?>/gi, '\n')
+                .replace(/<div[^>]*>/gi, '\n')
+                .replace(/<\/div>/gi, '')
+                .replace(/<p[^>]*>/gi, '\n')
+                .replace(/<\/p>/gi, '')
+                .replace(/&nbsp;/gi, ' ');
+
             content = rawHtml.replace(/^\n+|\n+$/g, '');
         } else if (type === 'title') {
-            let rawHtml = child.innerHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+            let rawHtml = child.innerHTML
+                .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+                .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+
             let tDiv = document.createElement('div');
             tDiv.innerHTML = rawHtml;
             content = (tDiv.textContent || tDiv.innerText || "").trim();
         } else if (type === 'postit') {
             const txtDiv = child.querySelectorAll('div')[1];
+
             if (txtDiv) {
                 let rawHtml = txtDiv.innerHTML.replace(/<br\s*[\/]?>/gi, '\n');
                 content = rawHtml.replace(/^\n+|\n+$/g, '').replace(/<[^>]*>?/gm, '');
@@ -1500,31 +1999,48 @@ function importFromHtml() {
         } else if (type === 'polaroid') {
             const img = child.querySelector('img');
             if (img) content = img.src;
+
             const textContainer = child.children[2];
             if (textContainer) {
                 const txtDivs = textContainer.querySelectorAll('div');
+
                 if (txtDivs.length >= 2) {
                     polaroidDate = txtDivs[0].textContent || '';
                     polaroidCaption = txtDivs[1].textContent || '';
                 }
             }
         } else if (type === 'narration') {
-            let rawHtml = child.innerHTML.replace(/<br\s*[\/]?>/gi, '\n').replace(/<div[^>]*>/gi, '\n').replace(/<\/div>/gi, '').replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '').replace(/&nbsp;/gi, ' ');
+            let rawHtml = child.innerHTML
+                .replace(/<br\s*[\/]?>/gi, '\n')
+                .replace(/<div[^>]*>/gi, '\n')
+                .replace(/<\/div>/gi, '')
+                .replace(/<p[^>]*>/gi, '\n')
+                .replace(/<\/p>/gi, '')
+                .replace(/&nbsp;/gi, ' ');
+
             content = rawHtml.replace(/^\n+|\n+$/g, '');
+
             if (!foundNarr) {
                 let nColor = rgbToHex(child.style.color);
+
                 if (nColor) {
                     let n1 = document.getElementById('narrColor');
                     let n2 = document.getElementById('narrColorPicker');
+
                     if (n1) n1.value = nColor;
                     if (n2) n2.value = nColor;
                 }
+
                 let italicCheck = document.getElementById('narrItalic');
                 if (italicCheck) italicCheck.checked = child.style.fontStyle === 'italic';
+
                 foundNarr = true;
             }
         } else if (type === 'dday') {
-            let rawHtml = child.innerHTML.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**').replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+            let rawHtml = child.innerHTML
+                .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+                .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+
             let tDiv = document.createElement('div');
             tDiv.innerHTML = rawHtml;
             content = (tDiv.textContent || tDiv.innerText || "").trim();
@@ -1533,6 +2049,7 @@ function importFromHtml() {
         } else if (type === 'bgm') {
             const titleSpan = child.querySelector('span[style*="max-width: 120px"]');
             if (titleSpan) bgmTitle = titleSpan.textContent.trim();
+
             const playDiv = child.querySelector('div[onclick*="playBGM"]');
             if (playDiv) {
                 const match = playDiv.getAttribute('onclick').match(/playBGM\('([^']+)'/);
@@ -1544,7 +2061,9 @@ function importFromHtml() {
         } else if (type === 'empty') {
             content = '';
         }
+
         if (type === 'narration' && !content) type = 'empty';
+
         newBlocks.push({
             type: type,
             content: content || '',
@@ -1558,6 +2077,7 @@ function importFromHtml() {
             polaroidCaption: polaroidCaption
         });
     });
+
     if (newBlocks.length > 0) {
         blocks = newBlocks;
         if (typeof renderEditor === 'function') renderEditor();
@@ -1567,75 +2087,101 @@ function importFromHtml() {
     }
 }
 
-// 💡 복사하기 함수
 function copyHtml() {
     const code = document.getElementById('finalHtmlCode');
-    if(code) {
+
+    if (code) {
         code.select();
         document.execCommand('copy');
         showToast('최종 HTML이 복사되었습니다!');
     }
 }
 
-// 💡 전역 동기화 로직
+// =========================================================================
+// 초기화
+// =========================================================================
+
 document.addEventListener("DOMContentLoaded", function() {
-    setupColorPicker('mintTextColorPicker', 'mintTextColor');
-    setupColorPicker('mintBubbleTextColorPicker', 'mintBubbleTextColor');
-    setupColorPicker('mintBgColorPicker', 'mintBgColor');
-    setupColorPicker('pinkTextColorPicker', 'pinkTextColor');
-    setupColorPicker('pinkBubbleTextColorPicker', 'pinkBubbleTextColor');
-    setupColorPicker('pinkBgColorPicker', 'pinkBgColor');
+    setupColorPicker('javierTextColorPicker', 'javierTextColor');
+    setupColorPicker('javierBubbleTextColorPicker', 'javierBubbleTextColor');
+    setupColorPicker('javierBgColorPicker', 'javierBgColor');
+
+    setupColorPicker('inesTextColorPicker', 'inesTextColor');
+    setupColorPicker('inesBubbleTextColorPicker', 'inesBubbleTextColor');
+    setupColorPicker('inesBgColorPicker', 'inesBgColor');
+
     setupColorPicker('mobTextColorPicker', 'mobTextColor');
     setupColorPicker('mobBubbleTextColorPicker', 'mobBubbleTextColor');
     setupColorPicker('mobBgColorPicker', 'mobBgColor');
+
     setupColorPicker('narrColorPicker', 'narrColor');
     setupColorPicker('highlightColorPicker', 'highlightColor');
     setupColorPicker('customBgColorPicker', 'customBgColor');
 
-    // 💡 [신규] 배경색 기본값을 완전 화이트(#FFFFFF)로 설정 (검색용 주석 태그: #DARKMODE_BG_LOGIC)
-    // - 기존 기본값(#FAFAFA)이거나 비어 있을 때만 교체 → 사용자가 저장해둔 값은 건드리지 않음
     (function initDefaultBgColor() {
         const bgColorEl = document.getElementById('customBgColor');
         const bgColorPickerEl = document.getElementById('customBgColorPicker');
         if (!bgColorEl) return;
+
         const cur = (bgColorEl.value || '').trim().toUpperCase();
+
         if (cur === '' || cur === '#FAFAFA') {
-            const defaultBg = (typeof isDarkMode !== 'undefined' && isDarkMode) ? DEFAULT_BG_DARK : DEFAULT_BG_LIGHT;
+            const defaultBg = (typeof isDarkMode !== 'undefined' && isDarkMode)
+                ? DEFAULT_BG_DARK
+                : DEFAULT_BG_LIGHT;
+
             bgColorEl.value = defaultBg;
             if (bgColorPickerEl) bgColorPickerEl.value = defaultBg;
         }
     })();
 
-    // 💡 [신규] 여백 설정 칸 자동 생성
     initLayoutPadUI();
-
-    // 💡 [신규] 버전 전환 시 배경색 체크박스 기본값(V1=ON / V2=OFF) 항상 재적용
     initBgToggleVersionWatcher();
 
-    // 💡 [신규] 사용자가 배경색을 직접 수정하면 기억 (다크모드 전환 시 덮어쓰기 방지)
     ['customBgColor', 'customBgColorPicker'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', () => { bgColorUserEdited = true; });
-    });
-
-    const inputsToSync = [
-        'mintTextColor', 'mintBubbleTextColor', 'mintBgColor', 'mintName', 'mintProfileUrl',
-        'pinkTextColor', 'pinkBubbleTextColor', 'pinkBgColor', 'pinkName', 'pinkProfileUrl',
-        'mobTextColor', 'mobBubbleTextColor', 'mobBgColor', 'mobName', 'mobProfileUrl',
-        'narrColor', 'highlightColor', 'customBgColor'
-    ];
-    inputsToSync.forEach(id => {
-        let el = document.getElementById(id);
         if (el) {
             el.addEventListener('input', () => {
-                if(typeof updateOutput === 'function') updateOutput();
+                bgColorUserEdited = true;
             });
         }
     });
+
+    const inputsToSync = [
+        'javierTextColor',
+        'javierBubbleTextColor',
+        'javierBgColor',
+        'javierName',
+        'javierProfileUrl',
+        'inesTextColor',
+        'inesBubbleTextColor',
+        'inesBgColor',
+        'inesName',
+        'inesProfileUrl',
+        'mobTextColor',
+        'mobBubbleTextColor',
+        'mobBgColor',
+        'mobName',
+        'mobProfileUrl',
+        'narrColor',
+        'highlightColor',
+        'customBgColor'
+    ];
+
+    inputsToSync.forEach(id => {
+        let el = document.getElementById(id);
+
+        if (el) {
+            el.addEventListener('input', () => {
+                if (typeof updateOutput === 'function') updateOutput();
+            });
+        }
+    });
+
     let elNarrItalic = document.getElementById('narrItalic');
     if (elNarrItalic) {
         elNarrItalic.addEventListener('change', () => {
-            if(typeof updateOutput === 'function') updateOutput();
+            if (typeof updateOutput === 'function') updateOutput();
         });
     }
 
@@ -1645,4 +2191,4 @@ document.addEventListener("DOMContentLoaded", function() {
             if (typeof updateOutput === 'function') updateOutput();
         });
     }
-});
+}); 
