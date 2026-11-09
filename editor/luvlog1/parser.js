@@ -123,7 +123,19 @@
             IMAGE_BASE +
             '29541315-c8e7-4551-b401-910fcc3ecd8c.webp' +
             '?alt=media&token=6e8d5019-1601-49c9-88f0-379785715ac5' +
-            '&v=1793377073872'
+            '&v=1793377073872',
+        
+        morning:
+            IMAGE_BASE +
+            'e08aea9b-0727-4d82-b7ae-4d9bcf71fd24.webp' +
+            '?alt=media&token=ae713ee2-3262-48f1-8d8b-dbcd30113ae8' +
+            '&v=1793377073623',
+
+        whiskey:
+            IMAGE_BASE +
+            'b402d310-5a9d-4455-be04-336aa3a09df6.webp' +
+            '?alt=media&token=da6a0001-ed51-4018-956b-c75014c47256' +
+            '&v=1793377073777'
     });
 
     // ==========================================
@@ -650,6 +662,8 @@
 
             if (character === '"' || character === "'") {
                 quote = character;
+            } else if (character === '{') {
+                quote = '}';
             } else if (character === '>') {
                 end = index + 1;
                 break;
@@ -670,7 +684,7 @@
 
         while (remaining) {
             const match = remaining.match(
-                /^([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/
+                /^([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/
             );
 
             if (!match) {
@@ -680,7 +694,7 @@
                 );
             }
 
-            const value = match[2] !== undefined ? match[2] : match[3];
+            const value = match[2] !== undefined ? match[2] : (match[3] !== undefined ? match[3] : match[4]);
 
             attributes[match[1]] = decodeAttributeEntities(value);
             remaining = remaining.slice(match[0].length).trimStart();
