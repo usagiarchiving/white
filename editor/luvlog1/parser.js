@@ -76,115 +76,67 @@
     // 자동 이미지 7개
     // ==========================================
 
-const IMAGE_BASE =
-    'https://firebasestorage.googleapis.com/v0/b/' +
-    'chat-ai-7a275.firebasestorage.app/o/' +
-    'users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2F' +
-    'character_images%2Fcircumstances%2F';
+    const IMAGE_BASE =
+        'https://firebasestorage.googleapis.com/v0/b/' +
+        'chat-ai-7a275.firebasestorage.app/o/' +
+        'users%2FpWJxBI4kB7P9LX5pzwTTRZ10P1C2%2F' +
+        'character_images%2Fcircumstances%2F';
 
-const AUTO_IMAGES = Object.freeze({
-    lowrider:
-        IMAGE_BASE +
-        '1fc8d042-14e3-45e4-af75-03000fe8426a.webp' +
-        '?alt=media&token=e5d95796-8458-45ff-8f1b-3a5dfa10ea9d' +
-        '&v=1793377073787',
+    const AUTO_IMAGES = Object.freeze({
+        lowrider:
+            IMAGE_BASE +
+            '1fc8d042-14e3-45e4-af75-03000fe8426a.webp' +
+            '?alt=media&token=e5d95796-8458-45ff-8f1b-3a5dfa10ea9d' +
+            '&v=1793377073787',
 
-    peek:
-        IMAGE_BASE +
-        'c91c63c9-8f91-477a-8800-4bb4816d43d7.webp' +
-        '?alt=media&token=0565f751-1a1d-4276-8c28-f373b55cf7bd' +
-        '&v=1793377073573',
+        peek:
+            IMAGE_BASE +
+            'c91c63c9-8f91-477a-8800-4bb4816d43d7.webp' +
+            '?alt=media&token=0565f751-1a1d-4276-8c28-f373b55cf7bd' +
+            '&v=1793377073573',
 
-    cold:
-        IMAGE_BASE +
-        'b5693ccc-eb98-4929-9941-ce79e0b1a218.webp' +
-        '?alt=media&token=aa915222-668b-4cbc-acaa-108911a1568b' +
-        '&v=1793377073573',
+        cold:
+            IMAGE_BASE +
+            'b5693ccc-eb98-4929-9941-ce79e0b1a218.webp' +
+            '?alt=media&token=aa915222-668b-4cbc-acaa-108911a1568b' +
+            '&v=1793377073573',
 
-    poker:
-        IMAGE_BASE +
-        'c9426974-fc2d-4e32-8c2d-87f0b380d647.webp' +
-        '?alt=media&token=5816dd13-0b06-4062-9629-396b0a4ea8df' +
-        '&v=1793377073936',
+        poker:
+            IMAGE_BASE +
+            'c9426974-fc2d-4e32-8c2d-87f0b380d647.webp' +
+            '?alt=media&token=5816dd13-0b06-4062-9629-396b0a4ea8df' +
+            '&v=1793377073936',
 
-    chip:
-        IMAGE_BASE +
-        'ca627f84-71c5-499d-8e92-215261da2600.webp' +
-        '?alt=media&token=abd31c93-536e-4358-84e9-0edb847b77fe' +
-        '&v=1793377073738',
+        chip:
+            IMAGE_BASE +
+            'ca627f84-71c5-499d-8e92-215261da2600.webp' +
+            '?alt=media&token=abd31c93-536e-4358-84e9-0edb847b77fe' +
+            '&v=1793377073738',
 
-    tattoo:
-        IMAGE_BASE +
-        '4eed3b00-e45d-4f18-b496-3093d6fd89cd.webp' +
-        '?alt=media&token=fbcd8340-7571-43e6-9e7a-801118dfe3dd' +
-        '&v=1793377073946',
+        tattoo:
+            IMAGE_BASE +
+            '4eed3b00-e45d-4f18-b496-3093d6fd89cd.webp' +
+            '?alt=media&token=fbcd8340-7571-43e6-9e7a-801118dfe3dd' +
+            '&v=1793377073946',
 
-    altar:
-        IMAGE_BASE +
-        '29541315-c8e7-4551-b401-910fcc3ecd8c.webp' +
-        '?alt=media&token=6e8d5019-1601-49c9-88f0-379785715ac5' +
-        '&v=1793377073872',
+        altar:
+            IMAGE_BASE +
+            '29541315-c8e7-4551-b401-910fcc3ecd8c.webp' +
+            '?alt=media&token=6e8d5019-1601-49c9-88f0-379785715ac5' +
+            '&v=1793377073872',
+        
+        morning:
+            IMAGE_BASE +
+            'e08aea9b-0727-4d82-b7ae-4d9bcf71fd24.webp' +
+            '?alt=media&token=ae713ee2-3262-48f1-8d8b-dbcd30113ae8' +
+            '&v=1793377073623',
 
-    morning:
-        IMAGE_BASE +
-        'e08aea9b-0727-4d82-b7ae-4d9bcf71fd24.webp' +
-        '?alt=media&token=ae713ee2-3262-48f1-8d8b-dbcd30113ae8' +
-        '&v=1793377073623',
-
-    whiskey:
-        IMAGE_BASE +
-        'b402d310-5a9d-4455-be04-336aa3a09df6.webp' +
-        '?alt=media&token=da6a0001-ed51-4018-956b-c75014c47256' +
-        '&v=1793377073777',
-
-    flip:
-        IMAGE_BASE +
-        '2c8fd7bb-1f2a-4961-ab12-bbe7ca7f8f22.webp' +
-        '?alt=media&token=96639c0a-4cc0-4251-840a-3562d35800ed' +
-        '&v=1793377073896',
-
-    relax:
-        IMAGE_BASE +
-        '006cbedf-0883-4ccb-be72-6da10cb0d583.webp' +
-        '?alt=media&token=a03d93dd-9958-4602-ad02-a287e49eb617' +
-        '&v=1793377073791',
-
-    bandage:
-        IMAGE_BASE +
-        'a88e87bd-a213-4a29-b95e-53799a2451e2.webp' +
-        '?alt=media&token=775605db-48a6-4354-8c81-936f1d109bb7' +
-        '&v=1793377073188',
-
-    bored:
-        IMAGE_BASE +
-        '493126c4-87e5-4e04-ba1c-9ae2202a11af.webp' +
-        '?alt=media&token=c4df282f-6a04-4844-9b0c-5842425464f7' +
-        '&v=1793377073550',
-
-    rain:
-        IMAGE_BASE +
-        '29486642-034e-42c8-8027-3367bd2fcdf6.webp' +
-        '?alt=media&token=79016e49-4dd6-463a-960b-4cd1640dac3b' +
-        '&v=1793377073911',
-
-    fiesta:
-        IMAGE_BASE +
-        'c95b98e5-98f1-4b99-8701-c60b27deec36.webp' +
-        '?alt=media&token=505711f7-1555-44c9-953a-df189e32ee8a' +
-        '&v=1793377073808',
-
-    birthday1:
-        IMAGE_BASE +
-        '291f2c6a-5b0d-4b69-9882-5145850509f4.webp' +
-        '?alt=media&token=ee8e66d9-1234-4de3-a77a-18d6020b6393' +
-        '&v=1793631738015',
-
-    birthday2:
-        IMAGE_BASE +
-        'ffc4a9d6-b25b-4781-a913-a26bf9c9f3a7.webp' +
-        '?alt=media&token=863fe3a4-7c62-43a6-9f58-2d892de508d6' +
-        '&v=1793631738029'
-});
+        whiskey:
+            IMAGE_BASE +
+            'b402d310-5a9d-4455-be04-336aa3a09df6.webp' +
+            '?alt=media&token=da6a0001-ed51-4018-956b-c75014c47256' +
+            '&v=1793377073777'
+    });
 
     // ==========================================
     // Apogee 디자인
