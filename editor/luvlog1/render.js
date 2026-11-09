@@ -5,7 +5,7 @@
 
 // 타자 입력 디바운싱
 let renderTimer = null;
-let syncTimer = null; 
+let syncTimer = null;
 
 function debounceUpdateOutput(skipPreviewUpdate = false) {
     if (renderTimer) clearTimeout(renderTimer);
