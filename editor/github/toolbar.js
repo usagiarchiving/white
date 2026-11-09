@@ -293,7 +293,7 @@ document.addEventListener('keyup', () => setTimeout(handleSelection, 10));
 document.addEventListener('touchend', () => setTimeout(handleSelection, 10));
 
 // =========================================================
-// 💡 [신규] 미리보기 내 블록 클릭 시 빠른 화자 전환 툴바
+// 💡 미리보기 내 블록 클릭 시 빠른 화자 전환 툴바
 // =========================================================
 let activePreviewIndex = -1;
 
@@ -318,7 +318,7 @@ function handleBlockClick(e) {
     const index = parseInt(blockEl.id.replace('preview-block-', ''));
     activePreviewIndex = index;
 
-    // 드래그(선택) 중일 때는 서식 툴바가 뜨므로 미니 툴바는 충돌을 막기 위해 띄우지 않음
+    // 💡 [수정] 드래그(선택) 중일 때는 화자 툴바를 숨겨서 서식(형광펜) 툴바 우선권 부여
     const selection = window.getSelection();
     if (selection.rangeCount && !selection.isCollapsed) {
         if(speakerToolbar) speakerToolbar.style.display = 'none';
@@ -330,15 +330,15 @@ function handleBlockClick(e) {
         const rect = blockEl.getBoundingClientRect();
         
         const toolbarHeight = speakerToolbar.offsetHeight || 36; 
-        const toolbarWidth = speakerToolbar.offsetWidth || 180; // 💡 버튼 추가로 인한 너비 조정
         
-        // 클릭한 블록 바로 위 좌측쯤에 귀엽게 나타남
-        let top = rect.top + window.scrollY - toolbarHeight - 8;
-        let left = rect.left + window.scrollX + 10; 
+        // 💡 [수정] 클릭한 블록 바로 위 좌측으로 위치를 조정하여 텍스트를 덜 가리게 변경
+        let top = rect.top + window.scrollY - toolbarHeight - 15;
+        let left = rect.left + window.scrollX - 20; 
         
         if (top < window.scrollY) {
-            top = rect.bottom + window.scrollY + 8;
+            top = rect.bottom + window.scrollY + 10;
         }
+        if (left < window.scrollX + 10) left = window.scrollX + 10;
         
         speakerToolbar.style.top = top + 'px';
         speakerToolbar.style.left = left + 'px';
@@ -348,7 +348,6 @@ function handleBlockClick(e) {
 function changeSpeakerFromPreview(newType) {
     if (activePreviewIndex === -1) return;
     
-    // script.js에 있는 기존 타입 변경 함수를 그대로 사용하여 100% 안전한 연동
     if (typeof changeBlockType === 'function') {
         changeBlockType(activePreviewIndex, newType);
     }
@@ -358,11 +357,9 @@ function changeSpeakerFromPreview(newType) {
     activePreviewIndex = -1;
 }
 
-// 💡 [추가] 툴바에서 문단 삭제를 안전하게 수행하는 함수
 function deleteBlockFromPreview() {
     if (activePreviewIndex === -1) return;
     
-    // script.js의 완벽하게 검증된 기본 삭제 로직(배열 삭제 + 렌더링 + 상태저장)을 호출
     if (typeof deleteBlock === 'function') {
         deleteBlock(activePreviewIndex);
     }
@@ -371,25 +368,83 @@ function deleteBlockFromPreview() {
     if (speakerToolbar) speakerToolbar.style.display = 'none';
     activePreviewIndex = -1;
     
-    // 삭제되었다는 부드러운 피드백 토스트 알림
     if (typeof showToast === 'function') {
         showToast('문단이 삭제되었습니다.');
     }
 }
 
-// 클릭 이벤트 감지 (바탕을 누르면 팝업이 스르륵 사라짐)
+// 💡 [추가] 블록 전체에 색상/형광펜 칠하기 (기본 민트, 핑크 복구)
+function applyFullColorToBlock(type) {
+    if (activePreviewIndex === -1) return;
+    let block = blocks[activePreviewIndex];
+    
+    if (type === 'mint') {
+        block.content = `<span style="color: #1d6f60; background-color: #eef8f3; padding: 0 2px; border-radius: 3px;">${block.content}</span>`;
+    } else if (type === 'pink') {
+        block.content = `<span style="color: #9b3e61; background-color: #fdf2f6; padding: 0 2px; border-radius: 3px;">${block.content}</span>`;
+    } else if (type === 'highlight') {
+        // 이미 형광펜이 칠해져 있다면 지우고, 아니면 씌우기 (토글)
+        if (block.content.startsWith('==') && block.content.endsWith('==')) {
+            block.content = block.content.slice(2, -2);
+        } else {
+            block.content = `==${block.content}==`;
+        }
+    }
+    
+    if (typeof renderEditor === 'function') renderEditor();
+    if (typeof saveState === 'function') saveState();
+    
+    const speakerToolbar = document.getElementById('quickSpeakerToolbar');
+    if (speakerToolbar) speakerToolbar.style.display = 'none';
+    activePreviewIndex = -1;
+}
+
+// 💡 [추가] 자바스크립트로 전체 색상(민트, 핑크, 형광펜) 버튼 3개 자동 주입
+document.addEventListener("DOMContentLoaded", function() {
+    const tb = document.getElementById('quickSpeakerToolbar');
+    if (tb && !document.getElementById('btn-all-mint')) {
+        const divider = document.createElement('div');
+        divider.className = 'tb-divider';
+        divider.style.cssText = 'width: 1px; height: 20px; background-color: #e5e5ea; margin: 0 8px;';
+        
+        const btnMint = document.createElement('button');
+        btnMint.id = 'btn-all-mint';
+        btnMint.title = '대사 전체 민트';
+        btnMint.innerHTML = '🎨';
+        btnMint.style.cssText = 'background: #eef8f3; color: #1d6f60; border: 1px solid #c3e6d6; font-weight: bold; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-right: 4px;';
+        btnMint.onclick = () => applyFullColorToBlock('mint');
+        
+        const btnPink = document.createElement('button');
+        btnPink.id = 'btn-all-pink';
+        btnPink.title = '대사 전체 핑크';
+        btnPink.innerHTML = '🎨';
+        btnPink.style.cssText = 'background: #fdf2f6; color: #9b3e61; border: 1px solid #f6d1df; font-weight: bold; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-right: 4px;';
+        btnPink.onclick = () => applyFullColorToBlock('pink');
+        
+        const btnHl = document.createElement('button');
+        btnHl.id = 'btn-all-hl';
+        btnHl.title = '전체 형광펜';
+        btnHl.innerHTML = '✏️';
+        btnHl.style.cssText = 'background: #C4F0E9; color: #1d6f60; border: 1px solid #a7dfd5; font-weight: bold; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;';
+        btnHl.onclick = () => applyFullColorToBlock('highlight');
+        
+        tb.appendChild(divider);
+        tb.appendChild(btnMint);
+        tb.appendChild(btnPink);
+        tb.appendChild(btnHl);
+    }
+});
+
+// 클릭 이벤트 감지 (바탕을 누르면 팝업 숨김)
 document.addEventListener('click', (e) => {
     const htmlPreview = document.getElementById('htmlPreview');
     const speakerToolbar = document.getElementById('quickSpeakerToolbar');
     
-    // 툴바 자체를 클릭한 경우 무시
     if (speakerToolbar && speakerToolbar.contains(e.target)) return;
 
-    // 미리보기 안을 클릭한 경우
     if (htmlPreview && htmlPreview.contains(e.target)) {
         handleBlockClick(e);
     } else {
-        // 완전 바깥을 클릭하면 툴바 숨김
         if (speakerToolbar) speakerToolbar.style.display = 'none';
     }
 });
