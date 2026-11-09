@@ -273,4 +273,4 @@ document.addEventListener('click', (e) => {
     } else {
         if (speakerToolbar) speakerToolbar.style.display = 'none';
     }
-});
+}); 
