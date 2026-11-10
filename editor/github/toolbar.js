@@ -97,6 +97,8 @@ function applyQuickStyle(styleName) {
         wrapSelectionWithStyle({ backgroundColor: hlColor, color: 'inherit', padding: '0 2px', borderRadius: '2px' });
     }
     setTimeout(handleSelection, 10);
+    // 📝 형광펜/민트/핑크를 칠한 직후 메모창 자동 열기
+    if (MEMO_AUTO_OPEN) setTimeout(openMemoForSelection, 30);
 }
 
 function formatPalette(command, value) {
@@ -435,16 +437,234 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+// =========================================================
+// 📝 메모 기능 (형광펜 / 민트 / 핑크 영역에 메모 달기)
+//  - 편집기: 칠한 직후 or 칠해진 곳 클릭 → 메모 팝업 (바깥 클릭 시 자동 저장)
+//  - 결과물: 칠한 영역 오른쪽 위에 아주 작은 모서리 표시 → 누르면 메모 말풍선
+//  - 메모 글씨: 글꼴 설정 없음(본문 글꼴 상속), 크기 10px 고정
+//  - 메모는 data-memo 속성에 저장돼서 본문 텍스트는 건드리지 않음
+// =========================================================
+const MEMO_AUTO_OPEN = true;   // 칠한 직후 메모창 자동 열기 (끄려면 false)
+const MEMO_NL = '↵';           // 줄바꿈 대체 문자 (결과물 변환 시 깨짐 방지)
+
+// 모서리 표시: 오른쪽 위에 작은 삼각형 (CSS 인라인만 사용)
+const MEMO_MARK_IMG = 'linear-gradient(225deg, rgba(90,90,100,0.55) 3.5px, transparent 0)';
+
+// 결과물에서 클릭 시 말풍선을 띄우는 코드 (외부 함수 없이 단독 동작 / 한 줄 유지 필수)
+const MEMO_READER_JS = [
+    "var d=document,t=this,o=d.getElementById('mm');",
+    "if(t.closest('[contenteditable],#htmlPreview'))return;",
+    "event.stopPropagation();",
+    "if(!d.__m){d.__m=1;d.addEventListener('click',function(){var q=d.getElementById('mm');if(q)q.remove()})}",
+    "if(o){o.remove();if(o.__s==t)return}",
+    "var p=d.createElement('div'),r=t.getClientRects()[0]||t.getBoundingClientRect();",
+    "p.id='mm';p.__s=t;",
+    "p.textContent=t.dataset.memo.split('" + MEMO_NL + "').join(String.fromCharCode(10));",
+    "p.style.cssText='position:absolute;z-index:9999;max-width:200px;padding:6px 9px;background:#fff;border:1px solid #e5e5ea;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);font:10px/1.5 '+getComputedStyle(t).fontFamily+';letter-spacing:0;color:#636366;white-space:pre-wrap;word-break:keep-all';",
+    "d.body.appendChild(p);",
+    "p.style.top=(r.bottom+pageYOffset+6)+'px';",
+    "p.style.left=Math.max(8,Math.min(r.left+pageXOffset,d.documentElement.clientWidth-p.offsetWidth-8))+'px'"
+].join('');
+
+let memoPopupEl = null;
+let memoTarget = null;
+let memoOrig = '';
+
+// 형광펜(배경색)이 칠해진 요소인지 판별 (기본 형광펜 / 민트 / 핑크 / == 마크다운)
+function isHighlightEl(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (el.id && el.id.startsWith('preview-block-')) return false;
+    if (el.tagName === 'MARK') return true;
+    if (el.tagName !== 'SPAN') return false;
+    const bg = el.style.backgroundColor;
+    return !!bg && bg !== 'transparent' && bg !== 'inherit' && bg !== 'initial';
+}
+
+function findHighlightEl(node) {
+    const preview = document.getElementById('htmlPreview');
+    let n = node && node.nodeType === 3 ? node.parentNode : node;
+    while (n && n !== preview) {
+        if (isHighlightEl(n)) return n;
+        n = n.parentNode;
+    }
+    return null;
+}
+
+function getMemo(el) {
+    return (el.getAttribute('data-memo') || '').split(MEMO_NL).join('\n');
+}
+
+function setMemo(el, text) {
+    el.setAttribute('data-memo', text.replace(/\r?\n/g, MEMO_NL));
+    el.style.backgroundImage = MEMO_MARK_IMG;
+    el.style.backgroundRepeat = 'no-repeat';
+    el.style.cursor = 'pointer';
+    el.setAttribute('onclick', MEMO_READER_JS);
+}
+
+function clearMemo(el) {
+    el.removeAttribute('data-memo');
+    el.removeAttribute('onclick');
+    el.style.backgroundImage = '';
+    el.style.backgroundRepeat = '';
+    el.style.cursor = '';
+    if (!el.getAttribute('style')) el.removeAttribute('style');
+}
+
+function commitMemoChange() {
+    if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
+    if (typeof saveState === 'function') saveState();
+}
+
+function memoTheme() {
+    const dark = document.body.classList.contains('dark-mode');
+    return dark
+        ? { bg: '#2c2c2e', bd: '#48484a', tx: '#f2f2f7', sub: '#8e8e93', inBg: '#1c1c1e', acc: '#B2E4D4', dot: '#B2E4D4', focus: '#5fa898', del: '#ff8a8a' }
+        : { bg: '#ffffff', bd: '#e5e5ea', tx: '#3a3a3c', sub: '#8e8e93', inBg: '#fafafa', acc: '#1d6f60', dot: '#7fd1bf', focus: '#a7dfd5', del: '#c2576b' };
+}
+
+function positionMemoPopup(el) {
+    if (!memoPopupEl) return;
+    const rects = el.getClientRects();
+    const rect = rects.length ? rects[rects.length - 1] : el.getBoundingClientRect();
+    const popH = memoPopupEl.offsetHeight;
+    const popW = memoPopupEl.offsetWidth;
+
+    // 기본은 칠한 영역 아래쪽 (위쪽엔 서식/화자 툴바가 뜨니까)
+    let top = rect.bottom + window.scrollY + 8;
+    if (rect.bottom + popH + 16 > window.innerHeight && rect.top - popH - 16 > 0) {
+        top = rect.top + window.scrollY - popH - 8;
+    }
+    let left = rect.left + window.scrollX;
+    const maxLeft = window.scrollX + document.documentElement.clientWidth - popW - 10;
+    if (left > maxLeft) left = maxLeft;
+    if (left < window.scrollX + 10) left = window.scrollX + 10;
+
+    memoPopupEl.style.top = top + 'px';
+    memoPopupEl.style.left = left + 'px';
+}
+
+function openMemoPopup(el, autoFocus) {
+    if (!el) return;
+    if (memoPopupEl && memoTarget === el) return;   // 같은 곳 다시 클릭하면 유지
+    closeMemoPopup(true);
+
+    const c = memoTheme();
+    const existing = getMemo(el);
+    memoTarget = el;
+    memoOrig = existing.trim();
+
+    const pop = document.createElement('div');
+    pop.id = 'memoPopup';
+    pop.style.cssText = `position:absolute;z-index:10002;width:220px;box-sizing:border-box;padding:9px 10px 8px;background:${c.bg};border:1px solid ${c.bd};border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.12);font-family:"Noto Sans KR",sans-serif;`;
+    pop.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:${c.acc};">
+                <i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${c.dot};"></i>메모
+            </span>
+            ${existing ? `<button type="button" id="memoDelBtn" style="background:none;border:none;padding:0;font-size:11px;color:${c.del};cursor:pointer;">삭제</button>` : ''}
+        </div>
+        <textarea id="memoInput" rows="3" placeholder="메모를 입력하세요" style="display:block;width:100%;box-sizing:border-box;resize:none;border:1px solid ${c.bd};border-radius:8px;padding:7px 8px;font-size:13px;line-height:1.5;font-family:inherit;color:${c.tx};background:${c.inBg};outline:none;"></textarea>
+        <div style="margin-top:6px;font-size:10px;color:${c.sub};">바깥을 누르면 자동 저장돼요</div>
+    `;
+    document.body.appendChild(pop);
+    memoPopupEl = pop;
+
+    const ta = pop.querySelector('#memoInput');
+    ta.value = existing;
+    ta.addEventListener('focus', () => { ta.style.borderColor = c.focus; });
+    ta.addEventListener('blur', () => { ta.style.borderColor = c.bd; });
+    // Ctrl+Z 등이 전역 undo로 새지 않도록 막기
+    ta.addEventListener('keydown', (ev) => {
+        ev.stopPropagation();
+        if (ev.isComposing || ev.keyCode === 229) return;
+        if (ev.key === 'Escape' || ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter')) {
+            ev.preventDefault();
+            closeMemoPopup(true);
+        }
+    });
+    ta.addEventListener('keyup', (ev) => ev.stopPropagation());
+
+    const delBtn = pop.querySelector('#memoDelBtn');
+    if (delBtn) {
+        delBtn.addEventListener('click', () => {
+            ta.value = '';
+            closeMemoPopup(true);
+        });
+    }
+
+    positionMemoPopup(el);
+    if (autoFocus) ta.focus({ preventScroll: true });
+}
+
+function closeMemoPopup(save) {
+    if (!memoPopupEl) return;
+    const ta = memoPopupEl.querySelector('#memoInput');
+    const target = memoTarget;
+
+    if (save !== false && ta && target && target.isConnected) {
+        const text = ta.value.trim();
+        if (text !== memoOrig) {
+            if (text) setMemo(target, text);
+            else clearMemo(target);
+            commitMemoChange();
+        }
+    }
+
+    memoPopupEl.remove();
+    memoPopupEl = null;
+    memoTarget = null;
+    memoOrig = '';
+}
+
+// 현재 선택 영역에서 칠해진 요소를 찾아 메모창 열기 (칠한 직후 자동 호출)
+function openMemoForSelection() {
+    const sel = window.getSelection();
+    const preview = document.getElementById('htmlPreview');
+    if (!sel || !sel.rangeCount || !preview) return;
+
+    const range = sel.getRangeAt(0);
+    if (!preview.contains(range.commonAncestorContainer)) return;
+
+    let el = findHighlightEl(range.commonAncestorContainer);
+    if (!el) {
+        const root = range.commonAncestorContainer.nodeType === 1
+            ? range.commonAncestorContainer
+            : range.commonAncestorContainer.parentElement;
+        if (root) {
+            el = Array.from(root.querySelectorAll('span, mark')).find(n => isHighlightEl(n) && range.intersectsNode(n));
+        }
+    }
+    if (el) openMemoPopup(el, true);
+}
+
+// 미리보기 스크롤하면 메모창은 저장하고 닫기 (위치 어긋남 방지)
+document.addEventListener('DOMContentLoaded', function() {
+    const pv = document.getElementById('htmlPreview');
+    if (pv) pv.addEventListener('scroll', () => closeMemoPopup(true));
+});
+
 // 클릭 이벤트 감지 (바탕을 누르면 팝업 숨김)
 document.addEventListener('click', (e) => {
     const htmlPreview = document.getElementById('htmlPreview');
     const speakerToolbar = document.getElementById('quickSpeakerToolbar');
     
     if (speakerToolbar && speakerToolbar.contains(e.target)) return;
+    if (memoPopupEl && memoPopupEl.contains(e.target)) return;
 
     if (htmlPreview && htmlPreview.contains(e.target)) {
         handleBlockClick(e);
+
+        // 칠해진 곳을 클릭(드래그 아님)하면 메모창, 아니면 닫기
+        const sel = window.getSelection();
+        const hl = findHighlightEl(e.target);
+        if (hl && sel && sel.isCollapsed) {
+            openMemoPopup(hl, false);
+        } else {
+            closeMemoPopup(true);
+        }
     } else {
+        closeMemoPopup(true);
         if (speakerToolbar) speakerToolbar.style.display = 'none';
     }
 });
