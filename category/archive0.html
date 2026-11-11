@@ -1,0 +1,1354 @@
+<style>
+    /* ==========================================================================
+       [기본 구조]
+       ========================================================================== */
+    .archive-wrapper {
+        position: relative;
+        padding-top: 10px;
+    }
+
+    /* 검색창 & 태그 아이콘 레이아웃 */
+    .search-wrapper { 
+        display: flex; justify-content: flex-end; align-items: center; 
+        margin-bottom: 20px; width: 100%; gap: 15px; 
+    }
+    #tags-toggle-btn {
+        cursor: pointer; color: var(--sub-color); font-size: 18px; transition: color 0.3s;
+    }
+    #tags-toggle-btn:hover, #tags-toggle-btn.active { color: var(--point-color); }
+    
+    .search-inner { position: relative; display: flex; align-items: center; }
+    #archive-search {
+        background: transparent; border: none; border-bottom: 1px solid transparent;
+        color: var(--main-color); font-family: 'Noto Serif KR', serif; font-size: 12px;
+        outline: none; padding: 2px 22px 2px 0; width: 0px; opacity: 0;
+        transition: width 0.4s ease, opacity 0.3s, border-color 0.4s;
+    }
+    #search-icon {
+        position: absolute; right: 0; color: var(--sub-color); opacity: 0.35;
+        cursor: pointer; font-size: 15px; transition: opacity 0.3s; z-index: 10;
+    }
+    #search-icon:hover { opacity: 0.7; }
+
+    /* 태그 모음 패널 */
+    #tags-panel {
+        display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; 
+        padding: 15px; background: rgba(0,0,0,0.02); border-radius: 6px; 
+        border: 1px solid var(--divider-bg);
+    }
+    .tag-pill {
+        font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color);
+        cursor: pointer; padding: 4px 10px; border-radius: 12px; 
+        background: #fff; border: 1px solid var(--divider-bg); transition: all 0.2s;
+    }
+    .tag-pill:hover { color: var(--point-color); border-color: var(--point-color); }
+
+    /* 맨 처음 구름 아이콘 */
+    #initial-upload-wrapper {
+        text-align: center; margin-bottom: 25px;
+    }
+    .cloud-upload-btn {
+        cursor: pointer; font-size: 26px; color: #f5c9d5; 
+        transition: color 0.3s ease, transform 0.2s ease;
+        display: inline-block; padding: 10px;
+    }
+    .cloud-upload-btn:hover { color: var(--point-color); transform: translateY(-2px); }
+
+    /* 점선 테두리 입력칸 */
+    .upload-container {
+        display: none; 
+        border: 1px dashed var(--point-color); border-radius: 4px; padding: 20px;
+        text-align: center; margin-bottom: 25px; background: transparent; position: relative;
+    }
+    #remove-preview {
+        position: absolute; top: -10px; right: -10px; background: #ff3b30; color: #fff;
+        border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 20;
+    }
+
+    /* 다중 이미지 썸네일 프리뷰 */
+    .preview-grid {
+        display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px;
+        -ms-overflow-style: none; scrollbar-width: none;
+    }
+    .preview-grid::-webkit-scrollbar { display: none; }
+    
+    .preview-thumb-wrap {
+        position: relative; width: 100px; height: 100px; flex-shrink: 0;
+        cursor: pointer; border-radius: 4px; border: 2px solid transparent;
+        transition: border-color 0.2s; background: rgba(0,0,0,0.04);
+    }
+    .preview-thumb-wrap.is-main { border-color: var(--point-color); }
+    .preview-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
+    
+    .main-badge {
+        position: absolute; top: 4px; left: 4px; background: var(--point-color); color: #fff;
+        font-size: 9px; padding: 2px 5px; border-radius: 2px; display: none; z-index: 5;
+    }
+    .preview-thumb-wrap.is-main .main-badge { display: block; }
+
+    /* 제목, 기록, 태그 입력 폼 */
+    .archive-input-item {
+        width: 100%; background: transparent; border: none; color: var(--main-color);
+        font-family: 'Noto Serif KR', serif; font-size: 13px; outline: none;
+        border-bottom: 1px solid var(--divider-bg); padding-bottom: 8px;
+    }
+    
+    .archive-footer-group {
+        display: flex; justify-content: space-between; align-items: center; margin-top: 15px;
+    }
+    #archive-date-picker {
+        background: transparent; border: none; outline: none; color: var(--sub-color);
+        font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;
+    }
+    .archive-submit-btn {
+        background: none; border: none; color: var(--point-color);
+        cursor: pointer; padding: 5px; font-size: 20px; transition: 0.2s; opacity: 0.7;
+    }
+    .archive-submit-btn:hover { opacity: 1; transform: translateX(3px); }
+
+    /* 갤러리 그리드 */
+    .gallery-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 5px; margin-top: 20px; padding-bottom: 40px;
+    }
+    @media (min-width: 768px) {
+        .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    }
+
+    .gallery-item {
+        position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden;
+        cursor: pointer; border: 1px solid var(--divider-bg); background: rgba(0,0,0,0.02);
+    }
+    .gallery-item img {
+        width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;
+    }
+    .gallery-item:hover img { transform: scale(1.05); }
+
+    .gallery-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.3s ease;
+        display: flex; flex-direction: column; justify-content: space-between; padding: 10px;
+    }
+    .gallery-item:hover .gallery-overlay { opacity: 1; }
+    .gallery-date { color: rgba(255,255,255,0.9); font-family: 'Noto Serif KR', serif; font-size: 10px; }
+    .gallery-hover-title {
+        color: rgba(255,255,255,1); font-family: 'Noto Serif KR', serif; font-size: 12px; font-weight: 600;
+        text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* 즐겨찾기 하트: 썸네일 왼쪽 아래 작은 하트 (아이폰 사진앱처럼) */
+    .gallery-fav-badge {
+        position: absolute; left: 7px; bottom: 6px; z-index: 2; pointer-events: none;
+        color: #fff; font-size: 13px; text-shadow: 0 1px 4px rgba(0,0,0,0.45);
+    }
+
+    /* 팝업 안 하트 버튼 */
+    .fav-btn {
+        color: var(--sub-color); opacity: 0.5; font-size: 15px; cursor: pointer;
+        padding: 2px; transition: opacity 0.25s, color 0.25s;
+    }
+    .fav-btn:hover { opacity: 0.85; }
+    .fav-btn.on { color: var(--point-color); opacity: 1; }
+    .fav-btn.pop { animation: favPop 0.3s ease-out; }
+    @keyframes favPop { 0% { transform: scale(1); } 50% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+    /* ✅ 선택 모드 */
+    #select-mode-btn {
+        cursor: pointer; color: var(--sub-color); font-size: 18px; transition: color 0.3s;
+    }
+    #select-mode-btn:hover, #select-mode-btn.active { color: var(--point-color); }
+
+    #select-menu {
+        display: none; position: absolute; right: 0; top: 38px; z-index: 60;
+        background: #fff; border: 1px solid var(--divider-bg); border-radius: 6px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: 6px; min-width: 130px;
+    }
+    .sm-item {
+        font-family: 'Noto Serif KR', serif; font-size: 12px; color: var(--main-color);
+        padding: 9px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap;
+    }
+    .sm-item:hover { color: var(--point-color); background: rgba(0,0,0,0.03); }
+    .sm-item.danger:hover { color: #ff3b30; }
+
+    .gallery-grid.select-mode { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .gallery-grid.select-mode .gallery-overlay { display: none; }
+    .gallery-grid.select-mode .gallery-item:hover img { transform: none; }
+    .gallery-grid.select-mode .gallery-item::after {
+        content: ''; position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; box-sizing: border-box;
+        border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.95); background: rgba(0,0,0,0.18);
+        z-index: 3; color: #fff; font-family: 'Noto Serif KR', serif; font-size: 11px;
+        line-height: 17px; text-align: center;
+    }
+    .gallery-grid.select-mode .gallery-item.is-selected::after {
+        content: attr(data-sel); background: var(--point-color); border-color: var(--point-color);
+    }
+    .gallery-grid.select-mode .gallery-item.is-selected { outline: 2px solid var(--point-color); outline-offset: -2px; }
+    .gallery-grid.select-mode .gallery-item.is-selected img { opacity: 0.8; }
+
+    /* 스크롤 따라오는 완료 바 */
+    #select-bar {
+        display: none; position: fixed; left: 50%; transform: translateX(-50%);
+        bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 10000;
+        align-items: center; gap: 14px; padding: 8px 10px 8px 18px;
+        background: #fff; border: 1px solid var(--divider-bg); border-radius: 30px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.14); font-family: 'Noto Serif KR', serif;
+        white-space: nowrap; max-width: calc(100vw - 24px); box-sizing: border-box;
+    }
+    #select-label { font-size: 12px; color: var(--main-color); overflow: hidden; text-overflow: ellipsis; }
+    .select-bar-btn { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 12px; padding: 6px 4px; }
+    #select-cancel { color: var(--sub-color); }
+    #select-done { color: #fff; background: var(--point-color); border-radius: 18px; padding: 7px 16px; font-weight: 600; }
+
+    /* 맨 아래 이미지 총 개수 (스크롤 안 따라옴) */
+    #archive-total-count {
+        text-align: right; font-family: 'Noto Serif KR', serif; font-size: 9px;
+        color: var(--sub-color); opacity: 0.4; padding: 0 2px 36px 0; margin-top: 6px; letter-spacing: 0.5px;
+    }
+
+    /* 팝업 배경 및 카드 */
+    .archive-lightbox {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(150, 150, 150, 0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        z-index: 20000; align-items: center; justify-content: center; cursor: zoom-out; padding: 20px;
+        box-sizing: border-box; /* 🚨 모바일 폴라로이드 다운그레이드 해결 1 */
+    }
+    .archive-lightbox-card {
+        background: #ffffff; border: 1px solid var(--divider-bg); border-radius: 4px;
+        padding: 25px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1); cursor: default;
+        animation: memoZoom 0.25s ease-out; display: flex; flex-direction: column; gap: 15px;
+        box-sizing: border-box; /* 🚨 모바일 폴라로이드 다운그레이드 해결 2 */
+    }
+    @keyframes memoZoom { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+</style>
+
+<div class="archive-wrapper">
+    
+    <div class="search-wrapper">
+        <i class="xi-tags" id="tags-toggle-btn" title="태그 모음 열기"></i>
+        <div class="search-inner">
+            <input type="text" id="archive-search" autocomplete="off" placeholder="Search">
+            <i class="xi-search" id="search-icon" title="Search"></i>
+        </div>
+        <i class="xi-check-circle-o" id="select-mode-btn" title="선택"></i>
+    </div>
+
+    <div id="select-menu">
+        <div class="sm-item danger" data-mode="delete">선택 삭제</div>
+        <div class="sm-item" data-mode="group">여러 개 묶기</div>
+        <div class="sm-item" data-mode="edit">일괄 수정</div>
+    </div>
+    
+    <div id="tags-panel"></div>
+
+    <div id="initial-upload-wrapper">
+        <input type="file" id="archive-file-input" accept="image/*" multiple style="display: none;">
+        <label for="archive-file-input" class="cloud-upload-btn" title="Upload">
+            <i class="xi-cloud"></i>
+        </label>
+    </div>
+
+    <div id="upload-container" class="upload-container">
+        <button id="remove-preview" onclick="removePreview()"><i class="xi-close"></i></button>
+        
+        <div class="preview-grid" id="preview-grid"></div>
+        
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+            <label style="font-size: 12.5px; color: var(--main-color); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <input type="checkbox" id="group-upload-cb" onchange="toggleGroupMode()" style="accent-color: var(--point-color);"> 
+                여러 장
+            </label>
+            <select id="archive-img-quality" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
+                <option value="original" selected>원본</option>
+                <option value="high">고화질</option>
+                <option value="low">저화질</option>
+            </select>
+        </div>
+        <div id="group-help" style="display: none; text-align: left; font-size: 11.5px; color: var(--point-color); margin-top: -8px; margin-bottom: 15px; padding-left: 20px;">
+            * 대표 사진 선택
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+            <input type="text" id="archive-title" class="archive-input-item" autocomplete="off" placeholder="Title" style="text-align: center;">
+            <textarea id="archive-caption" class="archive-input-item" placeholder="Caption" style="min-height: 60px; resize: none; line-height: 1.6;"></textarea>
+            
+            <input type="text" id="archive-tags" class="archive-input-item" autocomplete="off" placeholder="Tags (e.g., #daily #film)">
+            
+            <div class="archive-footer-group">
+                <input type="date" id="archive-date-picker" title="Change Date">
+                <button class="archive-submit-btn" id="submit-btn" onclick="uploadArchivePost()" title="Submit">
+                    <i class="xi-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="gallery-grid" id="gallery-feed"></div>
+    <div id="gallery-sentinel" style="height: 1px;"></div>
+    <div id="archive-total-count"></div>
+
+</div>
+
+<div id="select-bar">
+    <span id="select-label"></span>
+    <button class="select-bar-btn" id="select-cancel" onclick="cancelSelectMode()">취소</button>
+    <button class="select-bar-btn" id="select-done" onclick="finishSelect()">완료</button>
+</div>
+
+<div id="bulk-edit-modal" class="archive-lightbox" onclick="if(event.target === this) closeBulkEditModal()">
+    <div class="archive-lightbox-card" style="max-width: 340px; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--divider-bg); padding-bottom: 8px;">
+            <div style="font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);">일괄 수정</div>
+            <div id="bulk-edit-sub" style="font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--sub-color);"></div>
+        </div>
+        <input type="text" id="bulk-title" autocomplete="off" placeholder="제목 (비워두면 그대로)" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+        <input type="text" id="bulk-tags" autocomplete="off" placeholder="태그 (비워두면 그대로) #daily #film" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+        <select id="bulk-tag-mode" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11.5px; cursor: pointer; align-self: flex-start;">
+            <option value="add" selected>태그: 기존에 추가</option>
+            <option value="replace">태그: 덮어쓰기</option>
+        </select>
+        <div style="display: flex; justify-content: flex-end; gap: 14px; margin-top: 2px;">
+            <button onclick="confirmBulkEdit()" style="background:none; border:none; color:var(--point-color); font-size: 12px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">확인</button>
+            <button onclick="closeBulkEditModal()" style="background:none; border:none; color:var(--sub-color); font-size: 12px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">취소</button>
+        </div>
+    </div>
+</div>
+
+<div id="archive-lightbox" class="archive-lightbox" onclick="if(event.target === this) closeArchiveLightbox()">
+    <div class="archive-lightbox-card" id="archive-lightbox-card">
+        
+        <div id="lightbox-archive-img-container" style="display: flex; flex-direction: column; width: 100%;">
+        </div>
+        
+        <div id="lightbox-read-mode">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; border-bottom: 1px solid var(--divider-bg); padding-bottom: 8px;">
+                <div id="lightbox-archive-title" style="font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 600; color: var(--main-color);"></div>
+                <div id="lightbox-archive-date" style="font-family: 'Noto Serif KR', serif; font-size: 11px; color: var(--sub-color);"></div>
+            </div>
+            
+            <div id="lightbox-archive-caption" style="font-family: 'Noto Serif KR', serif; font-size: 13px; color: var(--main-color); line-height: 1.7; word-break: break-all; margin-bottom: 8px;"></div>
+            
+            <div id="lightbox-archive-tags" onclick="triggerTagSearch(this.innerText)" style="font-family: 'Noto Serif KR', serif; font-size: 11.5px; color: var(--sub-color); cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--point-color)'" onmouseout="this.style.color='var(--sub-color)'"></div>
+            
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; margin-top: 20px;">
+                <i class="xi-heart-o fav-btn" id="lightbox-fav-btn" onclick="toggleArchiveFavorite()" title="Favorite"></i>
+                <i class="xi-pen" onclick="startArchiveEdit()" title="Edit" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='0.35'"></i>
+                <i class="xi-trash" onclick="deleteArchiveFromLightbox()" title="Delete" style="color:var(--sub-color); opacity: 0.35; font-size: 11px; cursor:pointer; transition: 0.3s;" onmouseover="this.style.opacity='0.7'; this.style.color='#ff3b30'" onmouseout="this.style.opacity='0.35'; this.style.color='var(--sub-color)'"></i>
+            </div>
+        </div>
+
+        <div id="lightbox-edit-mode" style="display: none; flex-direction: column; gap: 12px;">
+            <input type="text" id="edit-archive-title" placeholder="Title" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+            <textarea id="edit-archive-caption" placeholder="Caption" style="width:100%; min-height:80px; background:transparent; border:1px solid var(--point-color); border-radius:2px; color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:10px; outline:none; resize:none; line-height:1.6;"></textarea>
+            
+            <input type="text" id="edit-archive-tags" placeholder="Tags" style="width:100%; background:transparent; border:none; border-bottom:1px solid var(--point-color); color:var(--main-color); font-family:'Noto Serif KR', serif; font-size:13px; padding:4px 0; outline:none;">
+            
+            <input type="date" id="edit-archive-date" style="width: 120px; background: transparent; border: none; border-bottom: 1px solid var(--point-color); color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; padding: 2px 0; outline: none; cursor:pointer;">
+            
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 4px;">
+                <button onclick="saveArchiveEdit()" style="background:none; border:none; color:var(--point-color); font-size: 11px; font-family:'Noto Serif KR', serif; font-weight:600; cursor:pointer; padding:0;">Save</button>
+                <button onclick="cancelArchiveEdit()" style="background:none; border:none; color:var(--sub-color); font-size: 11px; font-family:'Noto Serif KR', serif; cursor:pointer; padding:0;">Cancel</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    var ARCHIVE_URL = 'https://qefyxypznhovdshagcpc.supabase.co';
+    var ARCHIVE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlZnl4eXB6bmhvdmRzaGFnY3BjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzc2MTIsImV4cCI6MjA5NzIxMzYxMn0.RuAe5F5uOinYWDYmmF7YaNTuvhY_H41AhnX8orN6v_Y';
+    var archiveSupabase = window.supabase.createClient(ARCHIVE_URL, ARCHIVE_KEY);
+
+    var selectedFiles = [];
+    var mainFileIndex = 0;
+    var currentLightboxPostId = null;
+    var currentLightboxImageUrl = "";
+    
+    // 팝업 더블클릭 오작동 방지를 위한 타이머 변수
+    var archiveLightboxOpenTime = 0; 
+
+    // 날짜를 직접 바꿨는지 여부 (개별 업로드 시 사진별 날짜 유지용)
+    var archiveDateTouched = false;
+
+    // 업로드 중복 클릭 방지
+    var archiveUploading = false;
+
+    // ⚡ 갤러리 상태 (메모리에 데이터를 들고 있다가 필요한 만큼만 화면에 그림)
+    var archivePosts = [];        // 전체 게시물 (파싱 완료)
+    var archiveById = {};         // id → 게시물
+    var archiveFiltered = [];     // 검색 결과
+    var archiveRendered = 0;      // 화면에 그려진 개수
+    var ARCHIVE_PAGE = 40;        // 한 번에 그리는 개수
+    var archiveKeyword = '';
+    var archiveObserver = null;
+    var archiveFavDirty = false;
+    var archiveFavChain = Promise.resolve();
+
+    // 선택 모드 상태
+    var selectMode = null;   // 'delete' | 'group' | 'edit'
+    var selectedIds = [];    // 선택한 순서 유지 (문자열 id)
+    var selectBusy = false;
+
+    // 미리보기 상태
+    var previewUrls = [];
+    var previewBlobs = [];
+    var previewToken = 0;
+
+    /* ==========================================================================
+       [유틸]
+       content 형식: 이미지URL들(:::구분) ||| 캡션 ||| 태그 ||| 플래그
+       플래그: f = 즐겨찾기(하트), t = 작은 썸네일 있음
+       ========================================================================== */
+    function escAttr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+    function setFlag(flags, ch, on) {
+        var s = (flags || '').split(ch).join('');
+        return on ? s + ch : s;
+    }
+
+    function buildArchiveContent(urlsStr, caption, tags, flags) {
+        return urlsStr + "|||" + caption + "|||" + tags + (flags ? "|||" + flags : "");
+    }
+
+    // 원본 URL → 썸네일 URL (t_파일명.jpg)
+    function thumbUrlOf(url) {
+        return url.replace(/\/([^\/?#]+?)(\.[^.\/?#]*)?$/, '/t_$1.jpg');
+    }
+
+    function buildSearchText(p) {
+        return (p.title + ' ' + p.caption + ' ' + p.tags + ' ' + p.displayDate + (p.fav ? ' ♡' : '')).toLowerCase();
+    }
+
+    // 검색어 정규화: ♥ ❤ 도 ♡ 로 취급
+    function normKeyword(v) {
+        return v.toLowerCase().replace(/\uFE0F/g, '').replace(/[♥❤]/g, '♡');
+    }
+
+    function parseArchivePost(post) {
+        var raw = post.content || '';
+        var parts = raw.split("|||");
+        var imageUrls = parts[0] || "";
+        var flags = parts[3] || "";
+
+        var dateObj = new Date(post.created_at);
+        var yyyy = dateObj.getFullYear();
+        var mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        var dd = String(dateObj.getDate()).padStart(2, '0');
+
+        var p = {
+            id: post.id,
+            title: post.title || '',
+            imageUrls: imageUrls,
+            mainImg: imageUrls.split(":::")[0],
+            caption: parts[1] || "",
+            tags: parts[2] || "",
+            flags: flags,
+            fav: flags.indexOf('f') > -1,
+            hasThumb: flags.indexOf('t') > -1,
+            displayDate: `${yyyy}.${mm}.${dd}`,
+            inputDate: `${yyyy}-${mm}-${dd}`,
+            imgCount: imageUrls.split(":::").filter(Boolean).length
+        };
+        p.gridImg = p.hasThumb ? thumbUrlOf(p.mainImg) : p.mainImg;
+        p.searchLower = buildSearchText(p);
+        return p;
+    }
+
+    // 🚨 파일 업로드 전 알잘딱센 압축 엔진 (hasion.html 기능 이식)
+    // ⚡ FileReader(base64) 대신 objectURL 사용 → 메모리/렉 감소
+    window.compressImage = async function(file, qualityType) {
+        if (qualityType === 'original' || file.type === 'image/gif') {
+            return { fileOrBlob: file, ext: file.name.split('.').pop() };
+        }
+        return new Promise((resolve) => {
+            var objUrl = URL.createObjectURL(file);
+            var fallback = function() { resolve({ fileOrBlob: file, ext: file.name.split('.').pop() }); };
+            var img = new Image();
+            img.onload = function() {
+                URL.revokeObjectURL(objUrl);
+                var maxWidth = qualityType === 'high' ? 1920 : 1080;
+                var quality = qualityType === 'high' ? 0.8 : 0.6;
+                var width = img.width; var height = img.height;
+                if (width > maxWidth || height > maxWidth) {
+                    if (width > height) { height = Math.round((height * maxWidth) / width); width = maxWidth; } 
+                    else { width = Math.round((width * maxWidth) / height); height = maxWidth; }
+                }
+                var canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+                var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                
+                var outType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
+                var ext = (outType === 'image/webp') ? 'webp' : 'jpg';
+                
+                canvas.toBlob((blob) => { 
+                    canvas.width = 0; canvas.height = 0; // 메모리 즉시 반환
+                    if (!blob) { fallback(); return; }
+                    try {
+                        var newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, { type: outType, lastModified: file.lastModified });
+                        resolve({ fileOrBlob: newFile, ext: ext });
+                    } catch(e) { resolve({ fileOrBlob: blob, ext: ext }); }
+                }, outType, quality);
+            };
+            img.onerror = function() { URL.revokeObjectURL(objUrl); fallback(); };
+            img.src = objUrl;
+        });
+    };
+
+    // ⚡ 작은 썸네일 생성 (갤러리 그리드/미리보기용)
+    window.makeThumbnail = async function(file, maxSide, q) {
+        var objUrl = URL.createObjectURL(file);
+        try {
+            var img = await new Promise(function(res, rej) {
+                var i = new Image();
+                i.onload = function() { res(i); };
+                i.onerror = rej;
+                i.src = objUrl;
+            });
+            var w = img.naturalWidth, h = img.naturalHeight;
+            var s = Math.min(1, maxSide / Math.max(w, h));
+            w = Math.max(1, Math.round(w * s)); h = Math.max(1, Math.round(h * s));
+            var c = document.createElement('canvas'); c.width = w; c.height = h;
+            c.getContext('2d').drawImage(img, 0, 0, w, h);
+            var blob = await new Promise(function(r) { c.toBlob(r, 'image/jpeg', q); });
+            c.width = 0; c.height = 0;
+            return blob;
+        } catch (e) {
+            return null;
+        } finally {
+            URL.revokeObjectURL(objUrl);
+        }
+    };
+
+    // 1. 파일 다중 선택 핸들링
+    $('#archive-file-input').on('change', function(e) {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        selectedFiles = Array.from(e.target.files);
+        archiveDateTouched = false; // 새로 고른 파일은 날짜 직접 변경 전 상태
+        mainFileIndex = 0; // 초기값은 항상 0번 사진이 대표
+
+        var fileDate = new Date(selectedFiles[0].lastModified);
+        var yyyy = fileDate.getFullYear();
+        var mm = String(fileDate.getMonth() + 1).padStart(2, '0');
+        var dd = String(fileDate.getDate()).padStart(2, '0');
+        $('#archive-date-picker').val(`${yyyy}-${mm}-${dd}`);
+
+        renderPreviews();
+        $('#initial-upload-wrapper').hide(); 
+        $('#upload-container').slideDown(250); 
+    });
+
+    // 날짜 칸을 직접 바꿨을 때만 기록
+    $('#archive-date-picker').on('change', function() { archiveDateTouched = true; });
+
+    // ⚡ 썸네일 프리뷰: 빈 칸을 먼저 그리고, 작은 이미지를 하나씩 채움 (화면이 안 멈춤)
+    function releasePreviewUrls() {
+        previewUrls.forEach(function(u) { if (u) URL.revokeObjectURL(u); });
+        previewUrls = [];
+        previewBlobs = [];
+    }
+
+    window.renderPreviews = function() {
+        var token = ++previewToken;
+        releasePreviewUrls();
+
+        var html = selectedFiles.map(function(f, i) {
+            return `<div class="preview-thumb-wrap" data-index="${i}"><div class="main-badge">대표</div><img alt=""></div>`;
+        }).join('');
+        $('#preview-grid').html(html);
+        updatePreviewMain();
+        buildPreviewThumbs(token);
+    };
+
+    async function buildPreviewThumbs(token) {
+        for (var i = 0; i < selectedFiles.length; i++) {
+            if (token !== previewToken) return;
+            var f = selectedFiles[i];
+            var blob = (f.type === 'image/gif') ? null : await makeThumbnail(f, 480, 0.72);
+            if (token !== previewToken) return;
+            previewBlobs[i] = blob;
+            var src = URL.createObjectURL(blob || f);
+            previewUrls[i] = src;
+            $('#preview-grid .preview-thumb-wrap').eq(i).find('img').attr('src', src);
+            await new Promise(function(r) { setTimeout(r, 0); }); // 버튼 눌릴 틈 주기
+        }
+    }
+
+    function updatePreviewMain() {
+        var isGroup = $('#group-upload-cb').is(':checked');
+        $('#preview-grid .preview-thumb-wrap').each(function(i) {
+            $(this).toggleClass('is-main', isGroup && i === mainFileIndex);
+        });
+    }
+
+    $('#preview-grid').on('click', '.preview-thumb-wrap', function() {
+        setMainFile($(this).index());
+    });
+
+    // 묶음 옵션 토글
+    window.toggleGroupMode = function() {
+        var isGroup = $('#group-upload-cb').is(':checked');
+        if (isGroup) $('#group-help').slideDown(150);
+        else $('#group-help').slideUp(150);
+        updatePreviewMain();
+    };
+
+    // 대표 사진 지정
+    window.setMainFile = function(index) {
+        if (!$('#group-upload-cb').is(':checked')) return; 
+        mainFileIndex = index;
+        updatePreviewMain();
+    };
+
+    window.removePreview = function() {
+        previewToken++; // 진행 중인 미리보기 작업 중단
+        releasePreviewUrls();
+        selectedFiles = [];
+        mainFileIndex = 0;
+        archiveDateTouched = false;
+        $('#archive-file-input').val('');
+        $('#archive-title').val('');
+        $('#archive-caption').val('');
+        $('#archive-tags').val(''); 
+        $('#group-upload-cb').prop('checked', false);
+        $('#group-help').hide();
+        $('#preview-grid').empty();
+        $('#upload-container').slideUp(200, function() {
+            $('#initial-upload-wrapper').fadeIn(200); 
+        });
+    };
+
+    // 2. 다중 업로드 및 DB 저장
+    window.uploadArchivePost = async function() {
+        if (selectedFiles.length === 0 || archiveUploading) return;
+
+        var titleVal = $('#archive-title').val().trim();
+        var captionVal = $('#archive-caption').val().trim();
+        var tagsVal = $('#archive-tags').val().trim(); 
+        var dateVal = $('#archive-date-picker').val();
+        var isGroup = $('#group-upload-cb').is(':checked');
+        var qualityOption = $('#archive-img-quality').val() || 'original'; // 🚨 용량 선택값
+        var btn = $('#submit-btn');
+        var total = selectedFiles.length;
+
+        archiveUploading = true;
+        previewToken++; // 미리보기 생성 중단 (이미 만든 건 재사용)
+
+        try {
+            btn.prop('disabled', true).css('opacity', '0.5');
+
+            var uploadedUrls = [];
+            var fileDates = [];
+            var thumbFlags = [];
+            
+            // 모든 파일 스토리지 업로드 (압축 엔진 통과)
+            for (var idx = 0; idx < total; idx++) {
+                var file = selectedFiles[idx];
+                btn.html('<span style="font-size:11px;">' + (idx + 1) + '/' + total + '</span>');
+
+                var compressed = await compressImage(file, qualityOption);
+                var fileExt = compressed.ext || 'jpg';
+                var baseName = `${Date.now()}_${Math.random().toString(36).substring(2)}`;
+                var fileName = `${baseName}.${fileExt}`;
+
+                var { error: uploadError } = await archiveSupabase.storage.from('images').upload(fileName, compressed.fileOrBlob, { cacheControl: '31536000' });
+                if (uploadError) throw uploadError;
+
+                // ⚡ 갤러리용 작은 썸네일 (대표 사진/개별 사진만, 실패해도 업로드는 계속)
+                var thumbOk = false;
+                if ((!isGroup || idx === mainFileIndex) && file.type !== 'image/gif') {
+                    try {
+                        var tb = previewBlobs[idx] || await makeThumbnail(file, 480, 0.72);
+                        if (tb) {
+                            var { error: thumbError } = await archiveSupabase.storage.from('images').upload('t_' + baseName + '.jpg', tb, { contentType: 'image/jpeg', cacheControl: '31536000' });
+                            thumbOk = !thumbError;
+                        }
+                    } catch (e) { thumbOk = false; }
+                }
+
+                var { data: publicUrlData } = archiveSupabase.storage.from('images').getPublicUrl(fileName);
+                uploadedUrls.push(publicUrlData.publicUrl);
+                fileDates.push(new Date(file.lastModified));
+                thumbFlags.push(thumbOk);
+
+                await new Promise(function(r) { setTimeout(r, 0); }); // 화면 숨 쉴 틈
+            }
+
+            if (isGroup) {
+                // [묶음 모드] 한 게시물로 저장 (::: 구분자 사용)
+                if (mainFileIndex > 0) {
+                    var mUrl = uploadedUrls.splice(mainFileIndex, 1)[0];
+                    uploadedUrls.unshift(mUrl);
+                    var mDate = fileDates.splice(mainFileIndex, 1)[0];
+                    fileDates.unshift(mDate);
+                    var mThumb = thumbFlags.splice(mainFileIndex, 1)[0];
+                    thumbFlags.unshift(mThumb);
+                }
+                
+                var contentString = buildArchiveContent(uploadedUrls.join(":::"), captionVal, tagsVal, thumbFlags[0] ? 't' : '');
+                var finalDate = new Date(fileDates[0]);
+                
+                if (dateVal) { 
+                    var parts = dateVal.split('-');
+                    finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
+                }
+                var offset = finalDate.getTimezoneOffset() * 60000;
+                var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+
+                var { error: dbError } = await archiveSupabase.from('posts').insert([{ 
+                    category: 'archive', content: contentString, title: titleVal, created_at: localISOString 
+                }]);
+                if (dbError) throw dbError;
+
+            } else {
+                // [개별 모드] 각각 독립적인 게시물로 저장
+                var insertArray = [];
+                for (var i = 0; i < uploadedUrls.length; i++) {
+                    var contentString = buildArchiveContent(uploadedUrls[i], captionVal, tagsVal, thumbFlags[i] ? 't' : '');
+                    var finalDate = new Date(fileDates[i]); 
+                    
+                    // 날짜 칸을 직접 바꿨을 때만 전체 덮어쓰기, 아니면 사진별 날짜 유지
+                    if (dateVal && archiveDateTouched) { 
+                        var parts = dateVal.split('-');
+                        finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
+                    }
+                    var offset = finalDate.getTimezoneOffset() * 60000;
+                    var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+
+                    insertArray.push({
+                        category: 'archive', content: contentString, title: titleVal, created_at: localISOString
+                    });
+                }
+
+                var { error: dbError } = await archiveSupabase.from('posts').insert(insertArray);
+                if (dbError) throw dbError;
+            }
+
+            removePreview();
+            loadGalleryPosts();
+
+        } catch (error) {
+            alert('Failed to upload.');
+        } finally {
+            archiveUploading = false;
+            btn.html('<i class="xi-arrow-right"></i>');
+            btn.prop('disabled', false).css('opacity', '0.7');
+        }
+    };
+
+    // 3. 갤러리 로드 (⚡ 한 번에 다 그리지 않고 40개씩 스크롤하면서 추가)
+    function archiveItemHtml(p) {
+        var selCls = '', selAttr = '';
+        if (selectMode) {
+            var si = selectedIds.indexOf(String(p.id));
+            if (si > -1) { selCls = ' is-selected'; selAttr = ` data-sel="${selectMode === 'group' ? (si + 1) : '✓'}"`; }
+        }
+        var imgAttrs = p.hasThumb ? ` data-full="${escAttr(p.mainImg)}" onerror="this.onerror=null;this.src=this.dataset.full"` : '';
+        var heart = p.fav ? '<i class="xi-heart gallery-fav-badge"></i>' : '';
+        return `
+            <div class="gallery-wrapper-item">
+                <div class="gallery-item fade-in-element${selCls}" data-id="${p.id}"${selAttr}>
+                    <img src="${escAttr(p.gridImg)}" alt="archive image" loading="lazy" decoding="async"${imgAttrs}>
+                    <div class="gallery-overlay">
+                        <div style="display: flex; justify-content: flex-end; align-items: flex-start; width: 100%;">
+                            <span class="gallery-date">${p.displayDate}</span>
+                        </div>
+                        <div class="gallery-hover-title">${p.title}</div>
+                    </div>
+                    ${heart}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderMoreArchive() {
+        if (archiveRendered >= archiveFiltered.length) return;
+        var end = Math.min(archiveRendered + ARCHIVE_PAGE, archiveFiltered.length);
+        var html = '';
+        for (var i = archiveRendered; i < end; i++) html += archiveItemHtml(archiveFiltered[i]);
+        $('#gallery-feed').append(html); // 한 번에 추가
+        archiveRendered = end;
+        if (archiveRendered < archiveFiltered.length) rewatchArchiveSentinel();
+    }
+
+    function rewatchArchiveSentinel() {
+        if (!archiveObserver) return;
+        var s = document.getElementById('gallery-sentinel');
+        setTimeout(function() { archiveObserver.unobserve(s); archiveObserver.observe(s); }, 50);
+    }
+
+    function setupArchiveObserver() {
+        // 편집기가 빈 div를 지워도 동작하도록, 없으면 JS로 만들어 붙임
+        var s = document.getElementById('gallery-sentinel');
+        if (!s) {
+            var feedEl = document.getElementById('gallery-feed');
+            if (feedEl && feedEl.parentNode) {
+                s = document.createElement('div');
+                s.id = 'gallery-sentinel';
+                s.style.height = '1px';
+                feedEl.parentNode.insertBefore(s, feedEl.nextSibling);
+            }
+        }
+        if (!s || !('IntersectionObserver' in window)) { ARCHIVE_PAGE = Infinity; return; }
+        try {
+            archiveObserver = new IntersectionObserver(function(entries) {
+                if (entries[0].isIntersecting) renderMoreArchive();
+            }, { rootMargin: '800px 0px' });
+            archiveObserver.observe(s);
+        } catch (e) {
+            archiveObserver = null;
+            ARCHIVE_PAGE = Infinity; // 관찰자가 안 되면 한 번에 다 그림
+        }
+    }
+
+    function applyArchiveFilter() {
+        var kw = archiveKeyword;
+        archiveFiltered = kw ? archivePosts.filter(function(p) { return p.searchLower.indexOf(kw) > -1; }) : archivePosts;
+        archiveRendered = 0;
+        var feed = $('#gallery-feed');
+        feed.empty();
+
+        if (archivePosts.length === 0) {
+            feed.html('<p style="grid-column: 1 / -1; text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; font-family:\'Noto Serif KR\', serif;">No archives found.</p>');
+            return;
+        }
+        renderMoreArchive();
+    }
+
+    function buildTagsPanel() {
+        var allTags = new Set(); // 전체 태그 수집
+        archivePosts.forEach(function(p) {
+            // 태그 파싱 (#으로 시작하는 단어 추출)
+            var matches = p.tags.match(/#[^\s#]+/g);
+            if (matches) matches.forEach(function(m) { allTags.add(m); });
+        });
+
+        // ♡ 는 항상 맨 앞에 (눌러서 즐겨찾기만 모아보기)
+        var tagsHtml = '<span class="tag-pill" data-tag="♡">♡</span>';
+        tagsHtml += Array.from(allTags).map(function(tag) {
+            return `<span class="tag-pill" data-tag="${escAttr(tag)}">${escAttr(tag)}</span>`;
+        }).join('');
+        if (allTags.size === 0) {
+            tagsHtml += '<span style="font-size:11px; color:var(--sub-color);">생성된 태그가 없습니다.</span>';
+        }
+        $('#tags-panel').html(tagsHtml);
+    }
+
+    async function loadGalleryPosts() {
+        var feedContainer = $('#gallery-feed');
+        feedContainer.html('<p style="grid-column: 1 / -1; text-align:center; color:var(--sub-color); font-size:11px; padding:30px 0; opacity:0.6;">Loading...</p>');
+
+        try {
+            var { data, error } = await archiveSupabase.from('posts').select('id,title,content,created_at').eq('category', 'archive');
+            if (error) throw error;
+
+            data.sort((a, b) => {
+                var dateA = a.created_at.split('T')[0];
+                var dateB = b.created_at.split('T')[0];
+                if (dateA === dateB) return b.id - a.id; 
+                return new Date(dateB) - new Date(dateA);
+            });
+
+            archivePosts = data.map(parseArchivePost);
+            archiveById = {};
+            archivePosts.forEach(function(p) { archiveById[p.id] = p; });
+
+            buildTagsPanel();
+            applyArchiveFilter();
+            updateTotalCount();
+
+        } catch (error) {
+            feedContainer.html('<p style="grid-column: 1 / -1; text-align:center; color:#ff3b30; font-size:12px; padding:30px 0;">Failed to load.</p>');
+        }
+    }
+
+    // 썸네일 클릭 → 팝업 (이벤트 위임: 항목마다 onclick을 달지 않음)
+    $('#gallery-feed').on('click', '.gallery-item', function() {
+        var id = $(this).attr('data-id');
+        if (selectMode) { toggleSelect(id); return; } // 선택 모드에서는 팝업 대신 선택
+        openArchiveLightbox(id);
+    });
+
+    // 4. 태그 및 검색 제어
+    $('#tags-toggle-btn').click(function() {
+        $('#tags-panel').slideToggle(200);
+        $(this).toggleClass('active');
+    });
+
+    $('#tags-panel').on('click', '.tag-pill', function() {
+        triggerTagSearch($(this).attr('data-tag'));
+    });
+
+    window.triggerTagSearch = function(tagText) {
+        if(!tagText) return;
+        closeArchiveLightbox();
+        $('#archive-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).val(tagText).focus();
+        $('#search-icon').css('opacity', '0.7');
+        $('#archive-search').trigger('input'); 
+    };
+
+    $('#search-icon').click(function() {
+        $('#archive-search').css({'width': '110px', 'opacity': '1', 'border-bottom-color': 'var(--divider-bg)'}).focus();
+        $(this).css('opacity', '0.7');
+    });
+    $('#archive-search').blur(function() {
+        if($(this).val().trim() === '') {
+            $(this).css({'width': '0px', 'opacity': '0', 'border-bottom-color': 'transparent'});
+            $('#search-icon').css('opacity', '0.35');
+        }
+    });
+
+    // ⚡ 타자 칠 때마다 바로 필터하지 않고 잠깐 기다렸다가 한 번만
+    var archiveSearchTimer = null;
+    $('#archive-search').on('input', function() {
+        var val = $(this).val();
+        clearTimeout(archiveSearchTimer);
+        archiveSearchTimer = setTimeout(function() {
+            archiveKeyword = normKeyword(val);
+            applyArchiveFilter();
+        }, 150);
+    });
+
+    // 💗 즐겨찾기 (하트) 온/오프
+    function paintLightboxFav(fav, animate) {
+        var $b = $('#lightbox-fav-btn');
+        $b.toggleClass('on', fav).toggleClass('xi-heart', fav).toggleClass('xi-heart-o', !fav);
+        if (animate) {
+            $b.removeClass('pop');
+            void $b[0].offsetWidth;
+            $b.addClass('pop');
+        }
+    }
+
+    function paintGridFav(id, fav) {
+        var $item = $('#gallery-feed .gallery-item[data-id="' + id + '"]');
+        $item.find('.gallery-fav-badge').remove();
+        if (fav) $item.append('<i class="xi-heart gallery-fav-badge"></i>');
+    }
+
+    window.toggleArchiveFavorite = function() {
+        var p = archiveById[currentLightboxPostId];
+        if (!p) return;
+
+        // 화면은 먼저 바꾸고 (즉시 반응), DB는 뒤에서 순서대로 저장
+        p.fav = !p.fav;
+        p.flags = setFlag(p.flags, 'f', p.fav);
+        p.searchLower = buildSearchText(p);
+        paintLightboxFav(p.fav, true);
+        paintGridFav(p.id, p.fav);
+        archiveFavDirty = true;
+
+        var id = p.id;
+        archiveFavChain = archiveFavChain.then(async function() {
+            var cur = archiveById[id];
+            if (!cur) return;
+            var res = await archiveSupabase.from('posts')
+                .update({ content: buildArchiveContent(cur.imageUrls, cur.caption, cur.tags, cur.flags) })
+                .eq('id', id);
+            if (res.error) throw res.error;
+        }).catch(function() {
+            alert('Failed to save.');
+            loadGalleryPosts();
+        });
+    };
+
+    // 🚨 3. 삭제 및 라이트박스 제어 (스토리지 완전 삭제 포함)
+    window.deleteArchivePost = async function(id) {
+        if (!confirm("Are you sure you want to delete this?")) return;
+        try {
+            // DB에서 지우기 전에 이미지 URL부터 확보
+            var { data: postData } = await archiveSupabase.from('posts').select('content').eq('id', id).single();
+            
+            var { error } = await archiveSupabase.from('posts').delete().eq('id', id);
+            if (error) throw error;
+
+            // 스토리지 완전 삭제 로직 (썸네일 포함)
+            if (postData && postData.content) {
+                var contentParts = postData.content.split("|||");
+                var imageUrls = contentParts[0] || "";
+                var hasThumb = (contentParts[3] || "").indexOf('t') > -1;
+                if (imageUrls) {
+                    var urls = imageUrls.split(":::");
+                    var fileNames = urls.map(u => u.split('/').pop()).filter(name => name);
+                    if (hasThumb) {
+                        urls.forEach(function(u) {
+                            var thumbName = thumbUrlOf(u).split('/').pop();
+                            if (thumbName) fileNames.push(thumbName);
+                        });
+                    }
+                    if (fileNames.length > 0) {
+                        await archiveSupabase.storage.from('images').remove(fileNames);
+                    }
+                }
+            }
+
+            loadGalleryPosts();
+        } catch (error) { alert('Failed to delete.'); }
+    };
+    
+    window.deleteArchiveFromLightbox = function() {
+        deleteArchivePost(currentLightboxPostId);
+        closeArchiveLightbox();
+    };
+
+    window.openArchiveLightbox = function(id) {
+        var p = archiveById[id];
+        if (!p) return;
+
+        archiveLightboxOpenTime = Date.now();
+        currentLightboxPostId = p.id;
+        currentLightboxImageUrl = p.imageUrls; // 묶음 URL 원본 저장
+        
+        // 여러 장의 이미지를 세로로 쫙 펼쳐서 렌더링
+        var urls = p.imageUrls.split(":::");
+        var imgsHtml = urls.map(u => `<img src="${escAttr(u)}" loading="lazy" decoding="async" style="max-width: 100%; height: auto; object-fit: contain; border-radius: 2px; margin: 0 auto 15px auto; display: block; border: 1px solid var(--divider-bg);">`).join('');
+        $('#lightbox-archive-img-container').html(imgsHtml);
+        
+        $('#lightbox-archive-title').text(p.title || '');
+        $('#lightbox-archive-caption').html((p.caption || '').replace(/\n/g, '<br>'));
+        $('#lightbox-archive-tags').text(p.tags || ''); 
+        $('#lightbox-archive-date').text(p.displayDate || '');
+        
+        $('#edit-archive-title').val(p.title || '');
+        $('#edit-archive-caption').val(p.caption || '');
+        $('#edit-archive-tags').val(p.tags || '');
+        $('#edit-archive-date').val(p.inputDate || ''); 
+
+        paintLightboxFav(p.fav, false);
+        
+        $('#lightbox-read-mode').show();
+        $('#lightbox-edit-mode').hide();
+        
+        $('#archive-lightbox').css('display', 'flex').hide().fadeIn(150);
+    };
+    
+    window.closeArchiveLightbox = function() {
+        if (Date.now() - archiveLightboxOpenTime < 300) return; 
+        $('#archive-lightbox').fadeOut(150);
+        // ♡ 모아보기 중에 하트를 껐다면 닫을 때 목록 갱신
+        if (archiveFavDirty && archiveKeyword.indexOf('♡') > -1) applyArchiveFilter();
+        archiveFavDirty = false;
+    };
+
+    window.startArchiveEdit = function() {
+        $('#lightbox-read-mode').hide();
+        $('#lightbox-edit-mode').fadeIn(200).css('display', 'flex');
+    };
+    window.cancelArchiveEdit = function() {
+        $('#lightbox-edit-mode').hide();
+        $('#lightbox-read-mode').fadeIn(200);
+    };
+    
+    window.saveArchiveEdit = async function() {
+        var newTitle = $('#edit-archive-title').val().trim();
+        var newCaption = $('#edit-archive-caption').val().trim();
+        var newTags = $('#edit-archive-tags').val().trim();
+        var newDateStr = $('#edit-archive-date').val();
+
+        // 하트/썸네일 플래그는 그대로 유지
+        var curPost = archiveById[currentLightboxPostId];
+        var curFlags = curPost ? curPost.flags : '';
+        
+        var newContentStr = buildArchiveContent(currentLightboxImageUrl, newCaption, newTags, curFlags);
+        
+        try {
+            var finalDate = new Date();
+            if (newDateStr) {
+                var parts = newDateStr.split('-');
+                finalDate.setFullYear(parts[0], parts[1] - 1, parts[2]);
+            }
+            var offset = finalDate.getTimezoneOffset() * 60000;
+            var localISOString = new Date(finalDate.getTime() - offset).toISOString().slice(0, -1);
+
+            var { error } = await archiveSupabase.from('posts').update({ 
+                title: newTitle, 
+                content: newContentStr,
+                created_at: localISOString
+            }).eq('id', currentLightboxPostId);
+            
+            if (error) throw error;
+            
+            var yy = finalDate.getFullYear();
+            var m = String(finalDate.getMonth() + 1).padStart(2, '0');
+            var d = String(finalDate.getDate()).padStart(2, '0');
+            
+            $('#lightbox-archive-title').text(newTitle);
+            $('#lightbox-archive-caption').html(newCaption.replace(/\n/g, '<br>'));
+            $('#lightbox-archive-tags').text(newTags); 
+            $('#lightbox-archive-date').text(`${yy}.${m}.${d}`);
+            
+            cancelArchiveEdit();
+            loadGalleryPosts(); 
+        } catch (error) {
+            alert('Failed to save.');
+        }
+    };
+
+
+    /* ==========================================================================
+       ✅ 선택 모드: 선택 삭제 / 여러 개 묶기 / 일괄 수정
+       ========================================================================== */
+    function updateTotalCount() {
+        var total = archivePosts.reduce(function(sum, p) { return sum + p.imgCount; }, 0);
+        $('#archive-total-count').text(total);
+    }
+
+    var SELECT_LABELS = { delete: '삭제', group: '묶기', edit: '수정' };
+
+    function updateSelectBar() {
+        var n = selectedIds.length;
+        var txt;
+        if (selectBusy) txt = '처리 중...';
+        else if (n > 0) txt = SELECT_LABELS[selectMode] + ' · ' + n + '개 선택';
+        else if (selectMode === 'group') txt = '묶기 · 먼저 고른 사진이 대표';
+        else txt = SELECT_LABELS[selectMode] + ' · 항목을 선택하세요';
+        $('#select-label').text(txt);
+        $('#select-done, #select-cancel').prop('disabled', selectBusy).css('opacity', selectBusy ? 0.5 : 1);
+    }
+
+    // 화면에 있는 항목들의 선택 표시를 한 번에 갱신
+    function repaintSelection() {
+        var map = {};
+        selectedIds.forEach(function(id, i) { map[id] = i + 1; });
+        var isGroup = selectMode === 'group';
+        $('#gallery-feed .gallery-item').each(function() {
+            var o = map[this.getAttribute('data-id')];
+            if (o) {
+                this.classList.add('is-selected');
+                this.setAttribute('data-sel', isGroup ? o : '✓');
+            } else if (this.classList.contains('is-selected')) {
+                this.classList.remove('is-selected');
+                this.removeAttribute('data-sel');
+            }
+        });
+        updateSelectBar();
+    }
+
+    window.toggleSelectMenu = function() {
+        if (selectMode) { cancelSelectMode(); return; } // 선택 중에 아이콘을 누르면 종료
+        $('#select-menu').fadeToggle(120);
+    };
+    $('#select-mode-btn').on('click', function(e) { e.stopPropagation(); toggleSelectMenu(); });
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#select-menu, #select-mode-btn').length) $('#select-menu').hide();
+    });
+    $('#select-menu').on('click', '.sm-item', function() { startSelectMode($(this).attr('data-mode')); });
+
+    window.startSelectMode = function(mode) {
+        $('#select-menu').hide();
+        selectMode = mode;
+        selectedIds = [];
+        selectBusy = false;
+        $('#gallery-feed').addClass('select-mode');
+        $('#select-mode-btn').addClass('active');
+        $('#select-bar').css('display', 'flex');
+        repaintSelection();
+    };
+
+    window.cancelSelectMode = function() {
+        if (selectBusy) return;
+        selectMode = null;
+        selectedIds = [];
+        $('#gallery-feed').removeClass('select-mode');
+        $('#select-mode-btn').removeClass('active');
+        $('#select-bar').hide();
+        $('#gallery-feed .gallery-item.is-selected').removeClass('is-selected').removeAttr('data-sel');
+    };
+
+    function toggleSelect(id) {
+        if (selectBusy) return;
+        var i = selectedIds.indexOf(id);
+        if (i > -1) selectedIds.splice(i, 1);
+        else selectedIds.push(id);
+        repaintSelection();
+    }
+
+    function selectedPosts() {
+        return selectedIds.map(function(id) { return archiveById[id]; }).filter(Boolean);
+    }
+
+    function setSelectBusy(b) { selectBusy = b; updateSelectBar(); }
+
+    // 완료 버튼
+    window.finishSelect = function() {
+        if (selectBusy || !selectMode) return;
+        var n = selectedIds.length;
+        if (n === 0) { alert('항목을 선택해 주세요.'); return; }
+
+        if (selectMode === 'delete') {
+            if (confirm(n + '개 항목을 삭제하시겠습니까?\n(사진도 완전히 삭제돼요)')) runBulkDelete();
+        } else if (selectMode === 'group') {
+            if (n < 2) { alert('묶으려면 2개 이상 선택해 주세요.'); return; }
+            if (confirm(n + '개 항목을 하나로 묶으시겠습니까?\n(먼저 선택한 사진이 대표가 돼요)')) runBulkGroup();
+        } else if (selectMode === 'edit') {
+            openBulkEditModal();
+        }
+    };
+
+    // 스토리지 파일 이름 (원본 + 썸네일)
+    function storageNamesOf(p, thumbOnly) {
+        var names = [];
+        if (!thumbOnly) {
+            p.imageUrls.split(":::").forEach(function(u) {
+                var nm = u.split('/').pop();
+                if (nm) names.push(nm);
+            });
+        }
+        if (p.hasThumb) {
+            var tn = thumbUrlOf(p.mainImg).split('/').pop();
+            if (tn) names.push(tn);
+        }
+        return names;
+    }
+
+    async function removeStorageFiles(names) {
+        for (var i = 0; i < names.length; i += 100) {
+            try { await archiveSupabase.storage.from('images').remove(names.slice(i, i + 100)); } catch (e) {}
+        }
+    }
+
+    async function deleteRowsByIds(ids) {
+        for (var i = 0; i < ids.length; i += 100) {
+            var res = await archiveSupabase.from('posts').delete().in('id', ids.slice(i, i + 100));
+            if (res.error) throw res.error;
+        }
+    }
+
+    // 🗑 선택 삭제: DB 행 + 스토리지 사진 모두 삭제
+    async function runBulkDelete() {
+        var posts = selectedPosts();
+        setSelectBusy(true);
+        try {
+            await deleteRowsByIds(posts.map(function(p) { return p.id; }));
+            var names = [];
+            posts.forEach(function(p) { names = names.concat(storageNamesOf(p, false)); });
+            await removeStorageFiles(names);
+            selectBusy = false;
+            cancelSelectMode();
+            loadGalleryPosts();
+        } catch (e) {
+            alert('삭제에 실패했어요.');
+            setSelectBusy(false);
+            loadGalleryPosts();
+        }
+    }
+
+    // 🔗 여러 개 묶기: 먼저 고른 항목에 합치고 나머지 행은 삭제 (사진 파일은 그대로 유지)
+    async function runBulkGroup() {
+        var posts = selectedPosts();
+        if (posts.length < 2) return;
+        setSelectBusy(true);
+        try {
+            var first = posts[0];
+
+            var urls = [], seenUrl = {};
+            posts.forEach(function(p) {
+                p.imageUrls.split(":::").forEach(function(u) {
+                    if (u && !seenUrl[u]) { seenUrl[u] = true; urls.push(u); }
+                });
+            });
+
+            var title = '';
+            for (var i = 0; i < posts.length; i++) { if (posts[i].title) { title = posts[i].title; break; } }
+
+            var caps = [], seenCap = {};
+            posts.forEach(function(p) {
+                var c = (p.caption || '').trim();
+                if (c && !seenCap[c]) { seenCap[c] = true; caps.push(c); }
+            });
+
+            var tags = [], seenTag = {};
+            posts.forEach(function(p) {
+                (p.tags || '').split(/\s+/).filter(Boolean).forEach(function(t) {
+                    if (!seenTag[t]) { seenTag[t] = true; tags.push(t); }
+                });
+            });
+
+            var anyFav = posts.some(function(p) { return p.fav; });
+            var flags = (first.hasThumb ? 't' : '') + (anyFav ? 'f' : '');
+            var content = buildArchiveContent(urls.join(":::"), caps.join("\n"), tags.join(' '), flags);
+
+            var upd = await archiveSupabase.from('posts').update({ title: title, content: content }).eq('id', first.id);
+            if (upd.error) throw upd.error;
+
+            var others = posts.slice(1);
+            await deleteRowsByIds(others.map(function(p) { return p.id; }));
+
+            // 합쳐진 항목들의 작은 썸네일은 더 이상 안 쓰니 정리 (원본 사진은 유지)
+            var thumbNames = [];
+            others.forEach(function(p) { thumbNames = thumbNames.concat(storageNamesOf(p, true)); });
+            await removeStorageFiles(thumbNames);
+
+            selectBusy = false;
+            cancelSelectMode();
+            loadGalleryPosts();
+        } catch (e) {
+            alert('묶기에 실패했어요.');
+            setSelectBusy(false);
+            loadGalleryPosts();
+        }
+    }
+
+    // ✏️ 일괄 수정 (제목 / 태그)
+    window.openBulkEditModal = function() {
+        $('#bulk-edit-sub').text(selectedIds.length + '개 항목');
+        $('#bulk-title').val('');
+        $('#bulk-tags').val('');
+        $('#bulk-tag-mode').val('add');
+        $('#bulk-edit-modal').css('display', 'flex').hide().fadeIn(150);
+    };
+    window.closeBulkEditModal = function() { $('#bulk-edit-modal').fadeOut(150); };
+
+    window.confirmBulkEdit = function() {
+        var newTitle = $('#bulk-title').val().trim();
+        var newTags = $('#bulk-tags').val().trim();
+        var mode = $('#bulk-tag-mode').val();
+        if (!newTitle && !newTags) { alert('수정할 제목이나 태그를 입력해 주세요.'); return; }
+
+        var n = selectedIds.length;
+        var msg = n + '개 항목을 수정하시겠습니까?';
+        if (newTitle) msg += '\n제목 → ' + newTitle;
+        if (newTags) msg += '\n태그 ' + (mode === 'add' ? '추가' : '덮어쓰기') + ' → ' + newTags;
+        if (!confirm(msg)) return;
+
+        closeBulkEditModal();
+        runBulkEdit(newTitle, newTags, mode);
+    };
+
+    async function runBulkEdit(newTitle, newTags, mode) {
+        var posts = selectedPosts();
+        setSelectBusy(true);
+        try {
+            var newTokens = newTags.split(/\s+/).filter(Boolean);
+            for (var i = 0; i < posts.length; i += 8) {
+                var batch = posts.slice(i, i + 8).map(function(p) {
+                    var title = newTitle ? newTitle : p.title;
+                    var tags = p.tags;
+                    if (newTokens.length) {
+                        if (mode === 'replace') tags = newTokens.join(' ');
+                        else {
+                            var cur = (p.tags || '').split(/\s+/).filter(Boolean);
+                            newTokens.forEach(function(t) { if (cur.indexOf(t) === -1) cur.push(t); });
+                            tags = cur.join(' ');
+                        }
+                    }
+                    var content = buildArchiveContent(p.imageUrls, p.caption, tags, p.flags);
+                    return archiveSupabase.from('posts').update({ title: title, content: content }).eq('id', p.id)
+                        .then(function(r) { if (r.error) throw r.error; });
+                });
+                await Promise.all(batch);
+            }
+            selectBusy = false;
+            cancelSelectMode();
+            loadGalleryPosts();
+        } catch (e) {
+            alert('수정에 실패했어요.');
+            setSelectBusy(false);
+            loadGalleryPosts();
+        }
+    }
+
+    try { setupArchiveObserver(); } catch (e) { ARCHIVE_PAGE = Infinity; }
+    setTimeout(() => { loadGalleryPosts(); }, 100);
+</script>
