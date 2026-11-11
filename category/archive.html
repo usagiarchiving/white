@@ -154,6 +154,37 @@
     .fav-btn.pop { animation: favPop 0.3s ease-out; }
     @keyframes favPop { 0% { transform: scale(1); } 50% { transform: scale(1.35); } 100% { transform: scale(1); } }
 
+    /* 🔀 정렬 / 월별 보기 버튼 */
+    .tool-btn {
+        position: relative; display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; color: var(--sub-color); transition: color 0.3s;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .tool-btn svg { width: 18px; height: 18px; display: block; transition: transform 0.3s ease; }
+    .tool-btn:hover, .tool-btn.active { color: var(--point-color); }
+    #sort-btn.asc svg { transform: rotate(180deg); }
+
+    .tool-tip {
+        position: absolute; top: 28px; left: 50%;
+        transform: translateX(-50%) translateY(-3px);
+        white-space: nowrap; font-family: 'Noto Serif KR', serif; font-size: 10.5px;
+        color: var(--main-color); background: #fff; border: 1px solid var(--divider-bg);
+        border-radius: 4px; padding: 4px 9px; box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+        opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 50;
+    }
+    .tool-tip.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* 📅 월별 보기 헤더 */
+    .month-header {
+        grid-column: 1 / -1; display: flex; align-items: baseline; gap: 8px;
+        margin: 22px 0 2px; padding: 0 2px 8px; border-bottom: 1px solid var(--divider-bg);
+        font-family: 'Noto Serif KR', serif;
+    }
+    .gallery-grid > .month-header:first-child { margin-top: 0; }
+    .month-name { font-size: 15px; font-weight: 600; color: var(--main-color); letter-spacing: -0.2px; }
+    .month-year { font-size: 11px; color: var(--sub-color); opacity: 0.7; letter-spacing: 0.5px; }
+    .month-count { margin-left: auto; font-size: 10.5px; color: var(--sub-color); opacity: 0.55; }
+
     /* ✅ 선택 모드 */
     #select-mode-btn {
         cursor: pointer; color: var(--sub-color); font-size: 18px; transition: color 0.3s;
@@ -227,6 +258,14 @@
 <div class="archive-wrapper">
     
     <div class="search-wrapper">
+        <span class="tool-btn" id="view-btn" title="월별 보기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+            <span class="tool-tip"></span>
+        </span>
+        <span class="tool-btn" id="sort-btn" title="최신순">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+            <span class="tool-tip"></span>
+        </span>
         <i class="xi-tags" id="tags-toggle-btn" title="태그 모음 열기"></i>
         <div class="search-inner">
             <input type="text" id="archive-search" autocomplete="off" placeholder="Search">
@@ -385,6 +424,12 @@
     var archiveObserver = null;
     var archiveFavDirty = false;
     var archiveFavChain = Promise.resolve();
+
+    // 🔀 정렬 / 월별 보기 상태
+    var archiveSortAsc = false;     // false = 최신순(기본), true = 오래된 순
+    var archiveMonthly = false;     // 월별 보기 여부
+    var archiveLastMonth = '';      // 마지막으로 그린 월 (헤더 중복 방지)
+    var archiveMonthCounts = {};    // 'YYYY-MM' → 사진 수
 
     // 선택 모드 상태
     var selectMode = null;   // 'delete' | 'group' | 'edit'
@@ -762,11 +807,25 @@
         `;
     }
 
+    // 📅 월별 보기 헤더 (예: 11월 2026 ········ 24)
+    function monthHeaderHtml(key) {
+        var y = key.slice(0, 4), m = parseInt(key.slice(5, 7), 10);
+        var cnt = archiveMonthCounts[key] || 0;
+        return '<div class="month-header"><span class="month-name">' + m + '월</span><span class="month-year">' + y + '</span><span class="month-count">' + cnt + '</span></div>';
+    }
+
     function renderMoreArchive() {
         if (archiveRendered >= archiveFiltered.length) return;
         var end = Math.min(archiveRendered + ARCHIVE_PAGE, archiveFiltered.length);
         var html = '';
-        for (var i = archiveRendered; i < end; i++) html += archiveItemHtml(archiveFiltered[i]);
+        for (var i = archiveRendered; i < end; i++) {
+            var p = archiveFiltered[i];
+            if (archiveMonthly) {
+                var key = p.inputDate.slice(0, 7);
+                if (key !== archiveLastMonth) { html += monthHeaderHtml(key); archiveLastMonth = key; }
+            }
+            html += archiveItemHtml(p);
+        }
         $('#gallery-feed').append(html); // 한 번에 추가
         archiveRendered = end;
         if (archiveRendered < archiveFiltered.length) rewatchArchiveSentinel();
@@ -804,8 +863,17 @@
 
     function applyArchiveFilter() {
         var kw = archiveKeyword;
-        archiveFiltered = kw ? archivePosts.filter(function(p) { return p.searchLower.indexOf(kw) > -1; }) : archivePosts;
+        var list = kw ? archivePosts.filter(function(p) { return p.searchLower.indexOf(kw) > -1; }) : archivePosts;
+        archiveFiltered = archiveSortAsc ? list.slice().reverse() : list; // archivePosts는 최신순이라 뒤집으면 오래된 순
         archiveRendered = 0;
+        archiveLastMonth = '';
+        archiveMonthCounts = {};
+        if (archiveMonthly) {
+            archiveFiltered.forEach(function(p) {
+                var k = p.inputDate.slice(0, 7);
+                archiveMonthCounts[k] = (archiveMonthCounts[k] || 0) + p.imgCount;
+            });
+        }
         var feed = $('#gallery-feed');
         feed.empty();
 
@@ -1348,6 +1416,43 @@
             loadGalleryPosts();
         }
     }
+
+
+    /* ==========================================================================
+       🔀 정렬 / 📅 월별 보기
+       ========================================================================== */
+    var toolTipTimers = {};
+    function showToolTip(btnId, text) {
+        var $tip = $('#' + btnId + ' .tool-tip');
+        $tip.text(text).addClass('show');
+        clearTimeout(toolTipTimers[btnId]);
+        toolTipTimers[btnId] = setTimeout(function() { $tip.removeClass('show'); }, 1200);
+    }
+
+    // 목록이 바뀌면 갤러리 맨 위로 (이미 위에 있으면 가만히)
+    function scrollToGalleryTop() {
+        var w = document.querySelector('.archive-wrapper');
+        if (!w) return;
+        var top = w.getBoundingClientRect().top;
+        if (top < 0) window.scrollTo(0, window.pageYOffset + top - 10);
+    }
+
+    $('#sort-btn').on('click', function() {
+        archiveSortAsc = !archiveSortAsc;
+        var label = archiveSortAsc ? '오래된 순' : '최신순';
+        $(this).toggleClass('asc', archiveSortAsc).attr('title', label);
+        applyArchiveFilter();
+        scrollToGalleryTop();
+        showToolTip('sort-btn', label);
+    });
+
+    $('#view-btn').on('click', function() {
+        archiveMonthly = !archiveMonthly;
+        $(this).toggleClass('active', archiveMonthly);
+        applyArchiveFilter();
+        scrollToGalleryTop();
+        showToolTip('view-btn', archiveMonthly ? '월별 보기' : '전체 보기');
+    });
 
     try { setupArchiveObserver(); } catch (e) { ARCHIVE_PAGE = Infinity; }
     setTimeout(() => { loadGalleryPosts(); }, 100);
