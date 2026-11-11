@@ -80,6 +80,10 @@ const PAL=['#b8e6c9','#d7b8f5','#ffc6d9','#f6dd8f','#ffb3c6','#a8e6cf'];
 let blocks=[],status=null,chars=new Map(),raw='';
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+// 인물 대사 줄: **이름** | 대사   또는   이름 | 대사  (별표 있어도 없어도 인식)
+// 별표 없는 이름은 글자로 시작, 따옴표·별표·| 없이 최대 40자
+const DLG=/^\s*(?:\*\*(.+?)\*\*|(\p{L}[^|｜│"“”‘’*\n]{0,40}?))\s*[|｜│]\s*(.*)$/u;
+
 function parse(src){
   let st=null;
   src=src.replace(/<Apogee[\s\S]*?\/>/gi,m=>{st={};m.replace(/([A-Za-z]+)="([^"]*)"/g,(_,k,v)=>{st[k]=v});return '\n@@STATUS@@\n'});
@@ -105,14 +109,14 @@ function parse(src){
       continue;
     }
 
-    const m=l.match(/^\s*\*\*(.+?)\*\*\s*[|｜│]\s*(.*)$/);
+    const m=l.match(DLG);
     if(m){
       let j=i+1;while(j<L.length&&!L[j].trim())j++;
       const n=L[j]||'';let tr=null,t;
       if(t=n.match(/^\s*\(([\s\S]*)\)\s*$/))tr=t[1];
       else if(t=n.match(/^\s*\{\{\d+:\{\{#[0-9a-fA-F]{3,8}:\*\*([\s\S]*?)\*\*\}\}\}\}\s*$/))tr=t[1];
       if(tr!==null)i=j;
-      out.push({t:'d',n:m[1].trim(),l:m[2].replace(/(<br\s*\/?>\s*)+$/i,'').trim(),tr});continue;
+      out.push({t:'d',n:(m[1]||m[2]).trim(),l:m[3].replace(/(<br\s*\/?>\s*)+$/i,'').trim(),tr});continue;
     }
 
     let j=i+1;while(j<L.length&&!L[j].trim())j++;
@@ -190,7 +194,7 @@ function preview(t){
 function buildOptions(){
   const box=$('chars'),keys=[...chars.keys()];
   box.innerHTML='';
-  if(!keys.length){box.innerHTML='<div class="empty">등장인물을 찾지 못했어요. **이름** | "대사" 형식인지 확인해 주세요.</div>';return}
+  if(!keys.length){box.innerHTML='<div class="empty">등장인물을 찾지 못했어요. 이름 | "대사" 형식인지 확인해 주세요.</div>';return}
   keys.forEach((k,i)=>{
     const c=chars.get(k),d=document.createElement('div');
     d.className='char';d.dataset.i=i;d.style.animationDelay=(i*60)+'ms';
