@@ -826,3 +826,4 @@ document.addEventListener('click', (e) => {
         if (speakerToolbar) speakerToolbar.style.display = 'none';
     }
 });
+ 
