@@ -267,8 +267,25 @@ function applyInlineStyle(styles) {
     sel.addRange(nr);
     tbSavedRange = nr.cloneRange();
 
-    if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
+    notifyContentChanged(first);
     return true;
+}
+
+// 💡 직접 DOM을 바꾸면 브라우저가 'input' 이벤트를 안 보내서,
+//    번역/원문 등 각 편집 영역의 저장 핸들러(oninput 등)가 변경을 모름.
+//    execCommand 와 똑같이 input 이벤트를 직접 발생시킴.
+function notifyContentChanged(node) {
+    try {
+        let el = node && (node.nodeType === 1 ? node : node.parentElement);
+        const editable = el ? el.closest('[contenteditable]:not([contenteditable="false"])') : null;
+        const target = editable || getPreviewEl();
+        if (target) {
+            target.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatBackColor' }));
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    if (typeof syncPreviewToBlocks === 'function') syncPreviewToBlocks();
 }
 
 // 기존 함수명 유지 (다른 파일에서 호출해도 동작)
