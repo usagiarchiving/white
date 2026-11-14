@@ -2,7 +2,7 @@
 // parser.js
 // script.js / render.js 뒤에 로드
 // 기존 autoparse.js는 함께 로드하지 않음.
-//
+// 
 // 본문:
 // - 한 줄 = 한 블록
 // - 대사 바로 다음 괄호 번역만 같은 대사 블록에 병합
@@ -124,7 +124,7 @@
             '29541315-c8e7-4551-b401-910fcc3ecd8c.webp' +
             '?alt=media&token=6e8d5019-1601-49c9-88f0-379785715ac5' +
             '&v=1793377073872',
-        
+
         morning:
             IMAGE_BASE +
             'e08aea9b-0727-4d82-b7ae-4d9bcf71fd24.webp' +
@@ -135,7 +135,55 @@
             IMAGE_BASE +
             'b402d310-5a9d-4455-be04-336aa3a09df6.webp' +
             '?alt=media&token=da6a0001-ed51-4018-956b-c75014c47256' +
-            '&v=1793377073777'
+            '&v=1793377073777',
+
+        flip:
+            IMAGE_BASE +
+            '2c8fd7bb-1f2a-4961-ab12-bbe7ca7f8f22.webp' +
+            '?alt=media&token=96639c0a-4cc0-4251-840a-3562d35800ed' +
+            '&v=1793377073896',
+
+        relax:
+            IMAGE_BASE +
+            '006cbedf-0883-4ccb-be72-6da10cb0d583.webp' +
+            '?alt=media&token=a03d93dd-9958-4602-ad02-a287e49eb617' +
+            '&v=1793377073791',
+
+        bandage:
+            IMAGE_BASE +
+            'a88e87bd-a213-4a29-b95e-53799a2451e2.webp' +
+            '?alt=media&token=775605db-48a6-4354-8c81-936f1d109bb7' +
+            '&v=1793377073188',
+
+        bored:
+            IMAGE_BASE +
+            '493126c4-87e5-4e04-ba1c-9ae2202a11af.webp' +
+            '?alt=media&token=c4df282f-6a04-4844-9b0c-5842425464f7' +
+            '&v=1793377073550',
+
+        rain:
+            IMAGE_BASE +
+            '29486642-034e-42c8-8027-3367bd2fcdf6.webp' +
+            '?alt=media&token=79016e49-4dd6-463a-960b-4cd1640dac3b' +
+            '&v=1793377073911',
+
+        fiesta:
+            IMAGE_BASE +
+            'c95b98e5-98f1-4b99-8701-c60b27deec36.webp' +
+            '?alt=media&token=505711f7-1555-44c9-953a-df189e32ee8a' +
+            '&v=1793377073808',
+
+        birthday1:
+            IMAGE_BASE +
+            '291f2c6a-5b0d-4b69-9882-5145850509f4.webp' +
+            '?alt=media&token=ee8e66d9-1234-4de3-a77a-18d6020b6393' +
+            '&v=1793631738015',
+
+        birthday2:
+            IMAGE_BASE +
+            'ffc4a9d6-b25b-4781-a913-a26bf9c9f3a7.webp' +
+            '?alt=media&token=863fe3a4-7c62-43a6-9f58-2d892de508d6' +
+            '&v=1793631738029'
     });
 
     // ==========================================
