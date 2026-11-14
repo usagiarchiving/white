@@ -19,6 +19,11 @@
 // - showToast() (있으면 사용)
 //
 // Apogee 변환 함수 / 디자인 / 자동 이미지는 이 파일에 포함.
+//
+// 상태창 목록 (태그 이름의 숫자 = 상태창 번호)
+// - 상태창1: <Apogee ... />  → apogeeToHtml()
+// - 상태창2: <Apogee2 ... /> → apogee2ToHtml()
+// - 디자인을 바꾸거나 추가할 땐 "상태창N" 주석이 붙은 구간만 수정.
 // ==========================================
 
 (function () {
@@ -187,7 +192,9 @@
     });
 
     // ==========================================
-    // Apogee 디자인
+    // [상태창1] Apogee 디자인
+    // 태그: <Apogee ... />
+    // 변환 함수: apogeeToHtml()
     // ==========================================
 
     const APOGEE_CSS = `
@@ -654,7 +661,430 @@
     }
 
     // ==========================================
-    // Apogee 태그 읽기
+    // [상태창2] Apogee2 디자인
+    // 태그: <Apogee2 ... />
+    // 변환 함수: apogee2ToHtml()
+    //
+    // JSX(Apogee2)를 정적 HTML로 옮긴 것.
+    // - 펼치기(▼): <details> 사용
+    // - 탭(MSG/SCH/PRM/NOTE/INT): 라디오 + 라벨 사용
+    // ==========================================
+
+    const APOGEE2_CSS = `
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap');
+
+.apg{--bg:#0c0a06;--panel:#15110a;--panel2:#221c10;--line:#3b3322;--gold:#d9b44a;--gold2:#f0d27a;--ink:#f4ead0;--ink2:#cfc7b2;--mute:#8e8672;--bd:#5a4d2c;--dim:#7a7059;
+    width:100%;max-width:380px;margin:0 auto;position:relative;overflow:hidden;box-sizing:border-box;padding-bottom:12px;
+    background:radial-gradient(120% 80% at 50% 0%,#1d1608 0%,var(--bg) 60%);border:1px solid var(--line);border-radius:16px;
+    font-family:'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif;font-size:11px;line-height:1.55;color:var(--ink2);word-break:keep-all;overflow-wrap:break-word;
+    text-align:left;letter-spacing:0;font-style:normal;font-weight:normal}
+.apg *{box-sizing:border-box}
+.apg::before{content:"";position:absolute;inset:4px;border:1px solid rgba(217,180,74,.2);border-radius:12px;pointer-events:none}
+.apg-hd{display:flex;justify-content:space-between;align-items:flex-end;margin:0 14px;padding:15px 4px 10px;border-bottom:1px solid rgba(217,180,74,.22)}
+.apg-hl{display:flex;flex-direction:column;font-size:10.5px;color:var(--mute);line-height:1.5}
+.apg-pl{color:var(--ink2)}
+.apg-hr{text-align:right;line-height:1.3}
+.apg-hr b{display:block;font-family:'Gowun Batang',serif;font-size:19px;font-weight:700;color:var(--gold2);letter-spacing:.5px}
+.apg-hr span{font-size:10.5px;color:var(--mute)}
+.apg-st{padding:14px 14px 0;display:flex;flex-direction:column;gap:8px}
+.apg-tb{position:relative;padding-top:34px}
+.apg-bub{position:absolute;top:0;left:72px;padding:3px 11px;border-radius:999px;background:var(--panel2);border:1px solid #6b5c33;color:var(--gold2);font-size:12px;font-weight:700;white-space:nowrap}
+.apg-tb i{position:absolute;display:block;border-radius:50%;background:var(--panel2);border:1px solid #6b5c33}
+.apg-d1{left:50px;top:27px;width:3px;height:3px}
+.apg-d2{left:59px;top:20px;width:5px;height:5px}
+.apg-pc .apg-bub{left:auto;right:72px;border-color:#4a4536;color:var(--ink)}
+.apg-pc i{border-color:#4a4536}
+.apg-pc .apg-d1{left:auto;right:50px}
+.apg-pc .apg-d2{left:auto;right:59px}
+.apg-plate{display:flex;align-items:baseline;width:fit-content;max-width:100%;padding:5px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--panel2)}
+.apg-pc .apg-plate{margin-left:auto;border-color:#4a4536}
+.apg-kao{font-size:15px;white-space:nowrap;color:var(--ink)}
+.apg-cap{position:absolute;left:0;bottom:3px;display:inline-flex;border:1px solid var(--bd);border-radius:999px;overflow:hidden;font-size:10.5px;font-weight:700}
+.apg-cap b{background:var(--gold);color:#17110a;padding:0 10px}
+.apg-cap>span{padding:0 10px;color:var(--gold2)}
+.apg-dn{margin-left:5px}
+.apg-sum{display:block;width:100%;margin-top:8px;padding:5px 18px 5px 0;text-align:right;border:0;background:none;color:var(--gold);font-size:10px;line-height:1;cursor:pointer;font-family:inherit;list-style:none}
+.apg-det>summary{list-style:none}
+.apg-det>summary::-webkit-details-marker{display:none}
+.apg-ar{display:inline-block;transition:transform .2s}
+.apg-det[open] .apg-ar{transform:rotate(180deg)}
+.apg-more{padding:10px 12px 0;display:flex;flex-direction:column;gap:14px}
+.apg-box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.apg-two{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.apg-k{color:var(--mute);font-size:10px;font-weight:700;letter-spacing:.5px}
+.apg-k em{font-style:normal;font-weight:700;margin-right:5px;color:var(--gold)}
+.apg-k em.p{color:var(--ink2)}
+.apg-mind{padding:2px 0 2px 11px;border-left:2px solid var(--gold);margin:2px 4px}
+.apg-mh{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.apg-nm{font-weight:700;font-size:9.5px;letter-spacing:.3px;color:var(--gold)}
+.apg-mood{padding:0 7px;border-radius:999px;border:1px solid var(--bd);color:var(--mute);font-size:9px}
+.apg-t{font-size:12.5px;line-height:1.7;color:var(--gold2);white-space:pre-line}
+.apg-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.apg-tab{display:block;text-align:center;user-select:none;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:1px;padding:6px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--mute);cursor:pointer}
+.apg-chat{display:flex;flex-direction:column;gap:7px;padding:2px 8px 2px 4px}
+.apg-dt{text-align:center;color:var(--mute);font-size:10px;margin:2px 0 4px}
+.apg-dt b{font-weight:700}
+.apg-m{position:relative;isolation:isolate;max-width:78%;padding:6px 12px;border-radius:17px;line-height:1.5;white-space:pre-line}
+.apg-m.apg-u{align-self:flex-end;margin-right:8px;background:var(--gold);color:#1b1407}
+.apg-m.apg-c{align-self:flex-start;margin-left:8px;background:#2e2618;color:var(--ink)}
+.apg-m::before,.apg-m::after{content:"";position:absolute;bottom:0;z-index:-1}
+.apg-m.apg-u::before{right:-6px;width:18px;height:17px;background:var(--gold);border-bottom-left-radius:14px}
+.apg-m.apg-u::after{right:-10px;width:10px;height:18px;background:var(--panel);border-bottom-left-radius:10px}
+.apg-m.apg-c::before{left:-6px;width:18px;height:17px;background:#2e2618;border-bottom-right-radius:14px}
+.apg-m.apg-c::after{left:-10px;width:10px;height:18px;background:var(--panel);border-bottom-right-radius:10px}
+.apg-tr{margin-top:2px;font-size:10px;line-height:1.4;opacity:.7}
+.apg-chip{display:inline-block;background:#2b2519;border:1px solid var(--bd);color:var(--gold);font-size:9px;font-weight:800;letter-spacing:1px;padding:1px 7px;margin-right:7px;border-radius:4px}
+.apg-line{margin-bottom:8px}
+.apg-dash{border-top:1px dashed #575044;margin:10px 0}
+.apg-num{display:flex;gap:8px;padding:3px 0}
+.apg-num b{color:var(--gold);font-size:11px;flex-shrink:0}
+.apg-pr{color:#f2e2b8;font-weight:600}
+.apg-row{white-space:pre-line}
+.apg-row+.apg-row{margin-top:10px;padding-top:10px;border-top:1px dashed #575044}
+.apg-qa b{color:var(--gold);margin-right:4px}
+.apg-a{margin-top:4px;padding-left:8px;border-left:2px solid #4a3f22;color:var(--ink)}
+.apg-atr{margin-top:4px;padding-left:19px;color:var(--mute);font-size:10.5px}
+.apg-empty{color:#6e6a5c}
+.apg-tags{text-align:right;padding:8px 18px 0;color:var(--dim);font-size:10.5px;letter-spacing:-.2px}
+.apg .apg-r{display:none}
+.apg .pn{display:none}
+`;
+
+    const APOGEE2_TABS = [
+        ['msg', 'MSG'],
+        ['sch', 'SCH'],
+        ['prm', 'PRM'],
+        ['note', 'NOTE'],
+        ['int', 'INT']
+    ];
+
+    function apogee2ToHtml(attributes) {
+        const p = attributes || {};
+
+        const uid =
+            'apg-' +
+            Date.now().toString(36) + '-' +
+            (++apogeeSequence).toString(36) + '-' +
+            Math.random().toString(36).slice(2, 8);
+
+        const g = function (key) {
+            return p[key] == null ? '' : String(p[key]);
+        };
+
+        const textHtml = function (value) {
+            return esc(apogeeNewlines(value)).replace(/\n/g, '<br>');
+        };
+
+        const empty = '<span class="apg-empty">-</span>';
+
+        const v = function (value) {
+            return String(value || '').trim() ? textHtml(value) : empty;
+        };
+
+        const lines = function (value) {
+            return apogeeNewlines(value)
+                .split('\n')
+                .map(function (line) {
+                    return line.trim();
+                })
+                .filter(Boolean);
+        };
+
+        const numberLabel = function (index) {
+            return String(index + 1).padStart(2, '0');
+        };
+
+        const cName = g('npc') || 'NPC';
+
+        const sub = [
+            g('season'),
+            g('temperature'),
+            g('weather')
+        ].filter(Boolean).join(' ');
+
+        const hasDate = g('date') || g('weekday') || g('time');
+
+        const dm = parseInt(g('daysMet').replace(/[^0-9]/g, ''), 10);
+        const showDays = !isNaN(dm) && dm > 0;
+
+        const msgs = lines(g('messages'));
+        const trs = lines(g('messagesTr'));
+        const wants = lines(g('npcWants')).slice(0, 3);
+        const promiseList = lines(g('promises'));
+
+        const tabCss = APOGEE2_TABS.map(function (tab) {
+            const key = tab[0];
+
+            return (
+                '.apg .apg-r.r-' + key +
+                ':checked~.pn-' + key +
+                '{display:block}' +
+
+                '.apg .apg-r.r-' + key +
+                ':checked~.apg-tabs .tb-' + key +
+                '{background:var(--gold);border-color:var(--gold);color:#17110a}'
+            );
+        }).join('\n');
+
+        const radios = APOGEE2_TABS.map(function (tab, index) {
+            return (
+                '<input type="radio" name="' + uid +
+                '" id="' + uid + '-' + tab[0] +
+                '" class="apg-r r-' + tab[0] + '"' +
+                (index === 0 ? ' checked' : '') + '>'
+            );
+        }).join('');
+
+        const tabButtons = APOGEE2_TABS.map(function (tab) {
+            return (
+                '<label for="' + uid + '-' + tab[0] +
+                '" class="apg-tab tb-' + tab[0] + '">' +
+                tab[1] + '</label>'
+            );
+        }).join('');
+
+        const thought = function (text) {
+            return text
+                ? (
+                    '<i class="apg-d1"></i><i class="apg-d2"></i>' +
+                    '<div class="apg-bub">' + textHtml(text) + '</div>'
+                )
+                : '';
+        };
+
+        const noteRow = function (label, value) {
+            return (
+                '<div class="apg-row">' +
+                    '<div class="apg-k">' + label + '</div>' +
+                    v(value) +
+                '</div>'
+            );
+        };
+
+        const headerLeft =
+            (
+                g('location')
+                    ? '<span class="apg-pl">' + esc(g('location')) + '</span>'
+                    : ''
+            ) +
+            (sub ? '<span>' + esc(sub) + '</span>' : '');
+
+        const dateText = [g('date'), g('weekday')].filter(Boolean).join(' ');
+
+        const headerRight =
+            (g('time') ? '<b>' + esc(g('time')) + '</b>' : '') +
+            (dateText ? '<span>' + esc(dateText) + '</span>' : '');
+
+        const msgPanel =
+            '<div class="apg-box pn pn-msg">' +
+                '<div class="apg-chat">' +
+                    (
+                        hasDate
+                            ? '<div class="apg-dt"><b>' + esc(g('date')) +
+                              '</b> ' + esc(g('weekday')) +
+                              ' ' + esc(g('time')) + '</div>'
+                            : ''
+                    ) +
+                    (
+                        msgs.length
+                            ? msgs.map(function (text, index) {
+                                return (
+                                    '<div class="apg-m ' +
+                                    (index % 2 === 0 ? 'apg-c' : 'apg-u') + '">' +
+                                        textHtml(text) +
+                                        (
+                                            trs[index]
+                                                ? '<div class="apg-tr">' +
+                                                    textHtml(trs[index]) +
+                                                  '</div>'
+                                                : ''
+                                        ) +
+                                    '</div>'
+                                );
+                            }).join('')
+                            : empty
+                    ) +
+                '</div>' +
+            '</div>';
+
+        const schPanel =
+            '<div class="apg-box pn pn-sch">' +
+                '<div class="apg-line"><span class="apg-chip">NOW</span>' +
+                    v(g('scheduleNow')) +
+                '</div>' +
+                '<div class="apg-line"><span class="apg-chip">NEXT</span>' +
+                    v(g('scheduleNext')) +
+                '</div>' +
+                '<div class="apg-dash"></div>' +
+                '<div class="apg-k" style="margin-bottom:4px">DESIRE</div>' +
+                (
+                    wants.length
+                        ? wants.map(function (want, index) {
+                            return (
+                                '<div class="apg-num"><b>' +
+                                numberLabel(index) +
+                                '</b><span>' + textHtml(want) + '</span></div>'
+                            );
+                        }).join('')
+                        : empty
+                ) +
+            '</div>';
+
+        const prmPanel =
+            '<div class="apg-box pn pn-prm">' +
+                (
+                    promiseList.length
+                        ? promiseList.map(function (promise, index) {
+                            return (
+                                '<div class="apg-num"><b>' +
+                                numberLabel(index) +
+                                '</b><span class="apg-pr">' +
+                                textHtml(promise) +
+                                '</span></div>'
+                            );
+                        }).join('')
+                        : '<span class="apg-empty">아직 맺은 약속이 없다.</span>'
+                ) +
+            '</div>';
+
+        const notePanel =
+            '<div class="apg-box pn pn-note">' +
+                noteRow('DIARY', g('npcDiary')) +
+                noteRow('MEMO', g('npcMemo')) +
+                noteRow('TMI', g('tmi')) +
+                noteRow('GIFT', g('npcGift')) +
+            '</div>';
+
+        const intPanel =
+            '<div class="apg-box apg-qa pn pn-int">' +
+                '<div class="apg-k"><b>Q</b>' +
+                    textHtml(g('interviewQ') || '-') +
+                '</div>' +
+                '<div class="apg-a"><b>A</b>' +
+                    textHtml(g('interviewA') || '-') +
+                '</div>' +
+                (
+                    g('interviewATr')
+                        ? '<div class="apg-atr">(' +
+                            textHtml(g('interviewATr')) +
+                          ')</div>'
+                        : ''
+                ) +
+            '</div>';
+
+        return (
+            '<style>' + APOGEE2_CSS + tabCss + '</style>' +
+            '<div class="apg">' +
+                '<div class="apg-hd">' +
+                    '<div class="apg-hl">' + headerLeft + '</div>' +
+                    '<div class="apg-hr">' + headerRight + '</div>' +
+                '</div>' +
+
+                '<div class="apg-st">' +
+                    '<div class="apg-tb">' +
+                        thought(g('npcThought')) +
+                        '<div class="apg-plate"><span class="apg-kao">' +
+                            esc(g('npcKaomoji') || '-') +
+                        '</span></div>' +
+                    '</div>' +
+                    '<div class="apg-tb apg-pc">' +
+                        thought(g('pcThought')) +
+                        '<div class="apg-cap">' +
+                            (
+                                g('relation')
+                                    ? '<b>' + esc(g('relation')) + '</b>'
+                                    : ''
+                            ) +
+                            '<span>♥' +
+                                (
+                                    showDays
+                                        ? '<span class="apg-dn">' + dm + '</span>'
+                                        : ''
+                                ) +
+                            '</span>' +
+                        '</div>' +
+                        '<div class="apg-plate"><span class="apg-kao">' +
+                            esc(g('pcKaomoji') || '-') +
+                        '</span></div>' +
+                    '</div>' +
+                '</div>' +
+
+                '<details class="apg-det">' +
+                    '<summary class="apg-sum">' +
+                        '<span class="apg-ar">▼</span>' +
+                    '</summary>' +
+
+                    '<div class="apg-more">' +
+                        '<div class="apg-box">' +
+                            '<div class="apg-two">' +
+                                '<div><div class="apg-k">OUTFIT</div>' +
+                                    v(g('npcOutfit')) + '</div>' +
+                                '<div><div class="apg-k">OUTFIT</div>' +
+                                    v(g('pcOutfit')) + '</div>' +
+                                '<div><div class="apg-k">POSE</div>' +
+                                    v(g('npcPose')) + '</div>' +
+                                '<div><div class="apg-k">POSE</div>' +
+                                    v(g('pcPose')) + '</div>' +
+                            '</div>' +
+                        '</div>' +
+
+                        '<div class="apg-mind">' +
+                            '<div class="apg-mh">' +
+                                '<span class="apg-nm">' + esc(cName) + '</span>' +
+                                (
+                                    g('npcMood')
+                                        ? '<span class="apg-mood">' +
+                                            esc(g('npcMood')) +
+                                          '</span>'
+                                        : ''
+                                ) +
+                            '</div>' +
+                            '<div class="apg-t">' +
+                                textHtml(g('npcMind') || '...') +
+                            '</div>' +
+                        '</div>' +
+
+                        radios +
+                        '<div class="apg-tabs">' + tabButtons + '</div>' +
+                        msgPanel +
+                        schPanel +
+                        prmPanel +
+                        notePanel +
+                        intPanel +
+                    '</div>' +
+                '</details>' +
+
+                (
+                    g('genreTags')
+                        ? '<div class="apg-tags">' + esc(g('genreTags')) + '</div>'
+                        : ''
+                ) +
+            '</div>'
+        );
+    }
+
+    // ==========================================
+    // 상태창 디자인 등록부
+    //
+    // 태그 이름의 숫자 = 상태창 번호
+    //   <Apogee ... />   → 상태창1 (apogeeToHtml)
+    //   <Apogee2 ... />  → 상태창2 (apogee2ToHtml)
+    //
+    // 상태창3 이후를 추가할 때:
+    //   1) 새 디자인 함수 작성 (예: apogee3ToHtml)
+    //   2) 아래 등록부에 3: apogee3ToHtml 추가
+    //   3) 맨 아래 공개 함수에 window.apogee3ToHtml 추가 (선택)
+    // 기존 디자인을 바꿀 땐 해당 번호의 CSS / 함수만 수정.
+    // ==========================================
+
+    const APOGEE_DESIGNS = {
+        1: apogeeToHtml,   // 상태창1
+        2: apogee2ToHtml   // 상태창2
+    };
+
+    // ==========================================
+    // Apogee 태그 읽기 (상태창 공통)
     // 속성의 따옴표 안에서는 >, <br>, 줄바꿈을 보존.
     // ==========================================
 
@@ -695,12 +1125,15 @@
         );
     }
 
-    function readApogeeTag(source, start) {
+    // nameLength: "<Apogee" 또는 "<Apogee2" 등 태그 이름 길이.
+    // 생략하면 "<Apogee"(7글자).
+    function readApogeeTag(source, start, nameLength) {
+        const nameEnd = start + (nameLength || 7);
+
         let quote = '';
         let end = -1;
 
-        // "<Apogee"는 7글자.
-        for (let index = start + 7; index < source.length; index++) {
+        for (let index = nameEnd; index < source.length; index++) {
             const character = source[index];
 
             if (quote) {
@@ -724,7 +1157,7 @@
             );
         }
 
-        let remaining = source.slice(start + 7, end - 1)
+        let remaining = source.slice(nameEnd, end - 1)
             .replace(/\/\s*$/, '')
             .trim();
 
@@ -748,8 +1181,8 @@
             remaining = remaining.slice(match[0].length).trimStart();
         }
 
-        // <Apogee ...></Apogee> 형식도 허용.
-        const closing = source.slice(end).match(/^\s*<\/Apogee\s*>/i);
+        // <Apogee ...></Apogee>, <Apogee2 ...></Apogee2> 형식도 허용.
+        const closing = source.slice(end).match(/^\s*<\/Apogee\d*\s*>/i);
         if (closing) end += closing[0].length;
 
         return {
@@ -771,8 +1204,9 @@
 
         const tokens = [];
 
+        // <Apogee (상태창1), <Apogee2 (상태창2) ... 모두 인식.
         const specialPattern =
-            /^[ \t]*(`{3,}|~{3,})[^\n]*|<Apogee\b/gim;
+            /^[ \t]*(`{3,}|~{3,})[^\n]*|<Apogee(\d*)\b/gim;
 
         let cursor = 0;
         let match;
@@ -822,10 +1256,18 @@
                     ? closingPattern.lastIndex
                     : source.length;
             } else {
-                const apogee = readApogeeTag(source, match.index);
+                // 상태창 번호: <Apogee → 1, <Apogee2 → 2
+                const apogeeNumber = match[2] || '';
+
+                const apogee = readApogeeTag(
+                    source,
+                    match.index,
+                    7 + apogeeNumber.length
+                );
 
                 tokens.push({
                     kind: 'apogee',
+                    variant: apogeeNumber ? Number(apogeeNumber) : 1,
                     attributes: apogee.attributes
                 });
 
@@ -1113,9 +1555,20 @@
             if (token.kind === 'apogee') {
                 flushStatus();
 
+                // 상태창 번호(token.variant)에 맞는 디자인 선택.
+                // 1 → 상태창1, 2 → 상태창2 (등록부 APOGEE_DESIGNS 참고)
+                const design = APOGEE_DESIGNS[token.variant];
+
+                if (typeof design !== 'function') {
+                    throw new Error(
+                        '등록되지 않은 상태창입니다: <Apogee' +
+                        (token.variant === 1 ? '' : token.variant) + '>'
+                    );
+                }
+
                 // Apogee는 status가 아닌 html.
                 // 위/아래 여백은 render.js에서만 적용.
-                push('html', apogeeToHtml(token.attributes));
+                push('html', design(token.attributes));
                 continue;
             }
 
@@ -1312,9 +1765,9 @@
             return false;
         }
 
-        // 원문의 명확한 표식.
+        // 원문의 명확한 표식. (<Apogee, <Apogee2 ... 상태창 태그 포함)
         if (
-            /<Apogee\b/i.test(text) ||
+            /<Apogee\d*\b/i.test(text) ||
             /\{\{\s*img\s*::/i.test(text) ||
             /^\s*[*_]*[^|\n]+[|｜│]\s*[*_]*["“「『]/m.test(text)
         ) {
@@ -1379,7 +1832,8 @@
     // 공개 함수
     // ==========================================
 
-    window.apogeeToHtml = apogeeToHtml;
+    window.apogeeToHtml = apogeeToHtml;     // 상태창1
+    window.apogee2ToHtml = apogee2ToHtml;   // 상태창2
     window.parseBulkInput = parseBulkInput;
     window.importFromRawChat = importFromRawChat;
 
