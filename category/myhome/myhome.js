@@ -78,7 +78,7 @@ export function init() {
     controls.target.set(0, 0.55, 0.15);
     controls.enableDamping = true; controls.dampingFactor = 0.08;
     controls.enablePan = false;
-    controls.minPolarAngle = 0.55; controls.maxPolarAngle = 1.12;
+    controls.minPolarAngle = 0.35; controls.maxPolarAngle = 1.3;
     controls.minDistance = 3.2; controls.maxDistance = 17;
     controls.rotateSpeed = 0.7;
 
@@ -306,11 +306,9 @@ export function init() {
     });
     // 현관문과 화장실 문 사이, 화장실 쪽 벽: 액자처럼 납작하게 걸린 분리수거 봉지 + 아래 쓰레기통
     furniture('recycle', g => {
-        g.add(at(rbox(0.04, 0.03, 0.4, C.gray, 0.01), X(W) - 0.03, 1.62, Z(0.93)));                 // 걸이
-        [[0.8, 0xeeeae8], [0.93, 0xeeeae8], [1.06, 0xeeeae8]].forEach(([z, col]) => {
-            const bag = rbox(0.035, 0.5, 0.12, col, 0.015); g.add(at(bag, X(W) - 0.035, 1.34, Z(z)));
-            g.add(at(rbox(0.04, 0.03, 0.12, C.white, 0.008), X(W) - 0.035, 1.6, Z(z)));
-        });
+        g.add(at(rbox(0.04, 0.03, 0.3, C.gray, 0.01), X(W) - 0.03, 1.63, Z(0.93)));                 // 걸이
+        g.add(at(rbox(0.04, 0.55, 0.34, 0xeeeae8, 0.02), X(W) - 0.035, 1.31, Z(0.93)));          // 납작한 봉지 하나
+        g.add(at(rbox(0.045, 0.035, 0.34, C.white, 0.01), X(W) - 0.035, 1.6, Z(0.93)));
     }, 'E');
     furniture('trash', g => {
         g.add(at(cyl(0.14, 0.12, 0.4, C.white, 32), X(1.4), 0.2, Z(2.15)));          // 식탁 아래
@@ -619,7 +617,7 @@ export function init() {
         canvas.classList.toggle('is-hover', !!g);
         if (!g) { labelEl.classList.remove('on'); return; }
         const o = OBJECTS[g.userData.id], done = isDone(g.userData.id, todayKey());
-        labelEl.innerHTML = o.name + (done ? '<span class="n">오늘 ✓</span>' : '');
+        labelEl.innerHTML = o.name + (done ? '<span class="n">✓</span>' : '');
         labelEl.classList.add('on');
     }
     canvas.addEventListener('pointermove', ev => { if (ev.pointerType === 'mouse') setHover(pick(ev)); });
@@ -761,7 +759,8 @@ export function init() {
     const keyOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
     const todayKey = () => keyOf(new Date());
     const rec = (id, k) => (db.log[id] || {})[k];
-    const isDone = (id, k) => !!(rec(id, k) && rec(id, k).done);
+    const countOf = (id, k) => { const r = rec(id, k); return r ? (r.count || (r.done ? 1 : 0)) : 0; };
+    const isDone = (id, k) => countOf(id, k) > 0;
     const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const MONTH_EN = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
     const MON_EN = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -777,6 +776,7 @@ export function init() {
             const r = d.log[id][k];
             if ('d' in r) { if (r.d) r.done = true; delete r.d; }
             if ('m' in r) { if (r.m) r.memo = r.m; delete r.m; }
+            if (r.done && !r.count) r.count = 1;
         }));
         d.version = 1;
         d.place = PLACE.name;
@@ -810,7 +810,8 @@ export function init() {
         const j = {}; j[DATA] = { mutate: cur => { cur = normalize(cur); fn(cur); cur.updated_at = stamp(); return cur; }, fallback: { log: {} } };
         repo.commit(message, {}, j).then(res => {
             setPending(pending - 1);
-            if (!pending && res && res[DATA]) { db = normalize(res[DATA]); drawList(); if (card) drawCard(); }
+            // 저장소가 기억해 둔 최신본과 같은 객체를 쓰면 다음 수정이 두 번 반영되므로 복사해서 씀
+            if (!pending && res && res[DATA]) { db = normalize(JSON.parse(JSON.stringify(res[DATA]))); drawList(); if (card) drawCard(); }
         }, e => {
             setPending(pending - 1);
             alert('저장하지 못했어요.\n' + (e.message || e));
@@ -858,23 +859,26 @@ export function init() {
         let cells = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(w => '<div class="mh-wd">' + w + '</div>').join('');
         for (let i = 0; i < first; i++) cells += '<div class="mh-day empty"></div>';
         for (let d = 1; d <= last; d++) {
-            const k = y + '-' + pad(m + 1) + '-' + pad(d), r = rec(card.id, k) || {};
-            if (r.done) monthCount++;
-            const cls = ['mh-day', r.done ? 'done' : '', k === t ? 'is-today' : '', k > t ? 'future' : '', k === card.sel ? 'sel' : '', r.memo ? 'has-memo' : ''].join(' ');
-            cells += '<div class="' + cls + '" data-k="' + k + '">' + (r.done ? o.emoji : d) + '</div>';
+            const k = y + '-' + pad(m + 1) + '-' + pad(d), r = rec(card.id, k) || {}, n = countOf(card.id, k);
+            monthCount += n;
+            const cls = ['mh-day', n ? 'done' : '', k === t ? 'is-today' : '', k > t ? 'future' : '', k === card.sel ? 'sel' : '', r.memo ? 'has-memo' : ''].join(' ');
+            cells += '<div class="' + cls + '" data-k="' + k + '">' + (n ? o.emoji + (n > 1 ? '<i class="mh-n">' + n + '</i>' : '') : d) + '</div>';
         }
-        const sel = card.sel, sr = rec(card.id, sel) || {}, sd = new Date(sel + 'T00:00:00');
+        const sel = card.sel, sr = rec(card.id, sel) || {}, sn = countOf(card.id, sel), sd = new Date(sel + 'T00:00:00');
         const canStamp = sel <= t;
         cardEl.innerHTML =
-            '<div class="mh-head"><span class="mh-title"><b>' + esc(o.name) + '</b> · ' + MONTH_EN[m] + '</span>' +
-            '<span class="mh-today">today · ' + MON_EN[new Date().getMonth()] + ' ' + new Date().getDate() + '</span></div>' +
-            '<div class="mh-sub"><span class="mh-nav" data-nav="-1">‹</span><span>' + o.emoji + ' ' + esc(o.act) + ' · ' + y + '.' + pad(m + 1) + '</span><span class="mh-nav" data-nav="1">›</span></div>' +
+            '<div class="mh-head"><span class="mh-title"><b>' + esc(o.name) + '</b><span class="mh-act">' + o.emoji + ' ' + esc(o.act) + '</span></span></div>' +
+            '<div class="mh-sub"><span class="mh-nav" data-nav="-1">‹</span><span>' + y + '.' + pad(m + 1) + '</span><span class="mh-nav" data-nav="1">›</span></div>' +
             '<div class="mh-grid">' + cells + '</div>' +
-            '<div class="mh-memo"><span class="mh-memo-date">' + MON_EN[sd.getMonth()] + ' ' + sd.getDate() + '</span>' +
+            '<div class="mh-memo"><span class="mh-memo-date">' + (sd.getMonth() + 1) + '.' + sd.getDate() + '</span>' +
             '<textarea class="mh-memo-text" rows="1" placeholder="메모를 남겨요…">' + esc(sr.memo || '') + '</textarea></div>' +
             '<div class="mh-foot"><span class="mh-stat">이번 달 ' + monthCount + '번 · 연속 ' + streak(card.id) + '일</span>' +
-            '<span><button class="mh-stamp' + (sr.done ? ' on' : '') + '"' + (canStamp ? '' : ' disabled') + '>' + o.emoji + ' ' + (sr.done ? '했어요' : esc(o.act) + ' 했어요?') + '</button>' +
-            '<button class="mh-close">닫기</button></span></div>';
+            '<span class="mh-count' + (sn ? ' on' : '') + '">' +
+                '<button class="mh-minus"' + (canStamp && sn ? '' : ' disabled') + '>−</button>' +
+                '<span class="mh-num">' + sn + '</span>' +
+                '<button class="mh-plus"' + (canStamp ? '' : ' disabled') + '>+</button>' +
+            '</span>' +
+            '<button class="mh-close">닫기</button></div>';
         const ta = cardEl.querySelector('.mh-memo-text');
         const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
         fit(); ta.addEventListener('input', fit);
@@ -890,17 +894,20 @@ export function init() {
             d.log[id] = d.log[id] || {};
             const r = Object.assign({}, d.log[id][k] || {}); if (v) r.memo = v; else delete r.memo;
             r.at = stamp();
-            if (!r.done && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
+            if (!r.count && !r.done && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
         });
         drawCard();
     }
-    function toggleStamp(k) {
-        const id = card.id, on = !isDone(id, k);
-        save('myhome: ' + OBJECTS[id].name + ' ' + k + (on ? ' ✓' : ' 취소'), d => {
+    // 횟수 더하기/빼기 (하루에 여러 번 가능)
+    function addCount(k, delta) {
+        const id = card.id, next = Math.max(0, countOf(id, k) + delta);
+        save('myhome: ' + OBJECTS[id].name + ' ' + k + ' ' + next + '번', d => {
             d.log[id] = d.log[id] || {};
-            const r = Object.assign({}, d.log[id][k] || {}); if (on) r.done = true; else delete r.done;
+            const r = Object.assign({}, d.log[id][k] || {});
+            const cur = r.count || (r.done ? 1 : 0), n = Math.max(0, cur + delta);
+            if (n) { r.count = n; r.done = true; } else { delete r.count; delete r.done; }
             r.at = stamp();
-            if (!r.done && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
+            if (!r.count && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
         });
         drawCard();
     }
@@ -913,11 +920,12 @@ export function init() {
         if (day) {
             const k = day.dataset.k;
             if (k > todayKey()) return;
-            // 고른 날을 한 번 더 누르면 도장 찍기/지우기
-            if (card.sel === k) toggleStamp(k); else { card.sel = k; drawCard(); }
+            // 고른 날을 한 번 더 누르면 한 번 더하기
+            if (card.sel === k) addCount(k, 1); else { card.sel = k; drawCard(); }
             return;
         }
-        if (e.target.closest('.mh-stamp')) { toggleStamp(card.sel); return; }
+        if (e.target.closest('.mh-plus')) { addCount(card.sel, 1); return; }
+        if (e.target.closest('.mh-minus')) { addCount(card.sel, -1); return; }
         if (e.target.closest('.mh-close')) closeCard();
     });
 

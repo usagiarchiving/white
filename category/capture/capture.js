@@ -68,7 +68,7 @@
     // 커밋 후 화면 갱신: commit 결과(최신 JSON)를 그대로 반영
     function applyResult(res) {
         var d = res && res[DATA];
-        if (d) { db.items = d.items || []; db.groups = d.groups || []; }
+        if (d) { d = JSON.parse(JSON.stringify(d)); db.items = d.items || []; db.groups = d.groups || []; }   // 저장소가 기억한 최신본과 분리
         $('#cap-status').text(db.items.length ? '' : EMPTY_NOTE);
         render();
     }

@@ -156,3 +156,26 @@
 }
 .mh-zones button.on { background: #f7c9d4; border-color: #f7c9d4; color: #fff; }
 @media (max-width: 480px) { .mh-zones { justify-content: flex-start; } }
+
+/* 카드 머리: 가구 이름 + 행동 */
+.mh-card .mh-title { letter-spacing: 0; font-size: 14px; color: var(--ink); display: flex; align-items: baseline; gap: 10px; }
+.mh-card .mh-title b { font-weight: 600; letter-spacing: 0; }
+.mh-act { font-size: 12px; font-weight: 400; color: var(--pink-ink); }
+.mh-card .mh-sub { justify-content: center; gap: 18px; color: var(--ink); font-size: 12px; letter-spacing: 1px; margin-top: 6px; }
+
+/* 하루 여러 번: 칸 오른쪽 아래 작은 숫자 */
+.mh-n { position: absolute; right: 3px; bottom: 1px; font-style: normal; font-size: 9px; font-weight: 600; color: var(--pink-ink); }
+.mh-memo-date { letter-spacing: 1px; }
+
+/* − 횟수 + */
+.mh-count { display: inline-flex; align-items: center; border: 1px solid var(--pink); border-radius: 999px; overflow: hidden; margin-left: auto; }
+.mh-count button { width: 30px; height: 28px; border: none; background: #fff; color: var(--pink-ink); font-size: 15px; cursor: pointer; font-family: inherit; }
+.mh-count button:disabled { opacity: .35; cursor: default; }
+.mh-count .mh-num { min-width: 26px; text-align: center; font-size: 12px; color: var(--pink-ink); }
+.mh-count.on { background: var(--pink-soft); }
+.mh-count.on button { background: var(--pink-soft); }
+.mh-foot { gap: 10px; }
+
+/* 구역 버튼 줄 빈 곳에서도 방을 끌어 돌릴 수 있게 */
+.mh-zones { pointer-events: none; }
+.mh-zones button { pointer-events: auto; }
