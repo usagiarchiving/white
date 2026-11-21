@@ -82,10 +82,12 @@ export function init() {
     controls.enablePan = true;                 // 두 손가락으로 쓸면 그쪽으로 걸어가듯 이동 (바닥을 따라)
     controls.screenSpacePanning = false;
     controls.panSpeed = 0.9;
+    controls.zoomSpeed = 1.4;                  // 두 손가락 오므리기/벌리기 줌을 또렷하게
+    // 아이폰 사파리: 두 손가락 제스처가 페이지 확대로 새지 않게
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => stage.addEventListener(t, e => e.preventDefault(), { passive: false }));
     controls.minPolarAngle = 0.35; controls.maxPolarAngle = 1.3;
     controls.minDistance = 3.2; controls.maxDistance = 17;
     controls.rotateSpeed = 0.7;
-    controls.zoomSpeed = 0.8;         // 손가락 두 개로 확대(핀치)는 기본 기능 / 휠·트랙패드는 아래에서 따로 처리
 
     // 조명 (시간/날씨에 따라 아래 applySky에서 바뀜)
     const hemi = new THREE.HemisphereLight(0xffffff, 0xf4e9ec, 1.3); scene.add(hemi);
@@ -360,10 +362,11 @@ export function init() {
     let cookSprite = null;
     furniture('cook', g => {
         const tex = new THREE.TextureLoader().load('myhome/assets/chef.png'); tex.colorSpace = THREE.SRGBColorSpace;
-        const h = 0.5, w = h * 351 / 309;
+        const h = 0.3, w = h * 351 / 309;
         const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }));
-        at(m, X(0.55), h / 2 + 0.01, Z(0.86)); g.add(m); cookSprite = m;
-    });
+        m.rotation.y = Math.PI / 2;                                       // 왼쪽 벽에 납작하게 붙임 (방 쪽을 봄)
+        at(m, X(0) + 0.006, 1.3, Z(0.95)); g.add(m); cookSprite = null;
+    }, 'W');
 
     /* ---------------- 위에서부터 책장(식탁 쪽) · 수납장(뚫림, 세탁기 쪽) · 냉장고(세탁기 쪽) ---------------- */
     const U0 = 0.04, U1 = 1.0, UZ0 = 1.76, UZ1 = 2.54;
@@ -838,7 +841,6 @@ export function init() {
         if (cx !== tg.x || cz !== tg.z) { const dx = cx - tg.x, dz = cz - tg.z; tg.x = cx; tg.z = cz; camera.position.x += dx; camera.position.z += dz; }
         tg.y = Math.max(0.2, Math.min(1.4, tg.y));
         updateWalls();
-        if (cookSprite) { const gp = cookSprite.parent.position; cookSprite.rotation.y = Math.atan2(camera.position.x - gp.x, camera.position.z - gp.z); }
         // 현관문이 열려 있는 동안엔 문 안쪽 메모지를 숨김
         const ent = clickable.find(g => g.userData.id === 'entrance');
         if (notesGroup && ent && (ent.userData.openT || 0) > 0.03) notesGroup.visible = false;
