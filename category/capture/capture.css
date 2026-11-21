@@ -196,3 +196,8 @@
 
 /* 아이콘 누르기 쉬운 최소 크기 */
 .cap-top-icons i, .cap-day-tools i, .cap-meta-acts i, .cap-row-acts i { display: inline-block; min-width: 14px; min-height: 14px; text-align: center; }
+
+/* 저장 중 표시 */
+.cap-saving { margin-right: auto; font-size: 10px; color: var(--sub-color); opacity: 0; transition: opacity .3s; }
+.cap-saving.on { opacity: .8; animation: capBlink 1.4s ease-in-out infinite; }
+@keyframes capBlink { 50% { opacity: .35; } }

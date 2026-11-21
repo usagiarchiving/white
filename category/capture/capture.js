@@ -23,6 +23,7 @@
     };
 
     var $feed = $('#cap-feed'), $bar = $('#cap-bar');
+    var localUrls = {};   // 방금 올린 사진은 내 기기에 있는 파일로 바로 보여줌
 
     /* ---------------- 작은 도구들 ---------------- */
     function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
@@ -119,7 +120,7 @@
         var sel = state.sel.has(it.id) ? ' is-sel' : '';
         var size = (it.w && it.h) ? ' width="' + it.w + '" height="' + it.h + '"' : '';
         return '<figure class="cap-item' + sel + '" data-id="' + esc(it.id) + '">' +
-            '<img loading="lazy" decoding="async" alt=""' + size + ' src="' + esc(repo.url(it.path)) + '" data-path="' + esc(it.path) + '">' +
+            '<img loading="lazy" decoding="async" alt=""' + size + ' src="' + esc(localUrls[it.id] || repo.url(it.view || it.path)) + '" data-path="' + esc(it.view || it.path) + '">' +
             '<figcaption class="cap-meta">' +
                 (it.tags && it.tags.length ? '<span class="cap-meta-tags">' + esc(tagsText(it.tags)) + '</span>' : '') +
                 '<span class="cap-meta-acts">' +
@@ -365,12 +366,34 @@
     });
 
     /* ---------------- 수정 동작들 (모두 커밋 하나씩) ---------------- */
+    // 화면은 바로 바꾸고, GitHub 저장은 뒤에서 차례로 (저장 중엔 위에 '저장 중' 표시)
+    var pending = 0;
+    function setPending(n) {
+        pending = n;
+        $('#cap-saving').text(pending ? '저장 중…' : '').toggleClass('on', !!pending);
+    }
+    window.onbeforeunload = function () { return pending ? '아직 저장 중이에요.' : undefined; };
+    function background(promise) {
+        setPending(pending + 1);
+        return promise.then(function (res) {
+            setPending(pending - 1);
+            if (!pending) applyResult(res);    // 다 끝났을 때만 서버 상태로 맞춤 (중간에 화면이 깜빡이지 않게)
+            return res;
+        }, function (e) {
+            setPending(pending - 1);
+            busyAlert(e);
+            load();                            // 실패하면 서버 상태로 되돌림
+            throw e;
+        });
+    }
     async function run(message, files, fn) {
-        try {
-            var res = await repo.commit(message, files || {}, (function () { var j = {}; j[DATA] = mutateDb(fn); return j; })());
-            applyResult(res);
-            return true;
-        } catch (e) { busyAlert(e); return false; }
+        var local = JSON.parse(JSON.stringify(db));
+        fn(local); cleanupGroups(local);
+        db.items = local.items; db.groups = local.groups;
+        render();
+        var j = {}; j[DATA] = mutateDb(fn);
+        background(repo.commit(message, files || {}, j)).catch(function () {});
+        return true;
     }
 
     async function toggleFav(ids) {
@@ -391,7 +414,7 @@
         if (!ids.length) return;
         if (!confirm((question || (ids.length > 1 ? ids.length + '장을 삭제할까요?' : '이 캡처를 삭제할까요?')) + '\n저장소에서도 원본 파일이 지워져요.')) return;
         var files = {};
-        db.items.forEach(function (it) { if (ids.includes(it.id)) files[it.path] = null; });
+        db.items.forEach(function (it) { if (ids.includes(it.id)) { files[it.path] = null; if (it.view) files[it.view] = null; } });
         if (await run('capture: 삭제 ' + ids.length + '장', files, function (d) {
             d.items = d.items.filter(function (it) { return !ids.includes(it.id); });
         })) setSelecting(false);
@@ -617,7 +640,7 @@
         drawUpload();
     });
     $('#cap-sheet').on('change', '#cu-group', function () { $('#cu-group-box').toggle(this.checked); });
-    $('#cap-sheet').on('click', '#cu-go', async function () {
+    $('#cap-sheet').on('click', '#cu-go', function () {
         var rows = upload.rows.filter(function (r) { return !r.dup; });
         if (!rows.length) return;
         var tags = parseTags($('#cu-tags').val());
@@ -625,41 +648,82 @@
             id: 'g' + Date.now().toString(36), title: $('#cu-gtitle').val().trim(), memo: $('#cu-gmemo').val().trim(), tags: [], fav: false
         } : null;
 
-        setBusy(true, '올리는 중… 0 / ' + rows.length);
-        var done = 0, lastRes = null;
-        var onWait = function (sec) { $('#cap-sheet .cap-progress').text('GitHub이 잠깐 쉬래요… ' + sec + '초 뒤 이어서 (' + done + ' / ' + rows.length + ')'); };
-        try {
+        var items = rows.map(function (r) {
+            var base = 'capture/%s/' + r.at.slice(0, 4) + '/' + r.at.slice(5, 7) + '/' +
+                r.at.slice(0, 10).replace(/-/g, '') + '-' + r.at.slice(11, 19).replace(/:/g, '') + '_' + r.hash.slice(0, 8);
+            var it = {
+                id: r.hash.slice(0, 12), taken_at: r.at, date_src: r.src, path: base.replace('%s', 'images') + '.' + extOf(r.file), view: null, hash: r.hash,
+                w: r.w || null, h: r.h || null, size: r.bytes.length, name: r.file.name, type: r.file.type || '',
+                group: group ? group.id : null, tags: tags.slice(), fav: false, added_at: localISO(new Date())
+            };
+            localUrls[it.id] = r.url;     // 업로드 끝날 때까지(그리고 이후에도) 내 파일로 표시
+            r._viewBase = base.replace('%s', 'view');
+            return it;
+        });
+
+        // 화면에는 바로 추가하고 창을 닫음
+        if (group) db.groups.push(group);
+        items.forEach(function (it) { db.items.push(it); });
+        cleanupGroups(db);
+        $('#cap-status').text('');
+        upload = null;                     // closeSheet가 파일 주소를 지우지 않게
+        closeSheet();
+        goToDay(items[0].taken_at.slice(0, 10));
+
+        var total = rows.length, done = 0;
+        var showProg = function (extra) { $('#cap-saving').text('올리는 중 ' + done + ' / ' + total + (extra || '')).addClass('on'); };
+        var onWait = function (sec) { showProg(' · GitHub이 잠깐 쉬래요 ' + sec + '초'); };
+
+        var job = (async function () {
+            var lastRes = null;
             for (var s = 0; s < rows.length; s += BATCH) {
-                var chunk = rows.slice(s, s + BATCH), files = {}, newItems = [];
-                for (var r of chunk) {
-                    var ext = extOf(r.file);
-                    var path = 'capture/images/' + r.at.slice(0, 4) + '/' + r.at.slice(5, 7) + '/' +
-                        r.at.slice(0, 10).replace(/-/g, '') + '-' + r.at.slice(11, 19).replace(/:/g, '') + '_' + r.hash.slice(0, 8) + '.' + ext;
-                    files[path] = await repo.putBlob(r.bytes, onWait);
-                    newItems.push({
-                        id: r.hash.slice(0, 12), taken_at: r.at, date_src: r.src, path: path, hash: r.hash,
-                        w: r.w || null, h: r.h || null, size: r.bytes.length, name: r.file.name, type: r.file.type || '',
-                        group: group ? group.id : null, tags: tags.slice(), fav: false, added_at: localISO(new Date())
-                    });
-                    done++;
-                    $('#cap-sheet .cap-progress').text('올리는 중… ' + done + ' / ' + rows.length);
+                var chunk = rows.slice(s, s + BATCH), chunkItems = items.slice(s, s + BATCH);
+                // 보기용 가벼운 사본 만들기 (원본은 그대로 따로 저장)
+                var blobsIn = [];
+                for (var k = 0; k < chunk.length; k++) {
+                    blobsIn.push(chunk[k].bytes);
+                    var v = await makeView(chunk[k].file, chunk[k].bytes.length);
+                    chunk[k]._view = v;
+                    if (v) blobsIn.push(v.bytes);
                 }
+                var shas = await repo.putBlobs(blobsIn, null, onWait, 4);
+                var files = {}, n = 0;
+                chunk.forEach(function (r, idx) {
+                    files[chunkItems[idx].path] = shas[n++];
+                    if (r._view) { chunkItems[idx].view = r._viewBase + '.' + r._view.ext; files[chunkItems[idx].view] = shas[n++]; }
+                    done++;
+                });
+                showProg();
                 var j = {};
                 j[DATA] = mutateDb(function (d) {
                     var have = new Set(d.items.map(function (i) { return i.hash; }));
                     if (group && !d.groups.some(function (g) { return g.id === group.id; })) d.groups.push(group);
-                    newItems.forEach(function (it) { if (!have.has(it.hash)) d.items.push(it); });
+                    chunkItems.forEach(function (it) { if (!have.has(it.hash)) d.items.push(it); });
                 });
-                lastRes = await repo.commit('capture: ' + newItems.length + '장 추가 (' + newItems[0].taken_at.slice(0, 10) + ')', files, j, onWait);
-                applyResult(lastRes);
+                lastRes = await repo.commit('capture: ' + chunkItems.length + '장 추가 (' + chunkItems[0].taken_at.slice(0, 10) + ')', files, j, onWait);
             }
-            setBusy(false);
-            closeSheet();
-        } catch (e) {
-            setBusy(false, done + '장까지 올렸어요.');
-            busyAlert(e);
-        }
+            return lastRes;
+        })();
+        showProg();
+        background(job).catch(function () {});
     });
+
+    // 보기용 사본: 가로 1080px webp. 원본이 이미 작거나, 너무 길어서 브라우저가 못 그리면 만들지 않음
+    async function makeView(file, size) {
+        try {
+            if (size < 450 * 1024 || !window.createImageBitmap) return null;
+            var bmp = await createImageBitmap(file);
+            var scale = Math.min(1, 1080 / bmp.width), w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+            if (w * h > 16000000 || h > 16000) { bmp.close && bmp.close(); return null; }
+            var c = document.createElement('canvas'); c.width = w; c.height = h;
+            c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+            bmp.close && bmp.close();
+            var blob = await new Promise(function (r) { c.toBlob(r, 'image/webp', 0.85); });
+            if (!blob || blob.type !== 'image/webp') blob = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.86); });
+            if (!blob || blob.size > size * 0.8) return null;
+            return { bytes: new Uint8Array(await blob.arrayBuffer()), ext: blob.type === 'image/webp' ? 'webp' : 'jpg' };
+        } catch (e) { console.warn('view', e); return null; }
+    }
 
     function extOf(file) {
         var m = /\.([a-z0-9]{2,5})$/i.exec(file.name);

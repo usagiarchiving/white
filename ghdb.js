@@ -410,33 +410,65 @@
         return out.sha;
     };
     // 커밋 하나로: files = { 경로: blobSha 또는 null(삭제) }, json = { 경로: { mutate: fn(현재값)→새값, fallback } }
-    Repo.prototype.commit = async function (message, files, json, onWait) {
+    Repo.prototype.commit = function (message, files, json, onWait) {
+        // 커밋은 한 줄로 세워 하나씩 (화면은 먼저 바뀌고 저장은 뒤에서 차례로)
+        var self = this;
+        var job = (this.queue || Promise.resolve()).then(function () { return self._commit(message, files, json, onWait); });
+        this.queue = job.catch(function () {});
+        return job;
+    };
+    Repo.prototype._commit = async function (message, files, json, onWait) {
         requireToken();
         files = files || {}; json = json || {};
         for (var attempt = 0; attempt < 4; attempt++) {
-            var ref = await this.api('/git/ref/heads/' + BRANCH, { onWait: onWait });
-            var head = ref.object.sha;
-            var commit = await this.api('/git/commits/' + head, { onWait: onWait });
+            // 직전에 우리가 만든 커밋을 기억해 두면 확인 요청 2~3번을 건너뜀 (빗나가면 아래에서 다시)
+            var last = attempt === 0 ? this.last : null;
+            var head, baseTree;
+            if (last) { head = last.head; baseTree = last.tree; }
+            else {
+                var ref = await this.api('/git/ref/heads/' + BRANCH, { onWait: onWait });
+                head = ref.object.sha;
+                baseTree = (await this.api('/git/commits/' + head, { onWait: onWait })).tree.sha;
+            }
             var tree = [];
             for (var p in files) tree.push({ path: p, mode: '100644', type: 'blob', sha: files[p] });
             var results = {};
             for (var jp in json) {
-                var cur = await this.readJSON(jp, json[jp].fallback, head);
+                var cur = last && last.json[jp] !== undefined ? last.json[jp] : await this.readJSON(jp, json[jp].fallback, head);
                 var next = json[jp].mutate(JSON.parse(JSON.stringify(cur)));
                 results[jp] = next;
                 tree.push({ path: jp, mode: '100644', type: 'blob', content: JSON.stringify(next, null, 1) + '\n' });
             }
-            var newTree = await this.api('/git/trees', { method: 'POST', body: { base_tree: commit.tree.sha, tree: tree }, onWait: onWait });
-            var newCommit = await this.api('/git/commits', { method: 'POST', body: { message: message, tree: newTree.sha, parents: [head] }, onWait: onWait });
             try {
+                var newTree = await this.api('/git/trees', { method: 'POST', body: { base_tree: baseTree, tree: tree }, onWait: onWait });
+                var newCommit = await this.api('/git/commits', { method: 'POST', body: { message: message, tree: newTree.sha, parents: [head] }, onWait: onWait });
                 await this.api('/git/refs/heads/' + BRANCH, { method: 'PATCH', body: { sha: newCommit.sha, force: false }, onWait: onWait });
+                var keep = last ? Object.assign({}, last.json) : {};
+                for (var k in results) keep[k] = results[k];
+                this.last = { head: newCommit.sha, tree: newTree.sha, json: keep };
                 return results;
             } catch (e) {
-                // 그 사이 다른 커밋이 생겼으면 최신 상태 기준으로 다시
-                if (e.status === 422 && attempt < 3) continue;
+                this.last = null;
+                // 그 사이 다른 곳(다른 기기/다른 메뉴)에서 커밋이 생겼으면 최신 상태 기준으로 다시
+                if ((e.status === 422 || e.status === 409 || last) && attempt < 3) continue;
                 throw e;
             }
         }
+    };
+    // 여러 blob을 동시에 몇 개씩 올림
+    Repo.prototype.putBlobs = async function (list, onEach, onWait, parallel) {
+        var self = this, out = new Array(list.length), i = 0;
+        async function worker() {
+            while (i < list.length) {
+                var n = i++;
+                out[n] = await self.putBlob(list[n], onWait);
+                if (onEach) onEach(n);
+            }
+        }
+        var ws = [];
+        for (var w = 0; w < (parallel || 3); w++) ws.push(worker());
+        await Promise.all(ws);
+        return out;
     };
     // 화면에 쓸 이미지 주소 (사이트 반영 전이면 onerror에서 원본 저장소 주소로 바뀜)
     Repo.prototype.url = function (path) { return this.site + path; };
