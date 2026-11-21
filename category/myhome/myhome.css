@@ -1,103 +1,131 @@
 /* ==========================================================================
-   마이홈 — 가구를 누르면 열리는 해빗 트래커
+   마이홈 — 화이트 톤 + 연분홍 포인트
    ========================================================================== */
-.mh-wrap {
-    --mh-cream: #f6efe2; --mh-cell: #f3ebdd; --mh-line: #dccfb9; --mh-ink: #5a4a3a;
-    --mh-sub: #a08c74; --mh-red: #c2493d; --mh-green: #6d8a5e;
-    position: relative; padding-top: 6px; font-family: 'Noto Serif KR', serif;
-}
-.mh-top { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-bottom: 6px; min-height: 16px; }
-.mh-hint { font-size: 10.5px; color: var(--sub-color); opacity: .6; }
-.mh-saving { margin-right: auto; font-size: 10px; color: var(--sub-color); opacity: 0; transition: opacity .3s; }
-.mh-saving.on { opacity: .8; animation: mhBlink 1.4s ease-in-out infinite; }
-@keyframes mhBlink { 50% { opacity: .35; } }
+.mh-wrap { position: relative; padding-top: 4px; font-family: 'Noto Serif KR', serif; }
 
-.mh-stage { position: relative; width: 100%; aspect-ratio: 1 / 1.08; max-height: 78vh; margin: 0 auto; touch-action: none; }
+.mh-stage { position: relative; width: 100%; aspect-ratio: 1 / 1.12; max-height: 82vh; margin: 0 auto; touch-action: none; overflow: hidden; }
 #mh-canvas { width: 100%; height: 100%; display: block; outline: none; cursor: grab; }
 #mh-canvas.is-hover { cursor: pointer; }
 #mh-canvas:active { cursor: grabbing; }
 .mh-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--sub-color); pointer-events: none; }
+
+/* 가구 이름표 */
 .mh-label {
     position: absolute; transform: translate(-50%, -100%); pointer-events: none;
-    background: #fffaf2; color: #5a4a3a; border: 1px solid #e8dcc7; border-radius: 999px;
-    padding: 4px 11px; font-size: 11.5px; white-space: nowrap; box-shadow: 0 3px 10px rgba(90, 70, 40, .12);
-    opacity: 0; transition: opacity .15s;
+    background: rgba(255, 255, 255, .94); color: #6b5b60; border: 1px solid #f3c9d3; border-radius: 999px;
+    padding: 3px 11px; font-size: 11px; letter-spacing: .5px; white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(233, 150, 170, .15); opacity: 0; transition: opacity .15s;
 }
 .mh-label.on { opacity: 1; }
-.mh-label .e { margin-right: 4px; }
-.mh-label .n { font-size: 9.5px; color: var(--mh-red); margin-left: 5px; }
+.mh-label .n { font-size: 9.5px; color: #e48ba0; margin-left: 5px; }
 
-.mh-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 12px; margin: 14px 0 30px; }
-.mh-legend span { font-size: 11px; color: var(--sub-color); cursor: pointer; transition: color .2s; }
-.mh-legend span:hover { color: var(--point-color); }
-.mh-legend span.done { color: var(--main-color); }
+/* 저장 중 */
+.mh-saving { position: absolute; top: 10px; right: 10px; font-size: 10px; color: #c98a99; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.mh-saving.on { opacity: .9; animation: mhBlink 1.4s ease-in-out infinite; }
+@keyframes mhBlink { 50% { opacity: .35; } }
 
-/* ---------- 기록 카드 (참고 이미지 스타일) ---------- */
+/* 날씨 칩 */
+.mh-weather {
+    position: absolute; top: 8px; left: 8px; display: none; align-items: center; gap: 6px;
+    background: rgba(255, 255, 255, .85); border: 1px solid #f3d3db; border-radius: 999px;
+    padding: 4px 11px; font-family: inherit; font-size: 11px; color: #6b5b60; cursor: pointer;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.mh-weather.on { display: inline-flex; }
+.mh-weather b { font-weight: 600; color: #e08098; }
+.mh-weather small { font-size: 9.5px; color: #a8999d; }
+
+/* 오른쪽 아래 막대 */
+.mh-ctrl {
+    position: absolute; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 2px;
+    background: rgba(255, 255, 255, .88); border: 1px solid #f3cfd8; border-radius: 999px; padding: 3px 6px;
+    box-shadow: 0 3px 12px rgba(233, 150, 170, .12); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.mh-ctrl button {
+    width: 30px; height: 30px; border: none; background: none; border-radius: 50%; padding: 0; cursor: pointer;
+    color: #dc8aa0; display: inline-flex; align-items: center; justify-content: center; transition: background .15s, color .15s;
+}
+.mh-ctrl button:hover, .mh-ctrl button.on { background: #fdeef2; color: #cf6f89; }
+.mh-ctrl .sep { width: 1px; height: 14px; background: #f3d6dd; margin: 0 3px; }
+
+/* 가구 목록 (아이콘 누르면 좌르르) */
+.mh-list {
+    position: absolute; right: 8px; bottom: 50px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+    pointer-events: none; max-height: calc(100% - 70px); overflow-y: auto; scrollbar-width: none; padding: 2px;
+}
+.mh-list::-webkit-scrollbar { display: none; }
+.mh-list span {
+    background: rgba(255, 255, 255, .94); border: 1px solid #f3d6dd; border-radius: 999px;
+    padding: 3px 11px; font-size: 10.5px; color: #6b5b60; cursor: pointer; white-space: nowrap;
+    opacity: 0; transform: translateY(8px); transition: opacity .18s ease, transform .18s ease, background .15s;
+}
+.mh-list span:hover { background: #fdeef2; }
+.mh-list span.done::after { content: ' ✓'; color: #e48ba0; font-size: 10px; }
+.mh-list.open { pointer-events: auto; }
+.mh-list.open span { opacity: 1; transform: none; }
+
+/* ---------- 카드 (오프화이트 + 연분홍) ---------- */
 .mh-card-bg {
     display: none; position: fixed; inset: 0; z-index: 20000; padding: 20px;
-    background: rgba(60, 45, 30, .08); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 240, 244, .25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     align-items: center; justify-content: center;
 }
 .mh-card {
-    --mh-cream: #faf5ec; --mh-cell: #f3ebdd; --mh-line: #dccfb9; --mh-ink: #5a4a3a;
-    --mh-sub: #a08c74; --mh-red: #c2493d; --mh-green: #6d8a5e;
-    width: 100%; max-width: 330px; background: var(--mh-cream); border-radius: 10px;
-    padding: 22px 20px 18px; box-shadow: 0 14px 40px rgba(60, 45, 30, .18);
-    font-family: 'Noto Serif KR', serif; color: var(--mh-ink);
+    --ink: #5f5357; --sub: #b3a2a7; --cell: #ffffff; --line: #f1dde2; --pink: #efa3b5; --pink-soft: #fbe3e9; --pink-ink: #d4728c;
+    width: 100%; max-width: 330px; background: #fffcfb; border: 1px solid #f6e6ea; border-radius: 12px;
+    padding: 22px 20px 18px; box-shadow: 0 14px 40px rgba(220, 150, 170, .16);
+    font-family: 'Noto Serif KR', serif; color: var(--ink);
     animation: mhPop .28s cubic-bezier(.25, 1, .5, 1);
 }
 @keyframes mhPop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
 .mh-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
-.mh-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--mh-sub); text-transform: uppercase; }
-.mh-title b { color: var(--mh-ink); }
-.mh-today { font-size: 11.5px; font-style: italic; color: var(--mh-red); }
-.mh-sub { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--mh-sub); margin-bottom: 12px; }
-.mh-nav { cursor: pointer; padding: 2px 8px; user-select: none; color: var(--mh-sub); }
-.mh-nav:hover { color: var(--mh-ink); }
+.mh-title { font-size: 10.5px; font-weight: 600; letter-spacing: 3px; color: var(--sub); }
+.mh-title b { color: var(--ink); letter-spacing: 1px; }
+.mh-today { font-size: 11px; font-style: italic; color: var(--pink-ink); }
+.mh-sub { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--sub); margin-bottom: 12px; }
+.mh-nav { cursor: pointer; padding: 2px 8px; user-select: none; }
+.mh-nav:hover { color: var(--ink); }
 .mh-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.mh-wd { font-size: 9px; text-align: center; color: var(--mh-sub); opacity: .7; letter-spacing: 1px; padding-bottom: 2px; }
+.mh-wd { font-size: 9px; text-align: center; color: var(--sub); letter-spacing: 1px; padding-bottom: 2px; }
 .mh-day {
-    aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
-    background: var(--mh-cell); border: 1px solid var(--mh-line); border-radius: 3px;
-    font-size: 12px; color: var(--mh-ink); cursor: pointer; user-select: none; transition: transform .12s, box-shadow .12s;
+    aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; position: relative;
+    background: var(--cell); border: 1px solid var(--line); border-radius: 4px;
+    font-size: 11.5px; color: var(--ink); cursor: pointer; user-select: none; transition: transform .12s, box-shadow .12s;
 }
 .mh-day:hover { transform: translateY(-1px); }
 .mh-day.empty { visibility: hidden; }
-.mh-day.future { opacity: .45; cursor: default; }
-.mh-day.done { background: transparent; border-style: dashed; font-size: 17px; }
-.mh-day.is-today { background: var(--mh-red); border-color: var(--mh-red); color: #fff; }
-.mh-day.is-today.done { font-size: 17px; }
-.mh-day.sel { box-shadow: 0 0 0 1.5px var(--mh-green) inset; }
-.mh-day.has-memo::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--mh-red); position: relative; top: -12px; left: 2px; }
-.mh-day.is-today.has-memo::after { background: #fff; }
+.mh-day.future { opacity: .4; cursor: default; }
+.mh-day.done { background: transparent; border-style: dashed; border-color: var(--pink); font-size: 16px; }
+.mh-day.is-today { background: var(--pink-soft); border-color: var(--pink); color: var(--pink-ink); font-weight: 600; }
+.mh-day.sel { box-shadow: 0 0 0 1.5px var(--pink-ink) inset; }
+.mh-day.has-memo::after { content: ''; position: absolute; top: 3px; right: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--pink-ink); }
 
-.mh-memo {
-    margin-top: 14px; padding: 10px 12px; border-left: 3px solid var(--mh-red);
-    background: rgba(220, 205, 180, .25); display: flex; gap: 10px; align-items: flex-start;
-}
-.mh-memo-date { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--mh-red); text-transform: uppercase; padding-top: 3px; white-space: nowrap; }
+.mh-memo { margin-top: 14px; padding: 10px 12px; border-left: 2px solid var(--pink); background: #fdf3f5; display: flex; gap: 10px; align-items: flex-start; border-radius: 0 6px 6px 0; }
+.mh-memo-date { font-size: 9.5px; font-weight: 700; letter-spacing: 2px; color: var(--pink-ink); text-transform: uppercase; padding-top: 3px; white-space: nowrap; }
 .mh-memo-text {
-    flex: 1; font-size: 12.5px; font-style: italic; line-height: 1.7; color: var(--mh-ink);
+    flex: 1; font-size: 12.5px; font-style: italic; line-height: 1.7; color: var(--ink);
     background: transparent; border: none; outline: none; resize: none; font-family: inherit; padding: 0; min-height: 21px;
 }
-.mh-memo-text::placeholder { color: var(--mh-sub); opacity: .6; }
+.mh-memo-text::placeholder { color: var(--sub); opacity: .7; }
 .mh-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
-.mh-stat { font-size: 10.5px; color: var(--mh-sub); }
+.mh-stat { font-size: 10.5px; color: var(--sub); }
 .mh-stamp {
-    border: 1px solid var(--mh-line); background: #fff; border-radius: 999px; padding: 5px 12px;
-    font-family: inherit; font-size: 11.5px; color: var(--mh-ink); cursor: pointer; transition: all .15s;
+    border: 1px solid var(--pink); background: #fff; border-radius: 999px; padding: 5px 12px;
+    font-family: inherit; font-size: 11px; color: var(--pink-ink); cursor: pointer; transition: all .15s;
 }
-.mh-stamp.on { background: var(--mh-red); color: #fff; border-color: var(--mh-red); }
+.mh-stamp.on { background: var(--pink); color: #fff; }
 .mh-stamp:disabled { opacity: .4; cursor: default; }
-.mh-close { background: none; border: none; color: var(--mh-sub); font-size: 11px; cursor: pointer; font-family: inherit; margin-left: 10px; }
+.mh-close { background: none; border: none; color: var(--sub); font-size: 11px; cursor: pointer; font-family: inherit; margin-left: 10px; }
 
-/* 오른쪽 아래 카메라 버튼 (기울어진 칸) */
-.mh-ctrl { position: absolute; right: 6px; bottom: 6px; display: flex; gap: 6px; }
-.mh-ctrl button {
-    width: 34px; height: 28px; transform: skewX(-12deg);
-    background: rgba(255, 252, 247, .82); border: 1px solid #ecaebd; border-radius: 3px;
-    color: #c76a83; font-size: 15px; line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: background .15s, color .15s;
-}
-.mh-ctrl button:hover { background: #f6c3cf; color: #fff; }
-.mh-ctrl button:active { transform: skewX(-12deg) translateY(1px); }
+/* 일주일 날씨 */
+.mh-wk-row { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid #f6e9ec; font-size: 12px; }
+.mh-wk-row:last-child { border-bottom: none; }
+.mh-wk-day { width: 66px; color: var(--ink); white-space: nowrap; }
+.mh-wk-day small { color: var(--sub); font-size: 10px; margin-left: 3px; }
+.mh-wk-ic { width: 24px; text-align: center; font-size: 15px; }
+.mh-wk-txt { flex: 1; color: var(--sub); font-size: 11px; }
+.mh-wk-t { font-size: 11.5px; color: var(--ink); white-space: nowrap; }
+.mh-wk-t .lo { color: #93b4d6; margin-right: 6px; }
+.mh-wk-t .hi { color: var(--pink-ink); }
+.mh-wk-now { font-size: 11px; color: var(--sub); margin-bottom: 8px; }
+.mh-wk-now b { font-size: 20px; color: var(--ink); font-weight: 500; margin-right: 6px; }

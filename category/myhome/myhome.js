@@ -1,27 +1,32 @@
 /* ==========================================================================
    마이홈 — 내 방 디오라마 + 가구별 해빗 트래커
    - 방: three.js (vendor/three), 좌우 360도 회전, 카메라 쪽 벽은 자동으로 숨김
+   - 창문: 부산 동구의 해 뜨고 지는 시간 + 날씨(맑음/흐림/비/눈)를 반영 (Open-Meteo, 키 필요 없음)
    - 기록: 이 저장소의 myhome/myhome.json  { log: { 가구id: { 'YYYY-MM-DD': { d: 1, m: '메모' } } } }
    ========================================================================== */
 import * as THREE from '../../vendor/three/three.module.min.js';
 import { OrbitControls } from '../../vendor/three/OrbitControls.js';
 import { RoundedBoxGeometry } from '../../vendor/three/RoundedBoxGeometry.js';
 
-/* ---------------- 가구 설정 (이름/기록할 행동/도장) — 나중에 가구마다 규칙 바꿀 곳 ---------------- */
+/* ---------------- 가구 설정 (이름/기록할 행동/도장) — 가구마다 규칙 바꿀 곳 ---------------- */
 const OBJECTS = {
-    entrance: { name: '현관',     act: '현관 정리',   emoji: '👟' },
-    sink:     { name: '싱크대',   act: '설거지',      emoji: '🍽️' },
-    stove:    { name: '인덕션',   act: '요리',        emoji: '🍳' },
-    washer:   { name: '세탁기',   act: '빨래',        emoji: '🫧' },
-    bath:     { name: '화장실',   act: '화장실 청소', emoji: '🛁' },
-    books:    { name: '책장',     act: '독서',        emoji: '📚' },
-    drawer:   { name: '서랍장',   act: '정리',        emoji: '🧺' },
-    table:    { name: '식탁',     act: '밥 챙겨 먹기', emoji: '🍚' },
-    bed:      { name: '침대',     act: '이불 개기',   emoji: '🛏️' },
-    vanity:   { name: '화장대',   act: '스킨케어',    emoji: '🧴' },
-    desk:     { name: '책상',     act: '공부',        emoji: '✏️' },
-    closet:   { name: '옷장',     act: '옷 정리',     emoji: '👕' }
+    entrance: { name: '현관',   act: '현관 정리',    emoji: '👟' },
+    sink:     { name: '싱크대', act: '설거지',       emoji: '🫧' },
+    stove:    { name: '인덕션', act: '요리',         emoji: '🍳' },
+    washer:   { name: '세탁기', act: '빨래',         emoji: '🧺' },
+    bath:     { name: '화장실', act: '화장실 청소',  emoji: '🛁' },
+    books:    { name: '책장',   act: '독서',         emoji: '📚' },
+    drawer:   { name: '서랍장', act: '정리',         emoji: '🗂️' },
+    fridge:   { name: '냉장고', act: '냉장고 정리',  emoji: '🧊' },
+    table:    { name: '식탁',   act: '밥 챙겨 먹기', emoji: '🍚' },
+    bed:      { name: '침대',   act: '이불 개기',    emoji: '🛏️' },
+    vanity:   { name: '화장대', act: '스킨케어',     emoji: '🧴' },
+    desk:     { name: '책상',   act: '공부',         emoji: '✏️' },
+    closet:   { name: '옷장',   act: '옷 정리',      emoji: '👕' }
 };
+
+// 부산광역시 동구
+const PLACE = { name: '부산 동구', lat: 35.1295, lon: 129.0454 };
 
 // 메뉴에 들어올 때마다 새로 그림 (index.html의 작은 스크립트가 부름)
 export function init() {
@@ -30,13 +35,14 @@ export function init() {
     let db = { log: {} };
 
     /* ---------------- 방 크기 (도면 비율, 단위 m) ---------------- */
-    const W = 3.2, D = 5.3, H = 2.35, T = 0.12;      // 가로, 세로, 벽 높이, 벽 두께
-    const X = x => x - W / 2, Z = z => z - D / 2;    // 도면 좌표(왼쪽 위 0,0) → 장면 좌표
+    const W = 3.2, D = 5.3, H = 2.35, T = 0.12;
+    const X = x => x - W / 2, Z = z => z - D / 2;     // 도면 좌표(왼쪽 위 0,0) → 장면 좌표
 
+    // 화이트 톤 + 연분홍 포인트만
     const C = {
-        wall: 0xfffcf7, wallBand: 0xf1e4d2, floor: 0xead6b8, floorLine: 0xdcc39f, cap: 0xe9d3b5, base: 0xd2ad86,
-        cream: 0xfffdf8, wood: 0xe8c39a, woodDark: 0xcf9f74, pink: 0xf9bfcb, pinkDeep: 0xf192a8,
-        mint: 0xaedfc9, sky: 0xbfe1f5, yellow: 0xfde39a, lav: 0xd8ccf3, gray: 0xdedad5, dark: 0x6f6a66, leaf: 0x8fd18c
+        wall: 0xfffdfb, base: 0xf3eff0, trim: 0xf2b8c6, skirting: 0xf2eeec,
+        white: 0xffffff, off: 0xfaf8f6, soft: 0xf1eeec, gray: 0xdedbd9, steel: 0xd3d7da, dark: 0x4f4b4d,
+        pink: 0xf8d3dc, pinkMid: 0xf3b8c7, pinkDeep: 0xe99bb0, leaf: 0xa6d3a0, wood: 0xf0e6dc
     };
 
     /* ---------------- 기본 준비 ---------------- */
@@ -49,7 +55,7 @@ export function init() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.NoToneMapping;      // 흰색이 회색으로 탁해지지 않게
+    renderer.toneMapping = THREE.NoToneMapping;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
@@ -57,36 +63,32 @@ export function init() {
 
     const controls = new OrbitControls(camera, canvas);
     controls.target.set(0, 0.55, 0.15);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
+    controls.enableDamping = true; controls.dampingFactor = 0.08;
     controls.enablePan = false;
-    controls.minPolarAngle = 0.55;
-    controls.maxPolarAngle = 1.12;
-    controls.minDistance = 7;
-    controls.maxDistance = 17;
+    controls.minPolarAngle = 0.55; controls.maxPolarAngle = 1.12;
+    controls.minDistance = 7; controls.maxDistance = 17;
     controls.rotateSpeed = 0.7;
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xf3e2cc, 1.25));
-    scene.add(new THREE.AmbientLight(0xfff6ea, 0.25));
-    const sun = new THREE.DirectionalLight(0xfff3e2, 0.95);
-    sun.position.set(2.5, 7, 6);            // 창문(아래쪽) 방향에서 들어오는 빛
+    // 조명 (시간/날씨에 따라 아래 applySky에서 바뀜)
+    const hemi = new THREE.HemisphereLight(0xffffff, 0xf4e9ec, 1.3); scene.add(hemi);
+    const amb = new THREE.AmbientLight(0xffffff, 0.25); scene.add(amb);
+    const sun = new THREE.DirectionalLight(0xfff5ea, 0.9);
+    sun.position.set(2.5, 7, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.left = -5; sun.shadow.camera.right = 5; sun.shadow.camera.top = 5; sun.shadow.camera.bottom = -5;
-    sun.shadow.radius = 4; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
+    sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
     scene.add(sun);
-    const fill = new THREE.DirectionalLight(0xf0f4ff, 0.3);
-    fill.position.set(-5, 4, -4);
-    scene.add(fill);
+    const fill = new THREE.DirectionalLight(0xf5f3ff, 0.28); fill.position.set(-5, 4, -4); scene.add(fill);
+    const roomLamp = new THREE.PointLight(0xffd9b0, 0, 7, 1.4); roomLamp.position.set(0.2, 2.1, 0.4); scene.add(roomLamp);  // 밤에 켜지는 방 불빛
 
     /* ---------------- 모양 도우미 ---------------- */
     const matCache = {};
     function mat(color, opts) {
         const key = color + JSON.stringify(opts || {});
-        if (!matCache[key]) matCache[key] = new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.82, metalness: 0 }, opts || {}));
+        if (!matCache[key]) matCache[key] = new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.85, metalness: 0 }, opts || {}));
         return matCache[key];
     }
-    // 둥근 상자. 크기 w,h,d / 위치 x,y,z(아랫면 기준 y)
     function rbox(w, h, d, color, r, opts) {
         const rad = Math.min(r == null ? 0.05 : r, Math.min(w, h, d) / 2 - 0.001);
         const m = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 4, Math.max(rad, 0.001)), mat(color, opts));
@@ -94,10 +96,8 @@ export function init() {
         return m;
     }
     function at(m, x, y, z) { m.position.set(x, y, z); return m; }
-    // 도면 사각형(x0~x1, z0~z1)에 높이 h짜리 둥근 상자를 바닥 y0 위에 놓기
     function block(x0, x1, z0, z1, y0, h, color, r, opts) {
-        const m = rbox(x1 - x0, h, z1 - z0, color, r, opts);
-        return at(m, X((x0 + x1) / 2), y0 + h / 2, Z((z0 + z1) / 2));
+        return at(rbox(x1 - x0, h, z1 - z0, color, r, opts), X((x0 + x1) / 2), y0 + h / 2, Z((z0 + z1) / 2));
     }
     function cyl(rt, rb, h, color, seg) {
         const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 24), mat(color));
@@ -107,13 +107,17 @@ export function init() {
         const m = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), mat(color));
         m.scale.set(sx || 1, sy || 1, sz || 1); m.castShadow = true; return m;
     }
+    // 손잡이 (가는 막대)
+    function handle(x, y, z, vertical, len) {
+        const h = rbox(vertical ? 0.025 : (len || 0.16), vertical ? (len || 0.16) : 0.025, 0.025, C.gray, 0.01);
+        return at(h, x, y, z);
+    }
 
-    const clickable = [];   // 누를 수 있는 가구 그룹들
-    function furniture(id, build) {
+    const clickable = [];
+    function furniture(id, build, wallName) {
         const g = new THREE.Group();
-        g.userData.id = id;
+        g.userData.id = id; if (wallName) g.userData.wall = wallName;
         build(g);
-        // 그룹 중심을 아랫면 가운데로 (눌렀을 때 통통 튀는 효과 기준점)
         const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3());
         g.children.forEach(ch => { ch.position.x -= c.x; ch.position.z -= c.z; ch.position.y -= box.min.y; });
         g.position.set(c.x, box.min.y, c.z);
@@ -122,29 +126,31 @@ export function init() {
         return g;
     }
 
-    /* ---------------- 바닥 ---------------- */
+    /* ---------------- 바닥 + 받침 (연분홍 테두리) ---------------- */
     function plankTexture() {
         const c = document.createElement('canvas'); c.width = 512; c.height = 512;
         const g = c.getContext('2d');
-        g.fillStyle = '#ead6b8'; g.fillRect(0, 0, 512, 512);
+        g.fillStyle = '#f7f2ee'; g.fillRect(0, 0, 512, 512);
         const rows = 8;
         for (let r = 0; r < rows; r++) {
             const y = r * 512 / rows, off = (r % 2) * 128 + (r % 3) * 40;
-            g.fillStyle = r % 2 ? '#e6d0b0' : '#ecd9bd';
-            g.fillRect(0, y + 2, 512, 512 / rows - 4);
-            g.fillStyle = '#d9bf9a';
-            g.fillRect(0, y, 512, 2);
-            for (let x = -off; x < 512; x += 256) g.fillRect(x, y, 2, 512 / rows);
+            g.fillStyle = r % 2 ? '#f4eee9' : '#f8f4f0';
+            g.fillRect(0, y + 1, 512, 512 / rows - 2);
+            g.fillStyle = '#ebe2dc';
+            g.fillRect(0, y, 512, 1.5);
+            for (let x = -off; x < 512; x += 256) g.fillRect(x, y, 1.5, 512 / rows);
         }
         const t = new THREE.CanvasTexture(c);
-        t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1.6, 2.6); t.colorSpace = THREE.SRGBColorSpace;
-        t.anisotropy = 4;
+        t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1.6, 2.6); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
         return t;
     }
-    const base = rbox(W + T * 2 + 0.08, 0.34, D + T * 2 + 0.08, C.base, 0.06); at(base, 0, -0.2, 0); scene.add(base);
+    scene.add(at(rbox(W + T * 2 + 0.06, 0.3, D + T * 2 + 0.06, C.base, 0.05), 0, -0.17, 0));
+    // 받침 윗면 둘레 연분홍 선
+    [[W + T * 2 + 0.08, 0.02, 0, -(D / 2 + T + 0.03)], [W + T * 2 + 0.08, 0.02, 0, D / 2 + T + 0.03]].forEach(([w, d, x, z]) =>
+        scene.add(at(rbox(w, 0.025, d, C.trim, 0.008), x, -0.025, z)));
+    [-(W / 2 + T + 0.03), W / 2 + T + 0.03].forEach(x => scene.add(at(rbox(0.02, 0.025, D + T * 2 + 0.08, C.trim, 0.008), x, -0.025, 0)));
     const floor = new THREE.Mesh(new THREE.BoxGeometry(W, 0.02, D), new THREE.MeshStandardMaterial({ map: plankTexture(), roughness: 0.9 }));
-    floor.receiveShadow = true; at(floor, 0, -0.01, 0);
-    scene.add(floor);
+    floor.receiveShadow = true; at(floor, 0, -0.01, 0); scene.add(floor);
 
     /* ---------------- 벽 (카메라 쪽 벽은 숨김) ---------------- */
     const walls = [], wallByName = {};
@@ -153,205 +159,292 @@ export function init() {
     }
     function wallSlab(w, h, d) {
         const g = new THREE.Group();
-        const m = rbox(w, h, d, C.wall, 0.03); at(m, 0, h / 2, 0); g.add(m);
-        // 아래쪽 걸레받이 띠
-        const band = rbox(w + 0.01, 0.12, d + 0.02, C.wallBand, 0.02); at(band, 0, 0.06, 0); g.add(band);
-        const cap = rbox(w + 0.02, 0.05, d + 0.02, C.cap, 0.02); at(cap, 0, h + 0.02, 0); g.add(cap);   // 벽 윗면 띠
+        g.add(at(rbox(w, h, d, C.wall, 0.02), 0, h / 2, 0));
+        g.add(at(rbox(w + 0.01, 0.1, d + 0.02, C.skirting, 0.015), 0, 0.05, 0));
+        g.add(at(rbox(w + 0.02, 0.025, d + 0.02, C.trim, 0.008), 0, h + 0.012, 0));     // 벽 윗면 연분홍 선
         return g;
     }
-    // 위쪽 벽 (부엌/현관)
+    // 위쪽 벽: 환풍구 + 닫힌 수납장 두 개
     wall('N', new THREE.Vector3(0, 0, -1), g => {
-        const s = wallSlab(W + T * 2, H, T); at(s, 0, 0, Z(0) - T / 2); g.add(s);
-        // 현관 문
-        const door = rbox(0.82, 2.0, 0.06, 0xf3e3cf, 0.03); at(door, X(2.68), 1.0, Z(0) + 0.03); g.add(door);
-        const knob = sphere(0.035, 0xc9a56b); at(knob, X(2.68) - 0.3, 1.0, Z(0) + 0.08); g.add(knob);
-        // 인덕션 위 환풍구
-        const hood = rbox(0.7, 0.2, 0.46, 0xf4f1ec, 0.04); at(hood, X(0.52), 1.68, Z(0.23)); g.add(hood);
-        const hoodEdge = rbox(0.72, 0.04, 0.48, C.gray, 0.015); at(hoodEdge, X(0.52), 1.58, Z(0.24)); g.add(hoodEdge);
-        const duct = rbox(0.3, H - 1.78, 0.26, 0xf4f1ec, 0.03); at(duct, X(0.52), 1.78 + (H - 1.78) / 2, Z(0.13)); g.add(duct);
-        const led = rbox(0.2, 0.01, 0.06, 0xfff3c4, 0.004, { emissive: 0xfff3c4, emissiveIntensity: 0.8 }); at(led, X(0.52), 1.555, Z(0.3)); g.add(led);
-        // 선반 두 개 (환풍구 옆, 그 옆)
-        function cubby(x0, x1, y0, items) {
-            const w = x1 - x0, cx = X((x0 + x1) / 2), z = Z(0.15), d = 0.3, h = 0.56;
-            [[cx, y0, w, 0.04], [cx, y0 + h / 2, w, 0.035], [cx, y0 + h, w, 0.04]].forEach(([x, y, ww, t]) => {
-                const b = rbox(ww, t, d, C.wood, 0.012); at(b, x, y, z); g.add(b);
-            });
-            [x0 + 0.02, x1 - 0.02].forEach(x => { const sd = rbox(0.035, h, d, C.wood, 0.012); at(sd, X(x), y0 + h / 2, z); g.add(sd); });
-            items(cx, y0, h);
-        }
-        cubby(0.95, 1.5, 1.38, (cx, y0, h) => {
-            [[-0.15, C.pink], [0, C.mint], [0.15, C.yellow]].forEach(([dx, col]) => {
-                const jar = cyl(0.05, 0.05, 0.14, col); at(jar, cx + dx, y0 + 0.09, Z(0.15)); g.add(jar);
-                const lid = cyl(0.055, 0.055, 0.025, C.woodDark); at(lid, cx + dx, y0 + 0.17, Z(0.15)); g.add(lid);
-            });
-            for (let i = 0; i < 3; i++) { const plate = cyl(0.1, 0.1, 0.022, C.cream); at(plate, cx - 0.08, y0 + h / 2 + 0.03 + i * 0.026, Z(0.15)); g.add(plate); }
-            const bowl = sphere(0.07, C.sky, 1, 0.6, 1); at(bowl, cx + 0.14, y0 + h / 2 + 0.06, Z(0.15)); g.add(bowl);
-        });
-        cubby(1.55, 2.08, 1.38, (cx, y0, h) => {
-            [[-0.14, C.pinkDeep], [0, C.sky], [0.14, C.cream]].forEach(([dx, col]) => {
-                const mug = cyl(0.045, 0.04, 0.1, col); at(mug, cx + dx, y0 + 0.07, Z(0.15)); g.add(mug);
-            });
-            const pot = cyl(0.06, 0.05, 0.08, C.pink); at(pot, cx + 0.05, y0 + h / 2 + 0.06, Z(0.15)); g.add(pot);
-            const leaf = sphere(0.09, C.leaf); at(leaf, cx + 0.05, y0 + h / 2 + 0.16, Z(0.15)); g.add(leaf);
-            const book = rbox(0.06, 0.2, 0.18, C.lav, 0.01); at(book, cx - 0.14, y0 + h / 2 + 0.12, Z(0.15)); g.add(book);
+        g.add(at(wallSlab(W + T * 2, H, T), 0, 0, Z(0) - T / 2));
+        g.add(at(rbox(0.7, 0.2, 0.46, C.white, 0.04), X(0.52), 1.68, Z(0.23)));                         // 후드
+        g.add(at(rbox(0.72, 0.035, 0.48, C.soft, 0.012), X(0.52), 1.575, Z(0.24)));
+        g.add(at(rbox(0.3, H - 1.78, 0.26, C.white, 0.03), X(0.52), 1.78 + (H - 1.78) / 2, Z(0.13)));  // 덕트
+        g.add(at(rbox(0.2, 0.01, 0.06, 0xfff6dc, 0.004, { emissive: 0xfff3cf, emissiveIntensity: 0.7 }), X(0.52), 1.555, Z(0.3)));
+        [[0.94, 1.5], [1.54, 2.08]].forEach(([x0, x1]) => {
+            g.add(block(x0, x1, 0, 0.34, 1.36, 0.62, C.white, 0.035));
+            g.add(block(x0 + 0.02, x1 - 0.02, 0.34, 0.355, 1.38, 0.58, C.off, 0.015));                   // 문짝
+            g.add(handle(X(x1 - 0.08), 1.46, Z(0.37), true, 0.14));
         });
     });
-    // 아래쪽 벽 (창문)
+    // 아래쪽 벽: 창문 (하늘은 시간/날씨로 바뀜)
+    let skyTex, skyCanvas, weatherFX;
     wall('S', new THREE.Vector3(0, 0, 1), g => {
-        const s = wallSlab(W + T * 2, H, T); at(s, 0, 0, Z(D) + T / 2); g.add(s);
-        const frame = rbox(1.96, 1.15, 0.08, 0xffffff, 0.04); at(frame, X(1.71), 1.48, Z(D) - 0.03); g.add(frame);
-        const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.0), mat(0xbfe2f7, { emissive: 0xbfe2f7, emissiveIntensity: 0.55, roughness: 0.2 }));
+        g.add(at(wallSlab(W + T * 2, H, T), 0, 0, Z(D) + T / 2));
+        g.add(at(rbox(1.96, 1.15, 0.08, C.white, 0.04), X(1.71), 1.48, Z(D) - 0.03));
+        skyCanvas = document.createElement('canvas'); skyCanvas.width = 256; skyCanvas.height = 144;
+        skyTex = new THREE.CanvasTexture(skyCanvas); skyTex.colorSpace = THREE.SRGBColorSpace;
+        const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.0), new THREE.MeshBasicMaterial({ map: skyTex }));
         at(glass, X(1.71), 1.48, Z(D) - 0.075); glass.rotation.y = Math.PI; g.add(glass);
-        const bar = rbox(0.04, 1.0, 0.03, 0xffffff, 0.01); at(bar, X(1.71), 1.48, Z(D) - 0.09); g.add(bar);
-        const sill = rbox(2.1, 0.05, 0.16, 0xffffff, 0.02); at(sill, X(1.71), 0.9, Z(D) - 0.08); g.add(sill);
-        // 커튼
-        [X(0.62), X(2.8)].forEach(cx => { const cu = rbox(0.28, 1.45, 0.08, C.pink, 0.04); at(cu, cx, 1.42, Z(D) - 0.12); g.add(cu); });
-        const rod = cyl(0.02, 0.02, 2.6, C.woodDark); rod.rotation.z = Math.PI / 2; at(rod, X(1.71), 2.17, Z(D) - 0.12); g.add(rod);
+        g.add(at(rbox(0.04, 1.0, 0.03, C.white, 0.01), X(1.71), 1.48, Z(D) - 0.09));
+        g.add(at(rbox(2.1, 0.05, 0.16, C.white, 0.02), X(1.71), 0.9, Z(D) - 0.08));
+        [X(0.62), X(2.8)].forEach(cx => g.add(at(rbox(0.26, 1.45, 0.07, C.pink, 0.035), cx, 1.42, Z(D) - 0.12)));
+        const rod = cyl(0.015, 0.015, 2.6, C.gray); rod.rotation.z = Math.PI / 2; g.add(at(rod, X(1.71), 2.17, Z(D) - 0.12));
+        weatherFX = new THREE.Group(); g.add(weatherFX);
     });
-    // 왼쪽 벽
-    wall('W', new THREE.Vector3(-1, 0, 0), g => {
-        const s = wallSlab(T, H, D); at(s, X(0) - T / 2, 0, 0); g.add(s);
-        // 침대 위 액자
-        const fr = rbox(0.05, 0.42, 0.56, C.woodDark, 0.02); at(fr, X(0) + 0.03, 1.45, Z(3.9)); g.add(fr);
-        const art = rbox(0.02, 0.34, 0.48, C.lav, 0.01); at(art, X(0) + 0.06, 1.45, Z(3.9)); g.add(art);
-    });
-    // 오른쪽 벽 (화장실 문, 화장대 거울)
-    wall('E', new THREE.Vector3(1, 0, 0), g => {
-        const s = wallSlab(T, H, D); at(s, X(W) + T / 2, 0, 0); g.add(s);
-        const mirror = new THREE.Mesh(new THREE.CircleGeometry(0.26, 32), mat(0xdfeef7, { roughness: 0.15, emissive: 0xdfeef7, emissiveIntensity: 0.3 }));
-        mirror.scale.set(1, 1.3, 1); mirror.rotation.y = -Math.PI / 2; at(mirror, X(W) - 0.02, 1.38, Z(2.7)); g.add(mirror);
-        const rim = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.025, 10, 40), mat(C.pinkDeep));
-        rim.scale.set(1, 1.3, 1); rim.rotation.y = -Math.PI / 2; at(rim, X(W) - 0.02, 1.38, Z(2.7)); g.add(rim);
-    });
+    wall('W', new THREE.Vector3(-1, 0, 0), g => g.add(at(wallSlab(T, H, D), X(0) - T / 2, 0, 0)));
+    wall('E', new THREE.Vector3(1, 0, 0), g => g.add(at(wallSlab(T, H, D), X(W) + T / 2, 0, 0)));
 
-    /* ---------------- 가구 ---------------- */
-    // 부엌 조리대 몸통 (누를 수 없는 부분)
-    scene.add(block(0, 2.1, 0, 0.62, 0, 0.86, C.cream, 0.05));
-    scene.add(block(-0.01, 2.11, -0.01, 0.65, 0.86, 0.06, C.wood, 0.025));
-    // 오른쪽 수납문 두 짝
+    /* ---------------- 부엌 (올 화이트) ---------------- */
+    scene.add(block(0, 2.1, 0, 0.62, 0, 0.86, C.white, 0.04));
+    scene.add(block(-0.01, 2.11, -0.01, 0.65, 0.86, 0.05, C.off, 0.02));        // 상판
     [1.0, 1.55].forEach(x => {
-        const d = block(x, x + 0.5, 0.6, 0.64, 0.08, 0.7, 0xf4eee4, 0.03); scene.add(d);
-        const k = sphere(0.025, C.woodDark); at(k, X(x + 0.42), 0.62, Z(0.655)); scene.add(k);
+        scene.add(block(x, x + 0.5, 0.6, 0.635, 0.08, 0.7, C.off, 0.02));
+        scene.add(handle(X(x + 0.42), 0.6, Z(0.65), true, 0.14));
     });
-
     furniture('stove', g => {
-        g.add(block(0.18, 0.86, 0.08, 0.56, 0.92, 0.04, 0x55504c, 0.015));
+        g.add(block(0.18, 0.86, 0.08, 0.56, 0.91, 0.03, C.dark, 0.012, { roughness: 0.3 }));
         [[0.36, 0.22], [0.66, 0.4]].forEach(([x, z]) => {
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.012, 8, 32), mat(0xef8f7f, { emissive: 0xe0604f, emissiveIntensity: 0.4 }));
-            ring.rotation.x = Math.PI / 2; at(ring, X(x), 0.965, Z(z)); g.add(ring);
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.008, 8, 32), mat(0xf3a5b5, { emissive: 0xec8aa0, emissiveIntensity: 0.35 }));
+            ring.rotation.x = Math.PI / 2; g.add(at(ring, X(x), 0.945, Z(z)));
         });
-        const pan = cyl(0.12, 0.1, 0.07, 0x8c8781); at(pan, X(0.36), 1.0, Z(0.22)); g.add(pan);
     });
     furniture('sink', g => {
-        g.add(block(0.98, 1.72, 0.1, 0.52, 0.86, 0.075, 0xc9ced3, 0.03, { roughness: 0.35, metalness: 0.3 }));
-        g.add(block(1.03, 1.67, 0.14, 0.48, 0.9, 0.035, 0xb7bdc3, 0.015, { roughness: 0.3, metalness: 0.3 }));
-        const neck = cyl(0.025, 0.025, 0.3, 0xd9dde1); at(neck, X(1.35), 1.07, Z(0.06)); g.add(neck);
-        const spout = cyl(0.022, 0.022, 0.2, 0xd9dde1); spout.rotation.x = Math.PI / 2; at(spout, X(1.35), 1.21, Z(0.15)); g.add(spout);
-        const sponge = rbox(0.1, 0.05, 0.07, C.yellow, 0.015); at(sponge, X(1.8), 0.945, Z(0.2)); g.add(sponge);
-        const cup = cyl(0.05, 0.04, 0.1, C.pink); at(cup, X(1.85), 0.97, Z(0.4)); g.add(cup);
+        g.add(block(0.98, 1.72, 0.1, 0.52, 0.86, 0.065, C.steel, 0.03, { roughness: 0.3, metalness: 0.25 }));
+        g.add(block(1.03, 1.67, 0.14, 0.48, 0.89, 0.03, 0xc5cacf, 0.012, { roughness: 0.3, metalness: 0.25 }));
+        g.add(at(cyl(0.022, 0.022, 0.28, C.steel), X(1.35), 1.05, Z(0.06)));
+        const spout = cyl(0.02, 0.02, 0.18, C.steel); spout.rotation.x = Math.PI / 2; g.add(at(spout, X(1.35), 1.18, Z(0.14)));
     });
     furniture('washer', g => {
-        g.add(block(0.12, 0.84, 0.58, 0.64, 0.06, 0.74, 0xfdfdfc, 0.04));
-        const door = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 36), mat(0xcfe7f6, { roughness: 0.2, emissive: 0xbcdcf2, emissiveIntensity: 0.25 }));
-        door.rotation.x = Math.PI / 2; at(door, X(0.48), 0.4, Z(0.65)); g.add(door);
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.03, 10, 36), mat(C.gray));
-        at(ring, X(0.48), 0.4, Z(0.665)); g.add(ring);
-        const btn = sphere(0.025, C.pinkDeep); at(btn, X(0.72), 0.7, Z(0.65)); g.add(btn);
-    });
-    furniture('entrance', g => {
-        g.add(block(2.15, 3.2, 0, 0.3, -0.03, 0.04, 0xcdc7c0, 0.01));
-        const mat1 = block(2.3, 3.05, 0.32, 0.72, 0, 0.02, C.mint, 0.01); g.add(mat1);
-        [[2.5, 0.48], [2.72, 0.52]].forEach(([x, z]) => {
-            const shoe = rbox(0.11, 0.08, 0.26, C.pinkDeep, 0.04); at(shoe, X(x), 0.06, Z(z)); g.add(shoe);
-        });
-        const umb = cyl(0.03, 0.03, 0.8, C.sky); umb.rotation.z = 0.15; at(umb, X(3.08), 0.42, Z(0.4)); g.add(umb);
-    });
-    furniture('bath', g => {
-        g.userData.wall = 'E';
-        const door = rbox(0.06, 2.0, 0.84, 0xf3e3cf, 0.03); at(door, X(W) - 0.03, 1.0, Z(1.63)); g.add(door);
-        const knob = sphere(0.035, 0xc9a56b); at(knob, X(W) - 0.08, 1.0, Z(1.3)); g.add(knob);
-        const sign = rbox(0.02, 0.16, 0.16, C.sky, 0.03); at(sign, X(W) - 0.07, 1.55, Z(1.63)); g.add(sign);
+        g.add(block(0.12, 0.84, 0.58, 0.64, 0.06, 0.74, C.white, 0.04));
+        const door = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.03, 36), mat(0xe3edf3, { roughness: 0.15 }));
+        door.rotation.x = Math.PI / 2; g.add(at(door, X(0.48), 0.4, Z(0.655)));
+        g.add(at(new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 10, 36), mat(C.gray)), X(0.48), 0.4, Z(0.665)));
+        g.add(at(sphere(0.02, C.pinkDeep), X(0.74), 0.7, Z(0.65)));
     });
 
-    // 책장(위) + 서랍장(아래) — 한 덩어리 수납장을 둘로 나눠 누름
+    /* ---------------- 현관 / 화장실 ---------------- */
+    furniture('entrance', g => {
+        g.add(block(2.15, 3.2, 0, 0.3, -0.02, 0.03, 0xe9e6e4, 0.008));              // 현관 바닥 타일
+        g.add(at(rbox(0.82, 2.0, 0.06, C.off, 0.03), X(2.68), 1.0, Z(0) + 0.03));    // 현관문
+        g.add(handle(X(2.68) - 0.3, 1.0, Z(0) + 0.08, false, 0.12));
+    }, 'N');
+    furniture('bath', g => {
+        g.add(at(rbox(0.06, 2.0, 0.84, C.off, 0.03), X(W) - 0.03, 1.0, Z(1.63)));
+        g.add(handle(X(W) - 0.08, 1.0, Z(1.3), false, 0.12));
+    }, 'E');
+
+    /* ---------------- 냉장고(아래) + 서랍장 + 책장(위) — 앞면은 부엌 쪽 ---------------- */
+    const U0 = 0.04, U1 = 1.0, UZ0 = 1.76, UZ1 = 2.54;
+    furniture('fridge', g => {
+        g.add(block(U0, U1, UZ0, UZ1, 0, 0.84, C.white, 0.05));
+        g.add(block(U0 + 0.04, U1 - 0.04, UZ0 - 0.02, UZ0 + 0.01, 0.05, 0.36, C.off, 0.02));
+        g.add(block(U0 + 0.04, U1 - 0.04, UZ0 - 0.02, UZ0 + 0.01, 0.43, 0.37, C.off, 0.02));
+        g.add(handle(X(U1 - 0.12), 0.32, Z(UZ0 - 0.035), true, 0.16));
+        g.add(handle(X(U1 - 0.12), 0.7, Z(UZ0 - 0.035), true, 0.16));
+    });
     furniture('drawer', g => {
-        g.add(block(0.04, 1.0, 1.76, 2.54, 0, 0.62, C.cream, 0.05));
-        [0.08, 0.36].forEach(y => {
-            g.add(block(0.08, 0.96, 2.52, 2.56, y + 0.04, 0.22, 0xf6efe4, 0.03));
-            const k = sphere(0.03, C.woodDark); at(k, X(0.52), y + 0.15, Z(2.575)); g.add(k);
+        g.add(block(U0, U1, UZ0, UZ1, 0.84, 0.4, C.white, 0.04));
+        [0.88, 1.06].forEach(y => {
+            g.add(block(U0 + 0.04, U1 - 0.04, UZ0 - 0.02, UZ0 + 0.01, y, 0.15, C.off, 0.02));
+            g.add(handle(X((U0 + U1) / 2), y + 0.08, Z(UZ0 - 0.035), false, 0.18));
         });
     });
     furniture('books', g => {
-        g.add(block(0.04, 1.0, 1.76, 2.54, 0.62, 0.66, C.cream, 0.05));
-        g.add(block(0.08, 0.96, 1.8, 2.5, 0.7, 0.5, 0xefe5d6, 0.03));
-        const cols = [C.pink, C.mint, C.sky, C.yellow, C.lav, C.pinkDeep, C.mint, C.yellow];
-        let x = 0.12;
+        g.add(block(U0, U1, UZ0, UZ1, 1.24, 0.52, C.white, 0.04));
+        g.add(block(U0 + 0.05, U1 - 0.05, UZ0 - 0.005, UZ1 - 0.06, 1.29, 0.42, C.soft, 0.02));
+        const cols = [C.pinkMid, C.white, C.pink, C.gray, C.pinkDeep, C.white, C.pink, C.soft, C.pinkMid];
+        let x = U0 + 0.08;
         cols.forEach((col, i) => {
-            const w = 0.07 + (i % 3) * 0.015, h = 0.3 + (i % 4) * 0.04;
-            const b = rbox(w, h, 0.36, col, 0.015); at(b, X(x + w / 2), 0.72 + h / 2, Z(2.3)); g.add(b); x += w + 0.012;
+            const w = 0.07 + (i % 3) * 0.012, h = 0.26 + (i % 4) * 0.03;
+            g.add(at(rbox(w, h, 0.3, col, 0.012), X(x + w / 2), 1.3 + h / 2, Z(UZ0 + 0.2)));
+            x += w + 0.01;
         });
-        const plant = sphere(0.13, C.leaf); at(plant, X(0.82), 1.4, Z(2.15)); g.add(plant);
-        const pot = cyl(0.08, 0.06, 0.12, C.pink); at(pot, X(0.82), 1.34, Z(2.15)); g.add(pot);
     });
     furniture('table', g => {
-        g.add(block(1.0, 1.96, 1.88, 2.42, 0.68, 0.06, C.wood, 0.025));
-        [[1.88, 1.94], [1.88, 2.36]].forEach(([x, z]) => { const l = cyl(0.03, 0.03, 0.68, C.woodDark); at(l, X(x), 0.34, Z(z)); g.add(l); });
-        const mug = cyl(0.05, 0.045, 0.1, C.sky); at(mug, X(1.5), 0.79, Z(2.1)); g.add(mug);
-        const bowl = sphere(0.08, C.cream, 1, 0.5, 1); at(bowl, X(1.25), 0.76, Z(2.2)); g.add(bowl);
-        const stool = cyl(0.17, 0.15, 0.06, C.pink); at(stool, X(1.6), 0.46, Z(2.75)); g.add(stool);
-        const leg = cyl(0.03, 0.04, 0.44, C.woodDark); at(leg, X(1.6), 0.22, Z(2.75)); g.add(leg);
-    });
-    furniture('bed', g => {
-        g.add(block(0.02, 1.56, 2.62, 5.24, 0, 0.3, C.wood, 0.06));
-        g.add(block(0.02, 1.56, 5.12, 5.24, 0, 0.82, C.woodDark, 0.05));                // 머리판 (창문 쪽)
-        g.add(block(0.07, 1.51, 2.66, 5.12, 0.3, 0.2, 0xffffff, 0.08));                 // 매트리스
-        g.add(block(0.05, 1.53, 2.64, 4.4, 0.42, 0.14, C.pink, 0.07));                  // 이불
-        g.add(block(0.05, 1.53, 4.26, 4.42, 0.43, 0.15, 0xffffff, 0.06));              // 이불 끝 접힘
-        [0.42, 1.14].forEach(x => { const p = rbox(0.58, 0.16, 0.36, 0xfffaf2, 0.08); at(p, X(x), 0.58, Z(4.82)); g.add(p); });
-        const bear = sphere(0.12, 0xe8cfae); at(bear, X(1.25), 0.64, Z(4.45)); g.add(bear);
-        [-0.07, 0.07].forEach(dx => { const ear = sphere(0.04, 0xe8cfae); at(ear, X(1.25) + dx, 0.75, Z(4.45)); g.add(ear); });
-    });
-    furniture('vanity', g => {
-        g.add(block(2.62, 3.18, 2.3, 3.1, 0.7, 0.06, C.cream, 0.025));
-        [[2.66, 2.34], [2.66, 3.06]].forEach(([x, z]) => { const l = cyl(0.025, 0.025, 0.7, C.woodDark); at(l, X(x), 0.35, Z(z)); g.add(l); });
-        g.add(block(2.95, 3.16, 2.34, 3.06, 0.3, 0.38, C.cream, 0.03));
-        [[3.0, 2.5, C.pink, 0.14], [3.04, 2.62, C.mint, 0.1], [3.0, 2.85, C.lav, 0.12]].forEach(([x, z, col, h]) => {
-            const b = cyl(0.035, 0.04, h, col); at(b, X(x), 0.76 + h / 2, Z(z)); g.add(b);
-        });
-        const seat = cyl(0.17, 0.17, 0.12, C.pinkDeep); at(seat, X(2.35), 0.46, Z(2.7)); g.add(seat);
-        const sleg = cyl(0.04, 0.05, 0.4, C.woodDark); at(sleg, X(2.35), 0.2, Z(2.7)); g.add(sleg);
-    });
-    furniture('desk', g => {
-        g.add(block(2.55, 3.18, 3.2, 4.28, 0.72, 0.06, C.wood, 0.025));
-        g.add(block(2.6, 3.16, 3.24, 3.5, 0, 0.72, C.cream, 0.04));
-        g.add(block(2.6, 3.16, 3.98, 4.24, 0, 0.72, C.cream, 0.04));
-        const lap = rbox(0.3, 0.02, 0.4, C.gray, 0.01); at(lap, X(2.8), 0.79, Z(3.7)); g.add(lap);
-        const screen = rbox(0.02, 0.26, 0.4, C.dark, 0.01); screen.rotation.z = -0.25; at(screen, X(2.98), 0.92, Z(3.7)); g.add(screen);
-        const lampPole = cyl(0.015, 0.015, 0.4, C.woodDark); at(lampPole, X(3.05), 0.98, Z(4.12)); g.add(lampPole);
-        const shade = cyl(0.06, 0.12, 0.12, C.yellow); at(shade, X(3.0), 1.2, Z(4.12)); g.add(shade);
-        const bulb = new THREE.PointLight(0xffe2b0, 0.6, 1.6); at(bulb, X(3.0), 1.12, Z(4.12)); g.add(bulb);
-        const chair = rbox(0.42, 0.08, 0.42, C.mint, 0.04); at(chair, X(2.28), 0.46, Z(3.72)); g.add(chair);
-        const back = rbox(0.08, 0.42, 0.42, C.mint, 0.04); at(back, X(2.04), 0.72, Z(3.72)); g.add(back);
-        const cl = cyl(0.03, 0.04, 0.42, C.woodDark); at(cl, X(2.28), 0.21, Z(3.72)); g.add(cl);
-    });
-    furniture('closet', g => {
-        g.add(block(2.62, 3.18, 4.34, 5.27, 0, 2.0, C.cream, 0.05));
-        [[4.38, 4.79], [4.82, 5.23]].forEach(([z0, z1]) => {
-            g.add(block(2.58, 2.62, z0, z1, 0.08, 1.84, 0xf4ede2, 0.02));
-            const h = rbox(0.03, 0.22, 0.03, C.woodDark, 0.012); at(h, X(2.565), 1.05, Z(z0 < 4.8 ? z1 - 0.06 : z0 + 0.06)); g.add(h);
-        });
-        const box = rbox(0.4, 0.22, 0.5, C.sky, 0.05); at(box, X(2.9), 2.11, Z(4.8)); g.add(box);
+        g.add(block(1.0, 1.96, 1.88, 2.42, 0.68, 0.05, C.white, 0.02));
+        [[1.9, 1.94], [1.9, 2.36]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.68, C.soft), X(x), 0.34, Z(z))));
+        g.add(at(cyl(0.045, 0.04, 0.09, C.pink), X(1.5), 0.775, Z(2.1)));
     });
 
-    // 꾸밈 (누를 수 없음): 동그란 러그, 화분
-    const rug = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.02, 48), mat(C.yellow));
-    rug.scale.set(1, 1, 1.35); rug.receiveShadow = true; at(rug, X(2.0), 0.01, Z(3.6)); scene.add(rug);
-    const rug2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.022, 48), mat(0xfbeec7));
-    rug2.scale.set(1, 1, 1.35); rug2.receiveShadow = true; at(rug2, X(2.0), 0.012, Z(3.6)); scene.add(rug2);
-    const bigPot = cyl(0.13, 0.1, 0.24, C.cream); at(bigPot, X(2.2), 0.12, Z(5.0)); scene.add(bigPot);
-    [[0, 0.42, 0, 0.2], [-0.08, 0.6, 0.04, 0.15], [0.09, 0.55, -0.05, 0.14]].forEach(([dx, y, dz, r]) => {
-        const l = sphere(r, C.leaf); at(l, X(2.2) + dx, y, Z(5.0) + dz); scene.add(l);
+    /* ---------------- 침대 (머리는 창문 쪽) ---------------- */
+    furniture('bed', g => {
+        g.add(block(0.02, 1.56, 2.62, 5.24, 0, 0.28, C.off, 0.06));
+        g.add(block(0.02, 1.56, 5.12, 5.24, 0, 0.82, C.white, 0.05));                  // 머리판
+        g.add(block(0.07, 1.51, 2.66, 5.12, 0.28, 0.2, C.white, 0.08));                // 매트리스
+        g.add(block(0.05, 1.53, 2.64, 4.4, 0.4, 0.14, C.pink, 0.07));                  // 이불
+        g.add(block(0.05, 1.53, 4.26, 4.42, 0.41, 0.15, C.white, 0.06));              // 이불 끝 접힘
+        [0.42, 1.14].forEach(x => g.add(at(rbox(0.58, 0.16, 0.36, C.white, 0.08), X(x), 0.56, Z(4.82))));
     });
+
+    /* ---------------- 오른쪽: 화장대 / 책상 / 옷장 ---------------- */
+    furniture('vanity', g => {
+        g.add(block(2.62, 3.18, 2.3, 3.1, 0.7, 0.05, C.white, 0.02));
+        [[2.66, 2.34], [2.66, 3.06]].forEach(([x, z]) => g.add(at(cyl(0.02, 0.02, 0.7, C.soft), X(x), 0.35, Z(z))));
+        g.add(block(2.95, 3.16, 2.34, 3.06, 0.3, 0.38, C.white, 0.03));
+        [[3.0, 2.5, C.pinkMid, 0.13], [3.04, 2.62, C.white, 0.1], [3.0, 2.85, C.pink, 0.11]].forEach(([x, z, col, h]) =>
+            g.add(at(cyl(0.032, 0.036, h, col), X(x), 0.75 + h / 2, Z(z))));
+    });
+    furniture('desk', g => {
+        g.add(block(2.55, 3.18, 3.2, 4.28, 0.72, 0.05, C.white, 0.02));
+        g.add(block(2.6, 3.16, 3.24, 3.5, 0, 0.72, C.off, 0.035));
+        g.add(block(2.6, 3.16, 3.98, 4.24, 0, 0.72, C.off, 0.035));
+        g.add(at(rbox(0.3, 0.02, 0.4, C.gray, 0.01), X(2.8), 0.78, Z(3.7)));
+        const screen = rbox(0.02, 0.26, 0.4, C.dark, 0.01); screen.rotation.z = -0.25; g.add(at(screen, X(2.98), 0.91, Z(3.7)));
+        g.add(at(rbox(0.42, 0.07, 0.42, C.white, 0.035), X(2.28), 0.46, Z(3.72)));
+        g.add(at(rbox(0.38, 0.03, 0.38, C.pink, 0.014), X(2.28), 0.51, Z(3.72)));
+        g.add(at(rbox(0.07, 0.4, 0.42, C.white, 0.03), X(2.04), 0.71, Z(3.72)));
+        g.add(at(cyl(0.025, 0.035, 0.42, C.soft), X(2.28), 0.21, Z(3.72)));
+    });
+    furniture('closet', g => {
+        g.add(block(2.62, 3.18, 4.34, 5.27, 0, 2.0, C.white, 0.05));
+        [[4.38, 4.79], [4.82, 5.23]].forEach(([z0, z1]) => {
+            g.add(block(2.585, 2.62, z0, z1, 0.08, 1.84, C.off, 0.015));
+            g.add(handle(X(2.565), 1.05, Z(z0 < 4.8 ? z1 - 0.06 : z0 + 0.06), true, 0.22));
+        });
+    });
+
+    // 창가 화분 하나만
+    scene.add(at(cyl(0.12, 0.09, 0.22, C.white), X(2.2), 0.11, Z(5.0)));
+    [[0, 0.4, 0, 0.17], [-0.07, 0.55, 0.04, 0.13], [0.08, 0.5, -0.04, 0.12]].forEach(([dx, y, dz, r]) =>
+        scene.add(at(sphere(r, C.leaf), X(2.2) + dx, y, Z(5.0) + dz)));
+
+    /* ==========================================================================
+       하늘 / 날씨 (창문 + 방 밝기)
+       ========================================================================== */
+    let weather = null;     // Open-Meteo 응답
+    let sky = { phase: 'day', kind: 'clear' };
+    const WMO = c => c === 0 ? 'clear' : c <= 2 ? 'partly' : c === 3 ? 'cloudy' : c <= 48 ? 'fog'
+        : (c >= 71 && c <= 77) || c === 85 || c === 86 ? 'snow' : c >= 95 ? 'storm' : 'rain';
+    const KIND_TXT = { clear: '맑음', partly: '구름 조금', cloudy: '흐림', fog: '안개', rain: '비', snow: '눈', storm: '뇌우' };
+    const KIND_IC = { clear: '☀️', partly: '⛅', cloudy: '☁️', fog: '🌫️', rain: '🌧️', snow: '❄️', storm: '⛈️' };
+
+    function phaseNow() {
+        const now = new Date();
+        let rise, set;
+        if (weather && weather.daily && weather.daily.sunrise) { rise = new Date(weather.daily.sunrise[0]); set = new Date(weather.daily.sunset[0]); }
+        else { rise = new Date(now); rise.setHours(7, 10, 0, 0); set = new Date(now); set.setHours(17, 20, 0, 0); }   // 받기 전 대략값
+        const m = 40 * 60000;
+        if (now < rise - m || now > set.getTime() + m) return 'night';
+        if (Math.abs(now - rise) <= m) return 'dawn';
+        if (Math.abs(now - set) <= m) return 'dusk';
+        return 'day';
+    }
+
+    function drawSky() {
+        const g = skyCanvas.getContext('2d'), w = skyCanvas.width, h = skyCanvas.height;
+        const P = {
+            day:   ['#9fd0f2', '#d8eefb'], dawn: ['#f6c9d5', '#fde8d8'],
+            dusk:  ['#d9a6c9', '#f8c7b5'], night: ['#1f2a4a', '#3b4a72']
+        }[sky.phase];
+        const grey = ['cloudy', 'fog', 'rain', 'storm', 'snow'].includes(sky.kind);
+        const top = grey ? (sky.phase === 'night' ? '#2a2f3d' : '#b9c1ca') : P[0];
+        const bot = grey ? (sky.phase === 'night' ? '#3e4453' : '#dde2e6') : P[1];
+        const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, top); gr.addColorStop(1, bot);
+        g.fillStyle = gr; g.fillRect(0, 0, w, h);
+        if (sky.phase === 'night') {
+            if (!grey) { g.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 0; i < 26; i++) g.fillRect((i * 97) % w, (i * 53) % (h * 0.7), 1.5, 1.5); }
+            g.fillStyle = grey ? 'rgba(255,250,230,.35)' : '#fff6d8'; g.beginPath(); g.arc(w * 0.72, h * 0.3, 11, 0, 7); g.fill();
+        } else if (!grey) {
+            g.fillStyle = sky.phase === 'day' ? 'rgba(255,248,215,.95)' : 'rgba(255,225,200,.95)';
+            g.beginPath(); g.arc(w * 0.25, sky.phase === 'day' ? h * 0.28 : h * 0.75, 14, 0, 7); g.fill();
+        }
+        if (sky.kind !== 'clear') {
+            g.fillStyle = sky.phase === 'night' ? 'rgba(120,130,150,.55)' : 'rgba(255,255,255,.85)';
+            const n = sky.kind === 'partly' ? 2 : 4;
+            for (let i = 0; i < n; i++) {
+                const cx = (i * 71 + 30) % w, cy = 18 + (i % 2) * 20;
+                [[0, 0, 14], [12, -5, 12], [24, 0, 13], [10, 5, 12]].forEach(([dx, dy, r]) => { g.beginPath(); g.arc(cx + dx, cy + dy, r, 0, 7); g.fill(); });
+            }
+        }
+        // 건물 실루엣 살짝 (아래쪽)
+        g.fillStyle = sky.phase === 'night' ? 'rgba(20,25,45,.7)' : 'rgba(255,255,255,.55)';
+        [[0, 40], [30, 28], [52, 48], [88, 34], [120, 52], [160, 30], [190, 44], [225, 36]].forEach(([x, hh]) => g.fillRect(x, h - hh, 26, hh));
+        if (sky.phase === 'night') {
+            g.fillStyle = 'rgba(255,220,150,.75)';
+            for (let i = 0; i < 14; i++) g.fillRect((i * 37) % w + 6, h - 8 - (i * 13) % 30, 3, 3);
+        }
+        skyTex.needsUpdate = true;
+    }
+
+    // 비/눈 (창문 안쪽에서만 보이게)
+    let drops = null;
+    function setWeatherFX() {
+        weatherFX.clear(); drops = null;
+        const kind = sky.kind;
+        if (!['rain', 'storm', 'snow'].includes(kind)) return;
+        const snow = kind === 'snow', N = snow ? 70 : 90;
+        const pos = new Float32Array(N * (snow ? 3 : 6));
+        const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        const m = snow ? new THREE.PointsMaterial({ color: 0xffffff, size: 0.035, transparent: true, opacity: 0.9 })
+            : new THREE.LineBasicMaterial({ color: 0xdfe9f2, transparent: true, opacity: 0.7 });
+        const obj = snow ? new THREE.Points(geo, m) : new THREE.LineSegments(geo, m);
+        weatherFX.add(obj);
+        const seeds = [];
+        for (let i = 0; i < N; i++) seeds.push({ x: Math.random(), y: Math.random(), v: snow ? 0.12 + Math.random() * 0.1 : 1.4 + Math.random() * 0.8, p: Math.random() * 6 });
+        drops = { snow, seeds, geo, pos };
+    }
+    function stepWeatherFX(dt) {
+        if (!drops) return;
+        const x0 = X(0.82), x1 = X(2.6), y0 = 0.98, y1 = 1.98, z = Z(D) - 0.085;
+        drops.seeds.forEach((s, i) => {
+            s.y -= s.v * dt; if (s.y < 0) { s.y += 1; s.x = Math.random(); }
+            const px = x0 + (x1 - x0) * s.x + (drops.snow ? Math.sin(s.p + s.y * 8) * 0.02 : 0), py = y0 + (y1 - y0) * s.y;
+            if (drops.snow) { drops.pos[i * 3] = px; drops.pos[i * 3 + 1] = py; drops.pos[i * 3 + 2] = z; }
+            else {
+                drops.pos.set([px, py, z, px + 0.012, Math.max(y0, py - 0.07), z], i * 6);
+            }
+        });
+        drops.geo.attributes.position.needsUpdate = true;
+    }
+
+    function applySky() {
+        const phase = phaseNow();
+        const kind = weather && weather.current ? WMO(weather.current.weather_code) : 'clear';
+        const changedKind = kind !== sky.kind;
+        sky = { phase, kind };
+        drawSky();
+        if (changedKind || !drops) setWeatherFX();
+        const grey = ['cloudy', 'fog', 'rain', 'storm', 'snow'].includes(kind);
+        const L = {   // 방 밝기
+            day:   { hemi: 1.3, sun: 0.9, sunC: 0xfff5ea, amb: 0.25, lamp: 0 },
+            dawn:  { hemi: 1.05, sun: 0.6, sunC: 0xffd9c7, amb: 0.22, lamp: 0.3 },
+            dusk:  { hemi: 0.95, sun: 0.55, sunC: 0xffc6b0, amb: 0.2, lamp: 0.6 },
+            night: { hemi: 0.45, sun: 0.12, sunC: 0x9fb2e6, amb: 0.12, lamp: 2.2 }
+        }[phase];
+        hemi.intensity = L.hemi * (grey ? 0.88 : 1);
+        hemi.color.set(phase === 'night' ? 0xc9d2f0 : 0xffffff);
+        sun.intensity = L.sun * (grey ? 0.45 : 1); sun.color.set(L.sunC);
+        amb.intensity = L.amb;
+        roomLamp.intensity = L.lamp;
+        drawWeatherChip();
+    }
+
+    async function loadWeather() {
+        try {
+            const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + PLACE.lat + '&longitude=' + PLACE.lon +
+                '&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max' +
+                '&timezone=Asia%2FSeoul&forecast_days=7';
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(res.status);
+            weather = await res.json();
+        } catch (e) { console.warn('날씨를 못 받았어요', e); }
+        applySky();
+    }
+
+    function drawWeatherChip() {
+        const el = document.getElementById('mh-weather');
+        if (!el) return;
+        if (!weather || !weather.current) { el.classList.remove('on'); return; }
+        const k = WMO(weather.current.weather_code);
+        el.innerHTML = KIND_IC[k] + ' <b>' + Math.round(weather.current.temperature_2m) + '°</b> <small>' + PLACE.name + '</small>';
+        el.classList.add('on');
+    }
+
+    applySky();
+    loadWeather();
+    const skyTimer = setInterval(() => { if (!canvas.isConnected) { clearInterval(skyTimer); return; } applySky(); }, 5 * 60000);
+    const wxTimer = setInterval(() => { if (!canvas.isConnected) { clearInterval(wxTimer); return; } loadWeather(); }, 30 * 60000);
 
     /* ---------------- 화면 크기 / 렌더 ---------------- */
     function resize() {
@@ -359,7 +452,6 @@ export function init() {
         if (!w || !h) return;
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
-        // 화면이 좁을수록 조금 멀리서 봄
         camera.fov = w / h < 1 ? 34 : 30;
         camera.updateProjectionMatrix();
     }
@@ -379,8 +471,7 @@ export function init() {
         const r = canvas.getBoundingClientRect();
         ptr.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
         ray.setFromCamera(ptr, camera);
-        const hits = ray.intersectObjects(clickable, true);
-        for (const h of hits) {
+        for (const h of ray.intersectObjects(clickable, true)) {
             let o = h.object;
             while (o && !o.userData.id) o = o.parent;
             if (o && o.visible) return o;
@@ -398,12 +489,12 @@ export function init() {
     }
     canvas.addEventListener('pointermove', ev => { if (ev.pointerType === 'mouse') setHover(pick(ev)); });
     canvas.addEventListener('pointerleave', () => setHover(null));
-    canvas.addEventListener('pointerdown', ev => { downAt = { x: ev.clientX, y: ev.clientY, t: Date.now() }; });
+    canvas.addEventListener('pointerdown', ev => { downAt = { x: ev.clientX, y: ev.clientY }; closeList(); });
     canvas.addEventListener('pointerup', ev => {
         if (!downAt) return;
         const moved = Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y);
         downAt = null;
-        if (moved > 8) return;                       // 돌리던 중이면 무시
+        if (moved > 8) return;
         const g = pick(ev);
         if (!g) { setHover(null); return; }
         setHover(g);
@@ -419,7 +510,7 @@ export function init() {
         labelEl.style.top = ((1 - tmp.y) / 2 * stage.clientHeight) + 'px';
     }
 
-    // 오른쪽 아래 버튼: 왼쪽/오른쪽으로 45도, 멀리/가까이
+    /* ---------------- 오른쪽 아래 막대: 목록 / 회전 / 확대 ---------------- */
     let camAnim = null;
     const sph = new THREE.Spherical();
     function moveCam(dTheta, zoom) {
@@ -427,10 +518,6 @@ export function init() {
         const r1 = Math.min(controls.maxDistance, Math.max(controls.minDistance, sph.radius * zoom));
         camAnim = { t: 0, th0: sph.theta, th1: sph.theta + dTheta, r0: sph.radius, r1, phi: sph.phi };
     }
-    document.getElementById('mh-ctrl').addEventListener('click', e => {
-        const b = e.target.closest('[data-cam]'); if (!b) return;
-        ({ left: () => moveCam(Math.PI / 4, 1), right: () => moveCam(-Math.PI / 4, 1), out: () => moveCam(0, 1.18), in: () => moveCam(0, 0.85) })[b.dataset.cam]();
-    });
     function stepCam(dt) {
         if (!camAnim) return;
         camAnim.t = Math.min(1, camAnim.t + dt * 2.6);
@@ -439,6 +526,25 @@ export function init() {
         camera.position.setFromSpherical(sph).add(controls.target);
         if (camAnim.t >= 1) camAnim = null;
     }
+    const listEl = document.getElementById('mh-list');
+    function closeList() { listEl.classList.remove('open'); document.querySelector('[data-cam=list]').classList.remove('on'); }
+    function toggleList() {
+        drawList();
+        const open = !listEl.classList.contains('open');
+        listEl.classList.toggle('open', open);
+        document.querySelector('[data-cam=list]').classList.toggle('on', open);
+        // 아래에서부터 차례로 좌르르
+        const items = Array.from(listEl.children).reverse();
+        items.forEach((s, i) => { s.style.transitionDelay = open ? (i * 25) + 'ms' : '0ms'; });
+    }
+    document.getElementById('mh-ctrl').addEventListener('click', e => {
+        const b = e.target.closest('[data-cam]'); if (!b) return;
+        const a = b.dataset.cam;
+        if (a === 'list') { toggleList(); return; }
+        ({ left: () => moveCam(Math.PI / 4, 1), right: () => moveCam(-Math.PI / 4, 1), out: () => moveCam(0, 1.18), in: () => moveCam(0, 0.85) })[a]();
+    });
+    listEl.addEventListener('click', e => { const s = e.target.closest('[data-id]'); if (s) { closeList(); openCard(s.dataset.id); } });
+    document.getElementById('mh-weather').addEventListener('click', openWeek);
 
     const clock = new THREE.Clock();
     function tick() {
@@ -448,10 +554,10 @@ export function init() {
         stepCam(dt);
         controls.update();
         updateWalls();
+        stepWeatherFX(dt);
         clickable.forEach(g => {
-            // 가리키면 살짝 커지고, 누르면 통통
-            const target = g === hovered ? 1.035 : 1;
-            let s = g.scale.x + (target - g.scale.x) * Math.min(1, dt * 12);
+            const target = g === hovered ? 1.03 : 1;
+            const s = g.scale.x + (target - g.scale.x) * Math.min(1, dt * 12);
             if (g.userData.bounce > 0) {
                 g.userData.bounce = Math.max(0, g.userData.bounce - dt * 3.2);
                 const b = g.userData.bounce;
@@ -463,6 +569,7 @@ export function init() {
     }
     document.getElementById('mh-loading').remove();
     tick();
+
 
     /* ==========================================================================
        기록 (해빗 트래커)
@@ -481,7 +588,7 @@ export function init() {
             const d = await repo.readJSON(DATA, { log: {} });
             db = d && d.log ? d : { log: {} };
         } catch (e) { console.error(e); }
-        drawLegend();
+        drawList();
     }
 
     // 저장: 화면 먼저, GitHub은 뒤에서
@@ -498,7 +605,7 @@ export function init() {
         const j = {}; j[DATA] = { mutate: cur => { cur = cur && cur.log ? cur : { log: {} }; fn(cur); return cur; }, fallback: { log: {} } };
         repo.commit(message, {}, j).then(res => {
             setPending(pending - 1);
-            if (!pending && res && res[DATA]) { db = res[DATA]; drawLegend(); if (card) drawCard(); }
+            if (!pending && res && res[DATA]) { db = res[DATA]; drawList(); if (card) drawCard(); }
         }, e => {
             setPending(pending - 1);
             alert('저장하지 못했어요.\n' + (e.message || e));
@@ -511,15 +618,12 @@ export function init() {
         if (!cur.d && !cur.m) delete db.log[id][k]; else db.log[id][k] = cur;
     }
 
-    function drawLegend() {
-        const t = todayKey();
-        document.getElementById('mh-legend').innerHTML = Object.keys(OBJECTS).map(id =>
-            '<span data-id="' + id + '" class="' + (isDone(id, t) ? 'done' : '') + '">' + OBJECTS[id].emoji + ' ' + OBJECTS[id].name + (isDone(id, t) ? ' ✓' : '') + '</span>'
+    function drawList() {
+        const tday = todayKey();
+        document.getElementById('mh-list').innerHTML = Object.keys(OBJECTS).map(id =>
+            '<span data-id="' + id + '" class="' + (isDone(id, tday) ? 'done' : '') + '">' + OBJECTS[id].name + '</span>'
         ).join('');
     }
-    document.getElementById('mh-legend').addEventListener('click', e => {
-        const s = e.target.closest('[data-id]'); if (s) openCard(s.dataset.id);
-    });
 
     /* ---------------- 카드 ---------------- */
     let card = null;   // { id, y, m, sel }
@@ -531,7 +635,7 @@ export function init() {
         bg.style.display = 'flex';
         drawCard();
     }
-    function closeCard() { bg.style.display = 'none'; card = null; drawLegend(); }
+    function closeCard() { bg.style.display = 'none'; card = null; drawList(); }
     bg.addEventListener('click', e => { if (e.target === bg) closeCard(); });
 
     function streak(id) {
@@ -594,7 +698,7 @@ export function init() {
     }
 
     cardEl.addEventListener('click', e => {
-        if (!card) return;
+        if (!card) { if (e.target.closest('.mh-close')) closeCard(); return; }
         const nav = e.target.closest('[data-nav]');
         if (nav) { const d = new Date(card.y, card.m + Number(nav.dataset.nav), 1); card.y = d.getFullYear(); card.m = d.getMonth(); drawCard(); return; }
         const day = e.target.closest('.mh-day[data-k]');
@@ -608,6 +712,31 @@ export function init() {
         if (e.target.closest('.mh-stamp')) { toggleStamp(card.sel); return; }
         if (e.target.closest('.mh-close')) closeCard();
     });
+
+    /* ---------------- 일주일 날씨 ---------------- */
+    function openWeek() {
+        if (!weather || !weather.daily) return;
+        const d = weather.daily, WK = ['일', '월', '화', '수', '목', '금', '토'];
+        const nowK = WMO(weather.current.weather_code);
+        let rows = '';
+        d.time.forEach((day, i) => {
+            const dt = new Date(day + 'T00:00:00'), k = WMO(d.weather_code[i]);
+            const pr = d.precipitation_probability_max ? d.precipitation_probability_max[i] : null;
+            rows += '<div class="mh-wk-row"><span class="mh-wk-day">' + (i === 0 ? '오늘' : WK[dt.getDay()]) +
+                '<small>' + (dt.getMonth() + 1) + '.' + dt.getDate() + '</small></span>' +
+                '<span class="mh-wk-ic">' + KIND_IC[k] + '</span>' +
+                '<span class="mh-wk-txt">' + KIND_TXT[k] + (pr != null && pr >= 30 ? ' · ' + pr + '%' : '') + '</span>' +
+                '<span class="mh-wk-t"><span class="lo">' + Math.round(d.temperature_2m_min[i]) + '°</span><span class="hi">' + Math.round(d.temperature_2m_max[i]) + '°</span></span></div>';
+        });
+        const rise = d.sunrise[0].slice(11, 16), set = d.sunset[0].slice(11, 16);
+        card = null;
+        cardEl.innerHTML =
+            '<div class="mh-head"><span class="mh-title"><b>' + PLACE.name + '</b> · WEEK</span><span class="mh-today">해 ' + rise + ' – ' + set + '</span></div>' +
+            '<div class="mh-wk-now"><b>' + Math.round(weather.current.temperature_2m) + '°</b>' + KIND_IC[nowK] + ' ' + KIND_TXT[nowK] + '</div>' +
+            rows +
+            '<div class="mh-foot"><span class="mh-stat">Open-Meteo</span><button class="mh-close">닫기</button></div>';
+        bg.style.display = 'flex';
+    }
 
     load();
 }
