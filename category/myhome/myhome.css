@@ -179,3 +179,7 @@
 /* 구역 버튼 줄 빈 곳에서도 방을 끌어 돌릴 수 있게 */
 .mh-zones { pointer-events: none; }
 .mh-zones button { pointer-events: auto; }
+
+/* 방 화면이 화면 가로 끝까지 차면서 페이지가 옆으로 넘치지 않게 (트랙패드로 밀 때 튕김 방지) */
+html:has(.mh-stage), body:has(.mh-stage) { overflow-x: hidden; }
+.mh-stage { overscroll-behavior: contain; }
