@@ -23,8 +23,10 @@ const OBJECTS = {
     washer:   { zone: '주방', name: '세탁기',     act: '빨래',         emoji: '🧺' },
     fridge:   { zone: '주방', name: '냉장고',     act: '냉장고 정리',  emoji: '🧊' },
     trash:    { zone: '주방', name: '쓰레기통',   act: '쓰레기 버리기', emoji: '🗑️' },
+    kfloor:   { zone: '주방', name: '주방 바닥',  act: '바닥 청소',    emoji: '🧹' },
     recycle:  { zone: '주방', name: '분리수거함', act: '분리수거',     emoji: '♻️' },
     table:    { zone: '거실', name: '식탁',       act: '밥 챙겨 먹기', emoji: '🍚' },
+    lfloor:   { zone: '거실', name: '거실 바닥',  act: '바닥 청소',    emoji: '🧹' },
     books:    { zone: '거실', name: '책장',       act: '독서',         emoji: '📚' },
     drawer:   { zone: '거실', name: '수납장',     act: '정리',         emoji: '🗂️' },
     desk:     { zone: '거실', name: '책상',       act: '공부',         emoji: '✏️' },
@@ -94,7 +96,8 @@ export function init() {
     // 실내 불: 창밖이 어두워지면 저절로 켜짐 (applySky)
     const roomLamp = new THREE.PointLight(0xffe2bf, 0, 9, 1.2); roomLamp.position.set(0.1, 2.15, 0.1); scene.add(roomLamp);
     const bedLamp = new THREE.PointLight(0xffd7b0, 0, 4, 1.5); bedLamp.position.set(-0.6, 1.2, 1.8); scene.add(bedLamp);
-    const kitchenLamp = new THREE.PointLight(0xfff0d6, 0, 2.6, 1.5); kitchenLamp.position.set(-0.4, 1.3, -2.25); scene.add(kitchenLamp);
+    const kitchenLamp = new THREE.PointLight(0xfff0d6, 0, 2.8, 1.4); kitchenLamp.position.set(0.52 - W / 2, 1.45, 0.34 - D / 2); scene.add(kitchenLamp);   // 인덕션 위(환풍구) 조명
+    const livingLamp = new THREE.PointLight(0xffe6c8, 0, 6, 1.1); livingLamp.position.set(1.9 - W / 2, 2.15, 3.0 - D / 2); scene.add(livingLamp);       // 거실 조명
     const glowMat = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xffe6c4, emissiveIntensity: 0, roughness: 0.6 });
 
     /* ---------------- 모양 도우미 ---------------- */
@@ -167,6 +170,7 @@ export function init() {
         if (open === '+z') P(x0 + t, x1 - t, z0 + t, z0 + t + 0.004, y0 + t, h - 2 * t, inner);
         if (open === '-z') P(x0 + t, x1 - t, z1 - t - 0.004, z1 - t, y0 + t, h - 2 * t, inner);
         if (open === '-x') P(x1 - t - 0.004, x1 - t, z0 + t, z1 - t, y0 + t, h - 2 * t, inner);
+        if (open === '+x') P(x0 + t, x0 + t + 0.004, z0 + t, z1 - t, y0 + t, h - 2 * t, inner);
     }
 
     const clickable = [];
@@ -229,7 +233,7 @@ export function init() {
         g.add(at(rbox(0.72, 0.035, 0.48, C.soft, 0.012), X(0.52), 1.575, Z(0.24)));
         g.add(at(rbox(0.3, H - 1.78, 0.26, C.white, 0.03), X(0.52), 1.78 + (H - 1.78) / 2, Z(0.13)));  // 덕트
         const hoodLed = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.01, 0.07), glowMat); g.add(at(hoodLed, X(0.52), 1.555, Z(0.3)));
-        const strip = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.012, 0.03), glowMat); g.add(at(strip, X(1.51), 1.35, Z(0.3)));   // 상부장 아래 조명
+
     });
     // 아래쪽 벽: 창문 (하늘은 시간/날씨로 바뀜)
     let skyTex, skyCanvas, weatherFX;
@@ -303,15 +307,15 @@ export function init() {
     // 현관문과 화장실 문 사이, 화장실 쪽 벽: 액자처럼 납작하게 걸린 분리수거 봉지 + 아래 쓰레기통
     furniture('recycle', g => {
         g.add(at(rbox(0.04, 0.03, 0.4, C.gray, 0.01), X(W) - 0.03, 1.62, Z(0.93)));                 // 걸이
-        [[0.8, C.pink], [0.93, 0xe3edf4], [1.06, 0xe8f2e5]].forEach(([z, col]) => {
+        [[0.8, 0xeeeae8], [0.93, 0xeeeae8], [1.06, 0xeeeae8]].forEach(([z, col]) => {
             const bag = rbox(0.035, 0.5, 0.12, col, 0.015); g.add(at(bag, X(W) - 0.035, 1.34, Z(z)));
             g.add(at(rbox(0.04, 0.03, 0.12, C.white, 0.008), X(W) - 0.035, 1.6, Z(z)));
         });
     }, 'E');
     furniture('trash', g => {
-        g.add(at(cyl(0.13, 0.115, 0.38, C.white, 32), X(W) - 0.18, 0.19, Z(0.93)));
-        g.add(at(cyl(0.135, 0.135, 0.03, C.soft, 32), X(W) - 0.18, 0.395, Z(0.93)));
-        g.add(at(rbox(0.04, 0.02, 0.07, C.pinkMid, 0.008), X(W) - 0.33, 0.02, Z(0.93)));
+        g.add(at(cyl(0.14, 0.12, 0.4, C.white, 32), X(1.4), 0.2, Z(2.15)));          // 식탁 아래
+        g.add(at(cyl(0.145, 0.145, 0.03, C.soft, 32), X(1.4), 0.415, Z(2.15)));
+        g.add(at(rbox(0.07, 0.02, 0.04, C.gray, 0.008), X(1.4), 0.02, Z(1.99)));
     });
     furniture('bath', g => {
         g.add(at(rbox(0.06, 2.0, 0.84, C.oak, 0.03), X(W) - 0.03, 1.0, Z(1.63)));      // 화장실 문 (우드)
@@ -328,21 +332,19 @@ export function init() {
         hingedDoor(g, '-z', U0 + 0.04, U1 - 0.04, UZ0 - 0.005, 0.43, 0.37, C.off, 'a0', 0.16);
         hingedDoor(g, '-z', U0 + 0.04, U1 - 0.04, UZ0 - 0.005, 0.05, 0.36, C.off, 'a0', 0.16);
     });
-    furniture('drawer', g => {   // 수납장: 문 없이 뚫린 칸, 세탁기 쪽을 봄
-        g.add(block(U0, U1, UZ0, UZ1, 0.84, 0.4, C.white, 0.04));
-        g.add(block(U0 + 0.05, U1 - 0.05, UZ0 - 0.005, UZ1 - 0.06, 0.88, 0.32, C.soft, 0.015));
-        g.add(block(U0 + 0.48, U0 + 0.5, UZ0 - 0.004, UZ1 - 0.07, 0.88, 0.32, C.white, 0.004));   // 칸막이
-        g.add(block(U0 + 0.1, U0 + 0.42, UZ0 + 0.02, UZ0 + 0.34, 0.885, 0.2, C.pink, 0.03));        // 바구니
-        g.add(block(U0 + 0.56, U0 + 0.88, UZ0 + 0.02, UZ0 + 0.34, 0.885, 0.16, 0xeef0f2, 0.03));
+    furniture('drawer', g => {   // 수납장: 문 없이 뚫린 칸, 세탁기 쪽(-z)을 봄
+        carcass(g, U0, U1, UZ0, UZ1, 0.84, 0.4, '-z');
+        g.add(block(U0 + 0.47, U0 + 0.49, UZ0, UZ1 - 0.03, 0.865, 0.35, C.white, 0.004));          // 칸막이
+        g.add(block(U0 + 0.08, U0 + 0.42, UZ0 + 0.06, UZ0 + 0.42, 0.865, 0.18, 0xe9e6e3, 0.03));   // 바구니
+        g.add(block(U0 + 0.55, U0 + 0.88, UZ0 + 0.06, UZ0 + 0.42, 0.865, 0.15, 0xe9e6e3, 0.03));
     });
-    furniture('books', g => {    // 책장: 식탁 쪽(+x)을 봄
-        g.add(block(U0, U1, UZ0, UZ1, 1.24, 0.52, C.white, 0.04));
-        g.add(block(U0 + 0.06, U1 + 0.005, UZ0 + 0.05, UZ1 - 0.05, 1.29, 0.42, C.soft, 0.02));
-        const cols = [C.pinkMid, C.white, C.pink, C.gray, C.pinkDeep, C.white, C.pink, C.soft, C.pinkMid];
-        let z = UZ0 + 0.09;
+    furniture('books', g => {    // 책장: 문 없이 식탁 쪽(+x)을 봄
+        carcass(g, U0, U1, UZ0, UZ1, 1.24, 0.52, '+x');
+        const cols = [C.pinkMid, C.white, C.pink, C.gray, C.pinkDeep, C.white, C.soft];   // 책장 안에 들어가는 만큼만
+        let z = UZ0 + 0.06;
         cols.forEach((col, i) => {
             const w = 0.065 + (i % 3) * 0.012, h = 0.26 + (i % 4) * 0.03;
-            g.add(at(rbox(0.3, h, w, col, 0.012), X(U1 - 0.2), 1.3 + h / 2, Z(z + w / 2)));
+            g.add(at(rbox(0.28, h, w, col, 0.012), X(U1 - 0.2), 1.265 + h / 2, Z(z + w / 2)));
             z += w + 0.008;
         });
     });
@@ -350,6 +352,18 @@ export function init() {
         g.add(block(1.0, 1.96, 1.88, 2.42, 0.68, 0.05, C.white, 0.02));
         [[1.9, 1.94], [1.9, 2.36]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.68, C.soft), X(x), 0.34, Z(z))));
     });
+
+    /* ---------------- 바닥 (눌러서 바닥 청소 기록): 가리키면 살짝 분홍 ---------------- */
+    function floorArea(id, x0, x1, z0, z1) {
+        furniture(id, g => {
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0),
+                new THREE.MeshBasicMaterial({ color: 0xf3b8c7, transparent: true, opacity: 0, depthWrite: false }));
+            m.rotation.x = -Math.PI / 2; at(m, X((x0 + x1) / 2), 0.004, Z((z0 + z1) / 2));
+            g.add(m); g.userData.floor = m.material;
+        });
+    }
+    floorArea('kfloor', 0, W, 0.66, 1.76);
+    floorArea('lfloor', 0, W, 1.76, D);
 
     /* ---------------- 침대 (머리는 창문 쪽) ---------------- */
     furniture('bed', g => {
@@ -532,7 +546,8 @@ export function init() {
         amb.intensity = L.amb;
         roomLamp.intensity = lightsOn ? Math.max(L.lamp, 1.6) : L.lamp;
         bedLamp.intensity = lightsOn ? 0.9 : 0;
-        kitchenLamp.intensity = lightsOn ? 0.8 : 0;
+        kitchenLamp.intensity = lightsOn ? 1.1 : 0;
+        livingLamp.intensity = lightsOn ? (phase === 'night' ? 3.4 : 1.8) : 0;
         glowMat.emissiveIntensity = lightsOn ? 1.1 : 0.15;
         if (phase === 'night') hemi.color.set(0xffe9d6);     // 불 켜진 실내는 따뜻하게
         drawWeatherChip();
@@ -619,7 +634,7 @@ export function init() {
         if (!g) { setHover(null); return; }
         setHover(g);
         const hasDoors = g.userData.doors && g.userData.doors.length;
-        if (!hasDoors) g.userData.bounce = 1;
+        if (!hasDoors && !g.userData.floor) g.userData.bounce = 1;
         setTimeout(() => openCard(g.userData.id), hasDoors ? 380 : 140);
     });
 
@@ -711,10 +726,15 @@ export function init() {
         updateWalls();
         stepWeatherFX(dt);
         clickable.forEach(g => {
+            if (g.userData.floor) {
+                const want = g === hovered ? 0.16 : (card && card.id === g.userData.id) ? 0.12 : 0;
+                g.userData.floor.opacity += (want - g.userData.floor.opacity) * Math.min(1, dt * 10);
+                return;
+            }
             const doors = g.userData.doors;
             if (doors && doors.length) {
                 // 문 달린 가구: 커지지 않고 문이 열림 (가리킬 때, 그 가구 기록 카드가 열려 있을 때)
-                const want = (g === hovered || (card && card.id === g.userData.id)) ? 1 : 0;
+                const want = (card && card.id === g.userData.id) ? 1 : 0;      // 눌러야 열림
                 g.userData.openT = (g.userData.openT || 0) + (want - (g.userData.openT || 0)) * Math.min(1, dt * 6);
                 const e = g.userData.openT;
                 doors.forEach(d => { d.pivot.rotation.y = d.A * e; });
