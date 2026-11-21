@@ -232,3 +232,14 @@ html:has(.mh-stage), body:has(.mh-stage) { overflow-x: hidden; }
 .mh-chip-add { color: var(--sub); border-style: dashed; }
 .mh-shop-tag { flex: none; max-width: 70px; font-family: inherit; font-size: 10px; color: var(--pink-ink); background: #fdf3f5; border: none; border-radius: 999px; padding: 3px 6px; outline: none; cursor: pointer; }
 .mh-shop-deltag { margin-left: 0; color: #d4728c; }
+
+/* 요리: 아침·점심·저녁·밤 */
+.mh-meals { margin-top: 14px; border-left: 2px solid var(--pink); background: #fdf3f5; border-radius: 0 6px 6px 0; padding: 8px 10px 4px; }
+.mh-meals-date { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; color: var(--pink-ink); margin-bottom: 2px; }
+.mh-meal { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f6e3e8; }
+.mh-meal:last-child { border-bottom: none; }
+.mh-meal-label { flex: none; width: 26px; font-size: 11px; color: var(--pink-ink); padding-top: 2px; }
+.mh-meal-text { flex: 1; min-width: 0; border: none; background: transparent; outline: none; resize: none; font-family: inherit; font-size: 12.5px; line-height: 1.6; color: var(--ink); padding: 0; min-height: 20px; }
+.mh-meal-time { flex: none; width: 64px; border: none; background: transparent; font-family: inherit; font-size: 10.5px; color: var(--sub); padding: 2px 0; text-align: right; cursor: pointer; }
+.mh-meal-time:disabled { opacity: 0; }
+.mh-meal-time::-webkit-calendar-picker-indicator { display: none; }

@@ -254,12 +254,32 @@ export function init() {
         at(glass, X(1.71), 1.48, Z(D) - 0.075); glass.rotation.y = Math.PI; g.add(glass);
         g.add(at(rbox(0.04, 1.0, 0.03, C.white, 0.01), X(1.71), 1.48, Z(D) - 0.09));
         g.add(at(rbox(2.1, 0.05, 0.16, C.white, 0.02), X(1.71), 0.9, Z(D) - 0.08));
-        [X(0.62), X(2.8)].forEach(cx => g.add(at(rbox(0.26, 1.45, 0.07, C.pink, 0.035), cx, 1.42, Z(D) - 0.12)));
+
         const rod = cyl(0.015, 0.015, 2.6, C.gray); rod.rotation.z = Math.PI / 2; g.add(at(rod, X(1.71), 2.17, Z(D) - 0.12));
         weatherFX = new THREE.Group(); g.add(weatherFX);
     });
     wall('W', new THREE.Vector3(-1, 0, 0), g => g.add(at(wallSlab(T, H, D), X(0) - T / 2, 0, 0)));
     wall('E', new THREE.Vector3(1, 0, 0), g => g.add(at(wallSlab(T, H, D), X(W) + T / 2, 0, 0)));
+
+    /* ---------------- 커튼: 누르면 닫힘/열림, 닫아 둔 커튼은 해 뜨면 저절로 열림 ---------------- */
+    const curtainPanels = [];
+    let curtainT = 0;                 // 0 열림 → 1 닫힘 (화면 애니메이션 값)
+    furniture('curtain', g => {
+        [[0.62, 1.2], [2.8, 2.22]].forEach(([xo, xc]) => {
+            const m = rbox(0.26, 1.45, 0.07, C.pink, 0.035); at(m, X(xo), 1.42, Z(D) - 0.12);
+            m.userData = { xo: X(xo), xc: X(xc) };
+            g.add(m); curtainPanels.push(m);
+        });
+    }, 'S');
+    function stepCurtain(dt) {
+        const want = curtainClosed() ? 1 : 0;
+        if (Math.abs(want - curtainT) < 0.001) return;
+        curtainT += (want - curtainT) * Math.min(1, dt * 4);
+        curtainPanels.forEach(m => {
+            m.position.x = m.userData.xo + (m.userData.xc - m.userData.xo) * curtainT - m.parent.position.x;
+            m.scale.x = 1 + curtainT * (1.08 / 0.26 - 1);          // 0.26m → 1.08m 로 펼쳐짐
+        });
+    }
 
     /* ---------------- 부엌 (올 화이트) ---------------- */
     scene.add(block(0, 0.98, 0, 0.62, 0, 0.86, C.white, 0.04));
@@ -630,7 +650,7 @@ export function init() {
         const lightsOn = phase === 'night' || phase === 'dusk' || (grey && phase === 'dawn');
         hemi.intensity = L.hemi * (grey ? 0.88 : 1);
         hemi.color.set(0xffffff);
-        sun.intensity = L.sun * (grey ? 0.45 : 1); sun.color.set(L.sunC);
+        sun.intensity = L.sun * (grey ? 0.45 : 1) * (typeof curtainClosed === 'function' && db && curtainClosed() ? 0.25 : 1); sun.color.set(L.sunC);
         amb.intensity = L.amb;
         roomLamp.intensity = lightsOn ? Math.max(L.lamp, 1.6) : L.lamp;
         bedLamp.intensity = lightsOn ? 0.9 : 0;
@@ -716,6 +736,7 @@ export function init() {
         hovered = g;
         canvas.classList.toggle('is-hover', !!g);
         if (!g) { labelEl.classList.remove('on'); return; }
+        if (g.userData.id === 'curtain') { labelEl.innerHTML = '커튼' + (curtainClosed() ? '<span class="n">닫힘</span>' : ''); labelEl.classList.add('on'); return; }
         if (g.userData.id === 'shop') { const left = (db.shopping || []).filter(x => !x.done).length; labelEl.innerHTML = '장바구니' + (left ? '<span class="n">' + left + '</span>' : ''); labelEl.classList.add('on'); return; }
         if (g.userData.id === 'notes') { labelEl.innerHTML = '메모' + ((db.notes || []).length ? '<span class="n">' + db.notes.length + '</span>' : ''); labelEl.classList.add('on'); return; }
         const o = OBJECTS[g.userData.id], done = isDone(g.userData.id, todayKey());
@@ -734,7 +755,7 @@ export function init() {
         if (!g) { setHover(null); return; }
         setHover(g);
         const hasDoors = g.userData.doors && g.userData.doors.length;
-        if (!hasDoors && !g.userData.floor) g.userData.bounce = 1;
+        if (!hasDoors && !g.userData.floor && g.userData.id !== 'curtain') g.userData.bounce = 1;
         setTimeout(() => openCard(g.userData.id), hasDoors ? 380 : 140);
     });
 
@@ -834,6 +855,7 @@ export function init() {
         requestAnimationFrame(tick);
         const dt = Math.min(clock.getDelta(), 0.05);
         stepCam(dt);
+        stepCurtain(dt);
         controls.update();
         // 이동은 방 안에서만
         const tg = controls.target, lim = 0.2;
@@ -881,7 +903,7 @@ export function init() {
     const keyOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
     const todayKey = () => keyOf(new Date());
     const rec = (id, k) => (db.log[id] || {})[k];
-    const countOf = (id, k) => { const r = rec(id, k); return r ? (r.count || (r.done ? 1 : 0)) : 0; };
+    const countOf = (id, k) => { const r = rec(id, k); return r ? (r.count || (r.done ? 1 : 0) || (r.meals ? Object.keys(r.meals).length : 0)) : 0; };
     const isDone = (id, k) => countOf(id, k) > 0;
     const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const MONTH_EN = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
@@ -907,6 +929,7 @@ export function init() {
         d.notes = Array.isArray(d.notes) ? d.notes : [];     // 현관 메모: [{ id, title, date, body, at }]
         d.shopping = Array.isArray(d.shopping) ? d.shopping : [];   // 장바구니: [{ id, name, tag, done, at, done_at }]
         d.shop_tags = Array.isArray(d.shop_tags) && d.shop_tags.length ? d.shop_tags : SHOP_TAGS.slice();   // 장바구니 태그 (직접 추가 가능)
+        d.curtain = d.curtain && typeof d.curtain === 'object' ? d.curtain : { closed: false };        // 커튼: { closed, at }
         return d;
     }
     async function load() {
@@ -955,6 +978,7 @@ export function init() {
             '<em>' + z + '</em>' + Object.keys(OBJECTS).filter(id => OBJECTS[id].zone === z).map(id =>
                 '<span data-id="' + id + '" class="' + (isDone(id, tday) ? 'done' : '') + '">' + OBJECTS[id].name + '</span>').join('') +
             (z === '현관' ? '<span data-id="notes">현관 메모' + ((db.notes || []).length ? ' · ' + db.notes.length : '') + '</span>' : '') +
+            (z === '침실' ? '<span data-id="curtain">커튼' + (typeof curtainClosed === 'function' && curtainClosed() ? ' · 닫힘' : '') + '</span>' : '') +
             (z === '주방' ? '<span data-id="shop">장바구니' + ((db.shopping || []).filter(x => !x.done).length ? ' · ' + db.shopping.filter(x => !x.done).length : '') + '</span>' : '')
         ).join('');
         if (typeof buildNotes === 'function') buildNotes((db.notes || []).length);
@@ -967,6 +991,7 @@ export function init() {
     function openCard(id) {
         if (id === 'notes') { openNotes(); return; }
         if (id === 'shop') { openShop(); return; }
+        if (id === 'curtain') { toggleCurtain(); return; }
         const now = new Date();
         card = { id, y: now.getFullYear(), m: now.getMonth(), sel: todayKey() };
         bg.style.display = 'flex';
@@ -1002,8 +1027,9 @@ export function init() {
             '<div class="mh-head"><span class="mh-title"><b>' + esc(o.name) + '</b><span class="mh-act">' + o.emoji + ' ' + esc(o.act) + '</span></span></div>' +
             '<div class="mh-sub"><span class="mh-nav" data-nav="-1">‹</span><span>' + y + '.' + pad(m + 1) + '</span><span class="mh-nav" data-nav="1">›</span></div>' +
             '<div class="mh-grid">' + cells + '</div>' +
+            (card.id === 'cook' ? mealsHtml(sr, sd) :
             '<div class="mh-memo"><span class="mh-memo-date">' + (sd.getMonth() + 1) + '.' + sd.getDate() + '</span>' +
-            '<textarea class="mh-memo-text" rows="1">' + esc(sr.memo || '') + '</textarea></div>' +
+            '<textarea class="mh-memo-text" rows="1">' + esc(sr.memo || '') + '</textarea></div>') +
             '<div class="mh-foot"><span class="mh-stat">이번 달 ' + monthCount + '번 · 연속 ' + streak(card.id) + '일</span>' +
             '<span class="mh-count' + (sn ? ' on' : '') + '">' +
                 '<button class="mh-minus"' + (canStamp && sn ? '' : ' disabled') + '>−</button>' +
@@ -1011,11 +1037,57 @@ export function init() {
                 '<button class="mh-plus"' + (canStamp ? '' : ' disabled') + '>+</button>' +
             '</span>' +
             '<button class="mh-close">닫기</button></div>';
+        if (card.id === 'cook') { bindMeals(); return; }
         const ta = cardEl.querySelector('.mh-memo-text');
         const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
         fit(); ta.addEventListener('input', fit);
         ta.addEventListener('blur', () => saveMemo(ta.value));
         ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); } });
+    }
+
+    /* ---------------- 요리: 아침·점심·저녁·밤 메모 + 시간 ----------------
+       log.cook[날짜].meals = { breakfast|lunch|dinner|night: { memo, time: 'HH:MM' } }  (나중에 '김민정' 식사와 연결) */
+    const MEALS = [['breakfast', '아침'], ['lunch', '점심'], ['dinner', '저녁'], ['night', '밤']];
+    function mealsHtml(sr, sd) {
+        const meals = sr.meals || {};
+        return '<div class="mh-meals"><div class="mh-meals-date">' + (sd.getMonth() + 1) + '.' + sd.getDate() + '</div>' +
+            MEALS.map(([k, label]) => {
+                const m = meals[k] || {};
+                return '<div class="mh-meal" data-meal="' + k + '"><span class="mh-meal-label">' + label + '</span>' +
+                    '<textarea class="mh-meal-text" rows="1">' + esc(m.memo || '') + '</textarea>' +
+                    '<input class="mh-meal-time" type="time" value="' + esc(m.time || '') + '"' + (m.memo ? '' : ' disabled') + '></div>';
+            }).join('') + '</div>';
+    }
+    function hhmm(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+    function saveMeal(slot, patch) {
+        const id = 'cook', k = card.sel;
+        save('myhome: 요리 ' + k + ' ' + (MEALS.find(m => m[0] === slot) || [, slot])[1], d => {
+            d.log[id] = d.log[id] || {};
+            const r = Object.assign({}, d.log[id][k] || {});
+            const meals = Object.assign({}, r.meals || {});
+            const m = Object.assign({}, meals[slot] || {}, patch);
+            if (!m.memo) delete meals[slot]; else meals[slot] = m;
+            if (Object.keys(meals).length) r.meals = meals; else delete r.meals;
+            r.at = stamp();
+            if (!r.count && !r.memo && !r.meals) delete d.log[id][k]; else d.log[id][k] = r;
+        });
+    }
+    function bindMeals() {
+        cardEl.querySelectorAll('.mh-meal').forEach(row => {
+            const slot = row.dataset.meal, ta = row.querySelector('.mh-meal-text'), tm = row.querySelector('.mh-meal-time');
+            const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+            fit(); ta.addEventListener('input', fit);
+            ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); } });
+            ta.addEventListener('blur', () => {
+                const cur = ((rec('cook', card.sel) || {}).meals || {})[slot] || {}, v = ta.value.trim();
+                if (v === (cur.memo || '')) return;
+                // 처음 쓸 때 시간은 지금 (고른 날이 오늘이 아니면 비워 둠)
+                const time = cur.time || (card.sel === todayKey() ? hhmm(new Date()) : '');
+                saveMeal(slot, { memo: v, time });
+                drawCard();
+            });
+            tm.addEventListener('change', () => { saveMeal(slot, { time: tm.value }); });
+        });
     }
 
     function saveMemo(text) {
@@ -1116,6 +1188,27 @@ export function init() {
             card.edit = null; drawNotes(); drawList(); return;
         }
         if (e.target.closest('.mh-close')) closeCard();
+    }
+
+    /* ---------------- 커튼 상태 ---------------- */
+    // 닫은 뒤 해가 한 번 뜨면 저절로 열림
+    function lastSunrise() {
+        const now = new Date();
+        let rise = weather && weather.daily && weather.daily.sunrise ? new Date(weather.daily.sunrise[0]) : null;
+        if (!rise || isNaN(rise)) { rise = new Date(now); rise.setHours(7, 10, 0, 0); }       // 날씨를 못 받았으면 대략 7:10
+        if (rise > now) rise = new Date(rise.getTime() - 86400000);
+        return rise.getTime();
+    }
+    function curtainClosed() {
+        const c = db.curtain || {};
+        if (!c.closed) return false;
+        const at = Date.parse(c.at || 0) || 0;
+        return at >= lastSunrise();
+    }
+    function toggleCurtain() {
+        const close = !curtainClosed();
+        save('myhome: 커튼 ' + (close ? '닫기' : '열기'), d => { d.curtain = { closed: close, at: new Date().toISOString() }; });
+        applySky();
     }
 
     /* ---------------- 장바구니 (장보기 목록) ---------------- */
