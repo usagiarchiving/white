@@ -13,7 +13,7 @@ import { RoundedBoxGeometry } from '../../vendor/three/RoundedBoxGeometry.js';
 const ZONES = ['현관', '주방', '거실', '침실', '욕실'];
 const OBJECTS = {
     entrance: { zone: '현관', name: '현관',       act: '현관 정리',    emoji: '🚪' },
-    shoes:    { zone: '현관', name: '신발장',     act: '신발 정리',    emoji: '👟' },
+    shoes:    { zone: '현관', name: '신발 두는 곳', act: '신발 정리',  emoji: '👟' },
     sink:     { zone: '주방', name: '싱크대',     act: '설거지',       emoji: '🫧' },
     stove:    { zone: '주방', name: '인덕션',     act: '요리',         emoji: '🍳' },
     upper1:   { zone: '주방', name: '상부장 1',   act: '정리',         emoji: '✨' },
@@ -22,6 +22,8 @@ const OBJECTS = {
     lower2:   { zone: '주방', name: '하부장 2',   act: '정리',         emoji: '✨' },
     washer:   { zone: '주방', name: '세탁기',     act: '빨래',         emoji: '🧺' },
     fridge:   { zone: '주방', name: '냉장고',     act: '냉장고 정리',  emoji: '🧊' },
+    trash:    { zone: '주방', name: '쓰레기통',   act: '쓰레기 버리기', emoji: '🗑️' },
+    recycle:  { zone: '주방', name: '분리수거함', act: '분리수거',     emoji: '♻️' },
     table:    { zone: '거실', name: '식탁',       act: '밥 챙겨 먹기', emoji: '🍚' },
     books:    { zone: '거실', name: '책장',       act: '독서',         emoji: '📚' },
     drawer:   { zone: '거실', name: '서랍장',     act: '정리',         emoji: '🗂️' },
@@ -88,7 +90,11 @@ export function init() {
     sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
     scene.add(sun);
     const fill = new THREE.DirectionalLight(0xf5f3ff, 0.28); fill.position.set(-5, 4, -4); scene.add(fill);
-    const roomLamp = new THREE.PointLight(0xffd9b0, 0, 7, 1.4); roomLamp.position.set(0.2, 2.1, 0.4); scene.add(roomLamp);  // 밤에 켜지는 방 불빛
+    // 실내 불: 창밖이 어두워지면 저절로 켜짐 (applySky)
+    const roomLamp = new THREE.PointLight(0xffe2bf, 0, 9, 1.2); roomLamp.position.set(0.1, 2.15, 0.1); scene.add(roomLamp);
+    const bedLamp = new THREE.PointLight(0xffd7b0, 0, 4, 1.5); bedLamp.position.set(-0.6, 1.2, 1.8); scene.add(bedLamp);
+    const kitchenLamp = new THREE.PointLight(0xfff0d6, 0, 2.6, 1.5); kitchenLamp.position.set(-0.4, 1.3, -2.25); scene.add(kitchenLamp);
+    const glowMat = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xffe6c4, emissiveIntensity: 0, roughness: 0.6 });
 
     /* ---------------- 모양 도우미 ---------------- */
     const matCache = {};
@@ -178,7 +184,8 @@ export function init() {
         g.add(at(rbox(0.7, 0.2, 0.46, C.white, 0.04), X(0.52), 1.68, Z(0.23)));                         // 후드
         g.add(at(rbox(0.72, 0.035, 0.48, C.soft, 0.012), X(0.52), 1.575, Z(0.24)));
         g.add(at(rbox(0.3, H - 1.78, 0.26, C.white, 0.03), X(0.52), 1.78 + (H - 1.78) / 2, Z(0.13)));  // 덕트
-        g.add(at(rbox(0.2, 0.01, 0.06, 0xfff6dc, 0.004, { emissive: 0xfff3cf, emissiveIntensity: 0.7 }), X(0.52), 1.555, Z(0.3)));
+        const hoodLed = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.01, 0.07), glowMat); g.add(at(hoodLed, X(0.52), 1.555, Z(0.3)));
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.012, 0.03), glowMat); g.add(at(strip, X(1.51), 1.35, Z(0.3)));   // 상부장 아래 조명
     });
     // 아래쪽 벽: 창문 (하늘은 시간/날씨로 바뀜)
     let skyTex, skyCanvas, weatherFX;
@@ -234,17 +241,15 @@ export function init() {
 
     /* ---------------- 현관 / 화장실 ---------------- */
     furniture('entrance', g => {
-        g.add(block(2.15, 3.2, 0, 0.3, -0.02, 0.03, 0xe9e6e4, 0.008));              // 현관 바닥 타일
         g.add(at(rbox(0.82, 2.0, 0.06, C.silver, 0.03, { roughness: 0.45 }), X(2.68), 1.0, Z(0) + 0.03));    // 현관문 (옅은 실버)
         g.add(handle(X(2.68) - 0.3, 1.0, Z(0) + 0.08, false, 0.12));
     }, 'N');
-    // 신발장: 현관 앞 오른쪽 벽, 싱크대만큼 나와 있음
+    // 신발 두는 바닥: 현관문 앞, 싱크대만큼 나와 있는 타일 바닥 (한 칸 낮음)
     furniture('shoes', g => {
-        g.add(block(2.58, 3.2, 0.32, 1.12, 0, 1.0, C.white, 0.04));
-        [[0.34, 0.715], [0.725, 1.1]].forEach(([z0, z1], i) => {
-            g.add(block(2.565, 2.58, z0, z1, 0.06, 0.9, C.off, 0.012));
-            g.add(handle(X(2.55), 0.82, Z(i ? z0 + 0.06 : z1 - 0.06), true, 0.14));
-        });
+        g.add(block(2.14, 3.2, 0, 0.64, -0.03, 0.035, 0xe7e4e2, 0.006));
+        for (let i = 1; i < 4; i++) g.add(block(2.14 + i * 0.265 - 0.004, 2.14 + i * 0.265 + 0.004, 0.01, 0.63, 0.0, 0.008, 0xd8d4d2, 0.002));
+        g.add(block(2.15, 3.2, 0.36, 0.364, 0.0, 0.008, 0xd8d4d2, 0.002));
+        g.add(block(2.12, 3.2, 0.62, 0.66, 0, 0.04, C.off, 0.01));                    // 마루와의 턱
     });
     furniture('bath', g => {
         g.add(at(rbox(0.06, 2.0, 0.84, C.oak, 0.03), X(W) - 0.03, 1.0, Z(1.63)));      // 화장실 문 (우드)
@@ -281,6 +286,17 @@ export function init() {
     furniture('table', g => {
         g.add(block(1.0, 1.96, 1.88, 2.42, 0.68, 0.05, C.white, 0.02));
         [[1.9, 1.94], [1.9, 2.36]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.68, C.soft), X(x), 0.34, Z(z))));
+    });
+    // 식탁 아래 빈 공간: 쓰레기통(둥근 페달식) + 분리수거함(칸 나뉜 상자)
+    furniture('trash', g => {
+        g.add(at(cyl(0.15, 0.13, 0.4, C.white, 32), X(1.2), 0.2, Z(2.15)));
+        const lid = cyl(0.155, 0.155, 0.035, C.soft, 32); g.add(at(lid, X(1.2), 0.415, Z(2.15)));
+        g.add(at(rbox(0.08, 0.02, 0.04, C.pinkMid, 0.008), X(1.2), 0.02, Z(2.0)));
+    });
+    furniture('recycle', g => {
+        g.add(block(1.42, 1.84, 1.98, 2.34, 0, 0.36, C.white, 0.03));
+        [[1.42, 1.56, C.pink], [1.56, 1.7, 0xdfeaf2], [1.7, 1.84, 0xe7f1e4]].forEach(([x0, x1, col]) =>
+            g.add(block(x0 + 0.015, x1 - 0.015, 1.975, 1.99, 0.05, 0.26, col, 0.01)));
     });
 
     /* ---------------- 침대 (머리는 창문 쪽) ---------------- */
@@ -421,13 +437,18 @@ export function init() {
             day:   { hemi: 1.3, sun: 0.9, sunC: 0xfff5ea, amb: 0.25, lamp: 0 },
             dawn:  { hemi: 1.05, sun: 0.6, sunC: 0xffd9c7, amb: 0.22, lamp: 0.3 },
             dusk:  { hemi: 0.95, sun: 0.55, sunC: 0xffc6b0, amb: 0.2, lamp: 0.6 },
-            night: { hemi: 0.45, sun: 0.12, sunC: 0x9fb2e6, amb: 0.12, lamp: 2.2 }
+            night: { hemi: 0.62, sun: 0.1, sunC: 0x9fb2e6, amb: 0.16, lamp: 3.2 }
         }[phase];
+        const lightsOn = phase === 'night' || phase === 'dusk' || (grey && phase === 'dawn');
         hemi.intensity = L.hemi * (grey ? 0.88 : 1);
-        hemi.color.set(phase === 'night' ? 0xc9d2f0 : 0xffffff);
+        hemi.color.set(0xffffff);
         sun.intensity = L.sun * (grey ? 0.45 : 1); sun.color.set(L.sunC);
         amb.intensity = L.amb;
-        roomLamp.intensity = L.lamp;
+        roomLamp.intensity = lightsOn ? Math.max(L.lamp, 1.6) : L.lamp;
+        bedLamp.intensity = lightsOn ? 0.9 : 0;
+        kitchenLamp.intensity = lightsOn ? 0.8 : 0;
+        glowMat.emissiveIntensity = lightsOn ? 1.1 : 0.15;
+        if (phase === 'night') hemi.color.set(0xffe9d6);     // 불 켜진 실내는 따뜻하게
         drawWeatherChip();
     }
 
