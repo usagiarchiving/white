@@ -963,7 +963,7 @@ export function init() {
             '<div class="mh-sub"><span class="mh-nav" data-nav="-1">‹</span><span>' + y + '.' + pad(m + 1) + '</span><span class="mh-nav" data-nav="1">›</span></div>' +
             '<div class="mh-grid">' + cells + '</div>' +
             '<div class="mh-memo"><span class="mh-memo-date">' + (sd.getMonth() + 1) + '.' + sd.getDate() + '</span>' +
-            '<textarea class="mh-memo-text" rows="1" placeholder="메모를 남겨요…">' + esc(sr.memo || '') + '</textarea></div>' +
+            '<textarea class="mh-memo-text" rows="1">' + esc(sr.memo || '') + '</textarea></div>' +
             '<div class="mh-foot"><span class="mh-stat">이번 달 ' + monthCount + '번 · 연속 ' + streak(card.id) + '일</span>' +
             '<span class="mh-count' + (sn ? ' on' : '') + '">' +
                 '<button class="mh-minus"' + (canStamp && sn ? '' : ' disabled') + '>−</button>' +
@@ -1034,10 +1034,10 @@ export function init() {
         if (card.edit) {
             const n = card.edit === 'new' ? { title: '', date: todayKey(), body: '' } : (db.notes.find(x => x.id === card.edit) || {});
             cardEl.innerHTML =
-                '<div class="mh-head"><span class="mh-title"><b>현관 메모</b><span class="mh-act">' + (card.edit === 'new' ? '새 메모' : '메모 고치기') + '</span></span></div>' +
-                '<input class="mh-note-title" placeholder="제목" value="' + esc(n.title) + '">' +
+                '<div class="mh-head"><span class="mh-title"><b>현관 메모</b></span></div>' +
+                '<input class="mh-note-title" value="' + esc(n.title) + '">' +
                 '<input class="mh-note-date" type="date" value="' + esc(n.date || todayKey()) + '">' +
-                '<textarea class="mh-note-body" placeholder="본문">' + esc(n.body) + '</textarea>' +
+                '<textarea class="mh-note-body">' + esc(n.body) + '</textarea>' +
                 '<div class="mh-foot">' + (card.edit !== 'new' ? '<button class="mh-close mh-note-del">지우기</button>' : '<span></span>') +
                 '<span><button class="mh-close mh-note-cancel">취소</button><button class="mh-stamp on mh-note-save">붙이기</button></span></div>';
             return;
@@ -1048,7 +1048,7 @@ export function init() {
                 '<div class="mh-note" data-note="' + esc(n.id) + '">' +
                     '<div class="mh-note-top"><b>' + esc(n.title || '제목 없음') + '</b><span>' + esc((n.date || '').replace(/-/g, '.')) + '</span></div>' +
                     (n.body ? '<div class="mh-note-text">' + esc(n.body) + '</div>' : '') +
-                '</div>').join('') : '<div class="mh-note-empty">아직 붙인 메모가 없어요.</div>') +
+                '</div>').join('') : '') +
             '<div class="mh-foot"><button class="mh-stamp mh-note-add">+ 메모 붙이기</button><button class="mh-close">닫기</button></div>';
     }
     function notesClick(e) {
@@ -1080,6 +1080,8 @@ export function init() {
 
     /* ---------------- 장바구니 (장보기 목록) ---------------- */
     const SHOP_TAGS = ['장보기', '마트', '다이소', '쿠팡', '기타'];
+    // Solar 아이콘 heart-bold (480 Design, CC BY 4.0)
+    const HEART = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z"/></svg>';
     const shopTags = () => (db.shop_tags && db.shop_tags.length ? db.shop_tags : SHOP_TAGS);
     function lsTag() { try { return localStorage.getItem('mh-shop-tag') || ''; } catch (e) { return ''; } }
     function setLsTag(t) { try { localStorage.setItem('mh-shop-tag', t); } catch (e) {} }
@@ -1107,15 +1109,15 @@ export function init() {
             tagSelect(x) +
             '<span class="mh-shop-x" data-act="del">×</span></div>';
         cardEl.innerHTML =
-            '<div class="mh-head"><span class="mh-title"><b>장바구니</b><span class="mh-act">' + (todo.length ? todo.length + '개 사야 해요' : '다 샀어요') + '</span></span></div>' +
+            '<div class="mh-head"><span class="mh-title"><b>장바구니</b><span class="mh-act">' + (todo.length || '') + '</span></span></div>' +
             '<div class="mh-shop-tags">' +
                 '<span class="mh-chip' + (card.tag ? '' : ' on') + '" data-tag="">전체<small>' + leftOf('') + '</small></span>' +
                 tags.map(t => '<span class="mh-chip' + (card.tag === t ? ' on' : '') + '" data-tag="' + esc(t) + '">' + esc(t) + (leftOf(t) ? '<small>' + leftOf(t) + '</small>' : '') + '</span>').join('') +
-                '<span class="mh-chip mh-chip-add" data-act="newtag">+ 태그</span>' +
+                '<span class="mh-chip mh-chip-add" data-act="newtag">+</span>' +
             '</div>' +
-            '<div class="mh-shop-add"><input class="mh-shop-input" placeholder="' + (card.tag ? esc(card.tag) + '에 ' : '') + '살 것 추가 (예: 우유 2개)" enterkeyhint="done"><button class="mh-shop-plus">+</button></div>' +
+            '<div class="mh-shop-add"><input class="mh-shop-input" enterkeyhint="done"><button class="mh-shop-plus" aria-label="추가">' + HEART + '</button></div>' +
             '<div class="mh-shop-sec">살 것</div>' +
-            (todo.length ? todo.map(row).join('') : '<div class="mh-note-empty">사야 할 게 없어요.</div>') +
+            todo.map(row).join('') +
             (done.length ? '<div class="mh-shop-sec mh-shop-donehead" data-act="fold">산 것 ' + done.length + ' <span>' + (card.showDone ? '▾' : '▸') + '</span></div>' +
                 (card.showDone ? done.map(row).join('') + '<button class="mh-close mh-shop-clear">산 것 비우기</button>' : '') : '') +
             '<div class="mh-foot">' + (card.tag && !SHOP_TAGS.includes(card.tag) ? '<button class="mh-close mh-shop-deltag">이 태그 지우기</button>' : '<span></span>') + '<button class="mh-close">닫기</button></div>';

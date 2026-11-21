@@ -358,12 +358,10 @@
         bg.style.cssText = 'position:fixed;inset:0;z-index:30000;background:rgba(255,240,244,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;font-family:"Noto Serif KR",serif;';
         bg.innerHTML =
             '<div style="background:#fffcfb;border:1px solid #f6e6ea;border-radius:12px;padding:22px 20px 16px;max-width:300px;width:100%;box-shadow:0 14px 40px rgba(220,150,170,.16);color:#5f5357;text-align:center">' +
-              '<div style="font-size:13px;font-weight:600;margin-bottom:4px">다른 기기에서도 글쓰기</div>' +
-              '<div style="font-size:10.5px;color:#b3a2a7;line-height:1.7;margin-bottom:12px">폰 카메라로 이 QR을 찍으면<br>홈페이지가 열리면서 바로 저장돼요.</div>' +
-              '<div id="gh-qr" style="display:flex;justify-content:center;min-height:200px;align-items:center;font-size:11px;color:#b3a2a7">QR 만드는 중…</div>' +
-              '<div style="font-size:10px;color:#d4728c;margin-top:10px;line-height:1.6">이 QR은 비밀번호와 같아요. 다른 사람에게 보여 주지 마세요.</div>' +
+              '<div style="font-size:12.5px;font-weight:600;margin-bottom:12px">다른 기기</div>' +
+              '<div id="gh-qr" style="display:flex;justify-content:center;min-height:200px;align-items:center"></div>' +
               '<div style="display:flex;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid #f6e9ec">' +
-                '<button data-k="off" style="background:none;border:none;color:#b3a2a7;font-family:inherit;font-size:11px;cursor:pointer">이 기기에서 해제</button>' +
+                '<button data-k="off" style="background:none;border:none;color:#b3a2a7;font-family:inherit;font-size:11px;cursor:pointer">해제</button>' +
                 '<button data-k="close" style="background:none;border:none;color:#d4728c;font-weight:600;font-family:inherit;font-size:11.5px;cursor:pointer">닫기</button>' +
               '</div>' +
             '</div>';
