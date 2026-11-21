@@ -1,0 +1,76 @@
+{
+ "version": 1,
+ "updated_at": "2026-11-22T00:00:00+09:00",
+ "profile": [
+  {
+   "id": "pf0",
+   "label": "이름",
+   "value": "김민정"
+  },
+  {
+   "id": "pf1",
+   "label": "생년월일",
+   "value": "2002년생"
+  },
+  {
+   "id": "pf2",
+   "label": "성별",
+   "value": "여성"
+  },
+  {
+   "id": "pf3",
+   "label": "외형",
+   "value": ""
+  },
+  {
+   "id": "pf4",
+   "label": "성격",
+   "value": ""
+  },
+  {
+   "id": "pf5",
+   "label": "좋아하는 것",
+   "value": ""
+  },
+  {
+   "id": "pf6",
+   "label": "좋아하는 음식",
+   "value": ""
+  },
+  {
+   "id": "pf7",
+   "label": "싫어하는 것",
+   "value": ""
+  }
+ ],
+ "icons": {},
+ "hp": [],
+ "lines": [],
+ "library": [],
+ "condition": [],
+ "beauty": [],
+ "outfit": [],
+ "diary": [],
+ "symptom_tags": [
+  "배아픔",
+  "두통"
+ ],
+ "beauty_steps": {
+  "morning": [
+   "세안",
+   "토너",
+   "로션",
+   "선크림"
+  ],
+  "night": [
+   "클렌징",
+   "토너",
+   "세럼",
+   "크림"
+  ],
+  "etc": [
+   "팩",
+   "각질 케어"
+  ]
+ }
+}

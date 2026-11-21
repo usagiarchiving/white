@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="category/minjung/minjung.css?v=1">
+
+<div class="mj-root" id="mj-root">
+    <div class="mj-desk">
+        <!-- PC: 바탕화면 파일 아이콘 -->
+        <div class="mj-icons" id="mj-icons"></div>
+
+        <!-- 게임 화면: 방 배경(옆으로 밀어서 바꾸기) + 캐릭터 + 대사창 -->
+        <div class="mj-frame">
+            <div class="mj-game" id="mj-game">
+                <div class="mj-bgs" id="mj-bgs"></div>
+                <img class="mj-char" id="mj-char" src="minjung/assets/character.webp" alt="" draggable="false">
+                <div class="mj-date" id="mj-date"></div>
+                <button class="mj-hp" id="mj-hp" title="HP"></button>
+                <div class="mj-dots" id="mj-dots"></div>
+                <span class="mj-saving" id="mj-saving"></span>
+                <button class="mj-dialog" id="mj-dialog">
+                    <span class="mj-name">김민정</span>
+                    <span class="mj-say" id="mj-say"></span>
+                    <span class="mj-next">▼</span>
+                </button>
+                <!-- 모바일: 아래 메뉴 5개 -->
+                <nav class="mj-nav" id="mj-nav"></nav>
+            </div>
+        </div>
+    </div>
+    <!-- 열린 창들 -->
+    <div class="mj-layer" id="mj-layer"></div>
+    <div class="mj-toast" id="mj-toast"></div>
+    <input type="file" accept="image/*" id="mj-file" hidden>
+</div>
+
+<!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
+<script type="module">
+    import { init } from './category/minjung/minjung.js?v=1';
+    init();
+</script>
