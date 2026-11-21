@@ -49,20 +49,20 @@
 
 .cap-status { text-align: center; color: var(--sub-color); font-size: 12px; padding: 20px 0; }
 .cap-status:empty { display: none; }
-.cap-filter-note { font-size: 11.5px; color: var(--sub-color); margin-bottom: 15px; }
+.cap-filter-note { font-size: 10.5px; color: var(--sub-color); margin-bottom: 10px; }
 #cap-clear-filter { color: var(--point-color); cursor: pointer; margin-left: 6px; }
 
 /* ---------- 날짜 목록 (아코디언, 기본 닫힘) ---------- */
 .cap-day-head {
     display: flex; align-items: center; gap: 12px;
-    font-size: 13px; color: var(--main-color); cursor: pointer;
-    padding: 12px 0 6px; border-bottom: 1px solid var(--divider-bg); transition: color .3s;
+    font-size: 11.5px; color: var(--main-color); cursor: pointer;
+    padding: 8px 0 5px; border-bottom: 1px solid var(--divider-bg); transition: color .3s;
 }
 .cap-day-head:hover, .cap-day.is-open > .cap-day-head { color: var(--point-color); }
 .cap-day.is-open > .cap-day-head { border-bottom-color: transparent; }
 .cap-day-date { flex: 1; }
-.cap-day-date small { font-size: 11px; color: var(--sub-color); margin-left: 2px; }
-.cap-day-count { font-size: 11px; color: var(--sub-color); flex-shrink: 0; }
+.cap-day-date small { font-size: 9.5px; color: var(--sub-color); margin-left: 2px; }
+.cap-day-count { font-size: 9.5px; color: var(--sub-color); flex-shrink: 0; font-family: 'Courier New', monospace; }
 .cap-day-tools { display: none; gap: 13px; align-items: center; }
 .cap-day.is-open > .cap-day-head .cap-day-tools { display: inline-flex; }
 .cap-day-tools i, .cap-meta-acts i, .cap-row-acts i {
@@ -72,17 +72,21 @@
 .cap-day-tools .cap-act-del:hover, .cap-meta-acts .cap-act-del:hover { color: #ff3b30; }
 .cap-day.is-picked > .cap-day-head .cap-day-date { color: #D04978; }
 
-.cap-day-body { display: none; padding: 15px 0 30px; border-bottom: 1px solid var(--divider-bg); }
+.cap-day-body { display: none; padding: 10px 0 20px; border-bottom: 1px solid var(--divider-bg); }
 .cap-day.is-open > .cap-day-body { display: block; }
 
 /* ---------- 이미지 (칸 없이 이어서) ---------- */
-.cap-item { margin: 0 0 14px; position: relative; }
+.cap-item { margin: 0 0 10px; position: relative; }
 .cap-item img { display: block; width: 100%; height: auto; border-radius: 4px; background: var(--divider-bg); }
 .cap-item img.is-loaded { background: transparent; }
-.cap-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 10.5px; color: var(--sub-color); }
-.cap-meta-time { font-family: 'Courier New', monospace; opacity: .6; }
-.cap-meta-tags { color: var(--point-color); opacity: .8; }
-.cap-meta-acts { margin-left: auto; display: inline-flex; gap: 13px; align-items: center; }
+.cap-meta { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 3px; font-size: 10px; color: var(--sub-color); }
+.cap-meta-time { font-family: 'Courier New', monospace; font-size: 9px; opacity: .45; cursor: pointer; padding: 3px 0 3px 8px; transition: opacity .2s; }
+.cap-meta-time:hover, .show-tools .cap-meta-time { opacity: 1; color: var(--point-color); }
+.cap-meta-tags { color: var(--point-color); opacity: .7; margin-right: auto; font-size: 9.5px; }
+.cap-meta-fav { font-size: 9px; color: #D04978; opacity: .8; }
+.cap-meta-acts { display: none; gap: 14px; align-items: center; }
+.cap-item.show-tools .cap-meta-acts { display: inline-flex; }
+.cap-item.show-tools .cap-meta-fav { display: none; }
 .cap-meta-acts i { padding: 4px 0; min-width: 12px; text-align: center; }
 .cap-meta-acts i.is-fav, .cap-group-title .is-fav { color: #D04978; opacity: .9; }
 
@@ -100,12 +104,12 @@
 .cap-group { margin: 0 0 14px; }
 .cap-group-head {
     display: flex; align-items: baseline; gap: 10px; cursor: pointer;
-    font-size: 12px; color: var(--main-color); padding: 8px 0 8px 10px;
+    font-size: 11px; color: var(--main-color); padding: 6px 0 6px 10px;
     border-left: 2px solid var(--divider-bg); transition: color .3s, border-color .3s;
 }
 .cap-group-head:hover, .cap-group.is-open > .cap-group-head { color: var(--point-color); border-left-color: var(--point-color); }
 .cap-group-title { flex: 1; }
-.cap-group-sub { font-size: 10.5px; color: var(--sub-color); font-family: 'Courier New', monospace; }
+.cap-group-sub { font-size: 9.5px; color: var(--sub-color); font-family: 'Courier New', monospace; }
 .cap-group-body { display: none; padding: 12px 0 4px 12px; border-left: 2px solid var(--divider-bg); }
 .cap-group.is-open > .cap-group-body { display: block; }
 .cap-group-memo { font-size: 12.5px; color: var(--main-color); line-height: 2; white-space: pre-wrap; margin-bottom: 6px; }

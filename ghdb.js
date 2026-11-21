@@ -35,6 +35,9 @@
     // posts 이외의 테이블은 테이블 이름이 곧 파일 이름
     var TABLE_FILE = { todos: 'todos', record: 'record' };
 
+    // GitHub API 응답은 브라우저가 60초간 기억(캐시)해서, 연달아 저장하면 옛 상태를 받음 → 항상 새로 받기
+    function nfetch(url, opts) { opts = opts || {}; opts.cache = 'no-store'; return fetch(url, opts); }
+
     /* ---------------- 토큰 ---------------- */
     function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
     function setToken(t) { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
@@ -92,7 +95,7 @@
         var path = 'data/' + name + '.json';
         if (getToken()) {
             // 토큰이 있으면 API로 최신본을 읽음 (Pages 반영 지연 없음)
-            var res = await fetch(API + path + '?ref=' + BRANCH + '&t=' + Date.now(), { headers: headers() });
+            var res = await nfetch(API + path + '?ref=' + BRANCH + '&t=' + Date.now(), { headers: headers() });
             if (res.status === 404) { cache[name] = { rows: [], sha: null }; return cache[name]; }
             if (!res.ok) throw await apiError(res, name + ' 읽기');
             var meta = await res.json();
@@ -104,7 +107,7 @@
                 text = new TextDecoder().decode(bytes);
             } else {
                 // 1MB가 넘는 파일은 raw로 다시 받음
-                var r2 = await fetch(API + path + '?ref=' + BRANCH + '&t=' + Date.now(), { headers: headers({ 'Accept': 'application/vnd.github.raw' }) });
+                var r2 = await nfetch(API + path + '?ref=' + BRANCH + '&t=' + Date.now(), { headers: headers({ 'Accept': 'application/vnd.github.raw' }) });
                 if (!r2.ok) throw await apiError(r2, name + ' 읽기');
                 text = await r2.text();
             }
@@ -112,7 +115,7 @@
             return cache[name];
         }
         // 토큰이 없으면(방문자) 사이트에 배포된 파일을 읽음
-        var res2 = await fetch(path + '?t=' + Date.now());
+        var res2 = await nfetch(path + '?t=' + Date.now());
         if (res2.status === 404) return { rows: [], sha: null };
         if (!res2.ok) throw new Error(name + ' 읽기 실패 (' + res2.status + ')');
         return { rows: await res2.json(), sha: null };
@@ -122,18 +125,18 @@
         requireToken();
         var body = { message: message, content: b64, branch: BRANCH };
         if (sha) body.sha = sha;
-        var res = await fetch(API + path, { method: 'PUT', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
+        var res = await nfetch(API + path, { method: 'PUT', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
         if (!res.ok) throw await apiError(res, path + ' 저장');
         return (await res.json()).content.sha;
     }
 
     async function deletePath(path, message) {
         requireToken();
-        var res = await fetch(API + path + '?ref=' + BRANCH, { headers: headers() });
+        var res = await nfetch(API + path + '?ref=' + BRANCH, { headers: headers() });
         if (res.status === 404) return;
         if (!res.ok) throw await apiError(res, path + ' 확인');
         var sha = (await res.json()).sha;
-        var del = await fetch(API + path, {
+        var del = await nfetch(API + path, {
             method: 'DELETE', headers: headers({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ message: message, sha: sha, branch: BRANCH })
         });
@@ -356,7 +359,7 @@
     Repo.prototype.api = async function (path, opts) {
         opts = opts || {};
         for (var attempt = 0; ; attempt++) {
-            var res = await fetch(this.base + path, {
+            var res = await nfetch(this.base + path, {
                 method: opts.method || 'GET',
                 headers: headers(opts.body ? { 'Content-Type': 'application/json' } : {}),
                 body: opts.body ? JSON.stringify(opts.body) : undefined
@@ -389,14 +392,14 @@
                 for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
                 text = new TextDecoder().decode(bytes);
             } else {
-                var r = await fetch(this.base + '/contents/' + path + refQ, { headers: headers({ 'Accept': 'application/vnd.github.raw' }) });
+                var r = await nfetch(this.base + '/contents/' + path + refQ, { headers: headers({ 'Accept': 'application/vnd.github.raw' }) });
                 if (!r.ok) throw await apiError(r, path + ' 읽기');
                 text = await r.text();
             }
             return JSON.parse(text);
         }
-        var res = await fetch(this.site + path + '?t=' + Date.now());
-        if (!res.ok) res = await fetch(this.raw + path + '?t=' + Date.now());   // Pages를 안 켰으면 원본 주소로
+        var res = await nfetch(this.site + path + '?t=' + Date.now());
+        if (!res.ok) res = await nfetch(this.raw + path + '?t=' + Date.now());   // Pages를 안 켰으면 원본 주소로
         if (!res.ok) return fallback;
         return res.json();
     };

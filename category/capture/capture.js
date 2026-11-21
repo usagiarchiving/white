@@ -18,7 +18,8 @@
         selecting: false, sel: new Set(),
         open: JSON.parse(lsGet('cap-open', '{}')),     // 기본은 모두 닫힘, 연 것만 기억
         calY: now.getFullYear(), calM: now.getMonth() + 1,
-        picked: null
+        picked: null,
+        monthOnly: lsGet('cap-month-only', '0') === '1'   // 켜면 달력에서 보고 있는 달만 목록에 표시
     };
 
     var $feed = $('#cap-feed'), $bar = $('#cap-bar');
@@ -120,13 +121,14 @@
         return '<figure class="cap-item' + sel + '" data-id="' + esc(it.id) + '">' +
             '<img loading="lazy" decoding="async" alt=""' + size + ' src="' + esc(repo.url(it.path)) + '" data-path="' + esc(it.path) + '">' +
             '<figcaption class="cap-meta">' +
-                '<span class="cap-meta-time">' + timeOf(it.taken_at) + '</span>' +
                 (it.tags && it.tags.length ? '<span class="cap-meta-tags">' + esc(tagsText(it.tags)) + '</span>' : '') +
                 '<span class="cap-meta-acts">' +
                     '<i data-act="fav" class="' + (it.fav ? 'xi-heart is-fav' : 'xi-heart-o') + '" title="♡"></i>' +
                     '<i data-act="edit" class="xi-pen" title="수정"></i>' +
                     '<i data-act="del" class="xi-trash cap-act-del" title="삭제"></i>' +
                 '</span>' +
+                (it.fav ? '<i class="xi-heart cap-meta-fav"></i>' : '') +
+                '<span class="cap-meta-time" data-act="tools" title="누르면 수정 도구">' + timeOf(it.taken_at) + '</span>' +
             '</figcaption>' +
         '</figure>';
     }
@@ -153,6 +155,10 @@
         var items = visibleItems();
         var days = buildDays(items);
         var keys = Object.keys(days).sort();
+        if (state.monthOnly) {
+            var ym = state.calY + '-' + pad(state.calM);
+            keys = keys.filter(function (d) { return d.slice(0, 7) === ym; });
+        }
         if (state.order === 'desc') keys.reverse();
 
         var note = '';
@@ -182,7 +188,13 @@
             '</section>';
         }).join('');
 
+        if (state.monthOnly) {
+            note += '<div class="cap-filter-note">' + state.calY + '년 ' + state.calM + '월만 보는 중 · ' +
+                keys.reduce(function (n, d) { return n + days[d].reduce(function (m, e) { return m + (e.items ? e.items.length : 1); }, 0); }, 0) + '장' +
+                (keys.length ? '' : ' (이 달엔 캡처가 없어요)') + '</div>';
+        }
         $feed.html(note + html);
+        $('#cap-ic-month').toggleClass('active', state.monthOnly);
         $('#cap-wrap').toggleClass('cap-selecting', state.selecting);
         $('#cap-ic-fav').toggleClass('active', state.fav).attr('class', (state.fav ? 'xi-heart' : 'xi-heart-o') + (state.fav ? ' active' : ''));
         $('#cap-ic-tags').toggleClass('active', !!state.tag || $('#cap-tags-panel').is(':visible'));
@@ -225,7 +237,8 @@
     }
     function shiftMonth(n) {
         var d = new Date(state.calY, state.calM - 1 + n, 1);
-        state.calY = d.getFullYear(); state.calM = d.getMonth() + 1; drawCal();
+        state.calY = d.getFullYear(); state.calM = d.getMonth() + 1;
+        state.monthOnly ? render() : drawCal();
     }
     $('#cap-cal-prev').on('click', function () { shiftMonth(-1); });
     $('#cap-cal-next').on('click', function () { shiftMonth(1); });
@@ -233,16 +246,23 @@
     $('#cap-cal-picker').on('change blur', function () {
         var v = $(this).val();
         if (/^\d{4}-\d{2}$/.test(v)) { state.calY = +v.slice(0, 4); state.calM = +v.slice(5, 7); }
-        drawCal();
+        state.monthOnly ? render() : drawCal();
     });
     $('#cap-cal-grid').on('click', '.cap-cal-day.has-log', function () { goToDay($(this).data('date')); });
 
     function goToDay(d) {
         state.picked = d;
+        state.calY = +d.slice(0, 4); state.calM = +d.slice(5, 7);
+        // 다른 날은 닫고 고른 날만 열어서, 위에서 사진이 늘어나 위치가 밀리지 않게
+        Object.keys(state.open).forEach(function (k) { if (k.charAt(0) === 'd') delete state.open[k]; });
         state.open['d:' + d] = 1; saveOpen();
         render();
-        var el = document.getElementById('cap-d-' + d);
-        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
+        var scroll = function (smooth) {
+            var el = document.getElementById('cap-d-' + d);
+            if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: smooth ? 'smooth' : 'auto' });
+        };
+        requestAnimationFrame(function () { scroll(true); });
+        setTimeout(function () { scroll(true); }, 450);
     }
 
     /* ---------------- 위쪽 아이콘들 ---------------- */
@@ -264,6 +284,9 @@
         state.tag = state.tag === t ? null : t; render();
     });
     $('#cap-ic-fav').on('click', function () { state.fav = !state.fav; render(); });
+    $('#cap-ic-month').on('click', function () {
+        state.monthOnly = !state.monthOnly; lsSet('cap-month-only', state.monthOnly ? '1' : '0'); render();
+    });
     $('#cap-ic-order').on('click', function () { state.order = state.order === 'asc' ? 'desc' : 'asc'; lsSet('cap-order', state.order); render(); });
     $('#cap-ic-upload').on('click', function () { openUploadPicker(null); });
     $feed.on('click', '#cap-clear-filter', function () { state.tag = null; state.fav = false; render(); });
@@ -306,6 +329,7 @@
             return;
         }
         var act = $(e.target).closest('[data-act]').data('act');
+        if (act === 'tools') { $(this).toggleClass('show-tools'); return; }
         if (act === 'fav') toggleFav([id]);
         if (act === 'edit') openItemSheet(id);
         if (act === 'del') deleteItems([id]);
@@ -316,25 +340,10 @@
     $('#cap-tb-select').on('click', function () { setSelecting(!state.selecting); });
     $('#cap-tb-upload').on('click', function () { openUploadPicker(null); });
 
-    // 스크롤을 내리는 동안엔 숨고, 멈추거나 올리면 다시 나타남
-    var lastY = window.scrollY, idleT = null;
-    $(window).off('scroll.cap').on('scroll.cap', function () {
-        if (!document.getElementById('cap-bar')) { $(window).off('scroll.cap'); return; }
-        var y = window.scrollY;
-        $bar.toggleClass('is-shown', y > 260 || state.selecting);
-        if (!state.selecting) {
-            if (y > lastY + 6) $bar.addClass('is-tucked');
-            else if (y < lastY - 6) $bar.removeClass('is-tucked');
-        }
-        lastY = y;
-        clearTimeout(idleT);
-        idleT = setTimeout(function () { $bar.removeClass('is-tucked'); }, 700);
-    });
-
     /* ---------------- 고르기 모드 ---------------- */
     function setSelecting(on) {
         state.selecting = on; state.sel.clear();
-        $bar.toggleClass('is-selecting', on).toggleClass('is-shown', on || window.scrollY > 260).removeClass('is-tucked');
+        $bar.toggleClass('is-selecting', on);
         $('#cap-wrap').toggleClass('cap-selecting', on);
         $('.cap-item').removeClass('is-sel');
         updateSelBar();
