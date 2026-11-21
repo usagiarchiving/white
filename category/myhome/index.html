@@ -1,14 +1,19 @@
-<link rel="stylesheet" href="category/myhome/myhome.css?v=1">
+<link rel="stylesheet" href="category/myhome/myhome.css?v=2">
 
 <div class="mh-wrap" id="mh-wrap">
     <div class="mh-top">
         <span id="mh-saving" class="mh-saving"></span>
-        <span class="mh-hint">끌어서 돌려 보고, 가구를 눌러요</span>
     </div>
     <div class="mh-stage" id="mh-stage">
         <canvas id="mh-canvas"></canvas>
         <div class="mh-label" id="mh-label"></div>
         <div class="mh-loading" id="mh-loading">방을 꾸미는 중…</div>
+        <div class="mh-ctrl" id="mh-ctrl">
+            <button data-cam="left" title="왼쪽으로 돌리기"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a4.5 4.5 0 1 1 1.4 3.3"/><path d="M3.2 3.6v3.9h3.9"/></svg></button>
+            <button data-cam="right" title="오른쪽으로 돌리기"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M3.5 7.5a4.5 4.5 0 1 1 1.4 3.3"/><path d="M3.2 3.6v3.9h3.9"/></svg></button>
+            <button data-cam="out" title="멀리">−</button>
+            <button data-cam="in" title="가까이">+</button>
+        </div>
     </div>
     <div class="mh-legend" id="mh-legend"></div>
 </div>
@@ -20,6 +25,6 @@
 
 <!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
 <script type="module">
-    import { init } from './category/myhome/myhome.js?v=1';
+    import { init } from './category/myhome/myhome.js?v=2';
     init();
 </script>

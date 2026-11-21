@@ -90,3 +90,14 @@
 .mh-stamp.on { background: var(--mh-red); color: #fff; border-color: var(--mh-red); }
 .mh-stamp:disabled { opacity: .4; cursor: default; }
 .mh-close { background: none; border: none; color: var(--mh-sub); font-size: 11px; cursor: pointer; font-family: inherit; margin-left: 10px; }
+
+/* 오른쪽 아래 카메라 버튼 (기울어진 칸) */
+.mh-ctrl { position: absolute; right: 6px; bottom: 6px; display: flex; gap: 6px; }
+.mh-ctrl button {
+    width: 34px; height: 28px; transform: skewX(-12deg);
+    background: rgba(255, 252, 247, .82); border: 1px solid #ecaebd; border-radius: 3px;
+    color: #c76a83; font-size: 15px; line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: background .15s, color .15s;
+}
+.mh-ctrl button:hover { background: #f6c3cf; color: #fff; }
+.mh-ctrl button:active { transform: skewX(-12deg) translateY(1px); }

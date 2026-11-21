@@ -34,9 +34,9 @@ export function init() {
     const X = x => x - W / 2, Z = z => z - D / 2;    // 도면 좌표(왼쪽 위 0,0) → 장면 좌표
 
     const C = {
-        wall: 0xf8f4ee, wallBand: 0xefe6da, floor: 0xead6b8, floorLine: 0xdcc39f,
-        cream: 0xfbf8f2, wood: 0xdcb48c, woodDark: 0xc49a72, pink: 0xf5c6cf, pinkDeep: 0xec9fb0,
-        mint: 0xbfe3d4, sky: 0xcfe7f6, yellow: 0xf9e3a2, lav: 0xd9cff0, gray: 0xd8d5d0, dark: 0x6f6a66, leaf: 0x9fd29a
+        wall: 0xfffcf7, wallBand: 0xf1e4d2, floor: 0xead6b8, floorLine: 0xdcc39f, cap: 0xe9d3b5, base: 0xd2ad86,
+        cream: 0xfffdf8, wood: 0xe8c39a, woodDark: 0xcf9f74, pink: 0xf9bfcb, pinkDeep: 0xf192a8,
+        mint: 0xaedfc9, sky: 0xbfe1f5, yellow: 0xfde39a, lav: 0xd8ccf3, gray: 0xdedad5, dark: 0x6f6a66, leaf: 0x8fd18c
     };
 
     /* ---------------- 기본 준비 ---------------- */
@@ -49,8 +49,7 @@ export function init() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMapping = THREE.NoToneMapping;      // 흰색이 회색으로 탁해지지 않게
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
@@ -67,15 +66,16 @@ export function init() {
     controls.maxDistance = 17;
     controls.rotateSpeed = 0.7;
 
-    scene.add(new THREE.HemisphereLight(0xfff7ec, 0xd9c6ad, 1.15));
-    const sun = new THREE.DirectionalLight(0xfff1dc, 1.6);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xf3e2cc, 1.25));
+    scene.add(new THREE.AmbientLight(0xfff6ea, 0.25));
+    const sun = new THREE.DirectionalLight(0xfff3e2, 0.95);
     sun.position.set(2.5, 7, 6);            // 창문(아래쪽) 방향에서 들어오는 빛
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.left = -5; sun.shadow.camera.right = 5; sun.shadow.camera.top = 5; sun.shadow.camera.bottom = -5;
     sun.shadow.radius = 4; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
     scene.add(sun);
-    const fill = new THREE.DirectionalLight(0xe8f0ff, 0.35);
+    const fill = new THREE.DirectionalLight(0xf0f4ff, 0.3);
     fill.position.set(-5, 4, -4);
     scene.add(fill);
 
@@ -141,9 +141,9 @@ export function init() {
         t.anisotropy = 4;
         return t;
     }
-    const floor = rbox(W + T * 2, 0.16, D + T * 2, 0xffffff, 0.05);
-    floor.material = new THREE.MeshStandardMaterial({ map: plankTexture(), roughness: 0.9 });
-    at(floor, 0, -0.08, 0);
+    const base = rbox(W + T * 2 + 0.08, 0.34, D + T * 2 + 0.08, C.base, 0.06); at(base, 0, -0.2, 0); scene.add(base);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(W, 0.02, D), new THREE.MeshStandardMaterial({ map: plankTexture(), roughness: 0.9 }));
+    floor.receiveShadow = true; at(floor, 0, -0.01, 0);
     scene.add(floor);
 
     /* ---------------- 벽 (카메라 쪽 벽은 숨김) ---------------- */
@@ -156,6 +156,7 @@ export function init() {
         const m = rbox(w, h, d, C.wall, 0.03); at(m, 0, h / 2, 0); g.add(m);
         // 아래쪽 걸레받이 띠
         const band = rbox(w + 0.01, 0.12, d + 0.02, C.wallBand, 0.02); at(band, 0, 0.06, 0); g.add(band);
+        const cap = rbox(w + 0.02, 0.05, d + 0.02, C.cap, 0.02); at(cap, 0, h + 0.02, 0); g.add(cap);   // 벽 윗면 띠
         return g;
     }
     // 위쪽 벽 (부엌/현관)
@@ -164,14 +165,36 @@ export function init() {
         // 현관 문
         const door = rbox(0.82, 2.0, 0.06, 0xf3e3cf, 0.03); at(door, X(2.68), 1.0, Z(0) + 0.03); g.add(door);
         const knob = sphere(0.035, 0xc9a56b); at(knob, X(2.68) - 0.3, 1.0, Z(0) + 0.08); g.add(knob);
-        // 부엌 선반 + 소품
-        const shelf = rbox(1.9, 0.06, 0.26, C.wood, 0.02); at(shelf, X(1.05), 1.62, Z(0.13)); g.add(shelf);
-        [[0.35, C.pink], [0.55, C.mint], [0.75, C.yellow]].forEach(([x, col]) => {
-            const jar = cyl(0.06, 0.06, 0.16, col); at(jar, X(x), 1.73, Z(0.13)); g.add(jar);
-            const lid = cyl(0.065, 0.065, 0.03, C.woodDark); at(lid, X(x), 1.82, Z(0.13)); g.add(lid);
+        // 인덕션 위 환풍구
+        const hood = rbox(0.7, 0.2, 0.46, 0xf4f1ec, 0.04); at(hood, X(0.52), 1.68, Z(0.23)); g.add(hood);
+        const hoodEdge = rbox(0.72, 0.04, 0.48, C.gray, 0.015); at(hoodEdge, X(0.52), 1.58, Z(0.24)); g.add(hoodEdge);
+        const duct = rbox(0.3, H - 1.78, 0.26, 0xf4f1ec, 0.03); at(duct, X(0.52), 1.78 + (H - 1.78) / 2, Z(0.13)); g.add(duct);
+        const led = rbox(0.2, 0.01, 0.06, 0xfff3c4, 0.004, { emissive: 0xfff3c4, emissiveIntensity: 0.8 }); at(led, X(0.52), 1.555, Z(0.3)); g.add(led);
+        // 선반 두 개 (환풍구 옆, 그 옆)
+        function cubby(x0, x1, y0, items) {
+            const w = x1 - x0, cx = X((x0 + x1) / 2), z = Z(0.15), d = 0.3, h = 0.56;
+            [[cx, y0, w, 0.04], [cx, y0 + h / 2, w, 0.035], [cx, y0 + h, w, 0.04]].forEach(([x, y, ww, t]) => {
+                const b = rbox(ww, t, d, C.wood, 0.012); at(b, x, y, z); g.add(b);
+            });
+            [x0 + 0.02, x1 - 0.02].forEach(x => { const sd = rbox(0.035, h, d, C.wood, 0.012); at(sd, X(x), y0 + h / 2, z); g.add(sd); });
+            items(cx, y0, h);
+        }
+        cubby(0.95, 1.5, 1.38, (cx, y0, h) => {
+            [[-0.15, C.pink], [0, C.mint], [0.15, C.yellow]].forEach(([dx, col]) => {
+                const jar = cyl(0.05, 0.05, 0.14, col); at(jar, cx + dx, y0 + 0.09, Z(0.15)); g.add(jar);
+                const lid = cyl(0.055, 0.055, 0.025, C.woodDark); at(lid, cx + dx, y0 + 0.17, Z(0.15)); g.add(lid);
+            });
+            for (let i = 0; i < 3; i++) { const plate = cyl(0.1, 0.1, 0.022, C.cream); at(plate, cx - 0.08, y0 + h / 2 + 0.03 + i * 0.026, Z(0.15)); g.add(plate); }
+            const bowl = sphere(0.07, C.sky, 1, 0.6, 1); at(bowl, cx + 0.14, y0 + h / 2 + 0.06, Z(0.15)); g.add(bowl);
         });
-        for (let i = 0; i < 3; i++) { const plate = cyl(0.11, 0.11, 0.025, C.cream); at(plate, X(1.35), 1.665 + i * 0.03, Z(0.13)); g.add(plate); }
-        const pot = sphere(0.09, C.sky, 1, 0.8, 1); at(pot, X(1.75), 1.72, Z(0.13)); g.add(pot);
+        cubby(1.55, 2.08, 1.38, (cx, y0, h) => {
+            [[-0.14, C.pinkDeep], [0, C.sky], [0.14, C.cream]].forEach(([dx, col]) => {
+                const mug = cyl(0.045, 0.04, 0.1, col); at(mug, cx + dx, y0 + 0.07, Z(0.15)); g.add(mug);
+            });
+            const pot = cyl(0.06, 0.05, 0.08, C.pink); at(pot, cx + 0.05, y0 + h / 2 + 0.06, Z(0.15)); g.add(pot);
+            const leaf = sphere(0.09, C.leaf); at(leaf, cx + 0.05, y0 + h / 2 + 0.16, Z(0.15)); g.add(leaf);
+            const book = rbox(0.06, 0.2, 0.18, C.lav, 0.01); at(book, cx - 0.14, y0 + h / 2 + 0.12, Z(0.15)); g.add(book);
+        });
     });
     // 아래쪽 벽 (창문)
     wall('S', new THREE.Vector3(0, 0, 1), g => {
@@ -280,13 +303,13 @@ export function init() {
     });
     furniture('bed', g => {
         g.add(block(0.02, 1.56, 2.62, 5.24, 0, 0.3, C.wood, 0.06));
-        g.add(block(0.02, 1.56, 2.6, 2.72, 0, 0.85, C.woodDark, 0.05));                // 머리판
-        g.add(block(0.07, 1.51, 2.72, 5.2, 0.3, 0.2, 0xffffff, 0.08));                  // 매트리스
-        g.add(block(0.05, 1.53, 3.45, 5.22, 0.42, 0.14, C.pink, 0.07));                 // 이불
-        g.add(block(0.05, 1.53, 3.45, 3.62, 0.43, 0.15, 0xffffff, 0.06));              // 이불 끝 접힘
-        [[0.42], [1.14]].forEach(([x]) => { const p = rbox(0.58, 0.16, 0.36, 0xfffaf2, 0.08); at(p, X(x), 0.58, Z(2.98)); g.add(p); });
-        const bear = sphere(0.12, 0xe8cfae); at(bear, X(1.25), 0.64, Z(3.3)); g.add(bear);
-        [-0.07, 0.07].forEach(dx => { const ear = sphere(0.04, 0xe8cfae); at(ear, X(1.25) + dx, 0.75, Z(3.3)); g.add(ear); });
+        g.add(block(0.02, 1.56, 5.12, 5.24, 0, 0.82, C.woodDark, 0.05));                // 머리판 (창문 쪽)
+        g.add(block(0.07, 1.51, 2.66, 5.12, 0.3, 0.2, 0xffffff, 0.08));                 // 매트리스
+        g.add(block(0.05, 1.53, 2.64, 4.4, 0.42, 0.14, C.pink, 0.07));                  // 이불
+        g.add(block(0.05, 1.53, 4.26, 4.42, 0.43, 0.15, 0xffffff, 0.06));              // 이불 끝 접힘
+        [0.42, 1.14].forEach(x => { const p = rbox(0.58, 0.16, 0.36, 0xfffaf2, 0.08); at(p, X(x), 0.58, Z(4.82)); g.add(p); });
+        const bear = sphere(0.12, 0xe8cfae); at(bear, X(1.25), 0.64, Z(4.45)); g.add(bear);
+        [-0.07, 0.07].forEach(dx => { const ear = sphere(0.04, 0xe8cfae); at(ear, X(1.25) + dx, 0.75, Z(4.45)); g.add(ear); });
     });
     furniture('vanity', g => {
         g.add(block(2.62, 3.18, 2.3, 3.1, 0.7, 0.06, C.cream, 0.025));
@@ -370,7 +393,7 @@ export function init() {
         canvas.classList.toggle('is-hover', !!g);
         if (!g) { labelEl.classList.remove('on'); return; }
         const o = OBJECTS[g.userData.id], done = isDone(g.userData.id, todayKey());
-        labelEl.innerHTML = '<span class="e">' + o.emoji + '</span>' + o.name + (done ? '<span class="n">오늘 ✓</span>' : '');
+        labelEl.innerHTML = o.name + (done ? '<span class="n">오늘 ✓</span>' : '');
         labelEl.classList.add('on');
     }
     canvas.addEventListener('pointermove', ev => { if (ev.pointerType === 'mouse') setHover(pick(ev)); });
@@ -396,11 +419,33 @@ export function init() {
         labelEl.style.top = ((1 - tmp.y) / 2 * stage.clientHeight) + 'px';
     }
 
+    // 오른쪽 아래 버튼: 왼쪽/오른쪽으로 45도, 멀리/가까이
+    let camAnim = null;
+    const sph = new THREE.Spherical();
+    function moveCam(dTheta, zoom) {
+        sph.setFromVector3(camera.position.clone().sub(controls.target));
+        const r1 = Math.min(controls.maxDistance, Math.max(controls.minDistance, sph.radius * zoom));
+        camAnim = { t: 0, th0: sph.theta, th1: sph.theta + dTheta, r0: sph.radius, r1, phi: sph.phi };
+    }
+    document.getElementById('mh-ctrl').addEventListener('click', e => {
+        const b = e.target.closest('[data-cam]'); if (!b) return;
+        ({ left: () => moveCam(Math.PI / 4, 1), right: () => moveCam(-Math.PI / 4, 1), out: () => moveCam(0, 1.18), in: () => moveCam(0, 0.85) })[b.dataset.cam]();
+    });
+    function stepCam(dt) {
+        if (!camAnim) return;
+        camAnim.t = Math.min(1, camAnim.t + dt * 2.6);
+        const e = 1 - Math.pow(1 - camAnim.t, 3);
+        sph.set(camAnim.r0 + (camAnim.r1 - camAnim.r0) * e, camAnim.phi, camAnim.th0 + (camAnim.th1 - camAnim.th0) * e);
+        camera.position.setFromSpherical(sph).add(controls.target);
+        if (camAnim.t >= 1) camAnim = null;
+    }
+
     const clock = new THREE.Clock();
     function tick() {
         if (!canvas.isConnected) { ro.disconnect(); renderer.dispose(); return; }   // 다른 메뉴로 가면 정지
         requestAnimationFrame(tick);
         const dt = Math.min(clock.getDelta(), 0.05);
+        stepCam(dt);
         controls.update();
         updateWalls();
         clickable.forEach(g => {
