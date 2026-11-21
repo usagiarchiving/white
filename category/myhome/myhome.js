@@ -26,7 +26,7 @@ const OBJECTS = {
     recycle:  { zone: '주방', name: '분리수거함', act: '분리수거',     emoji: '♻️' },
     table:    { zone: '거실', name: '식탁',       act: '밥 챙겨 먹기', emoji: '🍚' },
     books:    { zone: '거실', name: '책장',       act: '독서',         emoji: '📚' },
-    drawer:   { zone: '거실', name: '서랍장',     act: '정리',         emoji: '🗂️' },
+    drawer:   { zone: '거실', name: '수납장',     act: '정리',         emoji: '🗂️' },
     desk:     { zone: '거실', name: '책상',       act: '공부',         emoji: '✏️' },
     bed:      { zone: '침실', name: '침대',       act: '이불 개기',    emoji: '🛏️' },
     vanity:   { zone: '침실', name: '화장대',     act: '스킨케어',     emoji: '🧴' },
@@ -44,7 +44,8 @@ export function init() {
     let db = { log: {} };
 
     /* ---------------- 방 크기 (도면 비율, 단위 m) ---------------- */
-    const W = 3.2, D = 5.3, H = 2.35, T = 0.12;
+    const W = 3.5, D = 5.3, H = 2.35, T = 0.12;
+    const EX = W - 3.2;                               // 도면보다 넓힌 만큼 (오른쪽 벽 가구는 이만큼 옮김)
     const X = x => x - W / 2, Z = z => z - D / 2;     // 도면 좌표(왼쪽 위 0,0) → 장면 좌표
 
     // 화이트 톤 + 연분홍 포인트만
@@ -127,11 +128,54 @@ export function init() {
         return at(h, x, y, z);
     }
 
+    // 경첩으로 열리는 문. 문 가로 범위(a0~a1), 앞면 위치(face), 높이(y0,h), 방향(facing: '+z' | '-z' | '-x')
+    // hinge: 'a0' 또는 'a1' 쪽이 경첩. 반환된 pivot을 그룹에 넣으면 됨
+    function hingedDoor(g, facing, a0, a1, face, y0, h, color, hinge, handleLen) {
+        const w = a1 - a0, along = facing === '-x' ? 'z' : 'x';
+        const pivot = new THREE.Group();
+        const hingeAt = hinge === 'a0' ? a0 : a1;
+        const pos = along === 'x' ? [X(hingeAt), y0 + h / 2, Z(face)] : [X(face), y0 + h / 2, Z(hingeAt)];
+        pivot.position.set(pos[0], pos[1], pos[2]);
+        const sign = hinge === 'a0' ? 1 : -1;
+        const door = along === 'x' ? rbox(w - 0.01, h, 0.025, color, 0.01) : rbox(0.025, h, w - 0.01, color, 0.01);
+        if (along === 'x') door.position.x = sign * w / 2; else door.position.z = sign * w / 2;
+        pivot.add(door);
+        const hd = handle(0, 0, 0, true, handleLen || 0.14);
+        const hOff = sign * (w - 0.07), out = 0.02;
+        if (along === 'x') hd.position.set(hOff, 0, facing === '+z' ? out : -out); else hd.position.set(-out, 0, hOff);
+        pivot.add(hd);
+        // 열릴 때 바깥으로 도는 각도
+        let A;
+        if (facing === '+z') A = hinge === 'a0' ? -1.75 : 1.75;
+        else if (facing === '-z') A = hinge === 'a0' ? 1.75 : -1.75;
+        else A = hinge === 'a0' ? -1.75 : 1.75;    // '-x'
+        g.add(pivot);
+        g.userData.doors.push({ pivot, A });
+        return pivot;
+    }
+
+    // 속이 빈 가구 몸통 (앞면만 뚫림): 문을 열면 안이 보이게
+    function carcass(g, x0, x1, z0, z1, y0, h, open, color) {
+        const t = 0.025, col = color || C.white, inner = C.soft;
+        const P = (a0, a1, b0, b1, yy, hh, c) => g.add(block(a0, a1, b0, b1, yy, hh, c, 0.006));
+        P(x0, x1, z0, z1, y0, t, col); P(x0, x1, z0, z1, y0 + h - t, t, col);                 // 바닥/천장
+        if (open !== '-x') P(x0, x0 + t, z0, z1, y0, h, col);
+        if (open !== '+x') P(x1 - t, x1, z0, z1, y0, h, col);
+        if (open !== '-z') P(x0, x1, z0, z0 + t, y0, h, col);
+        if (open !== '+z') P(x0, x1, z1 - t, z1, y0, h, col);
+        // 안쪽 벽 색 (살짝 회색)
+        if (open === '+z') P(x0 + t, x1 - t, z0 + t, z0 + t + 0.004, y0 + t, h - 2 * t, inner);
+        if (open === '-z') P(x0 + t, x1 - t, z1 - t - 0.004, z1 - t, y0 + t, h - 2 * t, inner);
+        if (open === '-x') P(x1 - t - 0.004, x1 - t, z0 + t, z1 - t, y0 + t, h - 2 * t, inner);
+    }
+
     const clickable = [];
-    function furniture(id, build, wallName) {
+    function furniture(id, build, wallName, dx) {
         const g = new THREE.Group();
         g.userData.id = id; if (wallName) g.userData.wall = wallName;
+        g.userData.doors = [];
         build(g);
+        if (dx) g.children.forEach(ch => { ch.position.x += dx; });
         const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3());
         g.children.forEach(ch => { ch.position.x -= c.x; ch.position.z -= c.z; ch.position.y -= box.min.y; });
         g.position.set(c.x, box.min.y, c.z);
@@ -206,17 +250,22 @@ export function init() {
     wall('E', new THREE.Vector3(1, 0, 0), g => g.add(at(wallSlab(T, H, D), X(W) + T / 2, 0, 0)));
 
     /* ---------------- 부엌 (올 화이트) ---------------- */
-    scene.add(block(0, 2.1, 0, 0.62, 0, 0.86, C.white, 0.04));
+    scene.add(block(0, 0.98, 0, 0.62, 0, 0.86, C.white, 0.04));
     scene.add(block(-0.01, 2.11, -0.01, 0.65, 0.86, 0.05, C.off, 0.02));        // 상판
     // 상부장 2개 (따로지만 딱 붙어 있음) / 하부장 2개 — 각각 눌러서 '정리' 기록
-    [['upper1', 0.94, 1.51], ['upper2', 1.51, 2.08]].forEach(([id, x0, x1]) => furniture(id, g => {
-        g.add(block(x0, x1, 0, 0.34, 1.36, 0.62, C.white, 0.02));
-        g.add(block(x0 + 0.015, x1 - 0.015, 0.34, 0.355, 1.375, 0.59, C.off, 0.012));
-        g.add(handle(X(id === 'upper1' ? x1 - 0.07 : x0 + 0.07), 1.46, Z(0.37), true, 0.14));
+    // 가리키거나 누르면 문이 실제로 열림 (안에 그릇/병 조금)
+    [['upper1', 0.94, 1.51, 'a0'], ['upper2', 1.51, 2.08, 'a1']].forEach(([id, x0, x1, hinge]) => furniture(id, g => {
+        carcass(g, x0, x1, 0, 0.34, 1.36, 0.62, '+z');
+        g.add(block(x0 + 0.03, x1 - 0.03, 0.03, 0.33, 1.66, 0.02, C.white, 0.005));      // 가운데 선반
+        g.add(at(cyl(0.09, 0.09, 0.05, C.white), X((x0 + x1) / 2 - 0.08), 1.44, Z(0.18)));
+        g.add(at(cyl(0.04, 0.04, 0.12, C.pink), X((x0 + x1) / 2 + 0.12), 1.74, Z(0.18)));
+        hingedDoor(g, '+z', x0 + 0.012, x1 - 0.012, 0.35, 1.375, 0.59, C.off, hinge);
     }, 'N'));
-    [['lower1', 0.98, 1.535], ['lower2', 1.535, 2.09]].forEach(([id, x0, x1]) => furniture(id, g => {
-        g.add(block(x0 + 0.005, x1 - 0.005, 0.6, 0.635, 0.08, 0.7, C.off, 0.012));
-        g.add(handle(X(id === 'lower1' ? x1 - 0.07 : x0 + 0.07), 0.6, Z(0.65), true, 0.14));
+    [['lower1', 0.98, 1.535, 'a0'], ['lower2', 1.535, 2.09, 'a1']].forEach(([id, x0, x1, hinge]) => furniture(id, g => {
+        carcass(g, x0, x1, 0, 0.6, 0, 0.86, '+z');
+        g.add(block(x0 + 0.03, x1 - 0.03, 0.03, 0.58, 0.44, 0.02, C.white, 0.005));      // 가운데 선반
+        g.add(at(cyl(0.06, 0.06, 0.18, C.white), X((x0 + x1) / 2), 0.2, Z(0.46)));
+        hingedDoor(g, '+z', x0 + 0.005, x1 - 0.005, 0.615, 0.08, 0.7, C.off, hinge);
     }));
     furniture('stove', g => {
         g.add(block(0.18, 0.86, 0.08, 0.56, 0.91, 0.03, C.dark, 0.012, { roughness: 0.3 }));
@@ -241,62 +290,65 @@ export function init() {
 
     /* ---------------- 현관 / 화장실 ---------------- */
     furniture('entrance', g => {
-        g.add(at(rbox(0.82, 2.0, 0.06, C.silver, 0.03, { roughness: 0.45 }), X(2.68), 1.0, Z(0) + 0.03));    // 현관문 (옅은 실버)
-        g.add(handle(X(2.68) - 0.3, 1.0, Z(0) + 0.08, false, 0.12));
+        g.add(at(rbox(0.82, 2.0, 0.06, C.silver, 0.03, { roughness: 0.45 }), X(2.68 + EX), 1.0, Z(0) + 0.03));    // 현관문 (옅은 실버)
+        g.add(handle(X(2.68 + EX) - 0.3, 1.0, Z(0) + 0.08, false, 0.12));
     }, 'N');
     // 신발 두는 바닥: 현관문 앞, 싱크대만큼 나와 있는 타일 바닥 (한 칸 낮음)
     furniture('shoes', g => {
-        g.add(block(2.14, 3.2, 0, 0.64, -0.03, 0.035, 0xe7e4e2, 0.006));
-        for (let i = 1; i < 4; i++) g.add(block(2.14 + i * 0.265 - 0.004, 2.14 + i * 0.265 + 0.004, 0.01, 0.63, 0.0, 0.008, 0xd8d4d2, 0.002));
-        g.add(block(2.15, 3.2, 0.36, 0.364, 0.0, 0.008, 0xd8d4d2, 0.002));
-        g.add(block(2.12, 3.2, 0.62, 0.66, 0, 0.04, C.off, 0.01));                    // 마루와의 턱
+        g.add(block(2.14, W, 0, 0.64, -0.03, 0.035, 0xe7e4e2, 0.006));
+        for (let x = 2.14 + 0.27; x < W - 0.05; x += 0.27) g.add(block(x - 0.004, x + 0.004, 0.01, 0.63, 0.0, 0.008, 0xd8d4d2, 0.002));
+        g.add(block(2.15, W, 0.36, 0.364, 0.0, 0.008, 0xd8d4d2, 0.002));
+        g.add(block(2.12, W, 0.62, 0.66, 0, 0.04, C.off, 0.01));                    // 마루와의 턱
+    });
+    // 현관문과 화장실 문 사이, 화장실 쪽 벽: 액자처럼 납작하게 걸린 분리수거 봉지 + 아래 쓰레기통
+    furniture('recycle', g => {
+        g.add(at(rbox(0.04, 0.03, 0.4, C.gray, 0.01), X(W) - 0.03, 1.62, Z(0.93)));                 // 걸이
+        [[0.8, C.pink], [0.93, 0xe3edf4], [1.06, 0xe8f2e5]].forEach(([z, col]) => {
+            const bag = rbox(0.035, 0.5, 0.12, col, 0.015); g.add(at(bag, X(W) - 0.035, 1.34, Z(z)));
+            g.add(at(rbox(0.04, 0.03, 0.12, C.white, 0.008), X(W) - 0.035, 1.6, Z(z)));
+        });
+    }, 'E');
+    furniture('trash', g => {
+        g.add(at(cyl(0.13, 0.115, 0.38, C.white, 32), X(W) - 0.18, 0.19, Z(0.93)));
+        g.add(at(cyl(0.135, 0.135, 0.03, C.soft, 32), X(W) - 0.18, 0.395, Z(0.93)));
+        g.add(at(rbox(0.04, 0.02, 0.07, C.pinkMid, 0.008), X(W) - 0.33, 0.02, Z(0.93)));
     });
     furniture('bath', g => {
         g.add(at(rbox(0.06, 2.0, 0.84, C.oak, 0.03), X(W) - 0.03, 1.0, Z(1.63)));      // 화장실 문 (우드)
         g.add(handle(X(W) - 0.08, 1.0, Z(1.3), false, 0.12));
     }, 'E');
 
-    /* ---------------- 냉장고(아래) + 서랍장 + 책장(위) — 앞면은 부엌 쪽 ---------------- */
+    /* ---------------- 위에서부터 책장(식탁 쪽) · 수납장(뚫림, 세탁기 쪽) · 냉장고(세탁기 쪽) ---------------- */
     const U0 = 0.04, U1 = 1.0, UZ0 = 1.76, UZ1 = 2.54;
     furniture('fridge', g => {
-        g.add(block(U0, U1, UZ0, UZ1, 0, 0.84, C.white, 0.05));
-        g.add(block(U0 + 0.04, U1 - 0.04, UZ0 - 0.02, UZ0 + 0.01, 0.05, 0.36, C.off, 0.02));
-        g.add(block(U0 + 0.04, U1 - 0.04, UZ0 - 0.02, UZ0 + 0.01, 0.43, 0.37, C.off, 0.02));
-        g.add(handle(X(U1 - 0.12), 0.32, Z(UZ0 - 0.035), true, 0.16));
-        g.add(handle(X(U1 - 0.12), 0.7, Z(UZ0 - 0.035), true, 0.16));
+        carcass(g, U0, U1, UZ0, UZ1, 0, 0.84, '-z');
+        g.add(block(U0 + 0.03, U1 - 0.03, UZ0 + 0.03, UZ1 - 0.03, 0.42, 0.02, 0xe8eef2, 0.004));    // 칸
+        g.add(at(cyl(0.05, 0.05, 0.2, C.pink), X(U0 + 0.3), 0.18, Z(UZ0 + 0.2)));
+        g.add(at(rbox(0.18, 0.1, 0.14, 0xe7f1e4, 0.02), X(U0 + 0.62), 0.5, Z(UZ0 + 0.2)));
+        hingedDoor(g, '-z', U0 + 0.04, U1 - 0.04, UZ0 - 0.005, 0.43, 0.37, C.off, 'a0', 0.16);
+        hingedDoor(g, '-z', U0 + 0.04, U1 - 0.04, UZ0 - 0.005, 0.05, 0.36, C.off, 'a0', 0.16);
     });
-    furniture('drawer', g => {
+    furniture('drawer', g => {   // 수납장: 문 없이 뚫린 칸, 세탁기 쪽을 봄
         g.add(block(U0, U1, UZ0, UZ1, 0.84, 0.4, C.white, 0.04));
-        [0.88, 1.06].forEach(y => {
-            g.add(block(U0 + 0.04, U1 - 0.04, UZ0 - 0.02, UZ0 + 0.01, y, 0.15, C.off, 0.02));
-            g.add(handle(X((U0 + U1) / 2), y + 0.08, Z(UZ0 - 0.035), false, 0.18));
-        });
+        g.add(block(U0 + 0.05, U1 - 0.05, UZ0 - 0.005, UZ1 - 0.06, 0.88, 0.32, C.soft, 0.015));
+        g.add(block(U0 + 0.48, U0 + 0.5, UZ0 - 0.004, UZ1 - 0.07, 0.88, 0.32, C.white, 0.004));   // 칸막이
+        g.add(block(U0 + 0.1, U0 + 0.42, UZ0 + 0.02, UZ0 + 0.34, 0.885, 0.2, C.pink, 0.03));        // 바구니
+        g.add(block(U0 + 0.56, U0 + 0.88, UZ0 + 0.02, UZ0 + 0.34, 0.885, 0.16, 0xeef0f2, 0.03));
     });
-    furniture('books', g => {
+    furniture('books', g => {    // 책장: 식탁 쪽(+x)을 봄
         g.add(block(U0, U1, UZ0, UZ1, 1.24, 0.52, C.white, 0.04));
-        g.add(block(U0 + 0.05, U1 - 0.05, UZ0 - 0.005, UZ1 - 0.06, 1.29, 0.42, C.soft, 0.02));
+        g.add(block(U0 + 0.06, U1 + 0.005, UZ0 + 0.05, UZ1 - 0.05, 1.29, 0.42, C.soft, 0.02));
         const cols = [C.pinkMid, C.white, C.pink, C.gray, C.pinkDeep, C.white, C.pink, C.soft, C.pinkMid];
-        let x = U0 + 0.08;
+        let z = UZ0 + 0.09;
         cols.forEach((col, i) => {
-            const w = 0.07 + (i % 3) * 0.012, h = 0.26 + (i % 4) * 0.03;
-            g.add(at(rbox(w, h, 0.3, col, 0.012), X(x + w / 2), 1.3 + h / 2, Z(UZ0 + 0.2)));
-            x += w + 0.01;
+            const w = 0.065 + (i % 3) * 0.012, h = 0.26 + (i % 4) * 0.03;
+            g.add(at(rbox(0.3, h, w, col, 0.012), X(U1 - 0.2), 1.3 + h / 2, Z(z + w / 2)));
+            z += w + 0.008;
         });
     });
     furniture('table', g => {
         g.add(block(1.0, 1.96, 1.88, 2.42, 0.68, 0.05, C.white, 0.02));
         [[1.9, 1.94], [1.9, 2.36]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.68, C.soft), X(x), 0.34, Z(z))));
-    });
-    // 식탁 아래 빈 공간: 쓰레기통(둥근 페달식) + 분리수거함(칸 나뉜 상자)
-    furniture('trash', g => {
-        g.add(at(cyl(0.15, 0.13, 0.4, C.white, 32), X(1.2), 0.2, Z(2.15)));
-        const lid = cyl(0.155, 0.155, 0.035, C.soft, 32); g.add(at(lid, X(1.2), 0.415, Z(2.15)));
-        g.add(at(rbox(0.08, 0.02, 0.04, C.pinkMid, 0.008), X(1.2), 0.02, Z(2.0)));
-    });
-    furniture('recycle', g => {
-        g.add(block(1.42, 1.84, 1.98, 2.34, 0, 0.36, C.white, 0.03));
-        [[1.42, 1.56, C.pink], [1.56, 1.7, 0xdfeaf2], [1.7, 1.84, 0xe7f1e4]].forEach(([x0, x1, col]) =>
-            g.add(block(x0 + 0.015, x1 - 0.015, 1.975, 1.99, 0.05, 0.26, col, 0.01)));
     });
 
     /* ---------------- 침대 (머리는 창문 쪽) ---------------- */
@@ -316,20 +368,21 @@ export function init() {
         g.add(block(2.95, 3.16, 2.34, 3.06, 0.3, 0.38, C.white, 0.03));
         [[3.0, 2.5, C.pinkMid, 0.13], [3.04, 2.62, C.white, 0.1], [3.0, 2.85, C.pink, 0.11]].forEach(([x, z, col, h]) =>
             g.add(at(cyl(0.032, 0.036, h, col), X(x), 0.75 + h / 2, Z(z))));
-    });
+    }, null, EX);
     furniture('desk', g => {
         g.add(block(2.55, 3.18, 3.2, 4.28, 0.72, 0.05, C.oak, 0.02));
         [[2.6, 3.25], [2.6, 4.23], [3.13, 3.25], [3.13, 4.23]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.72, C.oakDark), X(x), 0.36, Z(z))));
         g.add(at(rbox(0.3, 0.02, 0.4, C.gray, 0.01), X(2.8), 0.78, Z(3.7)));
         const screen = rbox(0.02, 0.26, 0.4, C.dark, 0.01); screen.rotation.z = -0.25; g.add(at(screen, X(2.98), 0.91, Z(3.7)));
-    });
+    }, null, EX);
     furniture('closet', g => {
-        g.add(block(2.62, 3.18, 4.34, 5.27, 0, 2.0, C.white, 0.05));
-        [[4.38, 4.79], [4.82, 5.23]].forEach(([z0, z1]) => {
-            g.add(block(2.585, 2.62, z0, z1, 0.08, 1.84, C.off, 0.015));
-            g.add(handle(X(2.565), 1.05, Z(z0 < 4.8 ? z1 - 0.06 : z0 + 0.06), true, 0.22));
-        });
-    });
+        carcass(g, 2.62, 3.18, 4.34, 5.27, 0, 2.0, '-x');
+        const rodM = cyl(0.012, 0.012, 0.8, C.gray); rodM.rotation.x = Math.PI / 2; g.add(at(rodM, X(2.9), 1.7, Z(4.8)));   // 옷걸이 봉
+        [[4.5, C.pink], [4.62, C.white], [4.74, 0xe3edf4], [4.9, C.pinkMid], [5.04, C.white]].forEach(([z, col]) =>
+            g.add(at(rbox(0.36, 0.62, 0.05, col, 0.02), X(2.9), 1.34, Z(z))));
+        hingedDoor(g, '-x', 4.38, 4.8, 2.605, 0.08, 1.84, C.off, 'a0', 0.22);
+        hingedDoor(g, '-x', 4.81, 5.23, 2.605, 0.08, 1.84, C.off, 'a1', 0.22);
+    }, null, EX);
 
     // 창가 화분 하나만
     scene.add(at(cyl(0.12, 0.09, 0.22, C.white), X(2.2), 0.11, Z(5.0)));
@@ -384,6 +437,8 @@ export function init() {
                 [[0, 0, 14], [12, -5, 12], [24, 0, 13], [10, 5, 12]].forEach(([dx, dy, r]) => { g.beginPath(); g.arc(cx + dx, cy + dy, r, 0, 7); g.fill(); });
             }
         }
+        // 계절 나무 (봄 벚꽃 / 여름 초록 / 가을 단풍 / 겨울 빈 가지)
+        drawSeasonTree(g, w, h);
         // 건물 실루엣 살짝 (아래쪽)
         g.fillStyle = sky.phase === 'night' ? 'rgba(20,25,45,.7)' : 'rgba(255,255,255,.55)';
         [[0, 40], [30, 28], [52, 48], [88, 34], [120, 52], [160, 30], [190, 44], [225, 36]].forEach(([x, hh]) => g.fillRect(x, h - hh, 26, hh));
@@ -392,6 +447,37 @@ export function init() {
             for (let i = 0; i < 14; i++) g.fillRect((i * 37) % w + 6, h - 8 - (i * 13) % 30, 3, 3);
         }
         skyTex.needsUpdate = true;
+    }
+
+    function drawSeasonTree(g, w, h) {
+        const mo = new Date().getMonth() + 1;
+        const season = mo >= 3 && mo <= 5 ? 'spring' : mo >= 6 && mo <= 8 ? 'summer' : mo >= 9 && mo <= 11 ? 'autumn' : 'winter';
+        const night = sky.phase === 'night';
+        const trunk = night ? '#3a3340' : '#a88a74';
+        const leaf = {
+            spring: night ? ['#6d5468', '#7d6077'] : ['#f9cfdc', '#f4b5c8', '#fde6ee'],
+            summer: night ? ['#2e4a3e', '#3a5a4a'] : ['#9fd39a', '#86c482', '#b7e0b0'],
+            autumn: night ? ['#5a3d34', '#6b4638'] : ['#f2a65a', '#e9805d', '#f6c56f', '#d96b52'],
+            winter: null
+        }[season];
+        const bx = w * 0.84, by = h;
+        g.strokeStyle = trunk; g.lineCap = 'round';
+        g.lineWidth = 7; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx - 4, h * 0.45); g.stroke();
+        g.lineWidth = 3;
+        [[-4, 0.55, -30, 0.3], [-3, 0.62, 26, 0.36], [-4, 0.48, -14, 0.18], [-3, 0.5, 20, 0.2]].forEach(([x0, y0, dx, y1]) => {
+            g.beginPath(); g.moveTo(bx + x0, h * y0); g.lineTo(bx + x0 + dx, h * y1); g.stroke();
+        });
+        if (leaf) {
+            const blobs = [[0, 0.3, 26], [-24, 0.38, 20], [22, 0.36, 20], [-10, 0.18, 18], [14, 0.2, 17], [-30, 0.26, 14], [30, 0.24, 14]];
+            blobs.forEach(([dx, yy, r], i) => { g.fillStyle = leaf[i % leaf.length]; g.beginPath(); g.arc(bx + dx, h * yy, r, 0, 7); g.fill(); });
+            if (!night && (season === 'spring' || season === 'autumn')) {      // 떨어지는 꽃잎/잎
+                g.fillStyle = leaf[1];
+                for (let i = 0; i < 10; i++) { g.beginPath(); g.ellipse(bx - 60 + (i * 23) % 90, h * 0.5 + (i * 17) % (h * 0.45), 2.5, 1.6, i, 0, 7); g.fill(); }
+            }
+        } else if (sky.kind === 'snow') {
+            g.fillStyle = 'rgba(255,255,255,.9)';
+            [[-26, 0.3], [24, 0.36], [-14, 0.18], [18, 0.2]].forEach(([dx, yy]) => { g.beginPath(); g.ellipse(bx + dx, h * yy, 8, 2.5, 0, 0, 7); g.fill(); });
+        }
     }
 
     // 비/눈 (창문 안쪽에서만 보이게)
@@ -532,8 +618,9 @@ export function init() {
         const g = pick(ev);
         if (!g) { setHover(null); return; }
         setHover(g);
-        g.userData.bounce = 1;
-        setTimeout(() => openCard(g.userData.id), 140);
+        const hasDoors = g.userData.doors && g.userData.doors.length;
+        if (!hasDoors) g.userData.bounce = 1;
+        setTimeout(() => openCard(g.userData.id), hasDoors ? 380 : 140);
     });
 
     const tmp = new THREE.Vector3();
@@ -573,12 +660,12 @@ export function init() {
     /* ---------------- 구역 버튼: 그 구역이 잘 보이는 쪽에서 다가가기 ---------------- */
     // x,z: 도면 좌표 / theta: 카메라 방향(벽 쪽 가구가 가려지지 않게) / r: 거리
     const ZONE_VIEW = {
-        '전체': { x: 1.6, z: 2.7, y: 0.5, theta: 0.67, r: 11.8, phi: 0.92 },
-        '현관': { x: 2.6, z: 0.7, y: 0.7, theta: -0.75, r: 6.2, phi: 0.95 },
+        '전체': { x: 1.75, z: 2.7, y: 0.5, theta: 0.67, r: 12.2, phi: 0.92 },
+        '현관': { x: 2.9, z: 0.8, y: 0.7, theta: -0.75, r: 6.4, phi: 0.95 },
         '주방': { x: 1.1, z: 0.5, y: 0.9, theta: 0.35, r: 6.4, phi: 0.95 },
         '거실': { x: 1.7, z: 2.8, y: 0.6, theta: 0.75, r: 7.4, phi: 0.9 },
         '침실': { x: 1.6, z: 4.2, y: 0.6, theta: 2.55, r: 7.4, phi: 0.92 },
-        '욕실': { x: 2.7, z: 1.4, y: 0.9, theta: -1.35, r: 6.2, phi: 0.98 }
+        '욕실': { x: 3.0, z: 1.3, y: 0.9, theta: -1.35, r: 6.4, phi: 0.98 }
     };
     const zonesEl = document.getElementById('mh-zones');
     zonesEl.innerHTML = Object.keys(ZONE_VIEW).map(z => '<button data-zone="' + z + '"' + (z === '전체' ? ' class="on"' : '') + '>' + z + '</button>').join('');
@@ -624,6 +711,15 @@ export function init() {
         updateWalls();
         stepWeatherFX(dt);
         clickable.forEach(g => {
+            const doors = g.userData.doors;
+            if (doors && doors.length) {
+                // 문 달린 가구: 커지지 않고 문이 열림 (가리킬 때, 그 가구 기록 카드가 열려 있을 때)
+                const want = (g === hovered || (card && card.id === g.userData.id)) ? 1 : 0;
+                g.userData.openT = (g.userData.openT || 0) + (want - (g.userData.openT || 0)) * Math.min(1, dt * 6);
+                const e = g.userData.openT;
+                doors.forEach(d => { d.pivot.rotation.y = d.A * e; });
+                return;
+            }
             const target = g === hovered ? 1.03 : 1;
             const s = g.scale.x + (target - g.scale.x) * Math.min(1, dt * 12);
             if (g.userData.bounce > 0) {
@@ -636,7 +732,6 @@ export function init() {
         renderer.render(scene, camera);
     }
     document.getElementById('mh-loading').remove();
-    tick();
 
 
     /* ==========================================================================
@@ -831,5 +926,6 @@ export function init() {
         bg.style.display = 'flex';
     }
 
+    tick();
     load();
 }
