@@ -399,19 +399,50 @@ export function init() {
         const px = X(2.2), pz = Z(5.0);
         g.add(at(cyl(0.13, 0.1, 0.24, C.white, 32), px, 0.12, pz));
         g.add(at(cyl(0.12, 0.12, 0.02, 0x8b7262, 24), px, 0.235, pz));                 // 흙
-        const leafGeo = new THREE.SphereGeometry(1, 20, 12);
-        const N = 11;
+        // 잎 무늬: 진한 초록 바탕에 크림색 점무늬 (사진 속 품종)
+        const tc = document.createElement('canvas'); tc.width = 256; tc.height = 256;
+        const tg = tc.getContext('2d');
+        tg.fillStyle = '#2f5b34'; tg.fillRect(0, 0, 256, 256);
+        let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+        for (let k = 0; k < 700; k++) {
+            const x = rnd() * 256, y = rnd() * 256;
+            const nearMid = Math.abs(x - 128) < 70 ? 1 : 0.45;          // 가운데 쪽에 무늬가 많음
+            if (rnd() > nearMid) continue;
+            tg.fillStyle = rnd() < 0.75 ? '#eef3d8' : '#cfe2b0';
+            tg.beginPath(); tg.ellipse(x, y, 2 + rnd() * 6, 1.5 + rnd() * 3, rnd() * 3, 0, 7); tg.fill();
+        }
+        tg.fillStyle = '#5f8f55'; tg.fillRect(126, 0, 4, 256);           // 가운데 잎맥
+        const leafTex = new THREE.CanvasTexture(tc); leafTex.colorSpace = THREE.SRGBColorSpace;
+        const leafMat = new THREE.MeshStandardMaterial({ map: leafTex, roughness: 0.55, side: THREE.DoubleSide });
+        // 잎 한 장: 끝이 뾰족한 창 모양 판, 살짝 아래로 휨
+        function leafGeometry(len, wid) {
+            const sh = new THREE.Shape(), n = 14;
+            sh.moveTo(0, 0);
+            for (let k = 1; k <= n; k++) { const t = k / n; sh.lineTo(wid * Math.pow(Math.sin(Math.PI * Math.min(t * 1.08, 1)), 0.75) * (1 - t * 0.25), t * len); }
+            for (let k = n - 1; k >= 1; k--) { const t = k / n; sh.lineTo(-wid * Math.pow(Math.sin(Math.PI * Math.min(t * 1.08, 1)), 0.75) * (1 - t * 0.25), t * len); }
+            sh.lineTo(0, 0);
+            const geo = new THREE.ShapeGeometry(sh, 3);
+            const pos = geo.attributes.position, uv = geo.attributes.uv;
+            for (let k = 0; k < pos.count; k++) {
+                const x = pos.getX(k), y = pos.getY(k), t = y / len;
+                uv.setXY(k, (x + wid) / (2 * wid), t);
+                pos.setXYZ(k, x, -0.1 * len * t * t + Math.abs(x) * 0.15, y);       // 끝이 살짝 처지고 가운데가 살짝 오목
+            }
+            geo.computeVertexNormals();
+            return geo;
+        }
+        const N = 9;
         for (let i = 0; i < N; i++) {
-            const ang = i / N * Math.PI * 2 + (i % 2) * 0.3;
-            const tilt = 0.55 + (i % 3) * 0.18;                  // 바깥으로 눕는 정도
-            const len = 0.2 + (i % 4) * 0.025, wid = 0.075;
+            const ang = i / N * Math.PI * 2 + (i % 2) * 0.35;
+            const up = 0.85 + (i % 3) * 0.2;                            // 바닥에서 들린 각도 (사진처럼 대부분 위로)
+            const len = 0.3 + (i % 4) * 0.05, wid = 0.075 + (i % 3) * 0.012;
+            const stemLen = 0.08 + (i % 3) * 0.07;
             const leaf = new THREE.Group();
-            const stem = cyl(0.006, 0.008, 0.16, 0x9fbf8a, 6); stem.position.y = 0.08; leaf.add(stem);
-            const outer = new THREE.Mesh(leafGeo, mat(0x4f8a5b)); outer.scale.set(wid, 0.012, len); outer.position.set(0, 0.17, len * 0.85); outer.castShadow = true;
-            const inner = new THREE.Mesh(leafGeo, mat(0xf2a7b8)); inner.scale.set(wid * 0.62, 0.014, len * 0.78); inner.position.set(0, 0.172, len * 0.85);
-            const vein = new THREE.Mesh(leafGeo, mat(0xfbe1e7)); vein.scale.set(0.006, 0.016, len * 0.8); vein.position.set(0, 0.174, len * 0.85);
-            leaf.add(outer, inner, vein);
-            leaf.rotation.order = 'YXZ'; leaf.rotation.y = ang; leaf.rotation.x = -(Math.PI / 2 - tilt) * 0.55;
+            const stem = cyl(0.006, 0.008, stemLen, 0x3f6b43, 6); stem.position.y = stemLen / 2; leaf.add(stem);
+            const blade = new THREE.Mesh(leafGeometry(len, wid), leafMat);
+            blade.position.set(0, stemLen, 0); blade.castShadow = true;
+            leaf.add(blade);
+            leaf.rotation.order = 'YXZ'; leaf.rotation.y = ang; leaf.rotation.x = -up;
             at(leaf, px, 0.22, pz);
             g.add(leaf);
         }
