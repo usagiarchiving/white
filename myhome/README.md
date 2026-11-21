@@ -48,9 +48,10 @@
 
 ```json
 "shopping": [
-  { "id": "smabc12", "name": "우유 2개", "done": false, "at": "2026-11-21T20:10:00+09:00" },
+  { "id": "smabc12", "name": "우유 2개", "tag": "마트", "done": false, "at": "2026-11-21T20:10:00+09:00" },
   { "id": "smabc13", "name": "계란", "done": true, "at": "...", "done_at": "2026-11-22T18:02:00+09:00" }
 ]
 ```
 
-`done`이 `true`면 산 것, `done_at`은 산 시각.
+`tag`는 태그(기본: 장보기·마트·다이소·쿠팡·기타), `done`이 `true`면 산 것, `done_at`은 산 시각.
+`shop_tags` — 태그 목록 (직접 추가한 태그 포함).

@@ -865,7 +865,8 @@ export function init() {
         d.zones = ZONES;
         d.objects = JSON.parse(JSON.stringify(OBJECTS));
         d.notes = Array.isArray(d.notes) ? d.notes : [];     // 현관 메모: [{ id, title, date, body, at }]
-        d.shopping = Array.isArray(d.shopping) ? d.shopping : [];   // 장바구니: [{ id, name, done, at, done_at }]
+        d.shopping = Array.isArray(d.shopping) ? d.shopping : [];   // 장바구니: [{ id, name, tag, done, at, done_at }]
+        d.shop_tags = Array.isArray(d.shop_tags) && d.shop_tags.length ? d.shop_tags : SHOP_TAGS.slice();   // 장바구니 태그 (직접 추가 가능)
         return d;
     }
     async function load() {
@@ -1078,8 +1079,12 @@ export function init() {
     }
 
     /* ---------------- 장바구니 (장보기 목록) ---------------- */
+    const SHOP_TAGS = ['장보기', '마트', '다이소', '쿠팡', '기타'];
+    const shopTags = () => (db.shop_tags && db.shop_tags.length ? db.shop_tags : SHOP_TAGS);
+    function lsTag() { try { return localStorage.getItem('mh-shop-tag') || ''; } catch (e) { return ''; } }
+    function setLsTag(t) { try { localStorage.setItem('mh-shop-tag', t); } catch (e) {} }
     function openShop() {
-        card = { id: 'shop', showDone: false };
+        card = { id: 'shop', showDone: false, tag: lsTag() };
         bg.style.display = 'flex';
         drawShop();
         setTimeout(() => { const i = cardEl.querySelector('.mh-shop-input'); if (i && window.matchMedia('(pointer: fine)').matches) i.focus(); }, 50);
@@ -1089,20 +1094,31 @@ export function init() {
         const prev = cardEl.querySelector('.mh-shop-input');
         const typed = prev ? prev.value : '', hadFocus = prev && document.activeElement === prev;
         const list = db.shopping || [];
-        const todo = list.filter(x => !x.done).sort((a, b) => (a.at || '').localeCompare(b.at || ''));
-        const done = list.filter(x => x.done).sort((a, b) => (b.done_at || '').localeCompare(a.done_at || ''));
+        const tags = shopTags();
+        if (card.tag && !tags.includes(card.tag)) card.tag = '';
+        const inTag = x => !card.tag || (x.tag || '기타') === card.tag;
+        const todo = list.filter(x => !x.done && inTag(x)).sort((a, b) => (a.at || '').localeCompare(b.at || ''));
+        const done = list.filter(x => x.done && inTag(x)).sort((a, b) => (b.done_at || '').localeCompare(a.done_at || ''));
+        const leftOf = t => list.filter(x => !x.done && (!t || (x.tag || '기타') === t)).length;
+        const tagSelect = x => '<select class="mh-shop-tag" data-act="tag">' + tags.map(t => '<option' + ((x.tag || '기타') === t ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
         const row = x => '<div class="mh-shop-row' + (x.done ? ' done' : '') + '" data-item="' + esc(x.id) + '">' +
             '<span class="mh-shop-check" data-act="toggle"></span>' +
             '<span class="mh-shop-name" data-act="toggle">' + esc(x.name) + '</span>' +
+            tagSelect(x) +
             '<span class="mh-shop-x" data-act="del">×</span></div>';
         cardEl.innerHTML =
             '<div class="mh-head"><span class="mh-title"><b>장바구니</b><span class="mh-act">' + (todo.length ? todo.length + '개 사야 해요' : '다 샀어요') + '</span></span></div>' +
-            '<div class="mh-shop-add"><input class="mh-shop-input" placeholder="살 것 추가 (예: 우유 2개)" enterkeyhint="done"><button class="mh-shop-plus">+</button></div>' +
+            '<div class="mh-shop-tags">' +
+                '<span class="mh-chip' + (card.tag ? '' : ' on') + '" data-tag="">전체<small>' + leftOf('') + '</small></span>' +
+                tags.map(t => '<span class="mh-chip' + (card.tag === t ? ' on' : '') + '" data-tag="' + esc(t) + '">' + esc(t) + (leftOf(t) ? '<small>' + leftOf(t) + '</small>' : '') + '</span>').join('') +
+                '<span class="mh-chip mh-chip-add" data-act="newtag">+ 태그</span>' +
+            '</div>' +
+            '<div class="mh-shop-add"><input class="mh-shop-input" placeholder="' + (card.tag ? esc(card.tag) + '에 ' : '') + '살 것 추가 (예: 우유 2개)" enterkeyhint="done"><button class="mh-shop-plus">+</button></div>' +
             '<div class="mh-shop-sec">살 것</div>' +
             (todo.length ? todo.map(row).join('') : '<div class="mh-note-empty">사야 할 게 없어요.</div>') +
             (done.length ? '<div class="mh-shop-sec mh-shop-donehead" data-act="fold">산 것 ' + done.length + ' <span>' + (card.showDone ? '▾' : '▸') + '</span></div>' +
                 (card.showDone ? done.map(row).join('') + '<button class="mh-close mh-shop-clear">산 것 비우기</button>' : '') : '') +
-            '<div class="mh-foot"><span></span><button class="mh-close">닫기</button></div>';
+            '<div class="mh-foot">' + (card.tag && !SHOP_TAGS.includes(card.tag) ? '<button class="mh-close mh-shop-deltag">이 태그 지우기</button>' : '<span></span>') + '<button class="mh-close">닫기</button></div>';
         const input = cardEl.querySelector('.mh-shop-input');
         input.value = typed;
         if (hadFocus) { input.focus(); input.setSelectionRange(typed.length, typed.length); }
@@ -1111,17 +1127,42 @@ export function init() {
     function addShop(text) {
         const names = String(text || '').split(/[,\n]/).map(t => t.trim()).filter(Boolean);
         if (!names.length) return;
-        const base = Date.now();
+        const base = Date.now(), tag = card.tag || '기타';
         const inp = cardEl.querySelector('.mh-shop-input'); if (inp) inp.value = '';
         save('myhome: 장바구니 추가 ' + names.join(', '), d => {
             d.shopping = d.shopping || [];
-            names.forEach((name, i) => d.shopping.push({ id: 's' + (base + i).toString(36), name, done: false, at: stamp() }));
+            names.forEach((name, i) => d.shopping.push({ id: 's' + (base + i).toString(36), name, tag, done: false, at: stamp() }));
         });
         drawShop(); drawList();
         const i = cardEl.querySelector('.mh-shop-input'); if (i) i.focus();
     }
+    cardEl.addEventListener('change', e => {
+        const sel = e.target.closest('.mh-shop-tag'); if (!sel || !card || card.id !== 'shop') return;
+        const id = sel.closest('[data-item]').dataset.item, t = sel.value;
+        save('myhome: 장바구니 태그 바꾸기 → ' + t, d => { const x = (d.shopping || []).find(y => y.id === id); if (x) x.tag = t; });
+        drawShop();
+    });
     function shopClick(e) {
         if (e.target.closest('.mh-shop-plus')) { addShop(cardEl.querySelector('.mh-shop-input').value); return; }
+        if (e.target.closest('.mh-shop-tag')) return;                     // 태그 바꾸기는 change에서
+        const chip = e.target.closest('[data-tag]');
+        if (chip) { card.tag = chip.dataset.tag; setLsTag(card.tag); drawShop(); return; }
+        if (e.target.closest('[data-act=newtag]')) {
+            const t = (prompt('새 태그 이름') || '').trim().replace(/\s+/g, ' ').slice(0, 12);
+            if (!t) return;
+            if (shopTags().includes(t)) { card.tag = t; drawShop(); return; }
+            save('myhome: 장바구니 태그 추가 ' + t, d => { d.shop_tags = (d.shop_tags && d.shop_tags.length ? d.shop_tags : SHOP_TAGS.slice()); if (!d.shop_tags.includes(t)) d.shop_tags.push(t); });
+            card.tag = t; setLsTag(t); drawShop(); return;
+        }
+        if (e.target.closest('.mh-shop-deltag')) {
+            const t = card.tag;
+            if (!confirm("'" + t + "' 태그를 지울까요? 이 태그의 항목은 '기타'로 옮겨져요.")) return;
+            save('myhome: 장바구니 태그 지우기 ' + t, d => {
+                d.shop_tags = (d.shop_tags || SHOP_TAGS.slice()).filter(x => x !== t);
+                (d.shopping || []).forEach(x => { if (x.tag === t) x.tag = '기타'; });
+            });
+            card.tag = ''; setLsTag(''); drawShop(); return;
+        }
         if (e.target.closest('[data-act=fold]')) { card.showDone = !card.showDone; drawShop(); return; }
         if (e.target.closest('.mh-shop-clear')) {
             if (!confirm('산 것을 목록에서 모두 지울까요?')) return;

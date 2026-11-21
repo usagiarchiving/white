@@ -220,3 +220,14 @@ html:has(.mh-stage), body:has(.mh-stage) { overflow-x: hidden; }
 .mh-shop-x:hover { opacity: 1; color: #d4728c; }
 .mh-shop-clear { display: block; margin: 8px 0 0 auto; color: #d4728c; }
 .mh-card { max-height: 86vh; overflow-y: auto; }
+
+/* 장바구니 태그 */
+.mh-shop-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px -2px 2px; padding: 2px; }
+.mh-shop-tags::-webkit-scrollbar { display: none; }
+.mh-chip { flex: none; font-size: 11.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); background: #fff; cursor: pointer; user-select: none; }
+.mh-chip small { font-size: 9.5px; color: var(--pink-ink); margin-left: 4px; }
+.mh-chip.on { background: var(--pink); border-color: var(--pink); color: #fff; }
+.mh-chip.on small { color: #fff; }
+.mh-chip-add { color: var(--sub); border-style: dashed; }
+.mh-shop-tag { flex: none; max-width: 76px; font-family: inherit; font-size: 10.5px; color: var(--pink-ink); background: #fdf3f5; border: none; border-radius: 999px; padding: 3px 6px; outline: none; cursor: pointer; }
+.mh-shop-deltag { margin-left: 0; color: #d4728c; }
