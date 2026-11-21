@@ -39,6 +39,15 @@
     function nfetch(url, opts) { opts = opts || {}; opts.cache = 'no-store'; return fetch(url, opts); }
 
     /* ---------------- 토큰 ---------------- */
+    // QR로 넘어온 토큰 받기: 주소 끝 #gh=토큰 → 이 기기에 저장하고 주소에서 바로 지움
+    (function () {
+        var m = /^#gh=([A-Za-z0-9_]+)/.exec(location.hash);
+        if (!m) return;
+        try { localStorage.setItem('gh_token', m[1]); } catch (e) {}
+        history.replaceState(null, '', location.pathname + location.search);
+        window.__ghTokenReceived = true;
+    })();
+
     function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
     function setToken(t) { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
 
@@ -332,20 +341,55 @@
         if (!btn) return;
         var on = !!getToken();
         btn.innerHTML = '<i class="' + (on ? 'xi-unlock-o' : 'xi-lock-o') + '"></i>';
-        btn.title = on ? '글쓰기 켜짐 (누르면 이 기기에서 해제)' : '글쓰기 켜기 (GitHub 토큰 입력)';
+        btn.title = on ? '글쓰기 켜짐 (누르면 다른 기기로 보내기 / 해제)' : '글쓰기 켜기 (GitHub 토큰 입력)';
+    }
+
+    /* ---------------- 다른 기기로 보내기 (QR) ---------------- */
+    function loadQrLib(cb) {
+        if (window.qrcode) return cb();
+        var sc = document.createElement('script');
+        sc.src = 'vendor/qrcode.js';
+        sc.onload = cb; document.head.appendChild(sc);
+    }
+    function keyPanel() {
+        var old = document.getElementById('gh-key-panel'); if (old) old.remove();
+        var bg = document.createElement('div');
+        bg.id = 'gh-key-panel';
+        bg.style.cssText = 'position:fixed;inset:0;z-index:30000;background:rgba(255,240,244,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;font-family:"Noto Serif KR",serif;';
+        bg.innerHTML =
+            '<div style="background:#fffcfb;border:1px solid #f6e6ea;border-radius:12px;padding:22px 20px 16px;max-width:300px;width:100%;box-shadow:0 14px 40px rgba(220,150,170,.16);color:#5f5357;text-align:center">' +
+              '<div style="font-size:13px;font-weight:600;margin-bottom:4px">다른 기기에서도 글쓰기</div>' +
+              '<div style="font-size:10.5px;color:#b3a2a7;line-height:1.7;margin-bottom:12px">폰 카메라로 이 QR을 찍으면<br>홈페이지가 열리면서 바로 저장돼요.</div>' +
+              '<div id="gh-qr" style="display:flex;justify-content:center;min-height:200px;align-items:center;font-size:11px;color:#b3a2a7">QR 만드는 중…</div>' +
+              '<div style="font-size:10px;color:#d4728c;margin-top:10px;line-height:1.6">이 QR은 비밀번호와 같아요. 다른 사람에게 보여 주지 마세요.</div>' +
+              '<div style="display:flex;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid #f6e9ec">' +
+                '<button data-k="off" style="background:none;border:none;color:#b3a2a7;font-family:inherit;font-size:11px;cursor:pointer">이 기기에서 해제</button>' +
+                '<button data-k="close" style="background:none;border:none;color:#d4728c;font-weight:600;font-family:inherit;font-size:11.5px;cursor:pointer">닫기</button>' +
+              '</div>' +
+            '</div>';
+        document.body.appendChild(bg);
+        bg.addEventListener('click', function (e) {
+            var k = e.target.getAttribute && e.target.getAttribute('data-k');
+            if (e.target === bg || k === 'close') bg.remove();
+            if (k === 'off' && confirm('이 기기에서 글쓰기를 해제할까요? (저장된 토큰을 지웁니다)')) { setToken(''); updateKeyIcon(); bg.remove(); }
+        });
+        loadQrLib(function () {
+            var url = location.origin + location.pathname + '#gh=' + getToken();
+            var qr = window.qrcode(0, 'M'); qr.addData(url); qr.make();
+            var box = document.getElementById('gh-qr');
+            if (box) box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true }).replace('<svg ', '<svg style="width:200px;height:200px" ');
+        });
     }
 
     function onKeyClick() {
-        if (getToken()) {
-            if (confirm('이 기기에서 글쓰기를 해제할까요? (저장된 토큰을 지웁니다)')) { setToken(''); updateKeyIcon(); }
-        } else {
-            askToken();
-        }
+        if (getToken()) keyPanel();
+        else askToken();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         var btn = document.getElementById('btn-key');
         if (btn) { btn.addEventListener('click', onKeyClick); updateKeyIcon(); }
+        if (window.__ghTokenReceived) setTimeout(function () { alert('이 기기에서도 글쓰기가 켜졌어요. 🔓'); }, 300);
     });
 
     /* ---------------- 다른 저장소 (예: 캡처 저장소) ----------------
