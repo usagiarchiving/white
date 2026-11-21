@@ -12,7 +12,8 @@ import { RoundedBoxGeometry } from '../../vendor/three/RoundedBoxGeometry.js';
 // zone: 메뉴에서 묶어 보여줄 구역 (보통 집처럼)
 const ZONES = ['현관', '주방', '거실', '침실', '욕실'];
 const OBJECTS = {
-    entrance: { zone: '현관', name: '현관',       act: '현관 정리',    emoji: '👟' },
+    entrance: { zone: '현관', name: '현관',       act: '현관 정리',    emoji: '🚪' },
+    shoes:    { zone: '현관', name: '신발장',     act: '신발 정리',    emoji: '👟' },
     sink:     { zone: '주방', name: '싱크대',     act: '설거지',       emoji: '🫧' },
     stove:    { zone: '주방', name: '인덕션',     act: '요리',         emoji: '🍳' },
     upper1:   { zone: '주방', name: '상부장 1',   act: '정리',         emoji: '✨' },
@@ -49,7 +50,7 @@ export function init() {
         wall: 0xfffdfb, base: 0xf3eff0, trim: 0xf2b8c6, skirting: 0xf2eeec,
         white: 0xffffff, off: 0xfaf8f6, soft: 0xf1eeec, gray: 0xdedbd9, steel: 0xd3d7da, dark: 0x4f4b4d,
         pink: 0xf8d3dc, pinkMid: 0xf3b8c7, pinkDeep: 0xe99bb0, leaf: 0xa6d3a0, wood: 0xf0e6dc,
-        oak: 0xd8b48c, oakDark: 0xc49b72, silver: 0xe8ebee
+        oak: 0xecdcc8, oakDark: 0xdfcab1, silver: 0xe8ebee
     };
 
     /* ---------------- 기본 준비 ---------------- */
@@ -237,6 +238,14 @@ export function init() {
         g.add(at(rbox(0.82, 2.0, 0.06, C.silver, 0.03, { roughness: 0.45 }), X(2.68), 1.0, Z(0) + 0.03));    // 현관문 (옅은 실버)
         g.add(handle(X(2.68) - 0.3, 1.0, Z(0) + 0.08, false, 0.12));
     }, 'N');
+    // 신발장: 현관 앞 오른쪽 벽, 싱크대만큼 나와 있음
+    furniture('shoes', g => {
+        g.add(block(2.58, 3.2, 0.32, 1.12, 0, 1.0, C.white, 0.04));
+        [[0.34, 0.715], [0.725, 1.1]].forEach(([z0, z1], i) => {
+            g.add(block(2.565, 2.58, z0, z1, 0.06, 0.9, C.off, 0.012));
+            g.add(handle(X(2.55), 0.82, Z(i ? z0 + 0.06 : z1 - 0.06), true, 0.14));
+        });
+    });
     furniture('bath', g => {
         g.add(at(rbox(0.06, 2.0, 0.84, C.oak, 0.03), X(W) - 0.03, 1.0, Z(1.63)));      // 화장실 문 (우드)
         g.add(handle(X(W) - 0.08, 1.0, Z(1.3), false, 0.12));
@@ -294,12 +303,7 @@ export function init() {
     });
     furniture('desk', g => {
         g.add(block(2.55, 3.18, 3.2, 4.28, 0.72, 0.05, C.oak, 0.02));
-        g.add(block(2.6, 3.16, 3.24, 3.5, 0, 0.72, C.oak, 0.035));
-        g.add(block(2.6, 3.16, 3.98, 4.24, 0, 0.72, C.oak, 0.035));
-        [[3.28, 3.46], [4.02, 4.2]].forEach(([z0, z1]) => [0.12, 0.38].forEach(y => {
-            g.add(block(2.585, 2.6, z0, z1, y, 0.2, C.oakDark, 0.008));
-            g.add(handle(X(2.57), y + 0.1, Z((z0 + z1) / 2), false, 0.1));
-        }));
+        [[2.6, 3.25], [2.6, 4.23], [3.13, 3.25], [3.13, 4.23]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.72, C.oakDark), X(x), 0.36, Z(z))));
         g.add(at(rbox(0.3, 0.02, 0.4, C.gray, 0.01), X(2.8), 0.78, Z(3.7)));
         const screen = rbox(0.02, 0.26, 0.4, C.dark, 0.01); screen.rotation.z = -0.25; g.add(at(screen, X(2.98), 0.91, Z(3.7)));
     });
