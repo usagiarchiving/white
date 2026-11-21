@@ -32,6 +32,7 @@ const OBJECTS = {
     desk:     { zone: '거실', name: '책상',       act: '공부',         emoji: '✏️' },
     bed:      { zone: '침실', name: '침대',       act: '이불 개기',    emoji: '🛏️' },
     vanity:   { zone: '침실', name: '화장대',     act: '스킨케어',     emoji: '🧴' },
+    plant:    { zone: '침실', name: '아글라오네마', act: '물주기',    emoji: '💧' },
     closet:   { zone: '침실', name: '옷장',       act: '옷 정리',      emoji: '👕' },
     bath:     { zone: '욕실', name: '화장실',     act: '화장실 청소',  emoji: '🛁' }
 };
@@ -323,26 +324,26 @@ export function init() {
     /* ---------------- 위에서부터 책장(식탁 쪽) · 수납장(뚫림, 세탁기 쪽) · 냉장고(세탁기 쪽) ---------------- */
     const U0 = 0.04, U1 = 1.0, UZ0 = 1.76, UZ1 = 2.54;
     furniture('fridge', g => {
-        carcass(g, U0, U1, UZ0, UZ1, 0, 0.84, '-z');
-        g.add(block(U0 + 0.03, U1 - 0.03, UZ0 + 0.03, UZ1 - 0.03, 0.42, 0.02, 0xe8eef2, 0.004));    // 칸
+        carcass(g, U0, U1, UZ0, UZ1, 0, 0.92, '-z');
+        g.add(block(U0 + 0.03, U1 - 0.03, UZ0 + 0.03, UZ1 - 0.03, 0.46, 0.02, 0xe8eef2, 0.004));    // 칸
         g.add(at(cyl(0.05, 0.05, 0.2, C.pink), X(U0 + 0.3), 0.18, Z(UZ0 + 0.2)));
-        g.add(at(rbox(0.18, 0.1, 0.14, 0xe7f1e4, 0.02), X(U0 + 0.62), 0.5, Z(UZ0 + 0.2)));
-        hingedDoor(g, '-z', U0 + 0.04, U1 - 0.04, UZ0 - 0.005, 0.43, 0.37, C.off, 'a0', 0.16);
-        hingedDoor(g, '-z', U0 + 0.04, U1 - 0.04, UZ0 - 0.005, 0.05, 0.36, C.off, 'a0', 0.16);
+        g.add(at(rbox(0.18, 0.1, 0.14, 0xe7f1e4, 0.02), X(U0 + 0.62), 0.54, Z(UZ0 + 0.2)));
+        hingedDoor(g, '-z', U0 + 0.04, U1 - 0.04, UZ0 - 0.005, 0.47, 0.41, C.off, 'a0', 0.16);
+        hingedDoor(g, '-z', U0 + 0.04, U1 - 0.04, UZ0 - 0.005, 0.05, 0.4, C.off, 'a0', 0.16);
     });
     furniture('drawer', g => {   // 수납장: 문 없이 뚫린 칸, 세탁기 쪽(-z)을 봄
-        carcass(g, U0, U1, UZ0, UZ1, 0.84, 0.4, '-z');
-        g.add(block(U0 + 0.47, U0 + 0.49, UZ0, UZ1 - 0.03, 0.865, 0.35, C.white, 0.004));          // 칸막이
-        g.add(block(U0 + 0.08, U0 + 0.42, UZ0 + 0.06, UZ0 + 0.42, 0.865, 0.18, 0xe9e6e3, 0.03));   // 바구니
-        g.add(block(U0 + 0.55, U0 + 0.88, UZ0 + 0.06, UZ0 + 0.42, 0.865, 0.15, 0xe9e6e3, 0.03));
+        carcass(g, U0, U1, UZ0, UZ1, 0.92, 0.5, '-z');
+        g.add(block(U0 + 0.47, U0 + 0.49, UZ0, UZ1 - 0.03, 0.945, 0.45, C.white, 0.004));          // 칸막이
+        g.add(block(U0 + 0.08, U0 + 0.42, UZ0 + 0.06, UZ0 + 0.42, 0.945, 0.22, 0xe9e6e3, 0.03));   // 바구니
+        g.add(block(U0 + 0.55, U0 + 0.88, UZ0 + 0.06, UZ0 + 0.42, 0.945, 0.18, 0xe9e6e3, 0.03));
     });
     furniture('books', g => {    // 책장: 문 없이 식탁 쪽(+x)을 봄
-        carcass(g, U0, U1, UZ0, UZ1, 1.24, 0.52, '+x');
+        carcass(g, U0, U1, UZ0, UZ1, 1.42, 0.58, '+x');
         const cols = [C.pinkMid, C.white, C.pink, C.gray, C.pinkDeep, C.white, C.soft];   // 책장 안에 들어가는 만큼만
         let z = UZ0 + 0.06;
         cols.forEach((col, i) => {
             const w = 0.065 + (i % 3) * 0.012, h = 0.26 + (i % 4) * 0.03;
-            g.add(at(rbox(0.28, h, w, col, 0.012), X(U1 - 0.2), 1.265 + h / 2, Z(z + w / 2)));
+            g.add(at(rbox(0.28, h, w, col, 0.012), X(U1 - 0.2), 1.445 + h / 2, Z(z + w / 2)));
             z += w + 0.008;
         });
     });
@@ -396,10 +397,28 @@ export function init() {
         hingedDoor(g, '-x', 4.81, 5.23, 2.605, 0.08, 1.84, C.off, 'a1', 0.22);
     }, null, EX);
 
-    // 창가 화분 하나만
-    scene.add(at(cyl(0.12, 0.09, 0.22, C.white), X(2.2), 0.11, Z(5.0)));
-    [[0, 0.4, 0, 0.17], [-0.07, 0.55, 0.04, 0.13], [0.08, 0.5, -0.04, 0.12]].forEach(([dx, y, dz, r]) =>
-        scene.add(at(sphere(r, C.leaf), X(2.2) + dx, y, Z(5.0) + dz)));
+    // 창가 화분: 아글라오네마 (넓고 끝이 뾰족한 잎, 초록 가장자리 + 분홍 무늬) — 눌러서 물주기
+    furniture('plant', g => {
+        const px = X(2.2), pz = Z(5.0);
+        g.add(at(cyl(0.13, 0.1, 0.24, C.white, 32), px, 0.12, pz));
+        g.add(at(cyl(0.12, 0.12, 0.02, 0x8b7262, 24), px, 0.235, pz));                 // 흙
+        const leafGeo = new THREE.SphereGeometry(1, 20, 12);
+        const N = 11;
+        for (let i = 0; i < N; i++) {
+            const ang = i / N * Math.PI * 2 + (i % 2) * 0.3;
+            const tilt = 0.55 + (i % 3) * 0.18;                  // 바깥으로 눕는 정도
+            const len = 0.2 + (i % 4) * 0.025, wid = 0.075;
+            const leaf = new THREE.Group();
+            const stem = cyl(0.006, 0.008, 0.16, 0x9fbf8a, 6); stem.position.y = 0.08; leaf.add(stem);
+            const outer = new THREE.Mesh(leafGeo, mat(0x4f8a5b)); outer.scale.set(wid, 0.012, len); outer.position.set(0, 0.17, len * 0.85); outer.castShadow = true;
+            const inner = new THREE.Mesh(leafGeo, mat(0xf2a7b8)); inner.scale.set(wid * 0.62, 0.014, len * 0.78); inner.position.set(0, 0.172, len * 0.85);
+            const vein = new THREE.Mesh(leafGeo, mat(0xfbe1e7)); vein.scale.set(0.006, 0.016, len * 0.8); vein.position.set(0, 0.174, len * 0.85);
+            leaf.add(outer, inner, vein);
+            leaf.rotation.order = 'YXZ'; leaf.rotation.y = ang; leaf.rotation.x = -(Math.PI / 2 - tilt) * 0.55;
+            at(leaf, px, 0.22, pz);
+            g.add(leaf);
+        }
+    });
 
     /* ==========================================================================
        하늘 / 날씨 (창문 + 방 밝기)
