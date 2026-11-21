@@ -11,12 +11,14 @@
     var repo = window.ghdb.repo(REPO_NAME);
 
     var db = { items: [], groups: [] };
+    var now = new Date();
     var state = {
         tag: null, fav: false,
-        order: lsGet('cap-order', 'asc'),
+        order: lsGet('cap-order', 'desc'),
         selecting: false, sel: new Set(),
-        folded: JSON.parse(lsGet('cap-folded', '{}')),
-        calMonth: null
+        open: JSON.parse(lsGet('cap-open', '{}')),     // 기본은 모두 닫힘, 연 것만 기억
+        calY: now.getFullYear(), calM: now.getMonth() + 1,
+        picked: null
     };
 
     var $feed = $('#cap-feed'), $bar = $('#cap-bar');
@@ -36,7 +38,9 @@
     }
     function tagsText(tags) { return (tags || []).map(function (t) { return '#' + t; }).join(' '); }
     function groupOf(item) { return item.group ? db.groups.find(function (g) { return g.id === item.group; }) : null; }
-    function saveFolded() { lsSet('cap-folded', JSON.stringify(state.folded)); }
+    function saveOpen() { lsSet('cap-open', JSON.stringify(state.open)); }
+    function isOpen(k) { return !!state.open[k] || ((state.tag || state.fav) && k.charAt(0) === 'd'); }
+    function idsOfDay(d) { return db.items.filter(function (it) { return dayOf(it.taken_at) === d; }).map(function (it) { return it.id; }); }
 
     function busyAlert(e) {
         console.error(e);
@@ -46,11 +50,12 @@
     }
 
     /* ---------------- 불러오기 ---------------- */
+    var EMPTY_NOTE = '아직 올린 캡처가 없어요. 위의 사진 아이콘으로 올려 주세요.';
     async function load() {
         try {
             var data = await repo.readJSON(DATA, { items: [], groups: [] });
             db.items = data.items || []; db.groups = data.groups || [];
-            $('#cap-status').text(db.items.length ? '' : '아직 올린 캡처가 없어요. 아래 사진 아이콘으로 올려 주세요.');
+            $('#cap-status').text(db.items.length ? '' : EMPTY_NOTE);
             render();
         } catch (e) {
             console.error(e);
@@ -62,7 +67,7 @@
     function applyResult(res) {
         var d = res && res[DATA];
         if (d) { db.items = d.items || []; db.groups = d.groups || []; }
-        $('#cap-status').text(db.items.length ? '' : '아직 올린 캡처가 없어요. 아래 사진 아이콘으로 올려 주세요.');
+        $('#cap-status').text(db.items.length ? '' : EMPTY_NOTE);
         render();
     }
 
@@ -87,21 +92,19 @@
 
     // 날짜별 → [낱장 또는 모음] 시간순
     function buildDays(items) {
-        var days = {};
-        var groupsSeen = {};
+        var days = {}, groupsSeen = {};
         items.forEach(function (it) {
-            var g = groupOf(it);
+            var g = groupOf(it), d = dayOf(it.taken_at);
             if (g) {
                 var entry = groupsSeen[g.id];
                 if (!entry) {
-                    // 모음은 첫 장의 날짜에 놓임
                     entry = groupsSeen[g.id] = { type: 'group', group: g, items: [], at: it.taken_at };
-                    (days[dayOf(it.taken_at)] = days[dayOf(it.taken_at)] || []).push(entry);
+                    (days[d] = days[d] || []).push(entry);   // 모음은 첫 장의 날짜에 놓임
                 }
                 entry.items.push(it);
                 if (it.taken_at < entry.at) entry.at = it.taken_at;
             } else {
-                (days[dayOf(it.taken_at)] = days[dayOf(it.taken_at)] || []).push({ type: 'item', item: it, at: it.taken_at });
+                (days[d] = days[d] || []).push({ type: 'item', item: it, at: it.taken_at });
             }
         });
         Object.keys(days).forEach(function (d) {
@@ -113,16 +116,16 @@
 
     function itemHtml(it) {
         var sel = state.sel.has(it.id) ? ' is-sel' : '';
-        var ratio = (it.w && it.h) ? ' width="' + it.w + '" height="' + it.h + '"' : '';
+        var size = (it.w && it.h) ? ' width="' + it.w + '" height="' + it.h + '"' : '';
         return '<figure class="cap-item' + sel + '" data-id="' + esc(it.id) + '">' +
-            '<img loading="lazy" decoding="async" alt=""' + ratio + ' src="' + esc(repo.url(it.path)) + '" data-path="' + esc(it.path) + '">' +
-            (it.fav ? '<i class="xi-heart cap-item-heart"></i>' : '') +
-            '<figcaption class="cap-info">' +
-                '<span>' + timeOf(it.taken_at) + '</span>' +
-                '<span class="cap-tagtxt">' + esc(tagsText(it.tags)) + '</span>' +
-                '<span class="cap-info-right">' +
-                    '<button data-act="fav" title="♡"><i class="' + (it.fav ? 'xi-heart cap-fav-on' : 'xi-heart-o') + '"></i></button>' +
-                    '<button data-act="edit" title="수정"><i class="xi-pen-o"></i></button>' +
+            '<img loading="lazy" decoding="async" alt=""' + size + ' src="' + esc(repo.url(it.path)) + '" data-path="' + esc(it.path) + '">' +
+            '<figcaption class="cap-meta">' +
+                '<span class="cap-meta-time">' + timeOf(it.taken_at) + '</span>' +
+                (it.tags && it.tags.length ? '<span class="cap-meta-tags">' + esc(tagsText(it.tags)) + '</span>' : '') +
+                '<span class="cap-meta-acts">' +
+                    '<i data-act="fav" class="' + (it.fav ? 'xi-heart is-fav' : 'xi-heart-o') + '" title="♡"></i>' +
+                    '<i data-act="edit" class="xi-pen" title="수정"></i>' +
+                    '<i data-act="del" class="xi-trash cap-act-del" title="삭제"></i>' +
                 '</span>' +
             '</figcaption>' +
         '</figure>';
@@ -131,19 +134,18 @@
     function groupHtml(e) {
         var g = e.group, first = e.items[0].taken_at, last = e.items[e.items.length - 1].taken_at;
         var span = timeOf(first) + (timeOf(last) !== timeOf(first) ? ' – ' + timeOf(last) : '');
-        var folded = state.folded['g:' + g.id] ? ' is-folded' : '';
-        return '<div class="cap-group' + folded + '" data-gid="' + esc(g.id) + '">' +
+        var open = isOpen('g:' + g.id) ? ' is-open' : '';
+        return '<div class="cap-group' + open + '" data-gid="' + esc(g.id) + '">' +
             '<div class="cap-group-head">' +
-                '<span class="cap-fold">▾</span>' +
-                '<span class="cap-group-title">' + esc(g.title || '모음') + '</span>' +
-                '<span class="cap-group-time">' + span + '</span>' +
-                '<span class="cap-count">' + e.items.length + '</span>' +
-                (g.fav ? '<i class="xi-heart cap-fav-on" style="font-size:11px"></i>' : '') +
-                '<span class="cap-group-tags">' + esc(tagsText(g.tags)) + '</span>' +
-                '<button class="cap-group-edit" title="모음 수정"><i class="xi-pen-o"></i></button>' +
+                '<span class="cap-group-title">' + (g.fav ? '<i class="xi-heart is-fav"></i> ' : '') + esc(g.title || '모음') + '</span>' +
+                '<span class="cap-group-sub">' + span + ' · ' + e.items.length + '장</span>' +
             '</div>' +
-            (g.memo ? '<div class="cap-group-memo">' + esc(g.memo) + '</div>' : '') +
-            '<div class="cap-group-body">' + e.items.map(itemHtml).join('') + '</div>' +
+            '<div class="cap-group-body">' +
+                (g.memo ? '<div class="cap-group-memo">' + esc(g.memo) + '</div>' : '') +
+                (g.tags && g.tags.length ? '<div class="cap-group-tags">' + esc(tagsText(g.tags)) + '</div>' : '') +
+                e.items.map(itemHtml).join('') +
+                '<div class="cap-row-acts"><i class="xi-pen cap-group-edit" title="모음 수정"></i></div>' +
+            '</div>' +
         '</div>';
     }
 
@@ -156,22 +158,23 @@
         var note = '';
         if (state.tag || state.fav) {
             note = '<div class="cap-filter-note">' + (state.fav ? '♡ ' : '') + (state.tag ? '#' + esc(state.tag) + ' ' : '') +
-                '· ' + items.length + '장 <button id="cap-clear-filter">전체 보기</button></div>';
+                '· ' + items.length + '장 <span id="cap-clear-filter">전체 보기</span></div>';
         }
 
         var html = keys.map(function (d) {
             var dt = new Date(d + 'T00:00:00');
             var cnt = days[d].reduce(function (n, e) { return n + (e.items ? e.items.length : 1); }, 0);
-            var folded = state.folded['d:' + d] ? ' is-folded' : '';
-            var showYear = dt.getFullYear() !== new Date().getFullYear();
-            return '<section class="cap-day' + folded + '" id="cap-d-' + d + '" data-date="' + d + '">' +
+            var open = isOpen('d:' + d) ? ' is-open' : '';
+            return '<section class="cap-day' + open + (state.picked === d ? ' is-picked' : '') + '" id="cap-d-' + d + '" data-date="' + d + '">' +
                 '<div class="cap-day-head">' +
-                    '<span class="cap-fold">▾</span>' +
-                    '<span class="cap-day-date">' + (dt.getMonth() + 1) + '월 ' + dt.getDate() + '일</span>' +
-                    '<span class="cap-day-week">' + WEEK[dt.getDay()] + '</span>' +
-                    (showYear ? '<span class="cap-day-year">' + dt.getFullYear() + '</span>' : '') +
-                    '<span class="cap-count">' + cnt + '</span>' +
-                    '<button class="cap-day-add" title="이 날짜에 올리기"><i class="xi-plus"></i></button>' +
+                    '<span class="cap-day-date">' + d.replace(/-/g, '.') + ' <small>' + WEEK[dt.getDay()] + '</small></span>' +
+                    '<span class="cap-day-tools" title="">' +
+                        '<i data-day="add" class="xi-plus" title="이 날짜에 추가"></i>' +
+                        '<i data-day="date" class="xi-calendar" title="이 날 전체 날짜 바꾸기"></i>' +
+                        '<i data-day="select" class="xi-check-circle-o" title="골라서 수정"></i>' +
+                        '<i data-day="del" class="xi-trash cap-act-del" title="이 날 전체 삭제"></i>' +
+                    '</span>' +
+                    '<span class="cap-day-count">' + cnt + '</span>' +
                 '</div>' +
                 '<div class="cap-day-body">' +
                     days[d].map(function (e) { return e.type === 'group' ? groupHtml(e) : itemHtml(e.item); }).join('') +
@@ -181,10 +184,12 @@
 
         $feed.html(note + html);
         $('#cap-wrap').toggleClass('cap-selecting', state.selecting);
-        $('#cap-tb-fav').toggleClass('is-on', state.fav).find('i').attr('class', state.fav ? 'xi-heart' : 'xi-heart-o');
-        $('#cap-tb-tags').toggleClass('is-on', !!state.tag);
-        $('#cap-tb-order i').attr('class', state.order === 'asc' ? 'xi-arrow-down' : 'xi-arrow-up');
-        $('#cap-tb-order').attr('title', state.order === 'asc' ? '오래된 날짜부터' : '최근 날짜부터');
+        $('#cap-ic-fav').toggleClass('active', state.fav).attr('class', (state.fav ? 'xi-heart' : 'xi-heart-o') + (state.fav ? ' active' : ''));
+        $('#cap-ic-tags').toggleClass('active', !!state.tag || $('#cap-tags-panel').is(':visible'));
+        $('#cap-ic-order').attr('class', state.order === 'asc' ? 'xi-arrow-down' : 'xi-arrow-up')
+            .attr('title', state.order === 'asc' ? '오래된 날짜부터' : '최근 날짜부터');
+        drawCal();
+        drawTags();
         updateSelBar();
     }
 
@@ -200,122 +205,47 @@
         if (e.target.tagName === 'IMG') e.target.classList.add('is-loaded');
     }, true);
 
-    /* ---------------- 화면 동작 ---------------- */
-    $feed.on('click', '.cap-day-head', function (e) {
-        if ($(e.target).closest('.cap-day-add').length) return;
-        var $d = $(this).parent(), k = 'd:' + $d.data('date');
-        $d.toggleClass('is-folded');
-        if ($d.hasClass('is-folded')) state.folded[k] = 1; else delete state.folded[k];
-        saveFolded();
-    });
-    $feed.on('click', '.cap-day-add', function () {
-        openUploadPicker($(this).closest('.cap-day').data('date'));
-    });
-    $feed.on('click', '.cap-group-head', function (e) {
-        var $g = $(this).parent(), gid = $g.data('gid');
-        if ($(e.target).closest('.cap-group-edit').length) { openGroupSheet(gid); return; }
-        if (state.selecting) {
-            // 고르기 모드에서는 모음 머리를 누르면 모음 전체 선택/해제
-            var ids = $g.find('.cap-item').map(function () { return $(this).data('id'); }).get();
-            var allOn = ids.every(function (id) { return state.sel.has(id); });
-            ids.forEach(function (id) { allOn ? state.sel.delete(id) : state.sel.add(id); });
-            $g.find('.cap-item').toggleClass('is-sel', !allOn);
-            updateSelBar();
-            return;
-        }
-        var k = 'g:' + gid;
-        $g.toggleClass('is-folded');
-        if ($g.hasClass('is-folded')) state.folded[k] = 1; else delete state.folded[k];
-        saveFolded();
-    });
-    $feed.on('click', '.cap-item', function (e) {
-        var id = String($(this).data('id'));
-        if (state.selecting) {
-            state.sel.has(id) ? state.sel.delete(id) : state.sel.add(id);
-            $(this).toggleClass('is-sel', state.sel.has(id));
-            updateSelBar();
-            return;
-        }
-        var act = $(e.target).closest('button').data('act');
-        if (act === 'fav') { toggleFav([id]); return; }
-        if (act === 'edit') { openItemSheet(id); return; }
-        if ($(e.target).closest('.cap-info').length) return;
-        $(this).toggleClass('show-info');
-    });
-    $feed.on('click', '#cap-clear-filter', function () { state.tag = null; state.fav = false; render(); });
-
-    /* ---------------- 툴바 ---------------- */
-    function closePops() { $('.cap-pop').removeClass('is-open'); $bar.removeClass('is-active'); }
-    function togglePop(id) {
-        var open = !$(id).hasClass('is-open');
-        closePops();
-        if (open) { $(id).addClass('is-open'); $bar.addClass('is-active'); }
-        return open;
-    }
-    $('#cap-tb-cal').on('click', function () { if (togglePop('#cap-pop-cal')) { state.calMonth = currentTopMonth(); drawCal(); } });
-    $('#cap-tb-tags').on('click', function () { if (togglePop('#cap-pop-tags')) drawTags(); });
-    $('#cap-tb-fav').on('click', function () { closePops(); state.fav = !state.fav; render(); });
-    $('#cap-tb-order').on('click', function () {
-        closePops(); state.order = state.order === 'asc' ? 'desc' : 'asc'; lsSet('cap-order', state.order); render();
-    });
-    $('#cap-tb-upload').on('click', function () { closePops(); openUploadPicker(null); });
-    $('#cap-tb-select').on('click', function () { closePops(); setSelecting(true); });
-    $(document).off('click.cap').on('click.cap', function (e) {
-        if (!$(e.target).closest('.cap-pop, .cap-bar').length) closePops();
-    });
-
-    // 스크롤을 내리는 동안엔 살짝 숨고, 멈추거나 올리면 다시 나타남
-    var lastY = window.scrollY, idleT = null;
-    $(window).off('scroll.cap').on('scroll.cap', function () {
-        if (!document.getElementById('cap-bar')) { $(window).off('scroll.cap'); $(document).off('click.cap'); return; }
-        var y = window.scrollY;
-        if (!state.selecting && !$bar.hasClass('is-active')) {
-            if (y > lastY + 6) $bar.addClass('is-tucked');
-            else if (y < lastY - 6) $bar.removeClass('is-tucked');
-        }
-        lastY = y;
-        clearTimeout(idleT);
-        idleT = setTimeout(function () { $bar.removeClass('is-tucked'); }, 700);
-    });
-
-    function currentTopMonth() {
-        var top = null;
-        $('.cap-day').each(function () { if (this.getBoundingClientRect().bottom > 80) { top = $(this).data('date'); return false; } });
-        var d = top || (db.items.length ? dayOf(db.items[db.items.length - 1].taken_at) : localISO(new Date()).slice(0, 10));
-        return d.slice(0, 7);
-    }
+    /* ---------------- 달력 (토끼굴 달력과 같은 모양) ---------------- */
     function drawCal() {
-        var ym = state.calMonth, y = +ym.slice(0, 4), m = +ym.slice(5, 7);
-        $('#cap-cal-title').text(y + '. ' + pad(m));
+        var y = state.calY, m = state.calM;
+        $('#cap-cal-month').text(y + '년 ' + m + '월').show();
+        $('#cap-cal-picker').val(y + '-' + pad(m)).hide();
         var has = {};
         visibleItems().forEach(function (it) { has[dayOf(it.taken_at)] = 1; });
         var first = new Date(y, m - 1, 1).getDay(), last = new Date(y, m, 0).getDate();
-        var h = WEEK.map(function (w) { return '<div class="wd">' + w + '</div>'; }).join('');
-        for (var i = 0; i < first; i++) h += '<div></div>';
+        var t = new Date(), isThisMonth = t.getFullYear() === y && t.getMonth() + 1 === m;
+        var h = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(function (w) { return '<div class="cap-cal-wd">' + w + '</div>'; }).join('');
+        for (var i = 0; i < first; i++) h += '<div class="cap-cal-wrap"></div>';
         for (var d = 1; d <= last; d++) {
-            var key = ym + '-' + pad(d);
-            h += '<div class="d' + (has[key] ? ' has' : '') + '" data-date="' + key + '">' + d + '</div>';
+            var key = y + '-' + pad(m) + '-' + pad(d);
+            var cls = 'cap-cal-day' + (has[key] ? ' has-log' : '') + (isThisMonth && d === t.getDate() ? ' is-today' : '') + (state.picked === key ? ' is-picked' : '');
+            h += '<div class="cap-cal-wrap"><div class="' + cls + '" data-date="' + key + '">' + d + '</div></div>';
         }
         $('#cap-cal-grid').html(h);
     }
     function shiftMonth(n) {
-        var y = +state.calMonth.slice(0, 4), m = +state.calMonth.slice(5, 7) - 1 + n;
-        var d = new Date(y, m, 1);
-        state.calMonth = d.getFullYear() + '-' + pad(d.getMonth() + 1);
-        drawCal();
+        var d = new Date(state.calY, state.calM - 1 + n, 1);
+        state.calY = d.getFullYear(); state.calM = d.getMonth() + 1; drawCal();
     }
     $('#cap-cal-prev').on('click', function () { shiftMonth(-1); });
     $('#cap-cal-next').on('click', function () { shiftMonth(1); });
-    $('#cap-cal-grid').on('click', '.d.has', function () {
-        var d = $(this).data('date');
-        closePops();
-        var el = document.getElementById('cap-d-' + d);
-        if (el) {
-            if ($(el).hasClass('is-folded')) { $(el).removeClass('is-folded'); delete state.folded['d:' + d]; saveFolded(); }
-            window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
-        }
+    $('#cap-cal-month').on('click', function () { $(this).hide(); $('#cap-cal-picker').show().focus(); });
+    $('#cap-cal-picker').on('change blur', function () {
+        var v = $(this).val();
+        if (/^\d{4}-\d{2}$/.test(v)) { state.calY = +v.slice(0, 4); state.calM = +v.slice(5, 7); }
+        drawCal();
     });
+    $('#cap-cal-grid').on('click', '.cap-cal-day.has-log', function () { goToDay($(this).data('date')); });
 
+    function goToDay(d) {
+        state.picked = d;
+        state.open['d:' + d] = 1; saveOpen();
+        render();
+        var el = document.getElementById('cap-d-' + d);
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
+    }
+
+    /* ---------------- 위쪽 아이콘들 ---------------- */
     function drawTags() {
         var count = {};
         db.items.forEach(function (it) { (it.tags || []).forEach(function (t) { count[t] = (count[t] || 0) + 1; }); });
@@ -324,30 +254,96 @@
             (g.tags || []).forEach(function (t) { count[t] = (count[t] || 0) + n; });
         });
         var tags = Object.keys(count).sort(function (a, b) { return count[b] - count[a]; });
-        if (!tags.length) { $('#cap-tag-list').html('<span class="cap-empty-note">아직 태그가 없어요.</span>'); return; }
-        $('#cap-tag-list').html('<span class="cap-chip' + (state.tag ? '' : ' is-on') + '" data-tag="">전체</span>' +
-            tags.map(function (t) {
-                return '<span class="cap-chip' + (state.tag === t ? ' is-on' : '') + '" data-tag="' + esc(t) + '">#' + esc(t) + '<small>' + count[t] + '</small></span>';
-            }).join(''));
+        $('#cap-tags-panel').html(tags.length ? tags.map(function (t) {
+            return '<span class="cap-pill' + (state.tag === t ? ' is-on' : '') + '" data-tag="' + esc(t) + '">#' + esc(t) + ' <small>' + count[t] + '</small></span>';
+        }).join('') : '<span class="cap-none">태그가 없습니다.</span>');
     }
-    $('#cap-tag-list').on('click', '.cap-chip', function () {
-        state.tag = $(this).data('tag') || null; closePops(); render(); window.scrollTo({ top: 0 });
+    $('#cap-ic-tags').on('click', function () { $('#cap-tags-panel').slideToggle(200); $(this).toggleClass('active'); });
+    $('#cap-tags-panel').on('click', '.cap-pill', function () {
+        var t = String($(this).data('tag'));
+        state.tag = state.tag === t ? null : t; render();
+    });
+    $('#cap-ic-fav').on('click', function () { state.fav = !state.fav; render(); });
+    $('#cap-ic-order').on('click', function () { state.order = state.order === 'asc' ? 'desc' : 'asc'; lsSet('cap-order', state.order); render(); });
+    $('#cap-ic-upload').on('click', function () { openUploadPicker(null); });
+    $feed.on('click', '#cap-clear-filter', function () { state.tag = null; state.fav = false; render(); });
+
+    /* ---------------- 목록 동작 ---------------- */
+    $feed.on('click', '.cap-day-head', function (e) {
+        var $d = $(this).parent(), d = $d.data('date'), tool = $(e.target).closest('[data-day]').data('day');
+        if (tool === 'add') { openUploadPicker(d); return; }
+        if (tool === 'date') { openDateSheet(idsOfDay(d), d); return; }
+        if (tool === 'select') { state.open['d:' + d] = 1; saveOpen(); $d.addClass('is-open'); setSelecting(true); return; }
+        if (tool === 'del') { deleteItems(idsOfDay(d), d.replace(/-/g, '.') + '의 캡처 ' + idsOfDay(d).length + '장을 모두 삭제할까요?'); return; }
+        var k = 'd:' + d;
+        $d.toggleClass('is-open');
+        if ($d.hasClass('is-open')) state.open[k] = 1; else delete state.open[k];
+        saveOpen();
+    });
+    $feed.on('click', '.cap-group-head', function () {
+        var $g = $(this).parent(), gid = $g.data('gid');
+        if (state.selecting) {
+            // 고르기 중엔 모음 머리를 누르면 모음 전체 선택/해제
+            var ids = $g.find('.cap-item').map(function () { return String($(this).data('id')); }).get();
+            var allOn = ids.every(function (id) { return state.sel.has(id); });
+            ids.forEach(function (id) { allOn ? state.sel.delete(id) : state.sel.add(id); });
+            $g.addClass('is-open').find('.cap-item').toggleClass('is-sel', !allOn);
+            updateSelBar();
+            return;
+        }
+        var k = 'g:' + gid;
+        $g.toggleClass('is-open');
+        if ($g.hasClass('is-open')) state.open[k] = 1; else delete state.open[k];
+        saveOpen();
+    });
+    $feed.on('click', '.cap-group-edit', function () { openGroupSheet($(this).closest('.cap-group').data('gid')); });
+    $feed.on('click', '.cap-item', function (e) {
+        var id = String($(this).data('id'));
+        if (state.selecting) {
+            state.sel.has(id) ? state.sel.delete(id) : state.sel.add(id);
+            $(this).toggleClass('is-sel', state.sel.has(id));
+            updateSelBar();
+            return;
+        }
+        var act = $(e.target).closest('[data-act]').data('act');
+        if (act === 'fav') toggleFav([id]);
+        if (act === 'edit') openItemSheet(id);
+        if (act === 'del') deleteItems([id]);
+    });
+
+    /* ---------------- 따라오는 작은 툴바 ---------------- */
+    $('#cap-tb-top').on('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    $('#cap-tb-select').on('click', function () { setSelecting(!state.selecting); });
+    $('#cap-tb-upload').on('click', function () { openUploadPicker(null); });
+
+    // 스크롤을 내리는 동안엔 숨고, 멈추거나 올리면 다시 나타남
+    var lastY = window.scrollY, idleT = null;
+    $(window).off('scroll.cap').on('scroll.cap', function () {
+        if (!document.getElementById('cap-bar')) { $(window).off('scroll.cap'); return; }
+        var y = window.scrollY;
+        $bar.toggleClass('is-shown', y > 260 || state.selecting);
+        if (!state.selecting) {
+            if (y > lastY + 6) $bar.addClass('is-tucked');
+            else if (y < lastY - 6) $bar.removeClass('is-tucked');
+        }
+        lastY = y;
+        clearTimeout(idleT);
+        idleT = setTimeout(function () { $bar.removeClass('is-tucked'); }, 700);
     });
 
     /* ---------------- 고르기 모드 ---------------- */
     function setSelecting(on) {
         state.selecting = on; state.sel.clear();
-        $bar.toggleClass('is-selecting', on).removeClass('is-tucked');
+        $bar.toggleClass('is-selecting', on).toggleClass('is-shown', on || window.scrollY > 260).removeClass('is-tucked');
         $('#cap-wrap').toggleClass('cap-selecting', on);
-        $('.cap-item').removeClass('is-sel show-info');
+        $('.cap-item').removeClass('is-sel');
         updateSelBar();
     }
     function updateSelBar() {
         $('#cap-sel-count').text(state.sel.size + '장');
-        $('.cap-bar-select .cap-tb[data-act]').not('[data-act=done]').prop('disabled', state.sel.size === 0)
-            .css('opacity', state.sel.size === 0 ? .35 : 1);
+        $('.cap-bar-select [data-act]').not('[data-act=done]').toggleClass('is-off', state.sel.size === 0);
     }
-    $('.cap-bar-select').on('click', '.cap-tb', function () {
+    $('.cap-bar-select').on('click', '[data-act]', function () {
         var act = $(this).data('act'), ids = Array.from(state.sel);
         if (act === 'done') { setSelecting(false); return; }
         if (!ids.length) return;
@@ -382,8 +378,9 @@
         })) setSelecting(false);
     }
 
-    async function deleteItems(ids) {
-        if (!confirm(ids.length + '장을 삭제할까요?\n저장소에서도 원본 파일이 지워져요.')) return;
+    async function deleteItems(ids, question) {
+        if (!ids.length) return;
+        if (!confirm((question || (ids.length > 1 ? ids.length + '장을 삭제할까요?' : '이 캡처를 삭제할까요?')) + '\n저장소에서도 원본 파일이 지워져요.')) return;
         var files = {};
         db.items.forEach(function (it) { if (ids.includes(it.id)) files[it.path] = null; });
         if (await run('capture: 삭제 ' + ids.length + '장', files, function (d) {
@@ -394,11 +391,11 @@
     /* ---------------- 시트 ---------------- */
     function openSheet(html) {
         $('#cap-sheet').html(html);
-        $('#cap-sheet-bg').addClass('is-open');
+        $('#cap-sheet-bg').css('display', 'flex').hide().fadeIn(150);
         $bar.css('visibility', 'hidden');
     }
     function closeSheet() {
-        $('#cap-sheet-bg').removeClass('is-open');
+        $('#cap-sheet-bg').fadeOut(120);
         $bar.css('visibility', '');
         if (upload) { upload.rows.forEach(function (r) { URL.revokeObjectURL(r.url); }); upload = null; }
     }
@@ -478,10 +475,11 @@
         });
     }
 
-    function openDateSheet(ids) {
+    function openDateSheet(ids, fromDay) {
         var first = db.items.find(function (i) { return i.id === ids[0]; });
+        if (!first) return;
         openSheet(
-            '<h3>' + ids.length + '장 날짜 바꾸기</h3><div class="cap-sub">시간은 그대로 두고 날짜만 바뀌어요.</div>' +
+            '<h3>' + (fromDay ? fromDay.replace(/-/g, '.') + ' 전체(' + ids.length + '장) 날짜 바꾸기' : ids.length + '장 날짜 바꾸기') + '</h3><div class="cap-sub">시간은 그대로 두고 날짜만 바뀌어요.</div>' +
             '<input type="date" id="cd-date" value="' + dayOf(first.taken_at) + '">' +
             '<div class="cap-actions"><span class="cap-progress"></span><button class="cap-btn" data-close>닫기</button><button class="cap-btn primary" id="cd-save">저장</button></div>'
         );
@@ -493,7 +491,7 @@
                 d.items.forEach(function (it) { if (ids.includes(it.id)) { it.taken_at = d0 + it.taken_at.slice(10); it.date_src = 'manual'; } });
             });
             setBusy(false);
-            if (ok) { closeSheet(); setSelecting(false); }
+            if (ok) { closeSheet(); if (state.selecting) setSelecting(false); goToDay(d0); }
         });
     }
 

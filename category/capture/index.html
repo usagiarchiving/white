@@ -1,51 +1,59 @@
-<link rel="stylesheet" href="category/capture/capture.css?v=3">
+<link rel="stylesheet" href="category/capture/capture.css?v=4">
 
 <div class="cap-wrap" id="cap-wrap">
+
+    <!-- 위쪽 아이콘 (이름을 부르는 법과 같은 자리/크기) -->
+    <div class="cap-top-icons">
+        <i class="xi-tags" id="cap-ic-tags" title="태그 모음"></i>
+        <i class="xi-heart-o" id="cap-ic-fav" title="♡만 보기"></i>
+        <i class="xi-arrow-up" id="cap-ic-order" title="날짜 순서"></i>
+        <i class="xi-image-o" id="cap-ic-upload" title="캡처 올리기"></i>
+    </div>
+    <div id="cap-tags-panel" class="cap-tags-panel"></div>
+
+    <!-- 토끼굴과 같은 달력 -->
+    <div class="cap-cal">
+        <div class="cap-cal-head">
+            <span class="cap-cal-nav" id="cap-cal-prev">&lt;</span>
+            <span>
+                <span id="cap-cal-month"></span>
+                <input type="month" id="cap-cal-picker">
+            </span>
+            <span class="cap-cal-nav" id="cap-cal-next">&gt;</span>
+        </div>
+        <div class="cap-cal-grid" id="cap-cal-grid"></div>
+    </div>
+
     <div id="cap-status" class="cap-status">불러오는 중…</div>
     <div id="cap-feed"></div>
-    <div id="cap-sentinel"></div>
 </div>
 
-<!-- 따라오는 툴바 -->
+<!-- 스크롤을 따라오는 작은 툴바 (조금 내려가면 나타남) -->
 <div id="cap-bar" class="cap-bar">
     <div class="cap-bar-normal">
-        <button class="cap-tb" id="cap-tb-cal" title="달력"><i class="xi-calendar"></i></button>
-        <button class="cap-tb" id="cap-tb-tags" title="태그"><i class="xi-tags"></i></button>
-        <button class="cap-tb" id="cap-tb-fav" title="♡만 보기"><i class="xi-heart-o"></i></button>
-        <button class="cap-tb" id="cap-tb-order" title="날짜 순서"><i class="xi-arrow-down"></i></button>
-        <span class="cap-tb-sep"></span>
-        <button class="cap-tb" id="cap-tb-select" title="골라서 수정"><i class="xi-check-circle-o"></i></button>
-        <button class="cap-tb cap-tb-up" id="cap-tb-upload" title="올리기"><i class="xi-image-o"></i></button>
+        <button id="cap-tb-top" title="달력으로"><i class="xi-calendar"></i></button>
+        <button id="cap-tb-select" title="골라서 수정"><i class="xi-check-circle-o"></i></button>
+        <button id="cap-tb-upload" title="올리기"><i class="xi-image-o"></i></button>
     </div>
     <div class="cap-bar-select">
-        <span class="cap-sel-count" id="cap-sel-count">0</span>
-        <button class="cap-tb" data-act="group" title="모음으로 묶기"><i class="xi-view-stream"></i></button>
-        <button class="cap-tb" data-act="ungroup" title="모음에서 빼기"><i class="xi-minus"></i></button>
-        <button class="cap-tb" data-act="date" title="날짜 바꾸기"><i class="xi-calendar"></i></button>
-        <button class="cap-tb" data-act="tags" title="태그 붙이기"><i class="xi-tags"></i></button>
-        <button class="cap-tb" data-act="fav" title="♡"><i class="xi-heart-o"></i></button>
-        <button class="cap-tb cap-danger" data-act="delete" title="삭제"><i class="xi-trash-o"></i></button>
-        <span class="cap-tb-sep"></span>
-        <button class="cap-tb cap-done" data-act="done" title="끝내기">완료</button>
+        <span class="cap-sel-count" id="cap-sel-count">0장</span>
+        <div class="divider"></div>
+        <button data-act="group" title="모음으로 묶기"><i class="xi-view-stream"></i></button>
+        <button data-act="ungroup" title="모음에서 빼기"><i class="xi-minus"></i></button>
+        <button data-act="date" title="날짜 바꾸기"><i class="xi-calendar"></i></button>
+        <button data-act="tags" title="태그"><i class="xi-tags"></i></button>
+        <button data-act="fav" title="♡"><i class="xi-heart-o"></i></button>
+        <button data-act="delete" class="btn-delete" title="삭제"><i class="xi-trash-o"></i></button>
+        <div class="divider"></div>
+        <button data-act="done" class="cap-done" title="끝내기">완료</button>
     </div>
 </div>
-
-<!-- 툴바 위로 뜨는 작은 창들 -->
-<div id="cap-pop-cal" class="cap-pop">
-    <div class="cap-cal-head">
-        <button class="cap-tb" id="cap-cal-prev"><i class="xi-angle-left"></i></button>
-        <span id="cap-cal-title"></span>
-        <button class="cap-tb" id="cap-cal-next"><i class="xi-angle-right"></i></button>
-    </div>
-    <div class="cap-cal-grid" id="cap-cal-grid"></div>
-</div>
-<div id="cap-pop-tags" class="cap-pop"><div id="cap-tag-list" class="cap-tag-list"></div></div>
 
 <input type="file" id="cap-file" accept="image/*" multiple hidden>
 
-<!-- 아래에서 올라오는 시트 (업로드/수정 공용) -->
+<!-- 수정/업로드 카드 (토끼굴 팝업과 같은 모양) -->
 <div id="cap-sheet-bg" class="cap-sheet-bg">
     <div id="cap-sheet" class="cap-sheet"></div>
 </div>
 
-<script src="category/capture/capture.js?v=3"></script>
+<script src="category/capture/capture.js?v=4"></script>
