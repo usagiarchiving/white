@@ -330,9 +330,18 @@ export function init() {
     });
     // 현관문과 화장실 문 사이, 화장실 쪽 벽: 액자처럼 납작하게 걸린 분리수거 봉지 + 아래 쓰레기통
     furniture('recycle', g => {
-        g.add(at(rbox(0.04, 0.03, 0.3, C.gray, 0.01), X(W) - 0.03, 1.63, Z(0.93)));                 // 걸이
-        g.add(at(rbox(0.04, 0.55, 0.34, 0xeeeae8, 0.02), X(W) - 0.035, 1.31, Z(0.93)));          // 납작한 봉지 하나
-        g.add(at(rbox(0.045, 0.035, 0.34, C.white, 0.01), X(W) - 0.035, 1.6, Z(0.93)));
+        g.add(at(rbox(0.04, 0.03, 0.56, C.gray, 0.01), X(W) - 0.03, 1.63, Z(0.96)));                 // 걸이 (장바구니까지)
+        g.add(at(rbox(0.04, 0.55, 0.26, 0xeeeae8, 0.02), X(W) - 0.035, 1.31, Z(0.83)));          // 납작한 분리수거 봉지
+        g.add(at(rbox(0.045, 0.035, 0.26, C.white, 0.01), X(W) - 0.035, 1.6, Z(0.83)));
+    }, 'E');
+    // 분리수거 옆에 걸린 장바구니(에코백) — 눌러서 장보기 목록
+    furniture('shop', g => {
+        g.add(at(rbox(0.05, 0.34, 0.24, 0xf2ebe1, 0.03), X(W) - 0.045, 1.22, Z(1.08)));            // 가방
+        g.add(at(rbox(0.052, 0.06, 0.1, C.pink, 0.01), X(W) - 0.07, 1.2, Z(1.08)));                // 작은 분홍 라벨
+        [1.02, 1.14].forEach(z => {                                                                // 손잡이 두 줄
+            const h = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.007, 6, 20, Math.PI), mat(0xe2d6c6));
+            h.rotation.y = Math.PI / 2; at(h, X(W) - 0.045, 1.39, Z(z)); g.add(h);
+        });
     }, 'E');
     furniture('trash', g => {
         g.add(at(cyl(0.14, 0.12, 0.4, C.white, 32), X(1.4), 0.2, Z(2.15)));          // 식탁 아래
@@ -672,6 +681,7 @@ export function init() {
         hovered = g;
         canvas.classList.toggle('is-hover', !!g);
         if (!g) { labelEl.classList.remove('on'); return; }
+        if (g.userData.id === 'shop') { const left = (db.shopping || []).filter(x => !x.done).length; labelEl.innerHTML = '장바구니' + (left ? '<span class="n">' + left + '</span>' : ''); labelEl.classList.add('on'); return; }
         if (g.userData.id === 'notes') { labelEl.innerHTML = '메모' + ((db.notes || []).length ? '<span class="n">' + db.notes.length + '</span>' : ''); labelEl.classList.add('on'); return; }
         const o = OBJECTS[g.userData.id], done = isDone(g.userData.id, todayKey());
         labelEl.innerHTML = o.name + (done ? '<span class="n">✓</span>' : '');
@@ -855,6 +865,7 @@ export function init() {
         d.zones = ZONES;
         d.objects = JSON.parse(JSON.stringify(OBJECTS));
         d.notes = Array.isArray(d.notes) ? d.notes : [];     // 현관 메모: [{ id, title, date, body, at }]
+        d.shopping = Array.isArray(d.shopping) ? d.shopping : [];   // 장바구니: [{ id, name, done, at, done_at }]
         return d;
     }
     async function load() {
@@ -902,7 +913,8 @@ export function init() {
         document.getElementById('mh-list').innerHTML = ZONES.map(z =>
             '<em>' + z + '</em>' + Object.keys(OBJECTS).filter(id => OBJECTS[id].zone === z).map(id =>
                 '<span data-id="' + id + '" class="' + (isDone(id, tday) ? 'done' : '') + '">' + OBJECTS[id].name + '</span>').join('') +
-            (z === '현관' ? '<span data-id="notes">현관 메모' + ((db.notes || []).length ? ' · ' + db.notes.length : '') + '</span>' : '')
+            (z === '현관' ? '<span data-id="notes">현관 메모' + ((db.notes || []).length ? ' · ' + db.notes.length : '') + '</span>' : '') +
+            (z === '주방' ? '<span data-id="shop">장바구니' + ((db.shopping || []).filter(x => !x.done).length ? ' · ' + db.shopping.filter(x => !x.done).length : '') + '</span>' : '')
         ).join('');
         if (typeof buildNotes === 'function') buildNotes((db.notes || []).length);
     }
@@ -913,6 +925,7 @@ export function init() {
 
     function openCard(id) {
         if (id === 'notes') { openNotes(); return; }
+        if (id === 'shop') { openShop(); return; }
         const now = new Date();
         card = { id, y: now.getFullYear(), m: now.getMonth(), sel: todayKey() };
         bg.style.display = 'flex';
@@ -930,6 +943,7 @@ export function init() {
 
     function drawCard() {
         if (card.id === 'notes') { drawNotes(); return; }
+        if (card.id === 'shop') { drawShop(); return; }
         const o = OBJECTS[card.id], y = card.y, m = card.m, t = todayKey();
         const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
         let monthCount = 0;
@@ -991,6 +1005,7 @@ export function init() {
 
     cardEl.addEventListener('click', e => {
         if (card && card.id === 'notes') { notesClick(e); return; }
+        if (card && card.id === 'shop') { shopClick(e); return; }
         if (!card) { if (e.target.closest('.mh-close')) closeCard(); return; }
         const nav = e.target.closest('[data-nav]');
         if (nav) { const d = new Date(card.y, card.m + Number(nav.dataset.nav), 1); card.y = d.getFullYear(); card.m = d.getMonth(); drawCard(); return; }
@@ -1058,6 +1073,75 @@ export function init() {
             const id = card.edit;
             save('myhome: 현관 메모 지우기', d => { d.notes = (d.notes || []).filter(x => x.id !== id); });
             card.edit = null; drawNotes(); drawList(); return;
+        }
+        if (e.target.closest('.mh-close')) closeCard();
+    }
+
+    /* ---------------- 장바구니 (장보기 목록) ---------------- */
+    function openShop() {
+        card = { id: 'shop', showDone: false };
+        bg.style.display = 'flex';
+        drawShop();
+        setTimeout(() => { const i = cardEl.querySelector('.mh-shop-input'); if (i && window.matchMedia('(pointer: fine)').matches) i.focus(); }, 50);
+    }
+    function drawShop() {
+        // 저장이 끝나 다시 그릴 때, 입력 중이던 글자와 커서는 그대로 둠
+        const prev = cardEl.querySelector('.mh-shop-input');
+        const typed = prev ? prev.value : '', hadFocus = prev && document.activeElement === prev;
+        const list = db.shopping || [];
+        const todo = list.filter(x => !x.done).sort((a, b) => (a.at || '').localeCompare(b.at || ''));
+        const done = list.filter(x => x.done).sort((a, b) => (b.done_at || '').localeCompare(a.done_at || ''));
+        const row = x => '<div class="mh-shop-row' + (x.done ? ' done' : '') + '" data-item="' + esc(x.id) + '">' +
+            '<span class="mh-shop-check" data-act="toggle"></span>' +
+            '<span class="mh-shop-name" data-act="toggle">' + esc(x.name) + '</span>' +
+            '<span class="mh-shop-x" data-act="del">×</span></div>';
+        cardEl.innerHTML =
+            '<div class="mh-head"><span class="mh-title"><b>장바구니</b><span class="mh-act">' + (todo.length ? todo.length + '개 사야 해요' : '다 샀어요') + '</span></span></div>' +
+            '<div class="mh-shop-add"><input class="mh-shop-input" placeholder="살 것 추가 (예: 우유 2개)" enterkeyhint="done"><button class="mh-shop-plus">+</button></div>' +
+            '<div class="mh-shop-sec">살 것</div>' +
+            (todo.length ? todo.map(row).join('') : '<div class="mh-note-empty">사야 할 게 없어요.</div>') +
+            (done.length ? '<div class="mh-shop-sec mh-shop-donehead" data-act="fold">산 것 ' + done.length + ' <span>' + (card.showDone ? '▾' : '▸') + '</span></div>' +
+                (card.showDone ? done.map(row).join('') + '<button class="mh-close mh-shop-clear">산 것 비우기</button>' : '') : '') +
+            '<div class="mh-foot"><span></span><button class="mh-close">닫기</button></div>';
+        const input = cardEl.querySelector('.mh-shop-input');
+        input.value = typed;
+        if (hadFocus) { input.focus(); input.setSelectionRange(typed.length, typed.length); }
+        input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addShop(input.value); } });
+    }
+    function addShop(text) {
+        const names = String(text || '').split(/[,\n]/).map(t => t.trim()).filter(Boolean);
+        if (!names.length) return;
+        const base = Date.now();
+        const inp = cardEl.querySelector('.mh-shop-input'); if (inp) inp.value = '';
+        save('myhome: 장바구니 추가 ' + names.join(', '), d => {
+            d.shopping = d.shopping || [];
+            names.forEach((name, i) => d.shopping.push({ id: 's' + (base + i).toString(36), name, done: false, at: stamp() }));
+        });
+        drawShop(); drawList();
+        const i = cardEl.querySelector('.mh-shop-input'); if (i) i.focus();
+    }
+    function shopClick(e) {
+        if (e.target.closest('.mh-shop-plus')) { addShop(cardEl.querySelector('.mh-shop-input').value); return; }
+        if (e.target.closest('[data-act=fold]')) { card.showDone = !card.showDone; drawShop(); return; }
+        if (e.target.closest('.mh-shop-clear')) {
+            if (!confirm('산 것을 목록에서 모두 지울까요?')) return;
+            save('myhome: 장바구니 산 것 비우기', d => { d.shopping = (d.shopping || []).filter(x => !x.done); });
+            drawShop(); drawList(); return;
+        }
+        const row = e.target.closest('[data-item]'), act = e.target.closest('[data-act]');
+        if (row && act) {
+            const id = row.dataset.item, item = (db.shopping || []).find(x => x.id === id);
+            if (!item) return;
+            if (act.dataset.act === 'toggle') {
+                const on = !item.done;
+                save('myhome: 장바구니 ' + item.name + (on ? ' 삼' : ' 다시 살 것'), d => {
+                    const x = (d.shopping || []).find(y => y.id === id); if (!x) return;
+                    x.done = on; if (on) x.done_at = stamp(); else delete x.done_at;
+                });
+            } else if (act.dataset.act === 'del') {
+                save('myhome: 장바구니 지우기 ' + item.name, d => { d.shopping = (d.shopping || []).filter(y => y.id !== id); });
+            }
+            drawShop(); drawList(); return;
         }
         if (e.target.closest('.mh-close')) closeCard();
     }

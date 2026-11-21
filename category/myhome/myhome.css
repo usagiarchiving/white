@@ -202,3 +202,21 @@ html:has(.mh-stage), body:has(.mh-stage) { overflow-x: hidden; }
 .mh-note-title:focus, .mh-note-body:focus { border-bottom-color: var(--pink); }
 .mh-note-add { margin-right: auto; }
 .mh-note-del { margin-left: 0; color: #d4728c; }
+
+/* 장바구니 */
+.mh-shop-add { display: flex; gap: 6px; margin: 10px 0 6px; }
+.mh-shop-input { flex: 1; min-width: 0; border: none; border-bottom: 1px solid var(--line); background: transparent; outline: none; padding: 7px 2px; font-family: inherit; font-size: 13px; color: var(--ink); }
+.mh-shop-input:focus { border-bottom-color: var(--pink); }
+.mh-shop-plus { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--pink); background: #fff; color: var(--pink-ink); font-size: 17px; cursor: pointer; flex: none; }
+.mh-shop-sec { font-size: 10px; letter-spacing: 2px; color: var(--sub); margin: 12px 0 4px; }
+.mh-shop-donehead { cursor: pointer; user-select: none; }
+.mh-shop-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid #f6e9ec; }
+.mh-shop-check { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--pink); flex: none; cursor: pointer; position: relative; }
+.mh-shop-row.done .mh-shop-check { background: var(--pink); }
+.mh-shop-row.done .mh-shop-check::after { content: ''; position: absolute; left: 4.5px; top: 1.5px; width: 4px; height: 8px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+.mh-shop-name { flex: 1; font-size: 13px; color: var(--ink); cursor: pointer; word-break: break-all; }
+.mh-shop-row.done .mh-shop-name { color: var(--sub); text-decoration: line-through; }
+.mh-shop-x { color: var(--sub); font-size: 15px; cursor: pointer; padding: 0 4px; opacity: .6; }
+.mh-shop-x:hover { opacity: 1; color: #d4728c; }
+.mh-shop-clear { display: block; margin: 8px 0 0 auto; color: #d4728c; }
+.mh-card { max-height: 86vh; overflow-y: auto; }
