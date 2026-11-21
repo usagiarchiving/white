@@ -9,20 +9,26 @@ import { OrbitControls } from '../../vendor/three/OrbitControls.js';
 import { RoundedBoxGeometry } from '../../vendor/three/RoundedBoxGeometry.js';
 
 /* ---------------- 가구 설정 (이름/기록할 행동/도장) — 가구마다 규칙 바꿀 곳 ---------------- */
+// zone: 메뉴에서 묶어 보여줄 구역 (보통 집처럼)
+const ZONES = ['현관', '주방', '거실', '침실', '욕실'];
 const OBJECTS = {
-    entrance: { name: '현관',   act: '현관 정리',    emoji: '👟' },
-    sink:     { name: '싱크대', act: '설거지',       emoji: '🫧' },
-    stove:    { name: '인덕션', act: '요리',         emoji: '🍳' },
-    washer:   { name: '세탁기', act: '빨래',         emoji: '🧺' },
-    bath:     { name: '화장실', act: '화장실 청소',  emoji: '🛁' },
-    books:    { name: '책장',   act: '독서',         emoji: '📚' },
-    drawer:   { name: '서랍장', act: '정리',         emoji: '🗂️' },
-    fridge:   { name: '냉장고', act: '냉장고 정리',  emoji: '🧊' },
-    table:    { name: '식탁',   act: '밥 챙겨 먹기', emoji: '🍚' },
-    bed:      { name: '침대',   act: '이불 개기',    emoji: '🛏️' },
-    vanity:   { name: '화장대', act: '스킨케어',     emoji: '🧴' },
-    desk:     { name: '책상',   act: '공부',         emoji: '✏️' },
-    closet:   { name: '옷장',   act: '옷 정리',      emoji: '👕' }
+    entrance: { zone: '현관', name: '현관',       act: '현관 정리',    emoji: '👟' },
+    sink:     { zone: '주방', name: '싱크대',     act: '설거지',       emoji: '🫧' },
+    stove:    { zone: '주방', name: '인덕션',     act: '요리',         emoji: '🍳' },
+    upper1:   { zone: '주방', name: '상부장 1',   act: '정리',         emoji: '✨' },
+    upper2:   { zone: '주방', name: '상부장 2',   act: '정리',         emoji: '✨' },
+    lower1:   { zone: '주방', name: '하부장 1',   act: '정리',         emoji: '✨' },
+    lower2:   { zone: '주방', name: '하부장 2',   act: '정리',         emoji: '✨' },
+    washer:   { zone: '주방', name: '세탁기',     act: '빨래',         emoji: '🧺' },
+    fridge:   { zone: '주방', name: '냉장고',     act: '냉장고 정리',  emoji: '🧊' },
+    table:    { zone: '거실', name: '식탁',       act: '밥 챙겨 먹기', emoji: '🍚' },
+    books:    { zone: '거실', name: '책장',       act: '독서',         emoji: '📚' },
+    drawer:   { zone: '거실', name: '서랍장',     act: '정리',         emoji: '🗂️' },
+    desk:     { zone: '거실', name: '책상',       act: '공부',         emoji: '✏️' },
+    bed:      { zone: '침실', name: '침대',       act: '이불 개기',    emoji: '🛏️' },
+    vanity:   { zone: '침실', name: '화장대',     act: '스킨케어',     emoji: '🧴' },
+    closet:   { zone: '침실', name: '옷장',       act: '옷 정리',      emoji: '👕' },
+    bath:     { zone: '욕실', name: '화장실',     act: '화장실 청소',  emoji: '🛁' }
 };
 
 // 부산광역시 동구
@@ -42,7 +48,8 @@ export function init() {
     const C = {
         wall: 0xfffdfb, base: 0xf3eff0, trim: 0xf2b8c6, skirting: 0xf2eeec,
         white: 0xffffff, off: 0xfaf8f6, soft: 0xf1eeec, gray: 0xdedbd9, steel: 0xd3d7da, dark: 0x4f4b4d,
-        pink: 0xf8d3dc, pinkMid: 0xf3b8c7, pinkDeep: 0xe99bb0, leaf: 0xa6d3a0, wood: 0xf0e6dc
+        pink: 0xf8d3dc, pinkMid: 0xf3b8c7, pinkDeep: 0xe99bb0, leaf: 0xa6d3a0, wood: 0xf0e6dc,
+        oak: 0xd8b48c, oakDark: 0xc49b72, silver: 0xe8ebee
     };
 
     /* ---------------- 기본 준비 ---------------- */
@@ -171,11 +178,6 @@ export function init() {
         g.add(at(rbox(0.72, 0.035, 0.48, C.soft, 0.012), X(0.52), 1.575, Z(0.24)));
         g.add(at(rbox(0.3, H - 1.78, 0.26, C.white, 0.03), X(0.52), 1.78 + (H - 1.78) / 2, Z(0.13)));  // 덕트
         g.add(at(rbox(0.2, 0.01, 0.06, 0xfff6dc, 0.004, { emissive: 0xfff3cf, emissiveIntensity: 0.7 }), X(0.52), 1.555, Z(0.3)));
-        [[0.94, 1.5], [1.54, 2.08]].forEach(([x0, x1]) => {
-            g.add(block(x0, x1, 0, 0.34, 1.36, 0.62, C.white, 0.035));
-            g.add(block(x0 + 0.02, x1 - 0.02, 0.34, 0.355, 1.38, 0.58, C.off, 0.015));                   // 문짝
-            g.add(handle(X(x1 - 0.08), 1.46, Z(0.37), true, 0.14));
-        });
     });
     // 아래쪽 벽: 창문 (하늘은 시간/날씨로 바뀜)
     let skyTex, skyCanvas, weatherFX;
@@ -198,10 +200,16 @@ export function init() {
     /* ---------------- 부엌 (올 화이트) ---------------- */
     scene.add(block(0, 2.1, 0, 0.62, 0, 0.86, C.white, 0.04));
     scene.add(block(-0.01, 2.11, -0.01, 0.65, 0.86, 0.05, C.off, 0.02));        // 상판
-    [1.0, 1.55].forEach(x => {
-        scene.add(block(x, x + 0.5, 0.6, 0.635, 0.08, 0.7, C.off, 0.02));
-        scene.add(handle(X(x + 0.42), 0.6, Z(0.65), true, 0.14));
-    });
+    // 상부장 2개 (따로지만 딱 붙어 있음) / 하부장 2개 — 각각 눌러서 '정리' 기록
+    [['upper1', 0.94, 1.51], ['upper2', 1.51, 2.08]].forEach(([id, x0, x1]) => furniture(id, g => {
+        g.add(block(x0, x1, 0, 0.34, 1.36, 0.62, C.white, 0.02));
+        g.add(block(x0 + 0.015, x1 - 0.015, 0.34, 0.355, 1.375, 0.59, C.off, 0.012));
+        g.add(handle(X(id === 'upper1' ? x1 - 0.07 : x0 + 0.07), 1.46, Z(0.37), true, 0.14));
+    }, 'N'));
+    [['lower1', 0.98, 1.535], ['lower2', 1.535, 2.09]].forEach(([id, x0, x1]) => furniture(id, g => {
+        g.add(block(x0 + 0.005, x1 - 0.005, 0.6, 0.635, 0.08, 0.7, C.off, 0.012));
+        g.add(handle(X(id === 'lower1' ? x1 - 0.07 : x0 + 0.07), 0.6, Z(0.65), true, 0.14));
+    }));
     furniture('stove', g => {
         g.add(block(0.18, 0.86, 0.08, 0.56, 0.91, 0.03, C.dark, 0.012, { roughness: 0.3 }));
         [[0.36, 0.22], [0.66, 0.4]].forEach(([x, z]) => {
@@ -226,11 +234,11 @@ export function init() {
     /* ---------------- 현관 / 화장실 ---------------- */
     furniture('entrance', g => {
         g.add(block(2.15, 3.2, 0, 0.3, -0.02, 0.03, 0xe9e6e4, 0.008));              // 현관 바닥 타일
-        g.add(at(rbox(0.82, 2.0, 0.06, C.off, 0.03), X(2.68), 1.0, Z(0) + 0.03));    // 현관문
+        g.add(at(rbox(0.82, 2.0, 0.06, C.silver, 0.03, { roughness: 0.45 }), X(2.68), 1.0, Z(0) + 0.03));    // 현관문 (옅은 실버)
         g.add(handle(X(2.68) - 0.3, 1.0, Z(0) + 0.08, false, 0.12));
     }, 'N');
     furniture('bath', g => {
-        g.add(at(rbox(0.06, 2.0, 0.84, C.off, 0.03), X(W) - 0.03, 1.0, Z(1.63)));
+        g.add(at(rbox(0.06, 2.0, 0.84, C.oak, 0.03), X(W) - 0.03, 1.0, Z(1.63)));      // 화장실 문 (우드)
         g.add(handle(X(W) - 0.08, 1.0, Z(1.3), false, 0.12));
     }, 'E');
 
@@ -264,7 +272,6 @@ export function init() {
     furniture('table', g => {
         g.add(block(1.0, 1.96, 1.88, 2.42, 0.68, 0.05, C.white, 0.02));
         [[1.9, 1.94], [1.9, 2.36]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.68, C.soft), X(x), 0.34, Z(z))));
-        g.add(at(cyl(0.045, 0.04, 0.09, C.pink), X(1.5), 0.775, Z(2.1)));
     });
 
     /* ---------------- 침대 (머리는 창문 쪽) ---------------- */
@@ -286,15 +293,15 @@ export function init() {
             g.add(at(cyl(0.032, 0.036, h, col), X(x), 0.75 + h / 2, Z(z))));
     });
     furniture('desk', g => {
-        g.add(block(2.55, 3.18, 3.2, 4.28, 0.72, 0.05, C.white, 0.02));
-        g.add(block(2.6, 3.16, 3.24, 3.5, 0, 0.72, C.off, 0.035));
-        g.add(block(2.6, 3.16, 3.98, 4.24, 0, 0.72, C.off, 0.035));
+        g.add(block(2.55, 3.18, 3.2, 4.28, 0.72, 0.05, C.oak, 0.02));
+        g.add(block(2.6, 3.16, 3.24, 3.5, 0, 0.72, C.oak, 0.035));
+        g.add(block(2.6, 3.16, 3.98, 4.24, 0, 0.72, C.oak, 0.035));
+        [[3.28, 3.46], [4.02, 4.2]].forEach(([z0, z1]) => [0.12, 0.38].forEach(y => {
+            g.add(block(2.585, 2.6, z0, z1, y, 0.2, C.oakDark, 0.008));
+            g.add(handle(X(2.57), y + 0.1, Z((z0 + z1) / 2), false, 0.1));
+        }));
         g.add(at(rbox(0.3, 0.02, 0.4, C.gray, 0.01), X(2.8), 0.78, Z(3.7)));
         const screen = rbox(0.02, 0.26, 0.4, C.dark, 0.01); screen.rotation.z = -0.25; g.add(at(screen, X(2.98), 0.91, Z(3.7)));
-        g.add(at(rbox(0.42, 0.07, 0.42, C.white, 0.035), X(2.28), 0.46, Z(3.72)));
-        g.add(at(rbox(0.38, 0.03, 0.38, C.pink, 0.014), X(2.28), 0.51, Z(3.72)));
-        g.add(at(rbox(0.07, 0.4, 0.42, C.white, 0.03), X(2.04), 0.71, Z(3.72)));
-        g.add(at(cyl(0.025, 0.035, 0.42, C.soft), X(2.28), 0.21, Z(3.72)));
     });
     furniture('closet', g => {
         g.add(block(2.62, 3.18, 4.34, 5.27, 0, 2.0, C.white, 0.05));
@@ -578,18 +585,40 @@ export function init() {
     const keyOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
     const todayKey = () => keyOf(new Date());
     const rec = (id, k) => (db.log[id] || {})[k];
-    const isDone = (id, k) => !!(rec(id, k) && rec(id, k).d);
+    const isDone = (id, k) => !!(rec(id, k) && rec(id, k).done);
     const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const MONTH_EN = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
     const MON_EN = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-    async function load() {
-        try {
-            const d = await repo.readJSON(DATA, { log: {} });
-            db = d && d.log ? d : { log: {} };
-        } catch (e) { console.error(e); }
-        drawList();
+    /* 저장 형식 (myhome/README.md 참고) — 나중에 리포트/통계에서 그대로 불러 쓰기 좋게
+       { version: 1, updated_at, place, zones, objects: { id: {zone,name,act,emoji} },
+         log: { id: { 'YYYY-MM-DD': { done: true, memo: '...', at: '기록한 시각' } } } } */
+    function stamp() { const d = new Date(), o = -d.getTimezoneOffset(); return new Date(d.getTime() + o * 60000).toISOString().slice(0, 19) + (o >= 0 ? '+' : '-') + pad(Math.floor(Math.abs(o) / 60)) + ':' + pad(Math.abs(o) % 60); }
+    function normalize(d) {
+        d = d && typeof d === 'object' ? d : {};
+        d.log = d.log || {};
+        Object.keys(d.log).forEach(id => Object.keys(d.log[id]).forEach(k => {     // 예전 짧은 키(d/m) → done/memo
+            const r = d.log[id][k];
+            if ('d' in r) { if (r.d) r.done = true; delete r.d; }
+            if ('m' in r) { if (r.m) r.memo = r.m; delete r.m; }
+        }));
+        d.version = 1;
+        d.place = PLACE.name;
+        d.zones = ZONES;
+        d.objects = JSON.parse(JSON.stringify(OBJECTS));
+        return d;
     }
+    async function load() {
+        try { db = normalize(await repo.readJSON(DATA, { log: {} })); } catch (e) { console.error(e); }
+        drawList();
+        if (card) drawCard();
+    }
+    // 다른 기기에서 바꾼 기록도 보이게: 이 화면으로 돌아오면 다시 불러옴
+    const onVisible = () => {
+        if (!canvas.isConnected) { document.removeEventListener('visibilitychange', onVisible); return; }
+        if (document.visibilityState === 'visible' && !pending && !(document.activeElement && document.activeElement.classList.contains('mh-memo-text'))) load();
+    };
+    document.addEventListener('visibilitychange', onVisible);
 
     // 저장: 화면 먼저, GitHub은 뒤에서
     let pending = 0;
@@ -602,10 +631,10 @@ export function init() {
         fn(db);
         if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); load().then(() => card && drawCard()); return; }
         setPending(pending + 1);
-        const j = {}; j[DATA] = { mutate: cur => { cur = cur && cur.log ? cur : { log: {} }; fn(cur); return cur; }, fallback: { log: {} } };
+        const j = {}; j[DATA] = { mutate: cur => { cur = normalize(cur); fn(cur); cur.updated_at = stamp(); return cur; }, fallback: { log: {} } };
         repo.commit(message, {}, j).then(res => {
             setPending(pending - 1);
-            if (!pending && res && res[DATA]) { db = res[DATA]; drawList(); if (card) drawCard(); }
+            if (!pending && res && res[DATA]) { db = normalize(res[DATA]); drawList(); if (card) drawCard(); }
         }, e => {
             setPending(pending - 1);
             alert('저장하지 못했어요.\n' + (e.message || e));
@@ -615,13 +644,14 @@ export function init() {
     function setRec(id, k, patch) {
         db.log[id] = db.log[id] || {};
         const cur = Object.assign({}, db.log[id][k] || {}, patch);
-        if (!cur.d && !cur.m) delete db.log[id][k]; else db.log[id][k] = cur;
+        if (!cur.done && !cur.memo) delete db.log[id][k]; else db.log[id][k] = cur;
     }
 
     function drawList() {
         const tday = todayKey();
-        document.getElementById('mh-list').innerHTML = Object.keys(OBJECTS).map(id =>
-            '<span data-id="' + id + '" class="' + (isDone(id, tday) ? 'done' : '') + '">' + OBJECTS[id].name + '</span>'
+        document.getElementById('mh-list').innerHTML = ZONES.map(z =>
+            '<em>' + z + '</em>' + Object.keys(OBJECTS).filter(id => OBJECTS[id].zone === z).map(id =>
+                '<span data-id="' + id + '" class="' + (isDone(id, tday) ? 'done' : '') + '">' + OBJECTS[id].name + '</span>').join('')
         ).join('');
     }
 
@@ -653,9 +683,9 @@ export function init() {
         for (let i = 0; i < first; i++) cells += '<div class="mh-day empty"></div>';
         for (let d = 1; d <= last; d++) {
             const k = y + '-' + pad(m + 1) + '-' + pad(d), r = rec(card.id, k) || {};
-            if (r.d) monthCount++;
-            const cls = ['mh-day', r.d ? 'done' : '', k === t ? 'is-today' : '', k > t ? 'future' : '', k === card.sel ? 'sel' : '', r.m ? 'has-memo' : ''].join(' ');
-            cells += '<div class="' + cls + '" data-k="' + k + '">' + (r.d ? o.emoji : d) + '</div>';
+            if (r.done) monthCount++;
+            const cls = ['mh-day', r.done ? 'done' : '', k === t ? 'is-today' : '', k > t ? 'future' : '', k === card.sel ? 'sel' : '', r.memo ? 'has-memo' : ''].join(' ');
+            cells += '<div class="' + cls + '" data-k="' + k + '">' + (r.done ? o.emoji : d) + '</div>';
         }
         const sel = card.sel, sr = rec(card.id, sel) || {}, sd = new Date(sel + 'T00:00:00');
         const canStamp = sel <= t;
@@ -665,9 +695,9 @@ export function init() {
             '<div class="mh-sub"><span class="mh-nav" data-nav="-1">‹</span><span>' + o.emoji + ' ' + esc(o.act) + ' · ' + y + '.' + pad(m + 1) + '</span><span class="mh-nav" data-nav="1">›</span></div>' +
             '<div class="mh-grid">' + cells + '</div>' +
             '<div class="mh-memo"><span class="mh-memo-date">' + MON_EN[sd.getMonth()] + ' ' + sd.getDate() + '</span>' +
-            '<textarea class="mh-memo-text" rows="1" placeholder="메모를 남겨요…">' + esc(sr.m || '') + '</textarea></div>' +
+            '<textarea class="mh-memo-text" rows="1" placeholder="메모를 남겨요…">' + esc(sr.memo || '') + '</textarea></div>' +
             '<div class="mh-foot"><span class="mh-stat">이번 달 ' + monthCount + '번 · 연속 ' + streak(card.id) + '일</span>' +
-            '<span><button class="mh-stamp' + (sr.d ? ' on' : '') + '"' + (canStamp ? '' : ' disabled') + '>' + o.emoji + ' ' + (sr.d ? '했어요' : esc(o.act) + ' 했어요?') + '</button>' +
+            '<span><button class="mh-stamp' + (sr.done ? ' on' : '') + '"' + (canStamp ? '' : ' disabled') + '>' + o.emoji + ' ' + (sr.done ? '했어요' : esc(o.act) + ' 했어요?') + '</button>' +
             '<button class="mh-close">닫기</button></span></div>';
         const ta = cardEl.querySelector('.mh-memo-text');
         const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
@@ -678,12 +708,13 @@ export function init() {
 
     function saveMemo(text) {
         if (!card) return;
-        const id = card.id, k = card.sel, v = text.trim(), cur = (rec(id, k) || {}).m || '';
+        const id = card.id, k = card.sel, v = text.trim(), cur = (rec(id, k) || {}).memo || '';
         if (v === cur) return;
         save('myhome: ' + OBJECTS[id].name + ' ' + k + ' 메모', d => {
             d.log[id] = d.log[id] || {};
-            const r = Object.assign({}, d.log[id][k] || {}); if (v) r.m = v; else delete r.m;
-            if (!r.d && !r.m) delete d.log[id][k]; else d.log[id][k] = r;
+            const r = Object.assign({}, d.log[id][k] || {}); if (v) r.memo = v; else delete r.memo;
+            r.at = stamp();
+            if (!r.done && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
         });
         drawCard();
     }
@@ -691,8 +722,9 @@ export function init() {
         const id = card.id, on = !isDone(id, k);
         save('myhome: ' + OBJECTS[id].name + ' ' + k + (on ? ' ✓' : ' 취소'), d => {
             d.log[id] = d.log[id] || {};
-            const r = Object.assign({}, d.log[id][k] || {}); if (on) r.d = 1; else delete r.d;
-            if (!r.d && !r.m) delete d.log[id][k]; else d.log[id][k] = r;
+            const r = Object.assign({}, d.log[id][k] || {}); if (on) r.done = true; else delete r.done;
+            r.at = stamp();
+            if (!r.done && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
         });
         drawCard();
     }

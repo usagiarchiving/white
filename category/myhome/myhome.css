@@ -129,3 +129,11 @@
 .mh-wk-t .hi { color: var(--pink-ink); }
 .mh-wk-now { font-size: 11px; color: var(--sub); margin-bottom: 8px; }
 .mh-wk-now b { font-size: 20px; color: var(--ink); font-weight: 500; margin-right: 6px; }
+
+/* 목록 구역 이름 */
+.mh-list em {
+    font-style: normal; font-size: 9.5px; letter-spacing: 2px; color: #d9a0b0; margin: 6px 4px 0 0;
+    opacity: 0; transform: translateY(8px); transition: opacity .18s ease, transform .18s ease;
+}
+.mh-list em:first-child { margin-top: 0; }
+.mh-list.open em { opacity: 1; transform: none; }
