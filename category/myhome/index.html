@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="category/myhome/myhome.css?v=6">
+<link rel="stylesheet" href="category/myhome/myhome.css?v=8">
 
 <div class="mh-wrap" id="mh-wrap">
     <div class="mh-stage" id="mh-stage">
@@ -9,6 +9,8 @@
         <!-- 왼쪽 위: 지금 날씨 (누르면 일주일) -->
         <button class="mh-weather" id="mh-weather" title="일주일 날씨"></button>
         <span id="mh-saving" class="mh-saving"></span>
+        <!-- 위쪽: 구역별로 다가가기 -->
+        <div class="mh-zones" id="mh-zones"></div>
 
         <!-- 오른쪽 아래: 가구 목록 / 회전 / 확대 -->
         <div class="mh-list" id="mh-list"></div>
@@ -31,6 +33,6 @@
 
 <!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
 <script type="module">
-    import { init } from './category/myhome/myhome.js?v=6';
+    import { init } from './category/myhome/myhome.js?v=8';
     init();
 </script>

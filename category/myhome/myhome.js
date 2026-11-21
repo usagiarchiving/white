@@ -74,7 +74,7 @@ export function init() {
     controls.enableDamping = true; controls.dampingFactor = 0.08;
     controls.enablePan = false;
     controls.minPolarAngle = 0.55; controls.maxPolarAngle = 1.12;
-    controls.minDistance = 7; controls.maxDistance = 17;
+    controls.minDistance = 3.2; controls.maxDistance = 17;
     controls.rotateSpeed = 0.7;
 
     // 조명 (시간/날씨에 따라 아래 applySky에서 바뀜)
@@ -463,7 +463,9 @@ export function init() {
         if (!w || !h) return;
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
-        camera.fov = w / h < 1 ? 34 : 30;
+        // 세로로 긴 폰 화면: 가로 시야를 30도로 유지해서 방이 옆으로 잘리지 않게
+        const hFov = 30 * Math.PI / 180;
+        camera.fov = w / h < 1 ? 2 * Math.atan(Math.tan(hFov / 2) / (w / h)) * 180 / Math.PI : 30;
         camera.updateProjectionMatrix();
     }
     const ro = new ResizeObserver(resize); ro.observe(stage); resize();
@@ -524,19 +526,53 @@ export function init() {
     /* ---------------- 오른쪽 아래 막대: 목록 / 회전 / 확대 ---------------- */
     let camAnim = null;
     const sph = new THREE.Spherical();
+    function startAnim(to) {
+        sph.setFromVector3(camera.position.clone().sub(controls.target));
+        let th1 = to.theta == null ? sph.theta : to.theta;
+        while (th1 - sph.theta > Math.PI) th1 -= Math.PI * 2;       // 가까운 쪽으로 돌기
+        while (th1 - sph.theta < -Math.PI) th1 += Math.PI * 2;
+        const r1 = Math.min(controls.maxDistance, Math.max(controls.minDistance, to.radius == null ? sph.radius : to.radius));
+        camAnim = { t: 0, th0: sph.theta, th1, r0: sph.radius, r1, ph0: sph.phi, ph1: to.phi == null ? sph.phi : to.phi,
+            tg0: controls.target.clone(), tg1: to.target ? to.target.clone() : controls.target.clone() };
+    }
     function moveCam(dTheta, zoom) {
         sph.setFromVector3(camera.position.clone().sub(controls.target));
-        const r1 = Math.min(controls.maxDistance, Math.max(controls.minDistance, sph.radius * zoom));
-        camAnim = { t: 0, th0: sph.theta, th1: sph.theta + dTheta, r0: sph.radius, r1, phi: sph.phi };
+        startAnim({ theta: sph.theta + dTheta, radius: sph.radius * zoom });
     }
     function stepCam(dt) {
         if (!camAnim) return;
-        camAnim.t = Math.min(1, camAnim.t + dt * 2.6);
-        const e = 1 - Math.pow(1 - camAnim.t, 3);
-        sph.set(camAnim.r0 + (camAnim.r1 - camAnim.r0) * e, camAnim.phi, camAnim.th0 + (camAnim.th1 - camAnim.th0) * e);
+        camAnim.t = Math.min(1, camAnim.t + dt * 1.8);
+        const e = 1 - Math.pow(1 - camAnim.t, 3), L = (a, b) => a + (b - a) * e;
+        controls.target.lerpVectors(camAnim.tg0, camAnim.tg1, e);
+        sph.set(L(camAnim.r0, camAnim.r1), L(camAnim.ph0, camAnim.ph1), L(camAnim.th0, camAnim.th1));
         camera.position.setFromSpherical(sph).add(controls.target);
         if (camAnim.t >= 1) camAnim = null;
     }
+
+    /* ---------------- 구역 버튼: 그 구역이 잘 보이는 쪽에서 다가가기 ---------------- */
+    // x,z: 도면 좌표 / theta: 카메라 방향(벽 쪽 가구가 가려지지 않게) / r: 거리
+    const ZONE_VIEW = {
+        '전체': { x: 1.6, z: 2.7, y: 0.5, theta: 0.67, r: 11.8, phi: 0.92 },
+        '현관': { x: 2.6, z: 0.7, y: 0.7, theta: -0.75, r: 6.2, phi: 0.95 },
+        '주방': { x: 1.1, z: 0.5, y: 0.9, theta: 0.35, r: 6.4, phi: 0.95 },
+        '거실': { x: 1.7, z: 2.8, y: 0.6, theta: 0.75, r: 7.4, phi: 0.9 },
+        '침실': { x: 1.6, z: 4.2, y: 0.6, theta: 2.55, r: 7.4, phi: 0.92 },
+        '욕실': { x: 2.7, z: 1.4, y: 0.9, theta: -1.35, r: 6.2, phi: 0.98 }
+    };
+    const zonesEl = document.getElementById('mh-zones');
+    zonesEl.innerHTML = Object.keys(ZONE_VIEW).map(z => '<button data-zone="' + z + '"' + (z === '전체' ? ' class="on"' : '') + '>' + z + '</button>').join('');
+    // 처음엔 '전체' 보기로 시작
+    {
+        const v = ZONE_VIEW['전체'];
+        controls.target.set(X(v.x), v.y, Z(v.z));
+        camera.position.setFromSpherical(new THREE.Spherical(v.r, v.phi, v.theta)).add(controls.target);
+    }
+    zonesEl.addEventListener('click', e => {
+        const b = e.target.closest('[data-zone]'); if (!b) return;
+        const v = ZONE_VIEW[b.dataset.zone];
+        zonesEl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+        startAnim({ target: new THREE.Vector3(X(v.x), v.y, Z(v.z)), theta: v.theta, radius: v.r, phi: v.phi });
+    });
     const listEl = document.getElementById('mh-list');
     function closeList() { listEl.classList.remove('open'); document.querySelector('[data-cam=list]').classList.remove('on'); }
     function toggleList() {
