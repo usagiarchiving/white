@@ -15,7 +15,8 @@ const OBJECTS = {
     entrance: { zone: '현관', name: '현관',       act: '현관 정리',    emoji: '🚪' },
     shoes:    { zone: '현관', name: '신발 두는 곳', act: '신발 정리',  emoji: '👟' },
     sink:     { zone: '주방', name: '싱크대',     act: '설거지',       emoji: '🫧' },
-    stove:    { zone: '주방', name: '인덕션',     act: '요리',         emoji: '🍳' },
+    stove:    { zone: '주방', name: '인덕션',     act: '조리대 청소',  emoji: '🧽' },
+    cook:     { zone: '주방', name: '요리',       act: '요리',         emoji: '🍳' },
     upper1:   { zone: '주방', name: '상부장 1',   act: '정리',         emoji: '✨' },
     upper2:   { zone: '주방', name: '상부장 2',   act: '정리',         emoji: '✨' },
     lower1:   { zone: '주방', name: '하부장 1',   act: '정리',         emoji: '✨' },
@@ -78,7 +79,9 @@ export function init() {
     const controls = new OrbitControls(camera, canvas);
     controls.target.set(0, 0.55, 0.15);
     controls.enableDamping = true; controls.dampingFactor = 0.08;
-    controls.enablePan = false;
+    controls.enablePan = true;                 // 두 손가락으로 쓸면 그쪽으로 걸어가듯 이동 (바닥을 따라)
+    controls.screenSpacePanning = false;
+    controls.panSpeed = 0.9;
     controls.minPolarAngle = 0.35; controls.maxPolarAngle = 1.3;
     controls.minDistance = 3.2; controls.maxDistance = 17;
     controls.rotateSpeed = 0.7;
@@ -353,6 +356,15 @@ export function init() {
         hingedDoor(g, '-x', 1.21, 2.05, W - 0.035, 0.0, 2.0, C.oak, 'a1', 0.16);          // 화장실 문 (우드, 눌러야 열림)
     }, 'E');
 
+    /* ---------------- 요리 스티커 (조리대와 냉장고 사이, 조리대 쪽): 누르면 요리 기록 ---------------- */
+    let cookSprite = null;
+    furniture('cook', g => {
+        const tex = new THREE.TextureLoader().load('myhome/assets/chef.png'); tex.colorSpace = THREE.SRGBColorSpace;
+        const h = 0.5, w = h * 351 / 309;
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }));
+        at(m, X(0.55), h / 2 + 0.01, Z(0.86)); g.add(m); cookSprite = m;
+    });
+
     /* ---------------- 위에서부터 책장(식탁 쪽) · 수납장(뚫림, 세탁기 쪽) · 냉장고(세탁기 쪽) ---------------- */
     const U0 = 0.04, U1 = 1.0, UZ0 = 1.76, UZ1 = 2.54;
     furniture('fridge', g => {
@@ -405,17 +417,37 @@ export function init() {
 
     /* ---------------- 오른쪽: 화장대 / 책상 / 옷장 ---------------- */
     furniture('vanity', g => {
-        g.add(block(2.62, 3.18, 2.3, 3.1, 0.7, 0.05, C.white, 0.02));
-        [[2.66, 2.34], [2.66, 3.06]].forEach(([x, z]) => g.add(at(cyl(0.02, 0.02, 0.7, C.soft), X(x), 0.35, Z(z))));
-        g.add(block(2.95, 3.16, 2.34, 3.06, 0.3, 0.38, C.white, 0.03));
-        [[3.0, 2.5, C.pinkMid, 0.13], [3.04, 2.62, C.white, 0.1], [3.0, 2.85, C.pink, 0.11]].forEach(([x, z, col, h]) =>
-            g.add(at(cyl(0.032, 0.036, h, col), X(x), 0.75 + h / 2, Z(z))));
+        // 좌식 화장대: 책상 절반 높이, 왼쪽은 다리, 오른쪽은 서랍 두 칸, 위에 세워 둔 거울
+        const VT = 0.36;
+        g.add(block(2.62, 3.18, 2.3, 3.1, VT - 0.04, 0.04, C.white, 0.015));
+        [[2.67, 2.35], [3.13, 2.35]].forEach(([x, z]) => g.add(block(x - 0.025, x + 0.025, z - 0.025, z + 0.025, 0, VT - 0.04, C.white, 0.008)));
+        g.add(block(2.64, 3.16, 2.8, 3.08, 0.02, VT - 0.06, C.white, 0.015));               // 서랍장 몸통
+        [0.03, 0.17].forEach(y => {
+            g.add(block(2.625, 2.64, 2.82, 3.06, y, 0.12, C.off, 0.006));
+            g.add(at(sphere(0.012, C.gray), X(2.615), y + 0.06, Z(2.94)));
+        });
+        const mz = 2.62, mx = 3.06;                                                       // 거울
+        g.add(at(rbox(0.1, 0.02, 0.16, C.white, 0.008), X(mx), VT + 0.01, Z(mz)));
+        g.add(at(cyl(0.012, 0.012, 0.14, C.white), X(mx), VT + 0.08, Z(mz)));
+        const frame = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.018, 10, 40), mat(C.white));
+        frame.scale.set(1, 1.25, 1); frame.rotation.y = Math.PI / 2; at(frame, X(mx), VT + 0.33, Z(mz)); g.add(frame);
+        const glass = new THREE.Mesh(new THREE.CircleGeometry(0.15, 36), mat(0xe9f1f6, { roughness: 0.1, emissive: 0xe9f1f6, emissiveIntensity: 0.25 }));
+        glass.scale.set(1, 1.25, 1); glass.rotation.y = -Math.PI / 2; at(glass, X(mx) - 0.006, VT + 0.33, Z(mz)); g.add(glass);
+        [[2.82, 2.4, C.pinkMid, 0.11], [2.9, 2.48, C.white, 0.08], [2.8, 2.98, C.pink, 0.09]].forEach(([x, z, col, h]) =>
+            g.add(at(cyl(0.028, 0.032, h, col), X(x), VT + h / 2, Z(z))));
     }, null, EX);
     furniture('desk', g => {
         g.add(block(2.55, 3.18, 3.2, 4.28, 0.72, 0.05, C.oak, 0.02));
         [[2.6, 3.25], [2.6, 4.23], [3.13, 3.25], [3.13, 4.23]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.72, C.oakDark), X(x), 0.36, Z(z))));
-        g.add(at(rbox(0.3, 0.02, 0.4, C.gray, 0.01), X(2.8), 0.78, Z(3.7)));
-        const screen = rbox(0.02, 0.26, 0.4, C.dark, 0.01); screen.rotation.z = -0.25; g.add(at(screen, X(2.98), 0.91, Z(3.7)));
+        g.add(at(rbox(0.26, 0.02, 0.38, C.gray, 0.01), X(2.99), 0.78, Z(3.5)));                     // 노트북 (벽 쪽으로)
+        const screen = rbox(0.02, 0.24, 0.38, C.dark, 0.01); screen.rotation.z = -0.22; g.add(at(screen, X(3.12), 0.9, Z(3.5)));
+        [-1, 1].forEach(sd => {                                                                    // 펼친 책
+            const pg = rbox(0.22, 0.012, 0.16, 0xfffdf8, 0.004); pg.rotation.x = sd * 0.06; g.add(at(pg, X(2.73), 0.778, Z(3.95) + sd * 0.082));
+        });
+        g.add(at(rbox(0.23, 0.008, 0.34, C.pinkMid, 0.003), X(2.73), 0.77, Z(3.95)));              // 책 표지
+        g.add(at(rbox(0.004, 0.003, 0.12, 0xd8d0d4, 0.001), X(2.71), 0.787, Z(4.0)));               // 글줄 느낌
+        const pen = cyl(0.006, 0.006, 0.15, C.dark, 8); pen.rotation.z = Math.PI / 2; pen.rotation.y = 0.5; g.add(at(pen, X(2.68), 0.783, Z(3.78)));
+        const pen2 = cyl(0.006, 0.006, 0.13, C.pinkDeep, 8); pen2.rotation.z = Math.PI / 2; pen2.rotation.y = -0.3; g.add(at(pen2, X(2.66), 0.783, Z(3.74)));
     }, null, EX);
     furniture('closet', g => {
         carcass(g, 2.62, 3.18, 4.34, 5.27, 0, 2.0, '-x');
@@ -755,7 +787,7 @@ export function init() {
         '전체': { x: 1.75, z: 2.7, y: 0.5, theta: 0.67, r: 12.2, phi: 0.92 },
         '현관': { x: 2.9, z: 0.8, y: 0.7, theta: -0.75, r: 6.4, phi: 0.95 },
         '주방': { x: 1.1, z: 0.5, y: 0.9, theta: 0.35, r: 6.4, phi: 0.95 },
-        '거실': { x: 1.7, z: 2.8, y: 0.6, theta: 0.75, r: 7.4, phi: 0.9 },
+        '거실': { x: 2.3, z: 3.5, y: 0.6, theta: -1.62, r: 6.2, phi: 1.0 },      // 침대 쪽에서 책상을 바라봄
         '침실': { x: 1.6, z: 4.2, y: 0.6, theta: 2.55, r: 7.4, phi: 0.92 },
         '욕실': { x: 3.0, z: 1.3, y: 0.9, theta: -1.35, r: 6.4, phi: 0.98 }
     };
@@ -800,7 +832,13 @@ export function init() {
         const dt = Math.min(clock.getDelta(), 0.05);
         stepCam(dt);
         controls.update();
+        // 이동은 방 안에서만
+        const tg = controls.target, lim = 0.2;
+        const cx = Math.max(-W / 2 - lim, Math.min(W / 2 + lim, tg.x)), cz = Math.max(-D / 2 - lim, Math.min(D / 2 + lim, tg.z));
+        if (cx !== tg.x || cz !== tg.z) { const dx = cx - tg.x, dz = cz - tg.z; tg.x = cx; tg.z = cz; camera.position.x += dx; camera.position.z += dz; }
+        tg.y = Math.max(0.2, Math.min(1.4, tg.y));
         updateWalls();
+        if (cookSprite) { const gp = cookSprite.parent.position; cookSprite.rotation.y = Math.atan2(camera.position.x - gp.x, camera.position.z - gp.z); }
         // 현관문이 열려 있는 동안엔 문 안쪽 메모지를 숨김
         const ent = clickable.find(g => g.userData.id === 'entrance');
         if (notesGroup && ent && (ent.userData.openT || 0) > 0.03) notesGroup.visible = false;
