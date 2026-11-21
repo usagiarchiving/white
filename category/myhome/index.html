@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="category/myhome/myhome.css?v=34">
+<link rel="stylesheet" href="category/myhome/myhome.css?v=35">
 
 <div class="mh-wrap" id="mh-wrap">
     <div class="mh-stage" id="mh-stage">
@@ -28,11 +28,15 @@
 
 <!-- 가구를 누르면 뜨는 기록 카드 / 일주일 날씨 카드 -->
 <div class="mh-card-bg" id="mh-card-bg">
-    <div class="mh-card" id="mh-card"></div>
+    <div class="mh-card">
+        <!-- Solar close-linear (480 Design, CC BY 4.0) -->
+        <button class="mh-x" id="mh-x" aria-label="닫기"><svg viewBox="0 0 24 24" width="16" height="16"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M19 5L5 19"/><path d="M19 19L5 5"/></g></svg></button>
+        <div id="mh-card"></div>
+    </div>
 </div>
 
 <!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
 <script type="module">
-    import { init } from './category/myhome/myhome.js?v=34';
+    import { init } from './category/myhome/myhome.js?v=35';
     init();
 </script>

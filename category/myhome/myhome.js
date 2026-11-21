@@ -21,7 +21,7 @@ const OBJECTS = {
     upper2:   { zone: '주방', name: '상부장 2',   act: '정리',         emoji: '✨' },
     lower1:   { zone: '주방', name: '하부장 1',   act: '정리',         emoji: '✨' },
     lower2:   { zone: '주방', name: '하부장 2',   act: '정리',         emoji: '✨' },
-    washer:   { zone: '주방', name: '세탁기',     act: '빨래',         emoji: '🧺' },
+    washer:   { zone: '주방', name: '세탁기',     act: '빨래',         emoji: '🧺', kinds: ['속옷', '잠옷', '흰옷', '외출복', '운동복', '양말', 'etc.'] },
     fridge:   { zone: '주방', name: '냉장고',     act: '냉장고 정리',  emoji: '🧊' },
     trash:    { zone: '주방', name: '쓰레기통',   act: '쓰레기 버리기', emoji: '🗑️' },
     kfloor:   { zone: '주방', name: '주방 바닥',  act: '바닥 청소',    emoji: '🧹' },
@@ -375,17 +375,17 @@ export function init() {
     });
     furniture('bath', g => {
         g.add(block(W - 0.012, W, 1.23, 2.03, 0.02, 1.98, 0xdfe7ec, 0.004));             // 문 뒤 (열리면 보이는 화장실 타일)
-        hingedDoor(g, '-x', 1.21, 2.05, W - 0.035, 0.0, 2.0, C.oak, 'a1', 0.16);          // 화장실 문 (우드, 눌러야 열림)
+        hingedDoor(g, '-x', 1.21, 2.05, W - 0.035, 0.0, 2.0, C.oak, 'a0', 0.16);          // 화장실 문 (우드, 눌러야 열림)
     }, 'E');
 
     /* ---------------- 요리 스티커 (조리대와 냉장고 사이, 조리대 쪽): 누르면 요리 기록 ---------------- */
     let cookSprite = null;
     furniture('cook', g => {
         const tex = new THREE.TextureLoader().load('myhome/assets/chef.png'); tex.colorSpace = THREE.SRGBColorSpace;
-        const h = 0.3, w = h * 351 / 309;
+        const h = 0.36, w = h * 351 / 309;
         const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }));
         m.rotation.y = Math.PI / 2;                                       // 왼쪽 벽에 납작하게 붙임 (방 쪽을 봄)
-        at(m, X(0) + 0.006, 1.3, Z(0.95)); g.add(m); cookSprite = null;
+        at(m, X(0) + 0.006, 1.14, Z(0.95)); g.add(m); cookSprite = null;
     }, 'W');
 
     /* ---------------- 위에서부터 책장(식탁 쪽) · 수납장(뚫림, 세탁기 쪽) · 냉장고(세탁기 쪽) ---------------- */
@@ -462,15 +462,17 @@ export function init() {
     furniture('desk', g => {
         g.add(block(2.55, 3.18, 3.2, 4.28, 0.72, 0.05, C.oak, 0.02));
         [[2.6, 3.25], [2.6, 4.23], [3.13, 3.25], [3.13, 4.23]].forEach(([x, z]) => g.add(at(cyl(0.022, 0.022, 0.72, C.oakDark), X(x), 0.36, Z(z))));
-        g.add(at(rbox(0.26, 0.02, 0.38, C.gray, 0.01), X(2.99), 0.78, Z(3.5)));                     // 노트북 (벽 쪽으로)
-        const screen = rbox(0.02, 0.24, 0.38, C.dark, 0.01); screen.rotation.z = -0.22; g.add(at(screen, X(3.12), 0.9, Z(3.5)));
+        const lap = new THREE.Group();                                                              // 노트북: 벽 쪽, 가운데 자리를 보게 살짝 돌림
+        lap.add(at(rbox(0.26, 0.02, 0.38, C.gray, 0.01), 0, 0, 0));
+        const screen = rbox(0.02, 0.24, 0.38, C.dark, 0.01); screen.rotation.z = -0.22; lap.add(at(screen, 0.13, 0.12, 0));
+        lap.rotation.y = 0.32; g.add(at(lap, X(2.98), 0.78, Z(3.56)));
         [-1, 1].forEach(sd => {                                                                    // 펼친 책
             const pg = rbox(0.22, 0.012, 0.16, 0xfffdf8, 0.004); pg.rotation.x = sd * 0.06; g.add(at(pg, X(2.73), 0.778, Z(3.95) + sd * 0.082));
         });
         g.add(at(rbox(0.23, 0.008, 0.34, C.pinkMid, 0.003), X(2.73), 0.77, Z(3.95)));              // 책 표지
-        g.add(at(rbox(0.004, 0.003, 0.12, 0xd8d0d4, 0.001), X(2.71), 0.787, Z(4.0)));               // 글줄 느낌
-        const pen = cyl(0.006, 0.006, 0.15, C.dark, 8); pen.rotation.z = Math.PI / 2; pen.rotation.y = 0.5; g.add(at(pen, X(2.68), 0.783, Z(3.78)));
-        const pen2 = cyl(0.006, 0.006, 0.13, C.pinkDeep, 8); pen2.rotation.z = Math.PI / 2; pen2.rotation.y = -0.3; g.add(at(pen2, X(2.66), 0.783, Z(3.74)));
+        // 필기구: 오른손잡이라 공책 오른쪽
+        const pen = cyl(0.006, 0.006, 0.15, C.dark, 8); pen.rotation.z = Math.PI / 2; pen.rotation.y = 0.35; g.add(at(pen, X(2.72), 0.783, Z(4.19)));
+        const pen2 = cyl(0.006, 0.006, 0.13, C.pinkDeep, 8); pen2.rotation.z = Math.PI / 2; pen2.rotation.y = -0.2; g.add(at(pen2, X(2.7), 0.783, Z(4.23)));
     }, null, EX);
     furniture('closet', g => {
         carcass(g, 2.62, 3.18, 4.34, 5.27, 0, 2.0, '-x');
@@ -903,7 +905,7 @@ export function init() {
     const keyOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
     const todayKey = () => keyOf(new Date());
     const rec = (id, k) => (db.log[id] || {})[k];
-    const countOf = (id, k) => { const r = rec(id, k); return r ? (r.count || (r.done ? 1 : 0) || (r.meals ? Object.keys(r.meals).length : 0)) : 0; };
+    const countOf = (id, k) => { const r = rec(id, k); return r ? ((r.items && r.items.length) || r.count || (r.done ? 1 : 0) || (r.meals ? Object.keys(r.meals).length : 0)) : 0; };
     const isDone = (id, k) => countOf(id, k) > 0;
     const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const MONTH_EN = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
@@ -929,6 +931,8 @@ export function init() {
         d.notes = Array.isArray(d.notes) ? d.notes : [];     // 현관 메모: [{ id, title, date, body, at }]
         d.shopping = Array.isArray(d.shopping) ? d.shopping : [];   // 장바구니: [{ id, name, tag, done, at, done_at }]
         d.shop_tags = Array.isArray(d.shop_tags) && d.shop_tags.length ? d.shop_tags : SHOP_TAGS.slice();   // 장바구니 태그 (직접 추가 가능)
+        d.shop_tags = d.shop_tags.map(t => t === '기타' ? 'etc.' : t);                                    // '기타' → 'etc.'
+        d.shopping.forEach(x => { if (x.tag === '기타') x.tag = 'etc.'; });
         d.curtain = d.curtain && typeof d.curtain === 'object' ? d.curtain : { closed: false };        // 커튼: { closed, at }
         return d;
     }
@@ -999,6 +1003,7 @@ export function init() {
     }
     function closeCard() { bg.style.display = 'none'; card = null; drawList(); }
     bg.addEventListener('click', e => { if (e.target === bg) closeCard(); });
+    document.getElementById('mh-x').addEventListener('click', () => closeCard());
 
     function streak(id) {
         let n = 0; const d = new Date();
@@ -1027,16 +1032,18 @@ export function init() {
             '<div class="mh-head"><span class="mh-title"><b>' + esc(o.name) + '</b><span class="mh-act">' + o.emoji + ' ' + esc(o.act) + '</span></span></div>' +
             '<div class="mh-sub"><span class="mh-nav" data-nav="-1">‹</span><span>' + y + '.' + pad(m + 1) + '</span><span class="mh-nav" data-nav="1">›</span></div>' +
             '<div class="mh-grid">' + cells + '</div>' +
+            (o.kinds ? '<div class="mh-kinds">' + o.kinds.map(kd => '<span class="mh-kind' + ((sr.items || []).includes(kd) ? ' on' : '') + (canStamp ? '' : ' off') + '" data-kind="' + esc(kd) + '">' + esc(kd) + '</span>').join('') + '</div>' : '') +
             (card.id === 'cook' ? mealsHtml(sr, sd) :
             '<div class="mh-memo"><span class="mh-memo-date">' + (sd.getMonth() + 1) + '.' + sd.getDate() + '</span>' +
             '<textarea class="mh-memo-text" rows="1">' + esc(sr.memo || '') + '</textarea></div>') +
             '<div class="mh-foot"><span class="mh-stat">이번 달 ' + monthCount + '번 · 연속 ' + streak(card.id) + '일</span>' +
+            (o.kinds ? '' :
             '<span class="mh-count' + (sn ? ' on' : '') + '">' +
-                '<button class="mh-minus"' + (canStamp && sn ? '' : ' disabled') + '>−</button>' +
+                '<button class="mh-minus" aria-label="빼기"' + (canStamp && sn ? '' : ' disabled') + '><svg viewBox="0 0 24 24" width="13" height="13"><path d="M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>' +
                 '<span class="mh-num">' + sn + '</span>' +
-                '<button class="mh-plus"' + (canStamp ? '' : ' disabled') + '>+</button>' +
-            '</span>' +
-            '<button class="mh-close">닫기</button></div>';
+                '<button class="mh-plus" aria-label="더하기"' + (canStamp ? '' : ' disabled') + '><svg viewBox="0 0 24 24" width="13" height="13"><path d="M6 12h12M12 6v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>' +
+            '</span>') +
+            '</div>';
         if (card.id === 'cook') { bindMeals(); return; }
         const ta = cardEl.querySelector('.mh-memo-text');
         const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
@@ -1102,6 +1109,21 @@ export function init() {
         });
         drawCard();
     }
+    // 빨래 종류 고르기 (하루에 여러 개)
+    function toggleKind(k, kind) {
+        const id = card.id, on = !((rec(id, k) || {}).items || []).includes(kind);
+        save('myhome: ' + OBJECTS[id].name + ' ' + k + ' ' + kind + (on ? '' : ' 취소'), d => {
+            d.log[id] = d.log[id] || {};
+            const r = Object.assign({}, d.log[id][k] || {});
+            const items = (r.items || []).filter(x => x !== kind);
+            if (on) items.push(kind);
+            if (items.length) { r.items = items; r.done = true; r.count = items.length; } else { delete r.items; delete r.done; delete r.count; }
+            r.at = stamp();
+            if (!r.count && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
+        });
+        drawCard();
+    }
+
     // 횟수 더하기/빼기 (하루에 여러 번 가능)
     function addCount(k, delta) {
         const id = card.id, next = Math.max(0, countOf(id, k) + delta);
@@ -1127,9 +1149,11 @@ export function init() {
             const k = day.dataset.k;
             if (k > todayKey()) return;
             // 고른 날을 한 번 더 누르면 한 번 더하기
-            if (card.sel === k) addCount(k, 1); else { card.sel = k; drawCard(); }
+            if (card.sel === k && !OBJECTS[card.id].kinds) addCount(k, 1); else { card.sel = k; drawCard(); }
             return;
         }
+        const kind = e.target.closest('[data-kind]');
+        if (kind && card.sel <= todayKey()) { toggleKind(card.sel, kind.dataset.kind); return; }
         if (e.target.closest('.mh-plus')) { addCount(card.sel, 1); return; }
         if (e.target.closest('.mh-minus')) { addCount(card.sel, -1); return; }
         if (e.target.closest('.mh-close')) closeCard();
@@ -1161,7 +1185,7 @@ export function init() {
                     '<div class="mh-note-top"><b>' + esc(n.title || '제목 없음') + '</b><span>' + esc((n.date || '').replace(/-/g, '.')) + '</span></div>' +
                     (n.body ? '<div class="mh-note-text">' + esc(n.body) + '</div>' : '') +
                 '</div>').join('') : '') +
-            '<div class="mh-foot"><button class="mh-stamp mh-note-add">+ 메모 붙이기</button><button class="mh-close">닫기</button></div>';
+            '<div class="mh-foot"><button class="mh-stamp mh-note-add">+ 메모 붙이기</button></div>';
     }
     function notesClick(e) {
         if (e.target.closest('.mh-note-add')) { card.edit = 'new'; drawNotes(); return; }
@@ -1212,7 +1236,7 @@ export function init() {
     }
 
     /* ---------------- 장바구니 (장보기 목록) ---------------- */
-    const SHOP_TAGS = ['장보기', '마트', '다이소', '쿠팡', '기타'];
+    const SHOP_TAGS = ['장보기', '마트', '다이소', '쿠팡', 'etc.'];
     // Solar 아이콘 heart-bold (480 Design, CC BY 4.0)
     const HEART = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M2 9.1371C2 14 6.01943 16.5914 8.96173 18.9109C10 19.7294 11 20.5 12 20.5C13 20.5 14 19.7294 15.0383 18.9109C17.9806 16.5914 22 14 22 9.1371C22 4.27416 16.4998 0.825464 12 5.50063C7.50016 0.825464 2 4.27416 2 9.1371Z"/></svg>';
     const shopTags = () => (db.shop_tags && db.shop_tags.length ? db.shop_tags : SHOP_TAGS);
@@ -1231,11 +1255,11 @@ export function init() {
         const list = db.shopping || [];
         const tags = shopTags();
         if (card.tag && !tags.includes(card.tag)) card.tag = '';
-        const inTag = x => !card.tag || (x.tag || '기타') === card.tag;
+        const inTag = x => !card.tag || (x.tag || 'etc.') === card.tag;
         const todo = list.filter(x => !x.done && inTag(x)).sort((a, b) => (a.at || '').localeCompare(b.at || ''));
         const done = list.filter(x => x.done && inTag(x)).sort((a, b) => (b.done_at || '').localeCompare(a.done_at || ''));
-        const leftOf = t => list.filter(x => !x.done && (!t || (x.tag || '기타') === t)).length;
-        const tagSelect = x => '<select class="mh-shop-tag" data-act="tag">' + tags.map(t => '<option' + ((x.tag || '기타') === t ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
+        const leftOf = t => list.filter(x => !x.done && (!t || (x.tag || 'etc.') === t)).length;
+        const tagSelect = x => '<select class="mh-shop-tag" data-act="tag">' + tags.map(t => '<option' + ((x.tag || 'etc.') === t ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
         const row = x => '<div class="mh-shop-row' + (x.done ? ' done' : '') + '" data-item="' + esc(x.id) + '">' +
             '<span class="mh-shop-check" data-act="toggle"></span>' +
             '<span class="mh-shop-name" data-act="toggle">' + esc(x.name) + '</span>' +
@@ -1253,7 +1277,7 @@ export function init() {
             todo.map(row).join('') +
             (done.length ? '<div class="mh-shop-sec mh-shop-donehead" data-act="fold">산 것 ' + done.length + ' <span>' + (card.showDone ? '▾' : '▸') + '</span></div>' +
                 (card.showDone ? done.map(row).join('') + '<button class="mh-close mh-shop-clear">산 것 비우기</button>' : '') : '') +
-            '<div class="mh-foot">' + (card.tag && !SHOP_TAGS.includes(card.tag) ? '<button class="mh-close mh-shop-deltag">이 태그 지우기</button>' : '<span></span>') + '<button class="mh-close">닫기</button></div>';
+            '<div class="mh-foot">' + (card.tag && !SHOP_TAGS.includes(card.tag) ? '<button class="mh-close mh-shop-deltag">이 태그 지우기</button>' : '') + '</div>';
         const input = cardEl.querySelector('.mh-shop-input');
         input.value = typed;
         if (hadFocus) { input.focus(); input.setSelectionRange(typed.length, typed.length); }
@@ -1262,7 +1286,7 @@ export function init() {
     function addShop(text) {
         const names = String(text || '').split(/[,\n]/).map(t => t.trim()).filter(Boolean);
         if (!names.length) return;
-        const base = Date.now(), tag = card.tag || '기타';
+        const base = Date.now(), tag = card.tag || 'etc.';
         const inp = cardEl.querySelector('.mh-shop-input'); if (inp) inp.value = '';
         save('myhome: 장바구니 추가 ' + names.join(', '), d => {
             d.shopping = d.shopping || [];
@@ -1291,10 +1315,10 @@ export function init() {
         }
         if (e.target.closest('.mh-shop-deltag')) {
             const t = card.tag;
-            if (!confirm("'" + t + "' 태그를 지울까요? 이 태그의 항목은 '기타'로 옮겨져요.")) return;
+            if (!confirm("'" + t + "' 태그를 지울까요? 이 태그의 항목은 'etc.'로 옮겨져요.")) return;
             save('myhome: 장바구니 태그 지우기 ' + t, d => {
                 d.shop_tags = (d.shop_tags || SHOP_TAGS.slice()).filter(x => x !== t);
-                (d.shopping || []).forEach(x => { if (x.tag === t) x.tag = '기타'; });
+                (d.shopping || []).forEach(x => { if (x.tag === t) x.tag = 'etc.'; });
             });
             card.tag = ''; setLsTag(''); drawShop(); return;
         }
@@ -1343,7 +1367,7 @@ export function init() {
             '<div class="mh-head"><span class="mh-title"><b>' + PLACE.name + '</b> · WEEK</span><span class="mh-today">해 ' + rise + ' – ' + set + '</span></div>' +
             '<div class="mh-wk-now"><b>' + Math.round(weather.current.temperature_2m) + '°</b>' + KIND_IC[nowK] + ' ' + KIND_TXT[nowK] + '</div>' +
             rows +
-            '<div class="mh-foot"><span class="mh-stat">Open-Meteo</span><button class="mh-close">닫기</button></div>';
+            '<div class="mh-foot"><span class="mh-stat">Open-Meteo</span></div>';
         bg.style.display = 'flex';
     }
 
