@@ -333,9 +333,6 @@ export function init() {
     });
     furniture('drawer', g => {   // 수납장: 문 없이 뚫린 칸, 세탁기 쪽(-z)을 봄
         carcass(g, U0, U1, UZ0, UZ1, 0.92, 0.5, '-z');
-        g.add(block(U0 + 0.47, U0 + 0.49, UZ0, UZ1 - 0.03, 0.945, 0.45, C.white, 0.004));          // 칸막이
-        g.add(block(U0 + 0.08, U0 + 0.42, UZ0 + 0.06, UZ0 + 0.42, 0.945, 0.22, 0xe9e6e3, 0.03));   // 바구니
-        g.add(block(U0 + 0.55, U0 + 0.88, UZ0 + 0.06, UZ0 + 0.42, 0.945, 0.18, 0xe9e6e3, 0.03));
     });
     furniture('books', g => {    // 책장: 문 없이 식탁 쪽(+x)을 봄
         carcass(g, U0, U1, UZ0, UZ1, 1.42, 0.58, '+x');
