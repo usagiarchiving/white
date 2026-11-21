@@ -82,7 +82,7 @@ export function init() {
     controls.minPolarAngle = 0.35; controls.maxPolarAngle = 1.3;
     controls.minDistance = 3.2; controls.maxDistance = 17;
     controls.rotateSpeed = 0.7;
-    controls.enableZoom = false;      // 휠/트랙패드는 아래에서 직접 처리
+    controls.zoomSpeed = 0.8;         // 손가락 두 개로 확대(핀치)는 기본 기능 / 휠·트랙패드는 아래에서 따로 처리
 
     // 조명 (시간/날씨에 따라 아래 applySky에서 바뀜)
     const hemi = new THREE.HemisphereLight(0xffffff, 0xf4e9ec, 1.3); scene.add(hemi);
@@ -151,9 +151,10 @@ export function init() {
         pivot.add(hd);
         // 열릴 때 바깥으로 도는 각도
         let A;
-        if (facing === '+z') A = hinge === 'a0' ? -1.75 : 1.75;
-        else if (facing === '-z') A = hinge === 'a0' ? 1.75 : -1.75;
-        else A = hinge === 'a0' ? -1.75 : 1.75;    // '-x'
+        const OPEN = 0.95;                          // 활짝이 아니라 살짝 (약 55도)
+        if (facing === '+z') A = hinge === 'a0' ? -OPEN : OPEN;
+        else if (facing === '-z') A = hinge === 'a0' ? OPEN : -OPEN;
+        else A = hinge === 'a0' ? -OPEN : OPEN;    // '-x'
         g.add(pivot);
         g.userData.doors.push({ pivot, A });
         return pivot;
@@ -296,8 +297,8 @@ export function init() {
 
     /* ---------------- 현관 / 화장실 ---------------- */
     furniture('entrance', g => {
-        g.add(at(rbox(0.82, 2.0, 0.06, C.silver, 0.03, { roughness: 0.45 }), X(2.68 + EX), 1.0, Z(0) + 0.03));    // 현관문 (옅은 실버)
-        g.add(handle(X(2.68 + EX) - 0.3, 1.0, Z(0) + 0.08, false, 0.12));
+        g.add(block(2.29 + EX, 3.07 + EX, 0.0, 0.012, 0.02, 1.98, 0x6e6a6c, 0.004));        // 문 뒤 (열리면 보이는 바깥)
+        hingedDoor(g, '+z', 2.27 + EX, 3.09 + EX, 0.035, 0.0, 2.0, C.silver, 'a1', 0.16);  // 현관문 (옅은 실버, 눌러야 열림)
     }, 'N');
     // 신발 두는 바닥: 현관문 앞, 싱크대만큼 나와 있는 타일 바닥 (한 칸 낮음)
     furniture('shoes', g => {
@@ -318,8 +319,8 @@ export function init() {
         g.add(at(rbox(0.07, 0.02, 0.04, C.gray, 0.008), X(1.4), 0.02, Z(1.99)));
     });
     furniture('bath', g => {
-        g.add(at(rbox(0.06, 2.0, 0.84, C.oak, 0.03), X(W) - 0.03, 1.0, Z(1.63)));      // 화장실 문 (우드)
-        g.add(handle(X(W) - 0.08, 1.0, Z(1.3), false, 0.12));
+        g.add(block(W - 0.012, W, 1.23, 2.03, 0.02, 1.98, 0xdfe7ec, 0.004));             // 문 뒤 (열리면 보이는 화장실 타일)
+        hingedDoor(g, '-x', 1.21, 2.05, W - 0.035, 0.0, 2.0, C.oak, 'a1', 0.16);          // 화장실 문 (우드, 눌러야 열림)
     }, 'E');
 
     /* ---------------- 위에서부터 책장(식탁 쪽) · 수납장(뚫림, 세탁기 쪽) · 냉장고(세탁기 쪽) ---------------- */
@@ -602,7 +603,17 @@ export function init() {
     const wxTimer = setInterval(() => { if (!canvas.isConnected) { clearInterval(wxTimer); return; } loadWeather(); }, 30 * 60000);
 
     /* ---------------- 화면 크기 / 렌더 ---------------- */
+    function fitStage() {
+        // 아이폰 사파리 아래 막대까지 고려해서, 지금 실제로 보이는 높이에 맞춤
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        const top = stage.getBoundingClientRect().top + window.scrollY;
+        stage.style.height = Math.max(380, Math.round(vh - top - 6)) + 'px';
+    }
+    fitStage();
+    window.addEventListener('resize', fitStage);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', fitStage);
     function resize() {
+        if (!canvas.isConnected) { window.removeEventListener('resize', fitStage); return; }
         const w = stage.clientWidth, h = stage.clientHeight;
         if (!w || !h) return;
         renderer.setSize(w, h, false);
@@ -671,14 +682,14 @@ export function init() {
     /* ---------------- 휠 / 트랙패드 ----------------
        두 손가락 옆으로 밀기 → 돌리기, 위아래로 밀기·마우스 휠·오므리기 → 확대/축소 (페이지는 안 움직임) */
     stage.addEventListener('wheel', ev => {
-        ev.preventDefault();
+        ev.preventDefault(); ev.stopPropagation();        // 기본 휠 줌 대신 아래 규칙으로
         camAnim = null;
         const off = camera.position.clone().sub(controls.target), sp = new THREE.Spherical().setFromVector3(off);
         const unit = ev.deltaMode === 1 ? 16 : 1, dx = ev.deltaX * unit, dy = ev.deltaY * unit;
         if (!ev.ctrlKey && Math.abs(dx) > Math.abs(dy)) sp.theta -= dx * 0.006;
         else sp.radius = Math.min(controls.maxDistance, Math.max(controls.minDistance, sp.radius * Math.exp(dy * (ev.ctrlKey ? 0.012 : 0.0018))));
         camera.position.setFromSpherical(sp).add(controls.target);
-    }, { passive: false });
+    }, { passive: false, capture: true });
 
     /* ---------------- 오른쪽 아래 막대: 목록 / 회전 / 확대 ---------------- */
     let camAnim = null;
