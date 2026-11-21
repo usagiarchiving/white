@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="category/myhome/myhome.css?v=1">
+
+<div class="mh-wrap" id="mh-wrap">
+    <div class="mh-top">
+        <span id="mh-saving" class="mh-saving"></span>
+        <span class="mh-hint">끌어서 돌려 보고, 가구를 눌러요</span>
+    </div>
+    <div class="mh-stage" id="mh-stage">
+        <canvas id="mh-canvas"></canvas>
+        <div class="mh-label" id="mh-label"></div>
+        <div class="mh-loading" id="mh-loading">방을 꾸미는 중…</div>
+    </div>
+    <div class="mh-legend" id="mh-legend"></div>
+</div>
+
+<!-- 가구를 누르면 뜨는 기록 카드 -->
+<div class="mh-card-bg" id="mh-card-bg">
+    <div class="mh-card" id="mh-card"></div>
+</div>
+
+<!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
+<script type="module">
+    import { init } from './category/myhome/myhome.js?v=1';
+    init();
+</script>
