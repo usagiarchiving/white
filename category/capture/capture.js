@@ -1,12 +1,12 @@
 /* ==========================================================================
    하시온 — AI 채팅 캡처 백업
-   - 데이터: usagiarchiving/capture 저장소의 data/capture.json
-   - 이미지: 같은 저장소 images/YYYY/MM/ 에 원본 그대로
+   - 데이터: 이 저장소(white)의 capture/capture.json
+   - 이미지: capture/images/YYYY/MM/ 에 원본 그대로
    - 날짜는 사진 정보(EXIF/XMP) → 파일 이름 → 파일 시간 순으로 자동 인식
    ========================================================================== */
 (function () {
-    var REPO_NAME = 'capture';
-    var DATA = 'data/capture.json';
+    var REPO_NAME = 'white';
+    var DATA = 'capture/capture.json';
     var BATCH = 8;                      // 커밋 하나에 담는 이미지 수
     var repo = window.ghdb.repo(REPO_NAME);
 
@@ -41,7 +41,7 @@
     function busyAlert(e) {
         console.error(e);
         var msg = (e && e.message) || String(e);
-        if (/404/.test(msg)) msg = 'GitHub에 "' + REPO_NAME + '" 저장소가 없거나, 토큰에 이 저장소 권한이 없어요.\n\n' + msg;
+        if (/404|403/.test(msg)) msg = '토큰에 이 저장소(' + REPO_NAME + ')의 Contents 쓰기 권한이 있는지 확인해 주세요.\n\n' + msg;
         alert('저장하지 못했어요.\n' + msg);
     }
 
@@ -536,7 +536,7 @@
 
     function openUploadPicker(forceDate) {
         if (!window.ghdb.hasToken()) {
-            alert('먼저 오른쪽 위 자물쇠를 눌러 GitHub 토큰을 넣어 주세요.\n(토큰에 ' + REPO_NAME + ' 저장소 권한도 있어야 해요)');
+            alert('먼저 오른쪽 위 자물쇠를 눌러 GitHub 토큰을 넣어 주세요.');
             return;
         }
         $('#cap-file').data('force-date', forceDate || '').val('').trigger('click');
@@ -626,7 +626,7 @@
                 var chunk = rows.slice(s, s + BATCH), files = {}, newItems = [];
                 for (var r of chunk) {
                     var ext = extOf(r.file);
-                    var path = 'images/' + r.at.slice(0, 4) + '/' + r.at.slice(5, 7) + '/' +
+                    var path = 'capture/images/' + r.at.slice(0, 4) + '/' + r.at.slice(5, 7) + '/' +
                         r.at.slice(0, 10).replace(/-/g, '') + '-' + r.at.slice(11, 19).replace(/:/g, '') + '_' + r.hash.slice(0, 8) + '.' + ext;
                     files[path] = await repo.putBlob(r.bytes, onWait);
                     newItems.push({

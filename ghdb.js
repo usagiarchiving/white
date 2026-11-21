@@ -32,7 +32,7 @@
         var t = prompt(
             '이 기기에서 글을 쓰려면 GitHub 토큰이 필요해요. (처음 한 번만)\n\n' +
             'GitHub → Settings → Developer settings → Fine-grained tokens\n' +
-            '→ Repository access: ' + OWNER + '/' + REPO + ', ' + OWNER + '/capture 선택\n' +
+            '→ Repository access: ' + OWNER + '/' + REPO + ' 선택\n' +
             '→ Permissions: Contents = Read and write\n\n' +
             '만든 토큰을 붙여 넣어 주세요.'
         );
