@@ -20,7 +20,9 @@
     <link rel="stylesheet" href="style.css" />
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- '빛이 꺾이는 각도'(archive)만 아직 Supabase를 씁니다 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="ghdb.js"></script>
 </head>
 
 <body>
@@ -29,8 +31,7 @@
             
             <header id="header">
                 <div class="inner_header">
-                    <button id="btn-login" class="nav-icon-btn" title="로그인"><i class="xi-log-in"></i></button>
-                    <button id="btn-logout" class="nav-icon-btn" title="로그아웃" style="display: none;"><i class="xi-log-out"></i></button>
+                    <button id="btn-key" class="nav-icon-btn" title="글쓰기 켜기"><i class="xi-lock-o"></i></button>
 
                     <button id="btn-theme" class="nav-icon-btn" onclick="toggleTheme()" title="테마 변경">
                         <i id="theme-icon" class="xi-toggle-off"></i>

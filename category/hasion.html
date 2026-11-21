@@ -286,8 +286,8 @@
         <input type="text" id="hasion-tags" class="hasion-tags-input" autocomplete="off" placeholder="tags">
         <div class="hasion-actions-right">
             <select id="img-quality" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer; margin-right: 8px;">
-                <option value="original">원본</option>
-                <option value="high" selected>고화질</option>
+                <option value="original" selected>원본</option>
+                <option value="high">고화질</option>
                 <option value="low">저화질</option>
             </select>
 
@@ -307,7 +307,7 @@
 <script>
     var HASION_URL = 'https://dvalxqujceuhfshatilq.supabase.co';
     var HASION_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YWx4cXVqY2V1aGZzaGF0aWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2Mzg3MTksImV4cCI6MjA5NzIxNDcxOX0.6ZabNquhVkOnboWyQPSybP6S5S5iGjjYcpspcLM0vr0';
-    var hasionSupabase = window.supabase.createClient(HASION_URL, HASION_KEY);
+    var hasionSupabase = window.ghdb.createClient(HASION_URL);
 
     /* 🚨 업로드 후 작성 완료되지 않은 이미지들을 임시 보관하는 추적 배열 */
     var pendingUploads = [];
@@ -372,7 +372,7 @@
         var match;
         while ((match = regex.exec(htmlContent)) !== null) {
             var url = match[1];
-            if (url.includes('supabase.co/storage/v1/object/public/images/')) {
+            if ((url.includes('supabase.co/storage/v1/object/public/images/') || url.includes('data/images/'))) {
                 var fileName = url.split('/').pop();
                 if (fileName) names.push(fileName);
             }
@@ -508,7 +508,7 @@
         if(!activeImgWrap) return;
         
         var imgUrl = activeImgWrap.find('img').attr('src');
-        if (imgUrl && imgUrl.includes('supabase.co/storage/v1/object/public/images/')) {
+        if (imgUrl && (imgUrl.includes('supabase.co/storage/v1/object/public/images/') || imgUrl.includes('data/images/'))) {
             var fileName = imgUrl.split('/').pop();
             hasionSupabase.storage.from('images').remove([fileName]); 
             var pIndex = pendingUploads.indexOf(fileName);
@@ -617,8 +617,8 @@
                                     
                                     <div style="display: flex; gap: 12px; align-items: center;" id="edit-actions-${post.id}">
                                         <select id="edit-img-quality-${post.id}" style="background: transparent; border: none; outline: none; color: var(--sub-color); font-family: 'Noto Serif KR', serif; font-size: 11px; cursor: pointer;">
-                                            <option value="original">원본</option>
-                                            <option value="high" selected>고화질</option>
+                                            <option value="original" selected>원본</option>
+                                            <option value="high">고화질</option>
                                             <option value="low">저화질</option>
                                         </select>
                                         <label for="edit-file-${post.id}" class="hasion-img-add-btn" style="margin:0; font-size:16px;" title="사진 추가"><i class="xi-image-o"></i></label>

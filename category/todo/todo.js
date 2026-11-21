@@ -3,14 +3,14 @@
    ========================================================================== */
 
 (function() {
-    if (typeof window.supabase === 'undefined') {
+    if (typeof window.ghdb === 'undefined') {
         alert("🚨 Supabase 라이브러리를 불러오지 못했습니다. index.html 하단의 script 태그를 확인해주세요.");
         return;
     }
 
     var SUPABASE_URL = 'https://ofhadtlrsccipnvdohqh.supabase.co';
     var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9maGFkdGxyc2NjaXBudmRvaHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NTMzODksImV4cCI6MjA5NzMyOTM4OX0.bNdMzGKMCimJtRdtluzaecIM0ZYvBx72-XQdD3WFCv0';
-    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var supabase = window.ghdb.createClient(SUPABASE_URL);
 
     const colors = ['gray', 'red', 'orange', 'yellow', 'green', 'mint', 'blue', 'navy', 'purple', 'pink'];
     

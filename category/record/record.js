@@ -6,8 +6,8 @@
 var RECORD_URL = 'https://yjjxlklzgcfwwcunmrht.supabase.co';
 var RECORD_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlqanhsa2x6Z2Nmd3djdW5tcmh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDU2NjgsImV4cCI6MjA5NzM4MTY2OH0.NYZ6zJZS0zHPqBde9plZD1IK7GZyk07F9jEF7wI55Y8';
 
-if (typeof window.supabase !== 'undefined') {
-    window.recordSupabase = window.supabase.createClient(RECORD_URL, RECORD_KEY);
+if (typeof window.ghdb !== 'undefined') {
+    window.recordSupabase = window.ghdb.createClient(RECORD_URL);
 }
 
 const TMDB_API_KEY = 'd6224997a8f1d896b0244b268bcefd54'; 

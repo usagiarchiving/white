@@ -236,7 +236,7 @@
 <script>
     var MEMO_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
     var MEMO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    var memoSupabase = window.supabase.createClient(MEMO_URL, MEMO_KEY);
+    var memoSupabase = window.ghdb.createClient(MEMO_URL);
 
     /* --- [에디터 & 툴바 핵심 로직] --- */
     var savedSelectionRange = null;

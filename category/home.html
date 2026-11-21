@@ -360,7 +360,7 @@
 <script>
     var HOME_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
     var HOME_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    var homeSupabase = window.supabase.createClient(HOME_URL, HOME_KEY);
+    var homeSupabase = window.ghdb.createClient(HOME_URL);
 
     var homeCalDate = new Date();
     var homeCalYear = homeCalDate.getFullYear();

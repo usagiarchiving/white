@@ -32,18 +32,6 @@ $(document).ready(function () {
     });
     $('.dropdown-inner').click(function(e) { e.stopPropagation(); });
 
-    $("#btn-login").click(function() {
-        $(this).hide();
-        $("#btn-logout").fadeIn(200);
-        alert("나만 로그인하는 관리자 세션 모드 활성화 (UI 가구현)");
-    });
-
-    $("#btn-logout").click(function() {
-        $(this).hide();
-        $("#btn-login").fadeIn(200);
-        alert("로그아웃 되었습니다.");
-    });
-
     // 첫 페이지 로드 시, 주소창에 적힌 꼬리표(#)를 먼저 감지하여 문을 엽니다.
     initPageLoad();
 });

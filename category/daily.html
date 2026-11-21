@@ -337,7 +337,7 @@
 <script>
     var DAILY_URL = 'https://pqqvmppgpqmtyttfjyve.supabase.co';
     var DAILY_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcXZtcHBncHFtdHl0dGZqeXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MzYxMDAsImV4cCI6MjA5NzAxMjEwMH0.86kBtiDT9J_FNeKDOqm82p53JObFTfQkQUAzsT94icw';
-    var dailySupabase = window.supabase.createClient(DAILY_URL, DAILY_KEY);
+    var dailySupabase = window.ghdb.createClient(DAILY_URL);
 
     var currentYear = new Date().getFullYear();
     var currentMonth = new Date().getMonth() + 1;
@@ -731,7 +731,7 @@
         if(!activeImgWrap) return;
         
         var imgUrl = activeImgWrap.find('img').attr('src');
-        if (imgUrl && imgUrl.includes('supabase.co/storage/v1/object/public/images/')) {
+        if (imgUrl && (imgUrl.includes('supabase.co/storage/v1/object/public/images/') || imgUrl.includes('data/images/'))) {
             var fileName = imgUrl.split('/').pop();
             dailySupabase.storage.from('images').remove([fileName]); 
             var pIndex = pendingUploads.indexOf(fileName);
@@ -810,7 +810,7 @@
         var match;
         while ((match = regex.exec(htmlContent)) !== null) {
             var url = match[1];
-            if (url.includes('supabase.co/storage/v1/object/public/images/')) {
+            if ((url.includes('supabase.co/storage/v1/object/public/images/') || url.includes('data/images/'))) {
                 var fileName = url.split('/').pop();
                 if (fileName) names.push(fileName);
             }
