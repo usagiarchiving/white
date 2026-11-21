@@ -1,0 +1,186 @@
+/* ==========================================================================
+   하시온 — 캡처 백업
+   이미지는 칸/카드 없이 원래 비율 그대로 한 줄로 이어집니다.
+   ========================================================================== */
+.cap-wrap { padding-bottom: 120px; font-family: 'Noto Serif KR', serif; }
+.cap-status { text-align: center; color: var(--sub-color); font-size: 12px; padding: 40px 0; }
+.cap-status:empty { display: none; }
+
+/* ---------- 날짜 묶음 ---------- */
+.cap-day { margin-bottom: 34px; }
+.cap-day-head {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 6px 0 10px; cursor: pointer; user-select: none;
+    color: var(--title-color);
+}
+.cap-fold { display: inline-block; width: 10px; color: var(--sub-color); font-size: 11px; transition: transform .2s ease; }
+.is-folded > .cap-day-head .cap-fold,
+.is-folded > .cap-group-head .cap-fold { transform: rotate(-90deg); }
+.cap-day-date { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+.cap-day-week { font-size: 11px; color: var(--sub-color); }
+.cap-day-year { font-size: 11px; color: var(--sub-color); }
+.cap-count { font-size: 10.5px; color: var(--sub-color); }
+.cap-day-add {
+    margin-left: auto; background: none; border: none; cursor: pointer;
+    color: var(--sub-color); font-size: 13px; padding: 2px 4px; opacity: .55; transition: opacity .2s, color .2s;
+}
+.cap-day-add:hover { opacity: 1; color: var(--point-color); }
+.is-folded > .cap-day-body, .is-folded > .cap-group-body, .is-folded > .cap-group-memo { display: none; }
+
+/* ---------- 이미지 (칸 없이) ---------- */
+.cap-item { margin: 0 0 6px; position: relative; }
+.cap-item img {
+    display: block; width: 100%; height: auto;
+    background: var(--divider-bg);
+}
+.cap-item img.is-loaded { background: transparent; }
+.cap-info {
+    display: none; align-items: center; gap: 10px;
+    padding: 6px 2px 4px; font-size: 11px; color: var(--sub-color);
+}
+.cap-item.show-info .cap-info { display: flex; }
+.cap-info .cap-tagtxt { color: var(--point-color); }
+.cap-info button { background: none; border: none; cursor: pointer; color: var(--sub-color); font-size: 13px; padding: 0 2px; min-width: 26px; min-height: 26px; }
+.cap-info button:hover { color: var(--main-color); }
+.cap-info .cap-info-right { margin-left: auto; display: flex; gap: 8px; }
+.cap-fav-on { color: #e0707b !important; }
+.cap-item-heart {
+    position: absolute; top: 8px; right: 8px; font-size: 13px; color: #fff;
+    text-shadow: 0 0 4px rgba(0,0,0,.45); pointer-events: none;
+}
+
+/* 고르기 모드 */
+.cap-selecting .cap-item { cursor: pointer; }
+.cap-selecting .cap-item::after {
+    content: ''; position: absolute; top: 10px; left: 10px; width: 18px; height: 18px;
+    border-radius: 50%; border: 1.5px solid #fff; background: rgba(0,0,0,.18);
+    box-shadow: 0 0 3px rgba(0,0,0,.3);
+}
+.cap-selecting .cap-item.is-sel::after {
+    background: var(--point-color); border-color: var(--point-color);
+}
+.cap-selecting .cap-item.is-sel img { opacity: .72; }
+
+/* ---------- 모음 ---------- */
+.cap-group { margin: 4px 0 14px; padding-left: 10px; border-left: 1px solid var(--divider-bg); }
+.cap-group-head {
+    display: flex; align-items: baseline; gap: 7px; padding: 4px 0 8px;
+    cursor: pointer; user-select: none; font-size: 12px; color: var(--main-color);
+}
+.cap-group-title { font-weight: 600; }
+.cap-group-time { font-size: 10.5px; color: var(--sub-color); }
+.cap-group-tags { font-size: 10.5px; color: var(--point-color); }
+.cap-group-edit { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--sub-color); font-size: 12px; opacity: .5; }
+.cap-group-edit:hover { opacity: 1; }
+.cap-group-memo { font-size: 12px; color: var(--sub-color); line-height: 1.7; margin: -4px 0 10px; white-space: pre-wrap; }
+
+/* ---------- 따라오는 툴바 ---------- */
+.cap-bar {
+    position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
+    transform: translateX(-50%); z-index: 900;
+    display: flex; align-items: center;
+    padding: 4px 8px; border-radius: 999px;
+    background: var(--modal-card-bg);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border: 1px solid var(--divider-bg);
+    box-shadow: 0 4px 18px rgba(0,0,0,.06);
+    opacity: .62; transition: opacity .25s ease, transform .3s ease;
+}
+.cap-bar:hover, .cap-bar.is-active, .cap-bar.is-selecting { opacity: 1; }
+.cap-bar.is-tucked { transform: translate(-50%, calc(100% + 30px)); }
+.cap-bar-normal, .cap-bar-select { display: flex; align-items: center; gap: 2px; }
+.cap-bar-select { display: none; }
+.cap-bar.is-selecting .cap-bar-normal { display: none; }
+.cap-bar.is-selecting .cap-bar-select { display: flex; }
+.cap-tb {
+    background: none; border: none; cursor: pointer; color: var(--sub-color);
+    font-size: 15px; width: 32px; height: 32px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: color .2s, background .2s; font-family: 'Noto Serif KR', serif;
+}
+.cap-tb:hover { color: var(--main-color); background: var(--divider-bg); }
+.cap-tb.is-on { color: var(--point-color); }
+.cap-tb-up { color: var(--point-color); }
+.cap-tb-sep { width: 1px; height: 14px; background: var(--divider-bg); margin: 0 4px; }
+.cap-danger:hover { color: #d9534f; }
+.cap-done { width: auto; padding: 0 10px; border-radius: 999px; font-size: 11.5px; color: var(--point-color); }
+.cap-sel-count { font-size: 11px; color: var(--sub-color); min-width: 22px; text-align: center; }
+
+/* ---------- 작은 창 (달력/태그) ---------- */
+.cap-pop {
+    display: none; position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 52px); z-index: 901;
+    width: min(300px, calc(100vw - 32px)); padding: 12px;
+    background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 12px;
+    box-shadow: 0 8px 26px rgba(0,0,0,.08); font-family: 'Noto Serif KR', serif;
+}
+.cap-pop.is-open { display: block; }
+.cap-cal-head { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--main-color); margin-bottom: 6px; }
+.cap-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.cap-cal-grid .wd { font-size: 9.5px; color: var(--sub-color); padding: 4px 0; }
+.cap-cal-grid .d {
+    font-size: 11.5px; padding: 6px 0 9px; border-radius: 8px; color: var(--sub-color); opacity: .45; position: relative;
+}
+.cap-cal-grid .d.has { opacity: 1; color: var(--main-color); cursor: pointer; }
+.cap-cal-grid .d.has::after {
+    content: ''; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px;
+    border-radius: 50%; background: var(--point-color);
+}
+.cap-cal-grid .d.has:hover { background: var(--divider-bg); }
+.cap-tag-list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 40vh; overflow-y: auto; }
+.cap-chip {
+    font-size: 11.5px; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+    background: var(--input-bg); color: var(--main-color); border: 1px solid transparent;
+}
+.cap-chip.is-on { border-color: var(--point-color); color: var(--point-color); }
+.cap-chip small { color: var(--sub-color); margin-left: 3px; }
+.cap-empty-note { font-size: 11.5px; color: var(--sub-color); }
+
+/* 필터 표시 줄 */
+.cap-filter-note { font-size: 11.5px; color: var(--sub-color); text-align: center; margin: -10px 0 20px; }
+.cap-filter-note button { background: none; border: none; color: var(--point-color); cursor: pointer; font-family: inherit; font-size: 11.5px; }
+
+/* ---------- 시트 ---------- */
+.cap-sheet-bg {
+    display: none; position: fixed; inset: 0; z-index: 1001;
+    background: rgba(0,0,0,.25); align-items: flex-end; justify-content: center;
+}
+.cap-sheet-bg.is-open { display: flex; }
+.cap-sheet {
+    width: min(560px, 100%); max-height: 86vh; overflow-y: auto;
+    background: var(--back-color); border-radius: 16px 16px 0 0;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    font-family: 'Noto Serif KR', serif; color: var(--main-color);
+    box-shadow: 0 -6px 30px rgba(0,0,0,.1);
+}
+.cap-sheet h3 { font-size: 13.5px; font-weight: 600; margin: 0 0 4px; }
+.cap-sheet .cap-sub { font-size: 11px; color: var(--sub-color); margin-bottom: 14px; }
+.cap-sheet label.cap-field { display: block; font-size: 11px; color: var(--sub-color); margin: 12px 0 4px; }
+.cap-sheet input[type=text], .cap-sheet input[type=date], .cap-sheet input[type=datetime-local], .cap-sheet textarea {
+    width: 100%; box-sizing: border-box; background: var(--input-bg); border: none; outline: none;
+    border-radius: 8px; padding: 9px 10px; font-family: inherit; font-size: 12.5px; color: var(--main-color);
+}
+.cap-sheet textarea { min-height: 64px; resize: vertical; line-height: 1.6; }
+.cap-sheet .cap-check { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 14px; cursor: pointer; }
+.cap-sheet .cap-check input { accent-color: var(--point-color); }
+.cap-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; align-items: center; }
+.cap-btn {
+    border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer;
+    font-family: inherit; font-size: 12px; background: var(--input-bg); color: var(--main-color);
+}
+.cap-btn.primary { background: var(--point-color); color: #fff; }
+.cap-btn.danger { color: #d9534f; background: transparent; margin-right: auto; padding-left: 0; }
+.cap-btn:disabled { opacity: .45; cursor: default; }
+.cap-progress { font-size: 11.5px; color: var(--sub-color); margin-right: auto; }
+
+/* 업로드 목록 */
+.cap-up-list { display: flex; flex-direction: column; gap: 8px; }
+.cap-up-row { display: flex; align-items: center; gap: 10px; }
+.cap-up-row img { width: 42px; height: 56px; object-fit: cover; object-position: top; border-radius: 4px; flex: none; background: var(--divider-bg); }
+.cap-up-mid { flex: 1; min-width: 0; }
+.cap-up-mid input[type=datetime-local] { padding: 6px 8px; font-size: 12px; }
+.cap-up-src { font-size: 10px; color: var(--sub-color); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap-up-src.warn { color: #c9893a; }
+.cap-up-row.is-dup { opacity: .45; }
+.cap-up-row.is-dup .cap-up-src { color: #d9534f; }
+.cap-up-x { background: none; border: none; color: var(--sub-color); cursor: pointer; font-size: 13px; flex: none; }

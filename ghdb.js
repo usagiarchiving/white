@@ -32,7 +32,7 @@
         var t = prompt(
             '이 기기에서 글을 쓰려면 GitHub 토큰이 필요해요. (처음 한 번만)\n\n' +
             'GitHub → Settings → Developer settings → Fine-grained tokens\n' +
-            '→ Repository access: ' + OWNER + '/' + REPO + ' 만 선택\n' +
+            '→ Repository access: ' + OWNER + '/' + REPO + ', ' + OWNER + '/capture 선택\n' +
             '→ Permissions: Contents = Read and write\n\n' +
             '만든 토큰을 붙여 넣어 주세요.'
         );
@@ -334,8 +334,103 @@
         if (btn) { btn.addEventListener('click', onKeyClick); updateKeyIcon(); }
     });
 
+    /* ---------------- 다른 저장소 (예: 캡처 저장소) ----------------
+       여러 파일 추가/삭제 + JSON 수정을 커밋 하나로 처리 (Git Data API) */
+    function Repo(name) {
+        this.name = name;
+        this.base = 'https://api.github.com/repos/' + OWNER + '/' + name;
+        this.raw = 'https://raw.githubusercontent.com/' + OWNER + '/' + name + '/' + BRANCH + '/';
+        this.site = '/' + name + '/';   // 같은 도메인의 GitHub Pages 주소 (usagiarchiving.github.io/<name>/)
+    }
+    Repo.prototype.api = async function (path, opts) {
+        opts = opts || {};
+        for (var attempt = 0; ; attempt++) {
+            var res = await fetch(this.base + path, {
+                method: opts.method || 'GET',
+                headers: headers(opts.body ? { 'Content-Type': 'application/json' } : {}),
+                body: opts.body ? JSON.stringify(opts.body) : undefined
+            });
+            // 짧은 시간에 너무 많이 올리면 GitHub이 잠시 막음 → 기다렸다 다시
+            if ((res.status === 403 || res.status === 429) && attempt < 5) {
+                var wait = Number(res.headers.get('retry-after')) || 20 * (attempt + 1);
+                var txt = ''; try { txt = await res.clone().text(); } catch (e) {}
+                if (res.status === 429 || /rate limit/i.test(txt)) {
+                    if (opts.onWait) opts.onWait(wait);
+                    await new Promise(function (r) { setTimeout(r, wait * 1000); });
+                    continue;
+                }
+            }
+            if (opts.allow404 && res.status === 404) return null;
+            if (!res.ok) throw await apiError(res, this.name + path);
+            return res.status === 204 ? null : res.json();
+        }
+    };
+    // JSON 읽기 (토큰 있으면 API 최신본, 없으면 사이트 배포본)
+    Repo.prototype.readJSON = async function (path, fallback, atRef) {
+        if (getToken()) {
+            var refQ = '?ref=' + (atRef || BRANCH) + '&t=' + Date.now();
+            var meta = await this.api('/contents/' + path + refQ, { allow404: true });
+            if (!meta) return fallback;
+            var text;
+            if (meta.encoding === 'base64' && meta.content) {
+                var bin = atob(meta.content.replace(/\n/g, ''));
+                var bytes = new Uint8Array(bin.length);
+                for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                text = new TextDecoder().decode(bytes);
+            } else {
+                var r = await fetch(this.base + '/contents/' + path + refQ, { headers: headers({ 'Accept': 'application/vnd.github.raw' }) });
+                if (!r.ok) throw await apiError(r, path + ' 읽기');
+                text = await r.text();
+            }
+            return JSON.parse(text);
+        }
+        var res = await fetch(this.site + path + '?t=' + Date.now());
+        if (!res.ok) res = await fetch(this.raw + path + '?t=' + Date.now());   // Pages를 안 켰으면 원본 주소로
+        if (!res.ok) return fallback;
+        return res.json();
+    };
+    // 파일 바이트 → blob sha (커밋 전에 미리 올려둠)
+    Repo.prototype.putBlob = async function (bytes, onWait) {
+        requireToken();
+        var out = await this.api('/git/blobs', { method: 'POST', body: { content: bytesToB64(bytes), encoding: 'base64' }, onWait: onWait });
+        return out.sha;
+    };
+    // 커밋 하나로: files = { 경로: blobSha 또는 null(삭제) }, json = { 경로: { mutate: fn(현재값)→새값, fallback } }
+    Repo.prototype.commit = async function (message, files, json, onWait) {
+        requireToken();
+        files = files || {}; json = json || {};
+        for (var attempt = 0; attempt < 4; attempt++) {
+            var ref = await this.api('/git/ref/heads/' + BRANCH, { onWait: onWait });
+            var head = ref.object.sha;
+            var commit = await this.api('/git/commits/' + head, { onWait: onWait });
+            var tree = [];
+            for (var p in files) tree.push({ path: p, mode: '100644', type: 'blob', sha: files[p] });
+            var results = {};
+            for (var jp in json) {
+                var cur = await this.readJSON(jp, json[jp].fallback, head);
+                var next = json[jp].mutate(JSON.parse(JSON.stringify(cur)));
+                results[jp] = next;
+                tree.push({ path: jp, mode: '100644', type: 'blob', content: JSON.stringify(next, null, 1) + '\n' });
+            }
+            var newTree = await this.api('/git/trees', { method: 'POST', body: { base_tree: commit.tree.sha, tree: tree }, onWait: onWait });
+            var newCommit = await this.api('/git/commits', { method: 'POST', body: { message: message, tree: newTree.sha, parents: [head] }, onWait: onWait });
+            try {
+                await this.api('/git/refs/heads/' + BRANCH, { method: 'PATCH', body: { sha: newCommit.sha, force: false }, onWait: onWait });
+                return results;
+            } catch (e) {
+                // 그 사이 다른 커밋이 생겼으면 최신 상태 기준으로 다시
+                if (e.status === 422 && attempt < 3) continue;
+                throw e;
+            }
+        }
+    };
+    // 화면에 쓸 이미지 주소 (사이트 반영 전이면 onerror에서 원본 저장소 주소로 바뀜)
+    Repo.prototype.url = function (path) { return this.site + path; };
+    Repo.prototype.rawUrl = function (path) { return this.raw + path; };
+
     window.ghdb = {
         createClient: function (url) { return new Client(url); },
+        repo: function (name) { return new Repo(name); },
         hasToken: function () { return !!getToken(); },
         setToken: function (t) { setToken(t); updateKeyIcon(); }
     };
