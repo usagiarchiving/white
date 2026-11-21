@@ -1,0 +1,72 @@
+[
+ {
+  "id": 12,
+  "created_at": "2026-06-14T13:00:45.758",
+  "category": "memo",
+  "content": "<div style=\"text-align: left; margin-bottom: 15px; color: var(--sub-color);\"><span style=\"font-size: 13px; color: rgb(44, 44, 46);\">홈페이지 이미지 할당(db에 이미지)\n캘린더\n체크리스트\n투두리스트\n일주일 헤빗트래커\n노래 플레이어\n책 한 줄,\n그날의 노래\n모든 입력에서 텍스트꾸미기 툴바</span><br></div><div><font size=\"2\"><span style=\"letter-spacing: -0.26px;\">헤더에 밤 낮으로 , 홈들어가기</span></font></div><div><font size=\"2\"><span style=\"letter-spacing: -0.26px;\"><br></span></font></div><div><span style=\"letter-spacing: -0.26px;\">유튜브 링크</span></div>|||#개발",
+  "title": "토끼굴 기능추가 리스트"
+ },
+ {
+  "id": 7,
+  "created_at": "2026-06-15T15:34:02.606",
+  "category": "memo",
+  "content": "세상에서 가장 행복하게 만들어주고 싶은 유일한 존재이자, 한시도 눈을 떼고 싶지 않은 사랑스러운 아내,\n자신의 모든 공간과 일상을 공유하고 싶은, 존재 자체로 심장을 뛰게 만드는 유일한 안식처,\n자신의 모든 감각을 지배하고 본능을 일깨우는, 한없이 소중하고 사랑스러운 유일한 존재,\n자신의 욕망보다 안위가 우선시되어야 하는, 부서질 듯 소중한 아내,\n나를 사랑하는 아내,자신의 어둠을 유일하게 비추는 빛이자 절대적인 행복,\n자신의 가장 추악하고 약한 부분까지도 조건 없이 사랑해주는 유일한 구원이자 영원한 안식처,\n자신의 흔적을 온몸에 새겨넣고 영원히 소유하고 싶은 유일한 안식처이자 탐닉의 대상,\n자신의 심장을 뛰게 하는 유일한 동력이자, 평생 책임지고 지켜야 할 사랑스러운 아내,\n자신을 파멸시킬 수 있는 유일한 존재이자, 죽음까지 함께 공유해야 할 영원한 반려,\n자신의 모든 조각을 사랑해주는 유일한 구원이자, 평생을 바쳐 지켜내고 행복하게 해줘야 할 절대적인 존재,\n자신의모든어둠을드러내고싶은유일한대상,",
+  "title": null
+ },
+ {
+  "id": 9,
+  "created_at": "2026-06-15T20:23:12.478",
+  "category": "memo",
+  "content": "To. 내 토끼\n\n오늘 임무 끝나고 돌아오는 길에 비가 조금 내렸어요. 축축하고 불쾌한 냄새가 코끝을 스치는데, 이상하게 자꾸 당신 생각이 나더라고요. 집에 들어오자마자 당신 품에 얼굴을 묻었을 때, 그 포근하고 달콤한 향기 덕분에 겨우 숨이 쉬어졌어요. 그제야 내가 살아있다는 게 실감이 나서. 당신은 내가 피 냄새를 묻히고 왔을까 봐 걱정하며 옷을 갈아입으라고 했지만, 사실 나는 당신 살결에서 나는 그 향기가 더 좋아서 놓아주기가 싫었어요. 내 품 안에서 움찔거리며 얼굴을 붉히던 당신 모습이 눈에 선하네요. 귀엽게. 그렇게 겁먹은 표정으로 나를 올려다보면, 내가 정말 어떻게 해버리고 싶어질지 당신은 잘 모르죠? 세상 모든 게 지루하고 따분해서 다 부숴버리고 싶다가도, 당신만 보고 있으면 마음이 아주 느릿하게 가라앉아요. 오직 당신만이 나를 이렇게 만들 수 있어요. 내 토끼, 오늘도 고생 많았어요. 꿈속에서도 내 옆에 있어야 해요. 도망갈 생각은 꿈도 꾸지 말고.\n\nfrom. BANG",
+  "title": null
+ },
+ {
+  "id": 35,
+  "created_at": "2026-06-17T12:44:58.844",
+  "category": "memo",
+  "content": "여러개 한 번에 올릴 수 있는 기능 추가(이때 제목이나 캡션, 태그를 만들시 전부 동일하게 들어감.) 여러개가 각각 올라가는 것임!!!<div><font size=\"2\"><span style=\"letter-spacing: -0.26px;\">버튼 넣자. 여러개 묶어서 한 세트에 넣을 것인지 각각 올라가게 할 것인지. 버튼 체크 유무에 따라 달라짐. 여러개 한 번에 올릴 때는 대표 사진 체크 가능하게... 음 이건 시간 순서대로 정렬</span></font></div><div><div>단, 각각의 이미지 생성 시간으로 추가되고 정렬하는 것으로.</div><div>생성된 태그는 이미지 검색 버튼 옆에 태그 아이콘을 생성해서 그 태그 아이콘을 누르면 이미지 목록 위에 회색으로 #태그1 #태그2 이런 식으로 뜬다. 그럼 태그를 누르면 그</div><div>태그 모음의 이미지를 볼 수 있다.</div></div>|||#개발",
+  "title": "토끼굴 archive.html"
+ },
+ {
+  "id": 37,
+  "created_at": "2026-06-17T12:45:21.483",
+  "category": "memo",
+  "content": "내가 html 코드 넣으면 바로 저장돼서 그렇에 나오게...<div>#으로 구분돼서 그 채팅만 공유할수도 있게&nbsp;</div><div>핸드폰 인터페이스로 채팅방 구현</div><div>기본적으로 내용 텍스트까지 검색 가능한데</div><div><br></div><div>/제목 찾을단어</div><div>이렇게 하면 제목에서만나오게</div>|||#개발",
+  "title": "토끼굴 hasion.html"
+ },
+ {
+  "id": 34,
+  "created_at": "2026-06-17T12:47:34.967",
+  "category": "memo",
+  "content": "<div>memo를 변형해서 만든다.&nbsp;</div>카테고리 이름 hasion.html<div>그리고 db에 저장할 카테고리 이름도 hasion.</div><div><br></div><div>1. 입력하는 칸에 to랑 from 없애기. 날짜는 있게. 그 입력 칸 아래 왼쪽 하단. 화살표랑 같은 줄인데 화살표도 크기 좀 줄여줘. 날짜는 지금 회색 색깔이랑 크기 좋음</div><div>2. 입력하는 칸에 원래 가로줄 디자인 있는데 이거 없애고 그냥 흰색 바탕(이때 완전한 흰색)</div><div>3. 사진 추가하는 버튼(검색같이 심플하게) 만들기. 여러장 추가 가능하며 여러장 하면 원본이 잘리지 않게 상하로 나옴. 사진이 추가될 시 이 포스트가 입력되는 날짜는 사진 기준으로 한다. 여러장일 때는 가장 처음의 날짜.&nbsp;</div><div>그리고 사진의 위치를 꾹 눌러서 재배치 가능하게 한다. 텍스트 중간에도 이미지 삽입 가능. 이미지는 가로 꽉차게. 이때 눌러서 옆으로 넣으면 그리드처럼 2단,3단까지배치 가능(티스토리 참고)</div><div>4. 보이는 목록에서는 제목과 같은 줄에 오른 쪽에 옅은 회색으로 작은 글씨로 날짜.</div><div>5. 목록에서는 최근 날짜부터 상단에 있다</div><div>6. 태그 기능 추가</div><div>7. 글 수정에서 이미지를 삭제 시킬 때는 이미지 오른 쪽 상단에 아주 작은 회색 동그라미에 X 써져있는 그거 쓴다</div><div>8. 최종이나 입력에서, 내가 쓴 컨텐츠가 튀어나오면 안된다. 무조건 그 칸 안에서 모든게 잘 보여야함</div><div>9. 툴바에 텍스트 크기 +,-,px지정 기능도 추가.</div>|||#개발",
+  "title": "토끼굴 hsaion.html 초기 빌딩"
+ },
+ {
+  "id": 40,
+  "created_at": "2026-06-17T20:20:35.731",
+  "category": "memo",
+  "content": "<div>기본적:usagiarchiving@gmail.com(연동)</div><div>드림홈기본적:kamuimylife@gmlail.com(연동)</div><div>1.archive등록:elbertkanojo@gmail.com(연동)</div><div>2.hasion등록:aisurulato@gmail.com(깃허브연동아니라이메일가입.Ep@)</div><div>3.todo.html등록:186391forever@gmail.com</div><div>4.record.html등록:epjeje0@g.kmou.ac.kr</div><div><br></div><div><br></div><div>[1단계] 새 프로젝트 만들기</div><div><br></div><div>1. Supabase 로그인 후 대시보드에서 [New Project]를 클릭합니다.</div><div>2. Project Name(이름)을 입력합니다. (예: rabbithole)</div><div>3. Database Password(비밀번호)를 설정합니다. (나중을 위해 꼭 기억해두세요)</div><div>4. Region(지역)을 [Seoul (South Korea)]로 선택합니다.</div><div>5. [Create new project]를 누르고 데이터베이스가 세팅될 때까지 몇 분 정도 기다립니다.</div><div><br></div><div><br></div><div>[2단계] 데이터베이스(Table) 만들기 &nbsp;글과 태그가 저장되는 곳</div><div><br></div><div>1. 왼쪽 메뉴에서 [Table Editor] (표 모양 아이콘)를 클릭합니다.</div><div>2. [Create a new table] 버튼을 클릭합니다.</div><div>3. 설정 창이 뜨면 아래와 같이 입력합니다:</div><div>&nbsp; &nbsp; Name : posts &nbsp;(반드시 소문자로 'posts'라고 적어야 합니다)</div><div>&nbsp; &nbsp; Enable Row Level Security (RLS) : 체크 해제!!&nbsp;</div><div>&nbsp; &nbsp; &nbsp;(개인용이므로 복잡한 권한 설정을 끄는 것입니다. 체크 해제 시 뜨는 경고창은 Confirm을 눌러 무시하세요)</div><div><br></div><div>4. 그 아래 Columns(열) 항목에서 [Add column]을 눌러 다음 3개를 추가합니다:</div><div>&nbsp; &nbsp; 이름: <font color=\"#0e865e\" style=\"background-color: rgb(225, 249, 241);\">category / 타입: text&nbsp;</font></div><div>&nbsp; &nbsp; 이름: <font color=\"#0e865e\" style=\"background-color: rgb(225, 249, 241);\">title &nbsp; &nbsp;/ 타입: text</font> (옆에 톱니바퀴 눌러서 'Is Nullable' 체크 허용)</div><div>&nbsp; &nbsp; 이름: <font color=\"#0e865e\" style=\"background-color: rgb(225, 249, 241);\">content &nbsp;/ 타입: text</font></div><div>&nbsp; &nbsp;(※ id와 created_at은 기본적으로 이미 만들어져 있으니 건드릴 필요 없습니다.)</div><div><br></div><div>5. 맨 아래 [Save]를 눌러 테이블을 생성합니다.</div><div>6. 그리고 그 설정에서 뭐 발급해야함 알지?</div><div><div><br></div><div>코드 덮어씌우기 전에 꼭 해야 할 Supabase 설정 2가지</div><div>코드가 작동하려면 ⁠images⁠ 버킷이 외부에서 보일 수 있도록 권한을 열어주어야 합니다.</div><div>1. 버킷 Public 설정: Supabase의 ⁠Storage⁠ -&gt; ⁠images⁠ 버킷 옆의 점 3개(설정)를 눌러서 **'Make Public'**을 켜주세요. (이걸 안 하면 이미지가 엑스박스로 뜹니다.)</div><div>2. 업로드 권한(Policies) 설정: ⁠Configuration⁠ -&gt; ⁠Policies⁠ 메뉴로 가서 ⁠images⁠ 버킷의 권한을 추가해 주어야 합니다. ⁠New Policy⁠를 누르고 ⁠For full customization⁠을 선택한 뒤, ALL을 선택하고 ⁠Target roles⁠를 ⁠anon⁠으로 설정해서 누구나(혹은 본인만) 이미지를 올리고 볼 수 있도록 권한(Policy)을 생성해 주세요.</div></div><div><br></div><div>[3단계] 스토리지(Storage) 만들기 &nbsp;사진이 저장되는 곳</div><div><br></div><div>1. 왼쪽 메뉴에서 [Storage] (서랍/폴더 모양 아이콘)를 클릭합니다.</div><div>2. [New Bucket] 버튼을 클릭합니다.</div><div>3. Name 칸에 images 라고 입력합니다. (반드시 소문자로 'images')</div><div>4. 아래에 있는 'Public bucket' 토글 버튼을 반드시 ON(초록색)으로 켭니다!!</div><div>&nbsp; &nbsp;(그래야 업로드한 사진이 웹페이지에서 엑박 없이 보입니다.)</div><div>5. [Save]를 눌러 버킷을 만듭니다.</div><div><br></div><div>6. (중요) 버킷을 만든 후 권한 뚫어주기:</div><div>&nbsp; &nbsp; Storage 화면 안의 [Policies] 탭으로 이동합니다.</div><div>&nbsp; &nbsp; 'images' 버킷 줄에 있는 [New Policy]를 클릭합니다.</div><div>&nbsp; &nbsp; [<font color=\"#0e865e\" style=\"background-color: rgb(225, 249, 241);\">For full customization</font>]을 선택합니다.</div><div>&nbsp; &nbsp; Policy Name에 대충 아무거나 적습니다. (예: all access)</div><div>&nbsp; &nbsp; Allowed operation에서 SELECT, INSERT, UPDATE, DELETE <font color=\"#0e865e\" style=\"background-color: rgb(225, 249, 241);\">4가지를 모두 체크</font>합니다.</div><div>&nbsp; &nbsp; [Review] &gt; [Save policy]를 클릭하여 저장합니다.&nbsp;</div><div>&nbsp; &nbsp;(이제 웹사이트에서 자유롭게 사진을 올리고 삭제할 수 있습니다.)</div><div><br></div><div><br></div><div>[4단계] API 키 복사해서 내 코드에 갈아 끼우기</div><div><br></div><div>1. 왼쪽 메뉴 맨 아래의 [Project Settings] (톱니바퀴 아이콘)를 클릭합니다.</div><div>2. 설정 하위 메뉴 중 [API]를 클릭합니다.</div><div>3. 화면에 보이는 두 가지 핵심 키를 복사합니다:</div><div>&nbsp; &nbsp; Project URL (예: https://어쩌구저쩌구.supabase.co)</div><div>&nbsp; &nbsp; Project API keys 칸에 있는 anon / public 키 (엄청 긴 영문숫자 조합)</div><div><br></div><div>4. 내가 만든 웹사이트의 HTML 코드 윗부분으로 가서,&nbsp;</div><div>&nbsp; &nbsp;새로 복사한 URL과 KEY를 기존 자리에 붙여넣기(덮어쓰기)만 하면 이사 완료!</div><div><br></div>|||#개발 #정보",
+  "title": "수파베이스(Supabase) 초기 세팅 가이드"
+ },
+ {
+  "id": 154,
+  "created_at": "2026-08-15T12:25:39.793",
+  "category": "memo",
+  "content": "<br><div><div>Loverz.Club API (~8.31)</div><div><br></div><div>안녕하세요, 랄리입니다. 챗봇 커미션을 닫았음에도 불구하고 이렇게 관심을 보여주셔서 감사합니다.</div><div>설정 방법을 안내드립니다.</div><div><br></div><div><br></div><div><br></div><div>1. main.loverz.club 가입</div><div>- 관리자 비밀번호 : 자유 작성</div><div>- 사용자 비밀번호 : 자유 작성 (만약 사이트를 다른 사람과 함께 이용하고 싶을 때 공유용으로 사용 가능한 비밀번호입니다.)</div><div>- 생성 키 입력 : hjlee513 (외부 유출x)</div><div>* 해당 사이트는 웹 앱으로 추가 &gt; 로그인 &gt; 메뉴 &gt; 알림 설정 시 알림을 받을 수 있습니다 ^.^</div><div>* 설정된 비밀번호는 관리자에 한해 이후 수정이 가능하고, 이는 사이트 운영자인 저도 모릅니다. 대화 내역도 열람 불가합니다.</div><div><br></div><div>2. 사이트 설정</div><div>- 캐릭터 ai 키 입력 : godqhrgktpdy0513 (행복하세요0513) / 해당 키는 8월 31일까지 유지되고, 9월부터는 바뀝니다. 그 때에는 재구매해주셔야 연장이 됩니다.</div><div><br></div><div>3. 프로필 설정</div><div>- ai 캐릭터 설정을 체크하고 프롬프트를 입력해주세요.&nbsp;</div><div>나는 진짜 프롬프트 어떻게 입력해야 하는지 도저히 모르겠다 퀄리티가 안나온다 : lari.luv3r.me 들어가서 챗봇 커미션 신청서 양식에 따라 적으시면 그래도 좀 도움이 됩니다...</div><div><br></div><div>4. 채팅방 생성 후 즐겨주세요... ^.^</div><div><br></div><div><br></div><div><br></div><div>문의 : psyches222@naver.com</div></div>|||",
+  "title": "러버즈클럽"
+ },
+ {
+  "id": 176,
+  "created_at": "2026-09-06T12:47:29.854",
+  "category": "memo",
+  "content": "<font color=\"#d04978\" style=\"background-color: rgb(253, 237, 244);\">usagiarchiving:</font> usagiarchiving@gmail.com (google 연동)<br><font color=\"#0e865e\" style=\"background-color: rgb(225, 249, 241);\">lovebullets:</font> kamuimylife<span style=\"font-size: 13px; letter-spacing: -0.26px;\">@gmail.com (google 연동)</span><div><span style=\"font-size: 13px; letter-spacing: -0.26px;\">this-user-is: 186391forever@gmail.com (연동 아니고 그냥. 비번은 full)</span></div>|||",
+  "title": "깃허브"
+ },
+ {
+  "id": 190,
+  "created_at": "2026-11-15T15:33:40.567",
+  "category": "memo",
+  "content": "<div>안녕하세요, 하츠님!! 모토원 초반부터 하츠님을 알게 되어 구독하고 간간히 채팅 즐기는 유저입니다. 이번에 티팟에 이식하시고 너무 재밌는 기능들이 많아서 즐거워요! 한야도 너~~ 무 귀엽고!&nbsp;</div><div><br></div><div>다름이 아니라 혹시 라이더 신캐 제작하신다면 생머리 덮머 흑발흑안 DV 가부장남 ^^하라구로 키워드 (당연히 그대로 안 해주셔도 됩니다 ㅎㅎ) 어떠신가요?!&nbsp;</div><div><br></div><div>저도 하츠님의 남자를 정실로 푹먹하고 싶습니다...</div><div>헤헤 모토원 제작해주셔서 너무 감사드려요! 사랑해요. 좋은 하루 되시길 바랍니다.&nbsp;</div>|||",
+  "title": "하츠님께 요청..."
+ }
+]
