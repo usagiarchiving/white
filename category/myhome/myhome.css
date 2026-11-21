@@ -183,3 +183,22 @@
 /* 방 화면이 화면 가로 끝까지 차면서 페이지가 옆으로 넘치지 않게 (트랙패드로 밀 때 튕김 방지) */
 html:has(.mh-stage), body:has(.mh-stage) { overflow-x: hidden; }
 .mh-stage { overscroll-behavior: contain; }
+
+/* 현관 메모 */
+.mh-note { padding: 10px 12px; margin-top: 8px; background: #fdf3f5; border-left: 2px solid var(--pink); border-radius: 0 6px 6px 0; cursor: pointer; }
+.mh-note:hover { background: #fbe9ee; }
+.mh-note-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.mh-note-top b { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.mh-note-top span { font-size: 10px; color: var(--sub); white-space: nowrap; letter-spacing: 1px; }
+.mh-note-text { font-size: 12px; line-height: 1.7; color: var(--ink); margin-top: 4px; white-space: pre-wrap; }
+.mh-note-empty { font-size: 11.5px; color: var(--sub); padding: 18px 0 6px; text-align: center; }
+.mh-note-title, .mh-note-date, .mh-note-body {
+    width: 100%; box-sizing: border-box; background: transparent; border: none; border-bottom: 1px solid var(--line);
+    font-family: inherit; color: var(--ink); outline: none; padding: 7px 0; margin-top: 6px;
+}
+.mh-note-title { font-size: 13px; font-weight: 600; }
+.mh-note-date { font-size: 11px; color: var(--sub); }
+.mh-note-body { font-size: 12.5px; line-height: 1.8; min-height: 110px; resize: vertical; }
+.mh-note-title:focus, .mh-note-body:focus { border-bottom-color: var(--pink); }
+.mh-note-add { margin-right: auto; }
+.mh-note-del { margin-left: 0; color: #d4728c; }

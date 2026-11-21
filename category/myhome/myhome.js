@@ -300,6 +300,27 @@ export function init() {
         g.add(block(2.29 + EX, 3.07 + EX, 0.0, 0.012, 0.02, 1.98, 0x6e6a6c, 0.004));        // 문 뒤 (열리면 보이는 바깥)
         hingedDoor(g, '+z', 2.27 + EX, 3.09 + EX, 0.035, 0.0, 2.0, C.silver, 'a1', 0.16);  // 현관문 (옅은 실버, 눌러야 열림)
     }, 'N');
+    // 현관문 안쪽에 붙인 메모지 (눌러서 메모 보기/쓰기). 메모 수만큼(최대 4장), 없으면 빈 한 장
+    const noteColors = [0xfde4ea, 0xfff3c8, 0xe6f1fb, 0xeaf5e3];
+    let notesGroup = null;
+    function buildNotes(count) {
+        if (notesGroup) { notesGroup.clear(); } else { notesGroup = furniture('notes', g => {
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.002), new THREE.MeshBasicMaterial({ visible: false })), X(2.68 + EX), 1.4, Z(0.07)));   // 누르는 영역
+        }, 'N'); }
+        const n = Math.max(1, Math.min(4, count));
+        if (notesGroup.children.length === 0) notesGroup.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.002), new THREE.MeshBasicMaterial({ visible: false })), 0, 0.25, 0));
+        for (let i = 0; i < n; i++) {
+            const note = rbox(0.15, 0.15, 0.006, noteColors[i % noteColors.length], 0.004);
+            note.position.set(-0.1 + (i % 2) * 0.19, 0.3 - Math.floor(i / 2) * 0.19 + (i % 2 ? -0.02 : 0), 0.004);
+            note.rotation.z = [0.06, -0.05, -0.03, 0.07][i];
+            const tape = rbox(0.06, 0.02, 0.008, 0xffffff, 0.003, { transparent: true, opacity: 0.75 });
+            tape.position.set(note.position.x, note.position.y + 0.075, 0.008); tape.rotation.z = note.rotation.z;
+            notesGroup.add(note, tape);
+        }
+        notesGroup.userData.top = 0.5;
+    }
+    buildNotes(0);
+
     // 신발 두는 바닥: 현관문 앞, 싱크대만큼 나와 있는 타일 바닥 (한 칸 낮음)
     furniture('shoes', g => {
         g.add(block(2.14, W, 0, 0.64, -0.03, 0.035, 0xe7e4e2, 0.006));
@@ -651,6 +672,7 @@ export function init() {
         hovered = g;
         canvas.classList.toggle('is-hover', !!g);
         if (!g) { labelEl.classList.remove('on'); return; }
+        if (g.userData.id === 'notes') { labelEl.innerHTML = '메모' + ((db.notes || []).length ? '<span class="n">' + db.notes.length + '</span>' : ''); labelEl.classList.add('on'); return; }
         const o = OBJECTS[g.userData.id], done = isDone(g.userData.id, todayKey());
         labelEl.innerHTML = o.name + (done ? '<span class="n">✓</span>' : '');
         labelEl.classList.add('on');
@@ -769,6 +791,9 @@ export function init() {
         stepCam(dt);
         controls.update();
         updateWalls();
+        // 현관문이 열려 있는 동안엔 문 안쪽 메모지를 숨김
+        const ent = clickable.find(g => g.userData.id === 'entrance');
+        if (notesGroup && ent && (ent.userData.openT || 0) > 0.03) notesGroup.visible = false;
         stepWeatherFX(dt);
         clickable.forEach(g => {
             if (g.userData.floor) {
@@ -829,6 +854,7 @@ export function init() {
         d.place = PLACE.name;
         d.zones = ZONES;
         d.objects = JSON.parse(JSON.stringify(OBJECTS));
+        d.notes = Array.isArray(d.notes) ? d.notes : [];     // 현관 메모: [{ id, title, date, body, at }]
         return d;
     }
     async function load() {
@@ -875,8 +901,10 @@ export function init() {
         const tday = todayKey();
         document.getElementById('mh-list').innerHTML = ZONES.map(z =>
             '<em>' + z + '</em>' + Object.keys(OBJECTS).filter(id => OBJECTS[id].zone === z).map(id =>
-                '<span data-id="' + id + '" class="' + (isDone(id, tday) ? 'done' : '') + '">' + OBJECTS[id].name + '</span>').join('')
+                '<span data-id="' + id + '" class="' + (isDone(id, tday) ? 'done' : '') + '">' + OBJECTS[id].name + '</span>').join('') +
+            (z === '현관' ? '<span data-id="notes">현관 메모' + ((db.notes || []).length ? ' · ' + db.notes.length : '') + '</span>' : '')
         ).join('');
+        if (typeof buildNotes === 'function') buildNotes((db.notes || []).length);
     }
 
     /* ---------------- 카드 ---------------- */
@@ -884,6 +912,7 @@ export function init() {
     const bg = document.getElementById('mh-card-bg'), cardEl = document.getElementById('mh-card');
 
     function openCard(id) {
+        if (id === 'notes') { openNotes(); return; }
         const now = new Date();
         card = { id, y: now.getFullYear(), m: now.getMonth(), sel: todayKey() };
         bg.style.display = 'flex';
@@ -900,6 +929,7 @@ export function init() {
     }
 
     function drawCard() {
+        if (card.id === 'notes') { drawNotes(); return; }
         const o = OBJECTS[card.id], y = card.y, m = card.m, t = todayKey();
         const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
         let monthCount = 0;
@@ -960,6 +990,7 @@ export function init() {
     }
 
     cardEl.addEventListener('click', e => {
+        if (card && card.id === 'notes') { notesClick(e); return; }
         if (!card) { if (e.target.closest('.mh-close')) closeCard(); return; }
         const nav = e.target.closest('[data-nav]');
         if (nav) { const d = new Date(card.y, card.m + Number(nav.dataset.nav), 1); card.y = d.getFullYear(); card.m = d.getMonth(); drawCard(); return; }
@@ -975,6 +1006,61 @@ export function init() {
         if (e.target.closest('.mh-minus')) { addCount(card.sel, -1); return; }
         if (e.target.closest('.mh-close')) closeCard();
     });
+
+    /* ---------------- 현관 메모 ---------------- */
+    function openNotes() {
+        card = { id: 'notes', edit: null };
+        bg.style.display = 'flex';
+        drawNotes();
+    }
+    function drawNotes() {
+        const notes = (db.notes || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.at || '').localeCompare(a.at || ''));
+        if (card.edit) {
+            const n = card.edit === 'new' ? { title: '', date: todayKey(), body: '' } : (db.notes.find(x => x.id === card.edit) || {});
+            cardEl.innerHTML =
+                '<div class="mh-head"><span class="mh-title"><b>현관 메모</b><span class="mh-act">' + (card.edit === 'new' ? '새 메모' : '메모 고치기') + '</span></span></div>' +
+                '<input class="mh-note-title" placeholder="제목" value="' + esc(n.title) + '">' +
+                '<input class="mh-note-date" type="date" value="' + esc(n.date || todayKey()) + '">' +
+                '<textarea class="mh-note-body" placeholder="본문">' + esc(n.body) + '</textarea>' +
+                '<div class="mh-foot">' + (card.edit !== 'new' ? '<button class="mh-close mh-note-del">지우기</button>' : '<span></span>') +
+                '<span><button class="mh-close mh-note-cancel">취소</button><button class="mh-stamp on mh-note-save">붙이기</button></span></div>';
+            return;
+        }
+        cardEl.innerHTML =
+            '<div class="mh-head"><span class="mh-title"><b>현관 메모</b><span class="mh-act">' + notes.length + '장</span></span></div>' +
+            (notes.length ? notes.map(n =>
+                '<div class="mh-note" data-note="' + esc(n.id) + '">' +
+                    '<div class="mh-note-top"><b>' + esc(n.title || '제목 없음') + '</b><span>' + esc((n.date || '').replace(/-/g, '.')) + '</span></div>' +
+                    (n.body ? '<div class="mh-note-text">' + esc(n.body) + '</div>' : '') +
+                '</div>').join('') : '<div class="mh-note-empty">아직 붙인 메모가 없어요.</div>') +
+            '<div class="mh-foot"><button class="mh-stamp mh-note-add">+ 메모 붙이기</button><button class="mh-close">닫기</button></div>';
+    }
+    function notesClick(e) {
+        if (e.target.closest('.mh-note-add')) { card.edit = 'new'; drawNotes(); return; }
+        const item = e.target.closest('[data-note]');
+        if (item) { card.edit = item.dataset.note; drawNotes(); return; }
+        if (e.target.closest('.mh-note-cancel')) { card.edit = null; drawNotes(); return; }
+        if (e.target.closest('.mh-note-save')) {
+            const title = cardEl.querySelector('.mh-note-title').value.trim(), date = cardEl.querySelector('.mh-note-date').value || todayKey();
+            const body = cardEl.querySelector('.mh-note-body').value.trim();
+            if (!title && !body) { alert('제목이나 본문을 적어 주세요.'); return; }
+            const id = card.edit === 'new' ? 'n' + Date.now().toString(36) : card.edit;
+            save('myhome: 현관 메모 ' + (card.edit === 'new' ? '붙이기' : '고치기') + ' ' + (title || date), d => {
+                d.notes = d.notes || [];
+                const rec = { id, title, date, body, at: stamp() };
+                const i = d.notes.findIndex(x => x.id === id);
+                if (i >= 0) d.notes[i] = rec; else d.notes.push(rec);
+            });
+            card.edit = null; drawNotes(); drawList(); return;
+        }
+        if (e.target.closest('.mh-note-del')) {
+            if (!confirm('이 메모를 뗄까요?')) return;
+            const id = card.edit;
+            save('myhome: 현관 메모 지우기', d => { d.notes = (d.notes || []).filter(x => x.id !== id); });
+            card.edit = null; drawNotes(); drawList(); return;
+        }
+        if (e.target.closest('.mh-close')) closeCard();
+    }
 
     /* ---------------- 일주일 날씨 ---------------- */
     function openWeek() {
