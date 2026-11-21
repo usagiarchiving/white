@@ -5,9 +5,20 @@
    - 쓰기(추가/수정/삭제/업로드)는 이 기기에 저장된 GitHub 토큰으로 커밋합니다.
    ========================================================================== */
 (function () {
+    // 저장소는 사이트 주소에서 알아서 찾음 → 다른 GitHub 계정/저장소에 그대로 복사해도 동작
+    //   <계정>.github.io/<저장소>/  →  계정/저장소
+    //   <계정>.github.io/           →  계정/<계정>.github.io
+    // (로컬 테스트 등 github.io가 아닐 때는 아래 기본값 사용)
     var OWNER = 'usagiarchiving';
     var REPO = 'white';
     var BRANCH = 'main';
+    (function () {
+        var m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname);
+        if (!m) return;
+        OWNER = m[1];
+        var first = location.pathname.split('/').filter(Boolean)[0];
+        REPO = first && !/\.html?$/i.test(first) ? first : m[1] + '.github.io';
+    })();
     var API = 'https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/';
     var RAW = 'https://raw.githubusercontent.com/' + OWNER + '/' + REPO + '/' + BRANCH + '/';
     var TOKEN_KEY = 'gh_token';
@@ -340,7 +351,7 @@
         this.name = name;
         this.base = 'https://api.github.com/repos/' + OWNER + '/' + name;
         this.raw = 'https://raw.githubusercontent.com/' + OWNER + '/' + name + '/' + BRANCH + '/';
-        this.site = '/' + name + '/';   // 같은 도메인의 GitHub Pages 주소 (usagiarchiving.github.io/<name>/)
+        this.site = /\.github\.io$/i.test(name) ? '/' : '/' + name + '/';   // 같은 도메인의 GitHub Pages 주소
     }
     Repo.prototype.api = async function (path, opts) {
         opts = opts || {};
@@ -430,7 +441,8 @@
 
     window.ghdb = {
         createClient: function (url) { return new Client(url); },
-        repo: function (name) { return new Repo(name); },
+        repo: function (name) { return new Repo(name || REPO); },
+        owner: OWNER, repoName: REPO,
         hasToken: function () { return !!getToken(); },
         setToken: function (t) { setToken(t); updateKeyIcon(); }
     };

@@ -5,7 +5,7 @@
    - 날짜는 사진 정보(EXIF/XMP) → 파일 이름 → 파일 시간 순으로 자동 인식
    ========================================================================== */
 (function () {
-    var REPO_NAME = 'white';
+    var REPO_NAME = window.ghdb.repoName;   // 지금 사이트의 저장소 (복사해 가도 그대로 동작)
     var DATA = 'capture/capture.json';
     var BATCH = 8;                      // 커밋 하나에 담는 이미지 수
     var repo = window.ghdb.repo(REPO_NAME);
