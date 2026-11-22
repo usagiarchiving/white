@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- Todo 카테고리를 혼자 열리는 화면으로: 다이어리 · 김민정 창 안에 그대로 띄움
+     app.html?skin=diary | minjung  (기능·저장은 Todo 카테고리와 완전히 같음: data/todos.json) -->
+<html lang="ko" class="theme-light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <base href="../../">
+    <title>To Do</title>
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap">
+    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="category/todo/skin.css?v=1">
+    <script>
+        // 테마(밝게/어둡게)는 사이트와 같이, 겉모양은 부른 곳에 맞춰
+        (function () {
+            var skin = (/[?&]skin=(\w+)/.exec(location.search) || [])[1] || '';
+            var dark = false; try { dark = localStorage.getItem('theme') === 'theme-dark'; } catch (e) {}
+            document.documentElement.className = (dark && !skin ? 'theme-dark' : 'theme-light') + (skin ? ' skin-' + skin : '');
+        })();
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="ghdb.js?v=12"></script>
+</head>
+<body>
+    <div id="todo-app"></div>
+    <script>
+        // 할 일을 저장하면 부른 화면(다이어리)에 알려서 영수증 등을 새로 그리게 함
+        (function () {
+            var f = window.fetch;
+            window.fetch = function (url, opts) {
+                var p = f.apply(this, arguments);
+                var m = ((opts && opts.method) || 'GET').toUpperCase();
+                if (m !== 'GET' && /todos\.json/.test(String(url))) {
+                    p.then(function (res) { if (res.ok && window.parent !== window) window.parent.postMessage({ type: 'todos-changed' }, location.origin); });
+                }
+                return p;
+            };
+        })();
+        // 부른 화면의 색을 받아서 그대로 씀
+        window.addEventListener('message', function (e) {
+            if (e.origin !== location.origin || !e.data || e.data.type !== 'skin-vars') return;
+            var v = e.data.vars || {};
+            Object.keys(v).forEach(function (k) { if (/^--[\w-]+$/.test(k) && /^#[0-9a-f]{3,8}$/i.test(v[k])) document.documentElement.style.setProperty(k, v[k]); });
+        });
+        $.ajax({ url: 'category/todo/index.html', dataType: 'html', cache: false }).done(function (html) {
+            $('#todo-app').html(html);
+            if (window.parent !== window) window.parent.postMessage({ type: 'todo-ready' }, location.origin);
+        });
+    </script>
+</body>
+</html>

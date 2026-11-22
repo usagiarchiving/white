@@ -30,7 +30,7 @@ const BUBBLE = {
 // 창 목록 (w/h는 넓은 화면 기준, x/y는 바탕 크기 비율)
 const APPS = {
     diary: { title: '다이어리',      icon: 'c-blue',  w: 1120, h: 780, center: true, y: 0.015 },
-    todo:  { title: '할 일',         icon: 'c-pink',  w: 380,  h: 640, x: 0.02, y: 0.03 },
+    todo:  { title: '할 일',         icon: 'c-pink',  w: 440,  h: 680, x: 0.02, y: 0.03 },
     done:  { title: '오늘의 영수증', icon: 'c-white', w: 400,  h: 640, x: 0.58, y: 0.05 },
     memo:  { title: '메모',          icon: 'c-gray',  w: 440,  h: 480, x: 0.36, y: 0.16 }
 };
@@ -48,6 +48,29 @@ const CELL_COLORS = [['', '없음'], ['#FBD9E2', '분홍'], ['#DDECF5', '하늘'
 const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
 const WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const WEEK_KO = ['일', '월', '화', '수', '목', '금', '토'];
+
+/* ---------------- 같이 쓰는 기록 파일 ---------------- */
+// 할 일 = Todo 카테고리와 같은 파일, 일기·프로필·내 스티커 = 김민정과 같은 파일, 집안일 = 마이홈 (영수증에 모아 보기만)
+const SHARED = { todos: 'data/todos.json', mj: 'minjung/minjung.json', mh: 'myhome/myhome.json' };
+const TODO_COLORS = { gray: '#bdb7b9', red: '#f08a8a', orange: '#f5b17a', yellow: '#f0cf62', green: '#9dd39a', mint: '#8fd6c6', blue: '#8fb8e8', navy: '#6b7fb8', purple: '#b79be0', pink: '#f4a3b8' };
+const MYHOME_ACTS = {
+    entrance: '🚪 현관 정리', shoes: '👟 신발 정리', sink: '🫧 설거지', stove: '🧽 조리대 청소', cook: '🍳 요리', upper1: '✨ 상부장 정리', upper2: '✨ 상부장 정리',
+    lower1: '✨ 하부장 정리', lower2: '✨ 하부장 정리', washer: '🧺 빨래', fridge: '🧊 냉장고 정리', trash: '🗑️ 쓰레기 버리기', kfloor: '🧹 주방 바닥 청소',
+    recycle: '♻️ 분리수거', table: '🍚 밥 챙겨 먹기', lfloor: '🧹 거실 바닥 청소', books: '📚 독서', drawer: '🗂️ 수납장 정리', desk: '✏️ 공부',
+    bed: '🛏️ 이불 개기', vanity: '🧴 스킨케어', plant: '💧 물주기', closet: '👕 옷 정리', bath: '🛁 화장실 청소'
+};
+const MEAL_KO = { breakfast: '아침', lunch: '점심', dinner: '저녁', snack: '간식', night: '야식' };
+const BEAUTY_KO = { morning: '아침 스킨케어', night: '저녁 스킨케어', etc: '스페셜 케어', shower: '샤워' };
+function prepShared(k, cur) {
+    if (k === 'todos') return Array.isArray(cur) ? cur : [];
+    cur = cur && typeof cur === 'object' && !Array.isArray(cur) ? cur : {};
+    if (k === 'mh') { if (!cur.log || typeof cur.log !== 'object') cur.log = {}; return cur; }
+    ['profile', 'diary', 'condition', 'beauty', 'quests'].forEach(f => { if (!Array.isArray(cur[f])) cur[f] = []; });
+    if (!cur.quest_log || typeof cur.quest_log !== 'object') cur.quest_log = {};
+    if (!cur.settings || typeof cur.settings !== 'object') cur.settings = {};
+    return cur;
+}
+const uniq = a => a.filter((x, i) => x && a.indexOf(x) === i);
 
 /* ---------------- 오하아사 ---------------- */
 const BIRTH = '2002-04-11';
@@ -98,6 +121,9 @@ const ICO = {
     copy: '<rect x="5.5" y="5.5" width="7" height="7" rx="1.5"/><path d="M10.5 3.5h-6a1 1 0 0 0-1 1v6"/>', swap: '<path d="M3.5 6h8l-2-2M12.5 10h-8l2 2"/>',
     text: '<path d="M4 4.5h8M8 4.5v7.5"/>', lock: '<rect x="4" y="7" width="8" height="5.5" rx="1.3"/><path d="M5.8 7V5.5a2.2 2.2 0 0 1 4.4 0V7"/>',
     unlock: '<rect x="4" y="7" width="8" height="5.5" rx="1.3"/><path d="M5.8 7V5.5a2.2 2.2 0 0 1 4.3-.7"/>', heart: '<path d="M8 12.5S3 9.6 3 6.4A2.4 2.4 0 0 1 8 5a2.4 2.4 0 0 1 5 1.4c0 3.2-5 6.1-5 6.1z"/>',
+    eye: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="2"/>',
+    eyeoff: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><path d="M3 13L13 3"/>',
+    photo: '<rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><circle cx="6" cy="7" r="1.2"/><path d="M13.5 10.5l-3-3-5 5"/>',
     reload: '<path d="M12.5 8a4.5 4.5 0 1 1-1.3-3.2"/><path d="M11.5 2.5v2.6H8.9"/>', palette: '<path d="M8 2.8a5.2 5.2 0 1 0 0 10.4c.9 0 1.2-.6 1-1.3-.3-.9.3-1.6 1.2-1.6h1.3a1.8 1.8 0 0 0 1.7-1.8A5.6 5.6 0 0 0 8 2.8z"/><circle cx="5.6" cy="7" r=".5" fill="currentColor"/><circle cx="8" cy="5.4" r=".5" fill="currentColor"/>'
 };
 const ic = n => '<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO[n] + '</svg>';
@@ -113,6 +139,7 @@ const monthKey = (y, m) => y + '-' + pad(m + 1);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const hhmm = iso => { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? '' : pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 const isUrl = s => /^https?:\/\/\S+$/i.test(String(s).trim());
+const safeUrl = s => isUrl(s || '') ? String(s).trim() : '';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function stamp() {
     const d = new Date(), off = -d.getTimezoneOffset(), sg = off >= 0 ? '+' : '-';
@@ -130,6 +157,8 @@ function normalize(d) {
     obj('profile'); obj('mood'); obj('goals'); obj('days'); obj('todos'); obj('theme');
     arr('ddays'); arr('bucket'); arr('music'); arr('stickers'); arr('myStickers');
     if (typeof d.memo !== 'string') d.memo = '';
+    if (!d.view || typeof d.view !== 'object') d.view = {};
+    if (!d.view.stk_off || typeof d.view.stk_off !== 'object') d.view.stk_off = {};
     return d;
 }
 
@@ -172,11 +201,20 @@ export function init() {
     }, true);
 
     /* ---------------- 불러오기 / 저장 ---------------- */
+    const ext = { todos: [], mj: prepShared('mj', {}), mh: prepShared('mh', {}) };
     async function load() {
-        try { db = normalize(await repo.readJSON(DATA, {})); } catch (e) { console.error(e); }
+        const keys = Object.keys(SHARED);
+        const got = await Promise.all([repo.readJSON(DATA, {})].concat(keys.map(k => repo.readJSON(SHARED[k], k === 'todos' ? [] : {}))).map(p => p.catch(e => { console.error(e); return null; })));
+        if (got[0]) db = normalize(got[0]);
+        keys.forEach((k, i) => { if (got[i + 1]) ext[k] = prepShared(k, got[i + 1]); });
         applyTheme(); renderAll(true);
         loadOha();
     }
+    // 다른 기기에서 쓴 기록: 화면으로 돌아오면 다시 불러옴 (입력 중·저장 중이면 건너뜀)
+    on(document, 'visibilitychange', () => {
+        const typing = document.activeElement && wrap.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+        if (document.visibilityState === 'visible' && !pending && !typing && !cardFn) load();
+    });
     const OHA = { data: null, loading: false };
     async function loadOha() {
         OHA.loading = true;
@@ -197,16 +235,26 @@ export function init() {
         return false;
     }
     // fn은 화면용(db)과 저장소 최신본(cur) 양쪽에 똑같이 적용됨 → id는 fn 밖에서 미리 만들어 둘 것
-    function save(message, fn, files) {
+    // more: 같은 커밋으로 함께 고칠 공용 파일 { todos | mj | mh: fn(그 파일 내용) }
+    function save(message, fn, files, more) {
         if (!canWrite()) { load(); return; }
-        fn(db);
+        more = more || {};
+        if (fn) fn(db);
+        Object.keys(more).forEach(k => more[k](ext[k]));
         renderAll();
         setPending(pending + 1);
         const j = {};
-        j[DATA] = { mutate: cur => { cur = normalize(cur); fn(cur); cur.updated_at = stamp(); return cur; }, fallback: {} };
+        if (fn) j[DATA] = { mutate: cur => { cur = normalize(cur); fn(cur); cur.updated_at = stamp(); return cur; }, fallback: {} };
+        Object.keys(more).forEach(k => {
+            j[SHARED[k]] = { mutate: cur => { cur = prepShared(k, cur); more[k](cur); if (k !== 'todos') cur.updated_at = stamp(); return cur; }, fallback: k === 'todos' ? [] : {} };
+        });
         repo.commit('diary: ' + message, files || {}, j).then(res => {
             setPending(pending - 1);
-            if (!pending && res && res[DATA]) { db = normalize(JSON.parse(JSON.stringify(res[DATA]))); applyTheme(); renderAll(true); }
+            if (!pending && res) {
+                if (res[DATA]) db = normalize(JSON.parse(JSON.stringify(res[DATA])));
+                Object.keys(SHARED).forEach(k => { if (res[SHARED[k]]) ext[k] = prepShared(k, JSON.parse(JSON.stringify(res[SHARED[k]]))); });
+                applyTheme(); renderAll(true);
+            }
         }, e => {
             setPending(pending - 1);
             alert('저장하지 못했어요.\n' + (e.message || e));
@@ -258,9 +306,29 @@ export function init() {
     // 더 이상 아무 데도 안 쓰는 사진이면 저장소에서도 지움
     function dropFile(path, files) {
         if (!path || CHAR[path] || path.indexOf('diary/') !== 0) return files || {};
-        const used = JSON.stringify(db).split('"' + path + '"').length - 1;
+        const used = (JSON.stringify(db) + JSON.stringify(ext.mj.settings || {})).split('"' + path + '"').length - 1;
         if (used <= 1) { files = files || {}; files[path] = null; }
         return files || {};
+    }
+
+    /* ---------------- 김민정과 같이 쓰는 것: 프로필 · 내 스티커 모음 ---------------- */
+    const mjProf = label => ((ext.mj.profile || []).find(x => x.label === label) || {}).value || '';
+    function setMjProf(d, label, value) {
+        const row = d.profile.find(x => x.label === label);
+        if (row) row.value = value; else d.profile.push({ id: 'pf' + uid(), label, value });
+    }
+    function birthKey() {
+        const m = /(\d{4})\D+(\d{1,2})\D+(\d{1,2})/.exec(mjProf('생년월일'));
+        return m ? m[1] + '-' + pad(m[2]) + '-' + pad(m[3]) : BIRTH;
+    }
+    // 내 스티커 = 김민정 settings.sticker_lib + 김민정 방에 붙인 스티커 + (예전) 다이어리에만 있던 것
+    function placedInMj(path) {
+        const st = (ext.mj.settings || {}).stickers || {};
+        return ['mobile', 'pc'].some(k => (st[k] || []).some(t => t.img === path));
+    }
+    function myStickerPaths() {
+        const set = ext.mj.settings || {}, st = set.stickers || {};
+        return uniq((set.sticker_lib || []).concat((st.pc || []).map(t => t.img), (st.mobile || []).map(t => t.img), db.myStickers.map(x => x.path)));
     }
 
     /* ---------------- 꾸미기(색/무늬) ---------------- */
@@ -272,6 +340,7 @@ export function init() {
         const v = themeVars();
         Object.keys(v).forEach(k => wrap.style.setProperty('--dy-' + k, v[k]));
         wrap.dataset.pattern = (db.theme && db.theme.pattern) || 'heart';
+        if (typeof postSkin === 'function') postSkin();
     }
 
     /* ==========================================================================
@@ -404,18 +473,24 @@ export function init() {
 
     RENDER.diary = (body, tools) => {
         tools.innerHTML =
-            '<button class="dy-rb' + (V.deco ? '' : ' on') + '" data-tool="deco" title="스티커를 고정하면 끌거나 눌러도 안 움직여요">' + ic(V.deco ? 'unlock' : 'lock') + '<span class="lbl">' + (V.deco ? '스티커 고정' : '고정 풀기') + '</span></button>' +
+            '<button class="dy-rb" data-tool="stkview" title="스티커 보이기/숨기기 (' + (isMobile() ? '휴대폰' : 'PC') + ')">' + ic(stkOff() ? 'eyeoff' : 'eye') + '<span class="lbl">스티커 ' + (stkOff() ? 'OFF' : 'ON') + '</span></button>' +
+            (stkOff() ? '' : '<button class="dy-rb' + (V.deco ? '' : ' on') + '" data-tool="deco" title="스티커를 고정하면 끌거나 눌러도 안 움직여요">' + ic(V.deco ? 'unlock' : 'lock') + '<span class="lbl">' + (V.deco ? '스티커 고정' : '고정 풀기') + '</span></button>') +
             '<button class="dy-rb" data-tool="sticker" title="스티커 붙이기">' + ic('plus') + '<span class="lbl">스티커</span></button>' +
             '<button class="dy-rb" data-tool="theme" title="색 바꾸기">' + ic('palette') + '<span class="lbl">꾸미기</span></button>';
         tools.onclick = e => {
             const t = e.target.closest('[data-tool]'); if (!t) return;
             if (t.dataset.tool === 'deco') { V.deco = !V.deco; V.sel = null; try { localStorage.setItem('dy-stk-lock', V.deco ? '0' : '1'); } catch (e) {} render('diary'); }
             if (t.dataset.tool === 'sticker') openThemeCard();
+            if (t.dataset.tool === 'stkview') {
+                const lay = isMobile() ? 'mobile' : 'pc', off = !stkOff();
+                V.sel = null;
+                save('스티커 ' + (off ? '끄기' : '켜기') + ' (' + lay + ')', d => { d.view.stk_off[lay] = off; });
+            }
             if (t.dataset.tool === 'theme') openThemeCard();
         };
         const mk = monthKey(V.y, V.m);
         body.innerHTML =
-            '<div class="dy-spread' + (V.deco ? ' dy-deco' : '') + '" id="dy-spread">' +
+            '<div class="dy-spread' + (V.deco && !stkOff() ? ' dy-deco' : '') + (stkOff() ? ' dy-stk-off' : '') + '" id="dy-spread">' +
                 '<div class="dy-left">' + profileW() + goalsW(mk) + ddayW() + musicW() + ohaW() + bucketW() + '</div>' +
                 '<div class="dy-right">' + calendarHTML(mk) + '</div>' +
                 '<div class="dy-stk-layer" id="dy-stk-layer">' + stickersHTML() + '</div>' +
@@ -449,7 +524,7 @@ export function init() {
         const ph = p.photo ? '<img src="' + esc(src(p.photo)) + '" alt="" style="width:100%;height:100%;object-fit:cover">' : '<img src="' + CHAR['c-white'] + '" alt="">';
         return widget('프로필',
             '<div class="dy-prof"><div class="ph" data-a="prof-photo" title="사진 바꾸기">' + ph + '</div>' +
-            '<div class="nm' + (p.name ? '' : ' none') + '" data-a="prof-name" title="이름">' + (p.name ? esc(p.name) : ic('pen')) + '</div>' +
+            '<div class="nm' + (mjProf('이름') ? '' : ' none') + '" data-a="prof-name" title="이름">' + (mjProf('이름') ? esc(mjProf('이름')) : ic('pen')) + '</div>' +
             '<div class="nt" data-a="prof-note" title="한 줄 소개">' + esc(p.note || '') + '</div>' +
             (p.photo ? '<button class="dy-rb" style="margin-top:6px" data-a="prof-unphoto">사진 빼기</button>' : '') + '</div>');
     }
@@ -482,7 +557,7 @@ export function init() {
     }
     /* 오하아사(おは朝) 별자리 운세: GitHub이 매일 아침 diary/ohaasa.json 으로 받아 둠 (.github/workflows/ohaasa.yml) */
     function ohaW() {
-        const sign = signOf(db.profile.birth || BIRTH);
+        const sign = signOf(birthKey());
         const o = OHA.data;
         const head = 'おは朝 운세 <span style="font-family:var(--dy-body);font-size:11px">' + SIGNS[sign - 1].e + ' ' + SIGNS[sign - 1].ko + '</span>' +
             '<button class="dy-rb round hx" data-a="oha-birth" title="생일 바꾸기" style="height:18px;width:18px;min-width:18px">' + ic('pen') + '</button>';
@@ -516,6 +591,8 @@ export function init() {
         if (V.qdate && V.qdate.slice(0, 7) === mk) return V.qdate;
         return todayKey().slice(0, 7) === mk ? todayKey() : mk + '-01';
     }
+    const firstLine = b => String(b || '').split('\n').map(l => l.trim()).filter(l => l && !/^!\[\]\(/.test(l))[0] || '';
+    const diaryOf = k => ext.mj.diary.filter(x => x.date === k).sort((a, b) => (a.time || '') < (b.time || '') ? -1 : 1);
     function calendarHTML(mk) {
         const first = new Date(V.y, V.m, 1);
         const start = new Date(V.y, V.m, 1 - first.getDay());
@@ -534,14 +611,12 @@ export function init() {
             if (day.photo) inner += '<img class="ph" src="' + esc(src(day.photo)) + '" alt="" loading="lazy">';
             else if (day.sticker) inner += '<img class="st" src="' + esc(src(day.sticker)) + '" alt="" loading="lazy">';
             const ev = day.events || [];
+            // 글: 일정 + 그날 일기(김민정 Diary와 같은 기록) — 사진/스티커 없는 날은 칸에 글 그대로
+            const texts = ev.map(e => e.text).concat(diaryOf(k).map(x => x.title || firstLine(x.body)), day.memo ? [day.memo] : []).filter(Boolean);
             if (pic) {
-                const dots = ev.map(() => '<i></i>').slice(0, 4).join('') + (day.link ? '<i class="l"></i>' : '') + (day.memo ? '<i class="l"></i>' : '');
-                if (dots) inner += '<span class="dots">' + dots + '</span>';
-            } else if (ev.length || day.memo || day.link) {
-                inner += '<span class="ev">' + ev.slice(0, 2).map(e => '<span>' + esc(e.text) + '</span>').join('') +
-                    (ev.length > 2 ? '<span>+' + (ev.length - 2) + '</span>' : '') +
-                    (!ev.length && day.memo ? '<span>✎ ' + esc(day.memo) + '</span>' : '') +
-                    (!ev.length && !day.memo && day.link ? '<span>🔗 링크</span>' : '') + '</span>';
+                if (texts.length || day.link) inner += '<span class="dots">' + texts.slice(0, 4).map(() => '<i></i>').join('') + (day.link ? '<i class="l"></i>' : '') + '</span>';
+            } else if (texts.length) {
+                inner += '<span class="tx">' + texts.map(t => '<span>' + esc(t) + '</span>').join('') + '</span>';
             }
             const bg = day.color && d.getMonth() === V.m ? ' style="background-color:' + esc(day.color) + '"' : '';
             cells += '<div class="' + cls.join(' ') + '" data-a="day" data-k="' + k + '"' + bg + '>' + inner + '</div>';
@@ -558,6 +633,7 @@ export function init() {
     }
 
     /* ---------------- 붙인 스티커 ---------------- */
+    const stkOff = () => !!db.view.stk_off[isMobile() ? 'mobile' : 'pc'];
     // 휴대폰은 위젯 배치가 달라서 스티커 자리를 따로 기억 (mx/my, 없으면 넓은 화면 자리)
     const posOf = st => isMobile() && st.mx != null ? { x: st.mx, y: st.my } : { x: st.x, y: st.y };
     function bubbleHTML(st, b) {
@@ -633,8 +709,10 @@ export function init() {
         const y = sp ? clamp((body.scrollTop + body.clientHeight / 2) / sp.offsetHeight * 100, 5, 95) : 50;
         const s = { id: uid(), src: srcId, x: +(40 + Math.random() * 20).toFixed(2), y: +y.toFixed(2), w: 9, r: Math.round(Math.random() * 16 - 8), z: Math.max(0, ...db.stickers.map(x => x.z || 1)) + 1 };
         if (isMobile()) { s.mx = s.x; s.my = s.y; }
-        if (BUBBLE[srcId]) s.r = 0;                 // 말풍선은 글이 잘 보이게 똑바로
+        if (BUBBLE[srcId]) { s.r = 0; s.w = 5.5; }  // 말풍선은 글이 잘 보이게 똑바로, 조금 작게
         V.deco = true; V.sel = s.id;
+        const lay = isMobile() ? 'mobile' : 'pc';
+        if (stkOff()) save('스티커 켜기 (' + lay + ')', d => { d.view.stk_off[lay] = false; });
         if (BUBBLE[srcId]) {
             return openTextCard('', text => { s.text = text; save('말풍선 스티커 붙이기', d => { d.stickers.push(Object.assign({}, s)); }); });
         }
@@ -644,64 +722,98 @@ export function init() {
     /* ==========================================================================
        할 일 창
        ========================================================================== */
+    // Todo 카테고리와 같은 규칙: 오늘은 밀린 일(못 한 일)도 같이, 다른 날은 그날 계획/완료한 일
+    function todosFor(k) {
+        const t = todayKey();
+        return ext.todos.filter(x => !x.parent_id && (k === t
+            ? (!x.is_completed && (!x.target_date || x.target_date <= t)) || (x.is_completed && (x.completed_date || x.target_date) === t)
+            : x.is_completed ? (x.completed_date || x.target_date) === k : x.target_date === k))
+            .sort((a, b) => (a.is_completed - b.is_completed) || ((a.sort_order || 0) - (b.sort_order || 0)));
+    }
+    // 할 일 창: Todo 카테고리를 그대로 띄움 (매트릭스·주간·달력·통계·상세 편집 전부, 같은 data/todos.json)
     RENDER.todo = (body, tools) => {
         tools.innerHTML = '';
-        const k = V.tDate, list = db.todos[k] || [];
-        const done = list.filter(t => t.done).length;
-        const d = parseKey(k);
-        const sun = addDays(k, -d.getDay());
-        let week = '';
-        for (let i = 0; i < 7; i++) {
-            const kk = addDays(sun, i), n = (db.todos[kk] || []).length;
-            week += '<button data-a="t-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === todayKey() ? 'today' : '') + '">' + WEEK_KO[i] + '<small>' + parseKey(kk).getDate() + '</small><i>' + (n ? '♥' : '') + '</i></button>';
-        }
-        const pct = list.length ? Math.round(done / list.length * 100) : 0;
-        body.innerHTML =
-            '<div class="dy-todo">' +
-                '<div class="dy-dnav"><button class="dy-rb round" data-a="t-prev">' + ic('left') + '</button><div class="d">' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + WEEK_KO[d.getDay()] + '요일</div>' +
-                '<button class="dy-rb round" data-a="t-next">' + ic('right') + '</button><button class="dy-rb" data-a="t-today">오늘</button></div>' +
-                '<div class="dy-week">' + week + '</div>' +
-                '<div style="display:flex;align-items:center;gap:8px"><div class="dy-prog" style="flex:1"><i style="width:' + pct + '%"></i></div><span style="font-family:var(--dy-title);font-size:12px">' + done + ' / ' + list.length + '</span></div>' +
-                '<div class="dy-add" style="margin:0"><input class="dy-in" data-enter="t-add"><button class="dy-rb round" data-a="t-add" title="추가">' + ic('plus') + '</button></div>' +
-                (list.length ? '<div class="dy-list">' + list.map(t =>
-                    '<div class="dy-li' + (t.done ? ' done' : '') + '" data-id="' + esc(t.id) + '"><button class="dy-chk" data-a="t-chk">' + (t.done ? ic('check') : '') + '</button>' +
-                    '<span class="tx" data-a="t-edit">' + esc(t.text) + '</span>' + (t.done && t.at ? '<span class="tm">' + hhmm(t.at) + '</span>' : '') +
-                    '<button class="dy-del" data-a="t-up" title="위로">' + ic('up') + '</button><button class="dy-del" data-a="t-del" title="지우기">' + ic('x') + '</button></div>').join('') + '</div>'
-                    : '') +
-                (list.some(t => !t.done) && k < todayKey() ? '<button class="dy-rb" data-a="t-carry" style="align-self:flex-start">못 한 일 오늘로 옮기기</button>' : '') +
-                '<div class="mascot"><img src="' + CHAR['c-pink'] + '" alt=""></div>' +
-            '</div>';
+        if (body.querySelector('iframe.dy-todo-frame')) return;           // 한 번 띄우면 다시 그리지 않음 (입력 중인 것 유지)
+        body.innerHTML = '<iframe class="dy-todo-frame" src="category/todo/app.html?skin=diary" title="할 일"></iframe>';
     };
+    function postSkin() {
+        const f = document.querySelector('.dy-todo-frame'); if (!f || !f.contentWindow) return;
+        const v = themeVars();
+        f.contentWindow.postMessage({ type: 'skin-vars', vars: { '--back-color': v.bg, '--dropdown-bg': v.paper, '--input-bg': v.soft, '--divider-bg': v.thin, '--main-color': v.line } }, location.origin);
+    }
+    on(window, 'message', async e => {
+        if (e.origin !== location.origin || !e.data) return;
+        if (e.data.type === 'todo-ready') postSkin();
+        if (e.data.type === 'todos-changed') {           // Todo 창에서 저장하면 영수증도 새로
+            try { ext.todos = prepShared('todos', await repo.readJSON(SHARED.todos, [])); } catch (er) {}
+            render('done');
+        }
+    });
 
     /* ==========================================================================
-       오늘의 영수증 창
+       오늘의 영수증 창 — 할 일 · 김민정 루틴/식사/뷰티 · 마이홈 집안일 · 목표/버킷을 한 장에
        ========================================================================== */
+    function receiptLines(k) {
+        const L = [], mj = ext.mj;
+        ext.todos.filter(t => !t.parent_id && t.is_completed && (t.completed_date || t.target_date) === k)
+            .forEach(t => L.push({ x: t.content, p: hhmm(t.completed_at) }));
+        const ql = mj.quest_log[k] || {};
+        Object.keys(ql).forEach(id => { const q = mj.quests.find(x => x.id === id); if (q) L.push({ x: '[루틴] ' + q.title, p: String(ql[id] || '').slice(0, 5) }); });
+        Object.keys(ext.mh.log).forEach(id => { const r = (ext.mh.log[id] || {})[k]; if (r && r.done) L.push({ x: '[집] ' + (MYHOME_ACTS[id] || id) + (r.count > 1 ? ' ×' + r.count : ''), p: hhmm(r.at) }); });
+        mj.condition.filter(c => c.date === k).forEach(c => {
+            if (c.type === 'meal') L.push({ x: '[식사] ' + (MEAL_KO[c.slot] || '') + (c.memo ? ' · ' + c.memo : ''), p: c.time || '' });
+            if (c.type === 'medicine') L.push({ x: '[약] ' + (c.name || '') + (c.memo ? ' · ' + c.memo : ''), p: c.time || '' });
+        });
+        mj.beauty.filter(b => b.date === k).forEach(b => L.push({ x: '[뷰티] ' + (BEAUTY_KO[b.slot] || b.slot || '') + ((b.steps || []).length ? ' · ' + b.steps.join(', ') : ''), p: b.time || '' }));
+        Object.values(db.goals).forEach(arr => (arr || []).forEach(g => { if (g.done && g.at && g.at.slice(0, 10) === k) L.push({ x: '[목표] ' + g.text, p: hhmm(g.at) }); }));
+        db.bucket.forEach(b => { if (b.done && b.at && b.at.slice(0, 10) === k) L.push({ x: '[버킷] ' + b.text, p: hhmm(b.at) }); });
+        return L.sort((a, b) => (a.p || '99') < (b.p || '99') ? -1 : 1).map(l => Object.assign(l, { p: l.p || '✓' }));
+    }
     RENDER.done = (body, tools) => {
         tools.innerHTML = '';
         const k = V.rDate, d = parseKey(k);
-        const lines = [];
-        (db.todos[k] || []).filter(t => t.done).forEach(t => lines.push({ x: t.text, p: hhmm(t.at) || '✓' }));
-        Object.values(db.goals).forEach(arr => (arr || []).forEach(g => { if (g.done && g.at && g.at.slice(0, 10) === k) lines.push({ x: '[목표] ' + g.text, p: hhmm(g.at) }); }));
-        db.bucket.forEach(b => { if (b.done && b.at && b.at.slice(0, 10) === k) lines.push({ x: '[버킷] ' + b.text, p: hhmm(b.at) }); });
-        const day = db.days[k] || {};
-        (day.events || []).forEach(e => lines.push({ x: '[일정] ' + e.text, p: '·' }));
-        const left = (db.todos[k] || []).filter(t => !t.done).length;
+        const lines = receiptLines(k);
+        const left = todosFor(k).filter(t => !t.is_completed).length;
+        const entry = ext.mj.diary.filter(x => x.date === k).sort((a, b) => (a.time || '') < (b.time || '') ? -1 : 1)[0];
+        const rc = (db.receipt && db.receipt.img) || 'c-white';
+        const isPhoto = !CHAR[rc];
         body.innerHTML =
             '<div class="dy-rcpt-wrap">' +
                 '<div class="dy-dnav" style="width:min(100%,330px)"><button class="dy-rb round" data-a="r-prev">' + ic('left') + '</button><div class="d">' + k.replace(/-/g, '. ') + '</div>' +
                 '<button class="dy-rb round" data-a="r-next">' + ic('right') + '</button><button class="dy-rb" data-a="r-today">오늘</button></div>' +
                 '<div class="dy-rcpt">' +
-                    '<div class="top"><img src="' + CHAR['c-white'] + '" alt=""><b>TODAY\'S RECEIPT</b><small>' + d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' (' + WEEK_KO[d.getDay()] + ')</small></div>' +
+                    '<div class="top"><button class="rimg' + (isPhoto ? ' photo' : '') + '" data-a="r-img" title="그림 바꾸기"><img src="' + esc(src(rc)) + '" alt=""></button>' +
+                    '<b>TODAY\'S RECEIPT</b><small>' + d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' (' + WEEK_KO[d.getDay()] + ')</small></div>' +
                     '<hr><div class="ln"><span class="q">QTY</span><span class="x">ITEM</span><span class="p">TIME</span></div><hr>' +
-                    (lines.length ? lines.map(l => '<div class="ln"><span class="q">1</span><span class="x">' + esc(l.x) + '</span><span class="p">' + esc(l.p) + '</span></div>').join('')
-                        : '') +
+                    lines.map(l => '<div class="ln"><span class="q">1</span><span class="x">' + esc(l.x) + '</span><span class="p">' + esc(l.p) + '</span></div>').join('') +
                     '<hr><div class="tot"><span>TOTAL</span><span>' + lines.length + '</span></div>' +
                     (left ? '<div class="ln"><span class="x">남은 할 일</span><span class="p">' + left + '</span></div>' : '') +
-                    '<hr><div class="msg">' + esc(day.memo || (lines.length ? '오늘도 수고했어요 ♡' : '')) + '</div>' +
+                    '<hr><div class="msg">' + esc(entry ? (entry.title || (entry.body || '').split('\n')[0]) : (lines.length ? '오늘도 수고했어요 ♡' : '')) + '</div>' +
                     '<div class="bc"></div><div class="msg" style="margin:0">THANK YOU ♥</div>' +
                 '</div>' +
             '</div>';
     };
+    // 영수증 위 그림: 스티커 또는 내 사진으로
+    function openReceiptImgCard() {
+        const cur = (db.receipt && db.receipt.img) || 'c-white';
+        openCard(function draw() {
+            cardBox.innerHTML = '<h3><img src="' + CHAR['c-white'] + '" alt="">영수증 그림</h3>' +
+                '<div class="dy-pick">' + stickerOptions(cur, 'rimg', false) + '</div>' +
+                '<div class="foot"><button class="dy-rb" data-c="photo">' + ic('photo') + '<span class="lbl">사진으로</span></button><button class="dy-rb on" data-c="close">닫기</button></div>';
+            cardBox.onclick = async e => {
+                const b = e.target.closest('[data-rimg]'), c = e.target.closest('[data-c]');
+                const old = cur;
+                if (b) { const v = b.dataset.rimg; closeCard(); return save('영수증 그림', d => { d.receipt = { img: v }; }, dropFile(old)); }
+                if (!c) return;
+                if (c.dataset.c === 'close') return closeCard();
+                if (c.dataset.c === 'photo') {
+                    const up = await uploadImage('photos', 500, false); if (!up) return;
+                    closeCard();
+                    save('영수증 사진', d => { d.receipt = { img: up.path }; }, dropFile(old, up.files));
+                }
+            };
+        });
+    }
 
     /* ==========================================================================
        메모 창
@@ -779,9 +891,10 @@ export function init() {
             case 'month': V.m = +t.dataset.m; return render('diary');
             case 'oha-all': V.ohaAll = !V.ohaAll; return render('diary');
             case 'oha-birth': {
-                const v = prompt('생일 (예: 2002-04-11)', db.profile.birth || BIRTH); if (v == null) return;
+                const v = prompt('생일 (예: 2002-04-11) — 김민정 프로필과 같이 바뀌어요', birthKey()); if (v == null) return;
                 if (!/^\d{4}-\d{2}-\d{2}$/.test(v.trim())) return alert('2002-04-11 처럼 적어 주세요.');
-                return save('생일', d => { d.profile.birth = v.trim(); });
+                const [by, bm, bd] = v.trim().split('-').map(Number);
+                return save('생일', null, null, { mj: d => setMjProf(d, '생년월일', by + '년 ' + bm + '월 ' + bd + '일') });
             }
             case 'mood': {
                 const v = prompt('이달의 한 줄', db.mood[mk] || ''); if (v == null) return;
@@ -810,7 +923,7 @@ export function init() {
                 const old = db.profile.photo; if (!old || !confirm('프로필 사진을 뺄까요?')) return;
                 return save('프로필 사진 빼기', d => { delete d.profile.photo; }, dropFile(old));
             }
-            case 'prof-name': { const v = prompt('이름', db.profile.name || ''); if (v == null) return; return save('이름', d => { d.profile.name = v.trim(); }); }
+            case 'prof-name': { const v = prompt('이름 — 김민정 프로필과 같이 바뀌어요', mjProf('이름')); if (v == null) return; return save('이름', null, null, { mj: d => setMjProf(d, '이름', v.trim()) }); }
             case 'prof-note': { const v = prompt('한 줄 소개', db.profile.note || ''); if (v == null) return; return save('한 줄 소개', d => { d.profile.note = v.trim(); }); }
             /* D-day */
             case 'dday-prev': V.dd--; return render('diary');
@@ -839,7 +952,7 @@ export function init() {
             case 'mu-play': {
                 const tr = db.music[V.mu]; if (!tr) return act(win, 'mu-add', t);
                 V.playing = !V.playing;
-                if (V.playing && tr.url) window.open(tr.url, '_blank', 'noopener');
+                if (V.playing && safeUrl(tr.url)) window.open(safeUrl(tr.url), '_blank', 'noopener');
                 return render('diary');
             }
             case 'mu-add': {
@@ -891,49 +1004,11 @@ export function init() {
                 const id = V.sel; if (!id) return; V.sel = null;
                 return save('스티커 떼기', d => { d.stickers = d.stickers.filter(x => x.id !== id); });
             }
-            /* 할 일 */
-            case 't-prev': V.tDate = addDays(V.tDate, -1); return render('todo');
-            case 't-next': V.tDate = addDays(V.tDate, 1); return render('todo');
-            case 't-today': V.tDate = todayKey(); return render('todo');
-            case 't-go': V.tDate = t.dataset.k; return render('todo');
-            case 't-add': {
-                const inp = inputOf(t); const v = inp && inp.value.trim(); if (!v) { inp && inp.focus(); return; }
-                const k = V.tDate, it = { id: uid(), text: v, done: false }; inp.value = '';
-                save('할 일 추가', d => { (d.todos[k] = d.todos[k] || []).push(Object.assign({}, it)); });
-                setTimeout(() => { const n = document.querySelector('[data-enter="t-add"]'); n && n.focus(); }, 30);
-                return;
-            }
-            case 't-chk': {
-                const k = V.tDate, id = rowId(t), at = stamp();
-                return save('할 일 체크', d => { const it = (d.todos[k] || []).find(x => x.id === id); if (it) { it.done = !it.done; if (it.done) it.at = at; else delete it.at; } });
-            }
-            case 't-edit': {
-                const k = V.tDate, id = rowId(t), it = (db.todos[k] || []).find(x => x.id === id); if (!it) return;
-                const v = prompt('고치기', it.text); if (v == null || !v.trim()) return;
-                return save('할 일 고치기', d => { const x = (d.todos[k] || []).find(y => y.id === id); if (x) x.text = v.trim(); });
-            }
-            case 't-up': {
-                const k = V.tDate, id = rowId(t);
-                return save('할 일 순서', d => { const L = d.todos[k] || []; const i = L.findIndex(x => x.id === id); if (i > 0) L.splice(i - 1, 0, L.splice(i, 1)[0]); });
-            }
-            case 't-del': {
-                const k = V.tDate, id = rowId(t);
-                return save('할 일 지우기', d => { d.todos[k] = (d.todos[k] || []).filter(x => x.id !== id); if (!d.todos[k].length) delete d.todos[k]; });
-            }
-            case 't-carry': {
-                const k = V.tDate, tk = todayKey(), move = (db.todos[k] || []).filter(x => !x.done).map(x => x.id);
-                if (!move.length || !confirm('못 한 일 ' + move.length + '개를 오늘로 옮길까요?')) return;
-                V.tDate = tk;
-                return save('할 일 옮기기', d => {
-                    const from = d.todos[k] || [], to = d.todos[tk] = d.todos[tk] || [];
-                    move.forEach(id => { const i = from.findIndex(x => x.id === id); if (i > -1) to.push(from.splice(i, 1)[0]); });
-                    if (!from.length) delete d.todos[k];
-                });
-            }
             /* 영수증 */
             case 'r-prev': V.rDate = addDays(V.rDate, -1); return render('done');
             case 'r-next': V.rDate = addDays(V.rDate, 1); return render('done');
             case 'r-today': V.rDate = todayKey(); return render('done');
+            case 'r-img': return openReceiptImgCard();
             /* 메모 */
             case 'memo-save': { const ta = document.getElementById('dy-memo-ta'); if (ta) { clearTimeout(memoTimer); saveMemo(ta.value); } return; }
         }
@@ -942,13 +1017,17 @@ export function init() {
     /* ==========================================================================
        카드 (날짜 / 꾸미기 / 스티커 서랍)
        ========================================================================== */
-    function openCard(fn) { cardFn = fn; fn(); modal.classList.add('on'); }
-    function closeCard() { cardFn = null; modal.classList.remove('on'); cardBox.innerHTML = ''; }
-    document.getElementById('dy-x').onclick = closeCard;
+    let cardGuard = null;           // 저장 안 한 내용이 있으면 닫기 전에 물어봄
+    function openCard(fn) { cardGuard = null; cardFn = fn; fn(); modal.classList.add('on'); }
+    function closeCard(force) {
+        if (force !== true && cardGuard && cardGuard() && !confirm('저장하지 않고 닫을까요?')) return;
+        cardGuard = null; cardFn = null; modal.classList.remove('on'); cardBox.innerHTML = '';
+    }
+    document.getElementById('dy-x').onclick = () => closeCard();
     modal.onclick = e => { if (e.target === modal) closeCard(); };
 
     function stickerOptions(cur, act, withNone) {
-        const mine = db.myStickers.map(s => s.path);
+        const mine = myStickerPaths();
         return (withNone ? '<button data-' + act + '="" class="' + (!cur ? 'on' : '') + '" title="없음" style="font-size:11px;color:var(--dy-sub)">없음</button>' : '') +
             BASE_STICKERS.map(c => c.id).concat(mine).map(id => '<button data-' + act + '="' + esc(id) + '" class="' + (cur === id ? 'on' : '') + '"><img src="' + esc(src(id)) + '" alt=""></button>').join('');
     }
@@ -965,61 +1044,105 @@ export function init() {
         if (!Object.keys(day).length) delete d.days[k];
     }
 
+    // 날짜 카드: 고친 것은 [저장]을 눌러야 한 번에 저장 (일기는 김민정 Diary와 같은 기록)
     function openDayCard(k) {
         const d0 = parseKey(k);
-        openCard(function draw() {
-            const day = db.days[k] || {};
-            const ev = day.events || [];
+        const clone = o => JSON.parse(JSON.stringify(o));
+        const orig = clone(db.days[k] || {});
+        const dr = clone(orig);
+        const origE = diaryOf(k).map(x => ({ id: x.id, title: x.title || '', body: x.body || '' }));
+        let ents = clone(origE);
+        if (dr.memo) { ents.push({ id: 'dy' + uid(), title: '', body: dr.memo }); delete dr.memo; }   // 예전 메모는 일기로 옮김
+        let files = {};                   // 새로 올린 사진 (저장할 때 같이 커밋)
+        const sig = () => JSON.stringify([dr, ents]);
+        const first = JSON.stringify([orig, origE]);
+        cardGuard = () => sig() !== first;
+
+        function draw() {
+            const ev = dr.events || [];
             cardBox.innerHTML =
                 '<h3><img src="' + CHAR['c-blue'] + '" alt="">' + (d0.getMonth() + 1) + '월 ' + d0.getDate() + '일 ' + WEEK_KO[d0.getDay()] + '요일</h3>' +
-                '<div class="pv">' + (day.photo ? '<img src="' + esc(src(day.photo)) + '" alt="">' : day.sticker ? '<img src="' + esc(src(day.sticker)) + '" alt="" style="width:55%">' : '') + '</div>' +
-                '<div class="row" style="margin-top:8px"><button class="dy-rb" data-c="photo">사진 ' + (day.photo ? '바꾸기' : '넣기') + '</button>' + (day.photo ? '<button class="dy-rb" data-c="unphoto">사진 빼기</button>' : '') + '</div>' +
-                '<div class="lb">스티커</div><div class="dy-pick">' + stickerOptions(day.sticker || '', 'st', true) + '</div>' +
+                '<div class="pv">' + (dr.photo ? '<img src="' + esc(src(dr.photo)) + '" alt="">' : dr.sticker ? '<img src="' + esc(src(dr.sticker)) + '" alt="" style="width:55%">' : '') + '</div>' +
+                '<div class="row" style="margin-top:8px"><button class="dy-rb" data-c="photo">' + ic('photo') + '<span class="lbl">사진 ' + (dr.photo ? '바꾸기' : '넣기') + '</span></button>' +
+                    (dr.photo ? '<button class="dy-rb" data-c="unphoto">사진 빼기</button>' : '') + '</div>' +
+                '<div class="lb">스티커</div><div class="dy-pick">' + stickerOptions(dr.sticker || '', 'st', true) + '</div>' +
                 '<div class="lb">일정</div>' +
                 '<div class="dy-add"><input class="dy-in" id="dy-ev-in"><button class="dy-rb round" data-c="ev-add" title="추가">' + ic('plus') + '</button></div>' +
                 (ev.length ? '<div class="dy-list">' + ev.map(e => '<div class="dy-li" data-id="' + esc(e.id) + '"><span class="tx">' + esc(e.text) + '</span><button class="dy-del" data-c="ev-del">' + ic('x') + '</button></div>').join('') + '</div>' : '') +
-                '<div class="lb">메모</div><textarea class="dy-in" id="dy-day-memo">' + esc(day.memo || '') + '</textarea>' +
-                '<div class="lb">링크</div><div class="row"><input class="dy-in" id="dy-day-link" value="' + esc(day.link || '') + '">' +
-                (day.link ? '<a class="dy-rb" href="' + esc(day.link) + '" target="_blank" rel="noopener" style="text-decoration:none">열기</a>' : '') + '</div>' +
-                '<div class="lb">칸 색</div><div class="dy-seg">' + CELL_COLORS.map(([c, n]) => '<button class="dy-rb' + ((day.color || '') === c ? ' on' : '') + '" data-color="' + c + '">' +
-                    (c ? '<i style="display:inline-block;width:11px;height:11px;border-radius:50%;border:1px solid var(--dy-line);background:' + c + '"></i>' : '') + n + '</button>').join('') + '</div>' +
-                '<div class="foot"><button class="dy-rb" data-c="clear">이 날 비우기</button><button class="dy-rb on" data-c="close">닫기</button></div>';
+                '<div class="lb" style="display:flex;justify-content:space-between;align-items:center">일기 <button class="dy-rb round" data-c="ent-add" title="일기 더 쓰기">' + ic('plus') + '</button></div>' +
+                '<div class="dy-ents">' + ents.map((e, i) => '<div class="dy-ent" data-i="' + i + '">' +
+                    '<div class="row"><input class="dy-in" data-ent="title" value="' + esc(e.title) + '" placeholder="제목"><button class="dy-del" data-c="ent-del" title="이 일기 지우기">' + ic('x') + '</button></div>' +
+                    '<textarea class="dy-in" data-ent="body">' + esc(e.body) + '</textarea></div>').join('') + '</div>' +
+                '<div class="lb">링크</div><div class="row"><input class="dy-in" id="dy-day-link" value="' + esc(dr.link || '') + '">' +
+                (safeUrl(dr.link) ? '<a class="dy-rb" href="' + esc(safeUrl(dr.link)) + '" target="_blank" rel="noopener" style="text-decoration:none">열기</a>' : '') + '</div>' +
+                '<div class="lb">칸 색</div><div class="dy-seg">' + CELL_COLORS.map(([c, n]) => '<button class="dy-rb' + ((dr.color || '') === c ? ' on' : '') + '" data-color="' + c + '">' +
+                    (c ? '<i style="display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid var(--dy-line);background:' + c + '"></i>' : '') + '<span class="lbl">' + n + '</span></button>').join('') + '</div>' +
+                '<div class="foot"><button class="dy-rb" data-c="clear">이 날 비우기</button><span style="flex:1"></span>' +
+                    '<button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
 
-            const memo = cardBox.querySelector('#dy-day-memo'), link = cardBox.querySelector('#dy-day-link'), evIn = cardBox.querySelector('#dy-ev-in');
-            const saveText = () => {
-                const m = memo.value.trim(), l = link.value.trim(), cur = db.days[k] || {};
-                if (m === (cur.memo || '') && l === (cur.link || '')) return;
-                save(k + ' 메모', d => { d.days[k] = Object.assign({}, d.days[k], { memo: m, link: l }); cleanDay(d, k); });
-            };
-            memo.addEventListener('blur', saveText);
-            link.addEventListener('blur', saveText);
-            const addEv = () => {
-                const v = evIn.value.trim(); if (!v) return evIn.focus();
-                const it = { id: uid(), text: v }; evIn.value = '';
-                save(k + ' 일정', d => { const dd = d.days[k] = d.days[k] || {}; dd.events = (dd.events || []).concat([Object.assign({}, it)]); });
-                draw(); setTimeout(() => { const n = document.getElementById('dy-ev-in'); n && n.focus(); }, 20);
-            };
-            evIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addEv(); } });
+            // 입력은 바로 초안에만 (다시 그리지 않음)
+            cardBox.querySelector('#dy-day-link').oninput = e => { dr.link = e.target.value.trim(); };
+            cardBox.querySelectorAll('[data-ent]').forEach(el => {
+                el.oninput = () => { const i = +el.closest('.dy-ent').dataset.i; ents[i][el.dataset.ent] = el.value; };
+            });
+            const evIn = cardBox.querySelector('#dy-ev-in');
+            evIn.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addEv(); } };
+        }
+        function addEv() {
+            const inp = cardBox.querySelector('#dy-ev-in'), v = inp.value.trim(); if (!v) return inp.focus();
+            dr.events = (dr.events || []).concat([{ id: uid(), text: v }]);
+            draw(); setTimeout(() => { const n = document.getElementById('dy-ev-in'); n && n.focus(); }, 20);
+        }
+        function commit() {
+            const day = clone(dr);
+            if (day.link && !safeUrl(day.link)) return alert('링크는 http:// 또는 https:// 로 시작해야 해요.');
+            if (day.events && !day.events.length) delete day.events;
+            ['photo', 'sticker', 'link', 'color', 'memo'].forEach(f => { if (!day[f]) delete day[f]; });
+            const empty = !Object.keys(day).length;
+            // 사진: 새로 올린 것만 커밋, 바뀌거나 뺀 예전 사진은 정리
+            let fl = {};
+            if (dr.photo && files[dr.photo]) fl[dr.photo] = files[dr.photo];
+            if (orig.photo && orig.photo !== dr.photo) fl = dropFile(orig.photo, fl);
+            // 일기: 바뀐 것만 (다른 기기에서 그 사이 쓴 일기는 그대로 둠)
+            const at = stamp(), hm = at.slice(11, 16);
+            const keep = ents.filter(e => e.title.trim() || e.body.trim());
+            const keepIds = keep.map(e => e.id), origIds = origE.map(e => e.id);
+            const entsChanged = JSON.stringify(keep) !== JSON.stringify(origE);
+            const more = entsChanged ? { mj: d => {
+                d.diary = d.diary.filter(x => !(x.date === k && origIds.includes(x.id) && !keepIds.includes(x.id)));
+                keep.forEach(e => {
+                    const o = origE.find(x => x.id === e.id), ex = d.diary.find(x => x.id === e.id);
+                    if (ex) { if (!o || o.title !== e.title || o.body !== e.body) { ex.title = e.title.trim(); ex.body = e.body.replace(/\s+$/, ''); ex.at = at; if (!ex.title) delete ex.title; } }
+                    else { const n = { id: e.id, date: k, time: hm, at, title: e.title.trim(), body: e.body.replace(/\s+$/, '') }; if (!n.title) delete n.title; d.diary.push(n); }
+                });
+            } } : null;
+            const dayChanged = JSON.stringify(day) !== JSON.stringify(orig);
+            if (!dayChanged && !more) return closeCard(true);
+            save(k + ' 기록', dayChanged ? (d => { if (empty) delete d.days[k]; else d.days[k] = clone(day); }) : null, fl, more || undefined);
+            closeCard(true);
+        }
 
-            cardBox.onclick = async e => {
-                const st = e.target.closest('[data-st]'), col = e.target.closest('[data-color]'), c = e.target.closest('[data-c]');
-                if (st) { const v = st.dataset.st; save(k + ' 스티커', d => { d.days[k] = Object.assign({}, d.days[k], { sticker: v }); cleanDay(d, k); }); return draw(); }
-                if (col) { const v = col.dataset.color; save(k + ' 칸 색', d => { d.days[k] = Object.assign({}, d.days[k], { color: v }); cleanDay(d, k); }); return draw(); }
-                if (!c) return;
-                const a = c.dataset.c;
-                if (a === 'close') return closeCard();
-                if (a === 'photo') { await setDayPhoto(k); return cardFn && draw(); }
-                if (a === 'unphoto') { const old = (db.days[k] || {}).photo; save(k + ' 사진 빼기', d => { if (d.days[k]) delete d.days[k].photo; cleanDay(d, k); }, dropFile(old)); return draw(); }
-                if (a === 'ev-add') return addEv();
-                if (a === 'ev-del') { const id = rowId(c); save(k + ' 일정 지우기', d => { const dd = d.days[k]; if (dd && dd.events) dd.events = dd.events.filter(x => x.id !== id); cleanDay(d, k); }); return draw(); }
-                if (a === 'clear') {
-                    if (!db.days[k] || !confirm('이 날의 사진, 스티커, 일정, 메모를 모두 지울까요?')) return;
-                    const old = db.days[k].photo;
-                    save(k + ' 비우기', d => { delete d.days[k]; }, dropFile(old));
-                    return closeCard();
-                }
-            };
-        });
+        openCard(draw);
+        cardGuard = () => sig() !== first || Object.keys(files).length > 0;
+        cardBox.onclick = async e => {
+            const st = e.target.closest('[data-st]'), col = e.target.closest('[data-color]'), c = e.target.closest('[data-c]');
+            if (st) { dr.sticker = st.dataset.st; return draw(); }
+            if (col) { dr.color = col.dataset.color; return draw(); }
+            if (!c) return;
+            const a = c.dataset.c;
+            if (a === 'close') return closeCard();
+            if (a === 'save') return commit();
+            if (a === 'photo') { const up = await uploadImage('photos', 1000, false); if (!up) return; files = Object.assign(files, up.files); dr.photo = up.path; return cardFn && draw(); }
+            if (a === 'unphoto') { delete dr.photo; return draw(); }
+            if (a === 'ev-add') return addEv();
+            if (a === 'ev-del') { const id = rowId(c); dr.events = (dr.events || []).filter(x => x.id !== id); return draw(); }
+            if (a === 'ent-add') { ents.push({ id: 'dy' + uid(), title: '', body: '' }); draw(); const t = cardBox.querySelectorAll('[data-ent="body"]'); if (t.length) t[t.length - 1].focus(); return; }
+            if (a === 'ent-del') { const i = +c.closest('.dy-ent').dataset.i; if ((ents[i].title || ents[i].body) && !confirm('이 일기를 지울까요? (저장하면 김민정 Diary에서도 지워져요)')) return; ents.splice(i, 1); return draw(); }
+            if (a === 'clear') {
+                if (!confirm('이 날의 사진, 스티커, 일정, 일기, 링크, 칸 색을 모두 비울까요? (저장을 눌러야 지워져요)')) return;
+                Object.keys(dr).forEach(f => delete dr[f]); ents = []; return draw();
+            }
+        };
     }
 
     // 말풍선 글 쓰기 (줄 바꿈 가능)
@@ -1062,13 +1185,13 @@ export function init() {
                 }).join('') + '</div>' +
                 '<div class="lb">내 마음대로 색</div><div class="dy-colors">' + EDITABLE.map(([k, n]) => '<label>' + n + '<input type="color" data-var="' + k + '" value="' + v[k] + '"></label>').join('') + '</div>' +
                 '<div class="lb">바탕 무늬</div><div class="dy-seg">' + PATTERNS.map(([k, n]) => '<button class="dy-rb' + ((t.pattern || 'heart') === k ? ' on' : '') + '" data-pat="' + k + '">' + n + '</button>').join('') + '</div>' +
-                '<div class="lb" style="display:flex;justify-content:space-between;align-items:center">스티커 서랍 <span style="font-family:var(--dy-body);font-size:11px">누르면 다이어리에 붙어요</span></div>' +
+                '<div class="lb" style="display:flex;justify-content:space-between;align-items:center">스티커 서랍 <span style="font-family:var(--dy-body);font-size:10px">내 스티커는 김민정과 같이 써요</span></div>' +
                 '<div class="dy-pick' + (editMine ? ' edit' : '') + '">' +
                     BASE_STICKERS.map(c => '<button data-put="' + c.id + '"><img src="' + c.src + '" alt=""></button>').join('') +
-                    db.myStickers.map(s => '<button data-put="' + esc(s.path) + '"><img src="' + esc(src(s.path)) + '" alt=""><span class="rm" data-rm="' + esc(s.path) + '">' + ic('x') + '</span></button>').join('') +
+                    myStickerPaths().map(p => '<button data-put="' + esc(p) + '"><img src="' + esc(src(p)) + '" alt=""><span class="rm" data-rm="' + esc(p) + '">' + ic('x') + '</span></button>').join('') +
                     '<button class="addb" data-c="add-stk" title="내 스티커 넣기">' + ic('plus') + '</button>' +
                 '</div>' +
-                '<div class="row" style="margin-top:8px;flex-wrap:wrap">' + (db.myStickers.length ? '<button class="dy-rb' + (editMine ? ' on' : '') + '" data-c="edit-mine">' + (editMine ? '다 지웠어요' : '내 스티커 지우기') + '</button>' : '') +
+                '<div class="row" style="margin-top:8px;flex-wrap:wrap">' + (myStickerPaths().length ? '<button class="dy-rb' + (editMine ? ' on' : '') + '" data-c="edit-mine">' + (editMine ? '다 지웠어요' : '내 스티커 지우기') + '</button>' : '') +
                 (db.stickers.length ? '<button class="dy-rb" data-c="clear-stk">붙인 스티커 모두 떼기 (' + db.stickers.length + ')</button>' : '') + '</div>' +
                 '<div class="foot"><button class="dy-rb" data-c="reset">처음 색으로</button><button class="dy-rb on" data-c="close">닫기</button></div>';
 
@@ -1084,12 +1207,13 @@ export function init() {
                 if (rm) {
                     e.stopPropagation();
                     const p = rm.dataset.rm;
+                    if (placedInMj(p)) return alert('김민정 방에 붙어 있는 스티커예요. 김민정에서 먼저 떼 주세요.');
                     if (!confirm('이 스티커를 서랍에서 뺄까요? (다이어리에 붙인 것도 같이 떨어져요)')) return;
                     save('내 스티커 빼기', d => {
                         d.myStickers = d.myStickers.filter(s => s.path !== p);
                         d.stickers = d.stickers.filter(s => s.src !== p);
                         Object.keys(d.days).forEach(k => { if (d.days[k].sticker === p) { delete d.days[k].sticker; cleanDay(d, k); } });
-                    }, { [p]: null });
+                    }, { [p]: null }, { mj: d => { d.settings.sticker_lib = (d.settings.sticker_lib || []).filter(x => x !== p); } });
                     return draw();
                 }
                 const pr = e.target.closest('[data-preset]'), pat = e.target.closest('[data-pat]'), put = e.target.closest('[data-put]'), c = e.target.closest('[data-c]');
@@ -1104,7 +1228,7 @@ export function init() {
                 if (a === 'clear-stk') { if (!confirm('다이어리에 붙인 스티커를 모두 뗄까요?')) return; V.sel = null; save('스티커 모두 떼기', d => { d.stickers = []; }); return draw(); }
                 if (a === 'add-stk') {
                     const up = await uploadImage('stickers', 480, true); if (!up) return;
-                    save('내 스티커 넣기', d => { d.myStickers.push({ id: uid(), path: up.path }); }, up.files);
+                    save('내 스티커 넣기', null, up.files, { mj: d => { d.settings.sticker_lib = uniq((d.settings.sticker_lib || []).concat([up.path])); } });
                     return cardFn && draw();
                 }
             };
@@ -1147,7 +1271,7 @@ export function init() {
     }));
     on(window, 'keydown', e => {
         if (e.key === 'Escape' && modal.classList.contains('on')) return closeCard();
-        if ((e.key === 'Delete' || e.key === 'Backspace') && V.sel && V.deco && !modal.classList.contains('on') && !e.target.matches('input, textarea')) {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && V.sel && V.deco && !stkOff() && !modal.classList.contains('on') && !e.target.matches('input, textarea')) {
             e.preventDefault(); act('diary', 'stk-del');
         }
     });

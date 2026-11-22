@@ -100,8 +100,7 @@ const NAV = [
 const SPOT = { quest: [0.12, 0.12], room: [0.5, 0.1], profile: [0, 0], library: [0.3, 0.4], food: [1, 0], state: [0.62, 0.3], diary: [0, 1], daily: [1, 1], hp: [1, 0.08], lines: [0.5, 0.85] };
 const SOON = [['schedule', 'Schedule'], ['inventory', 'Inventory'], ['bag', 'Bag'], ['shop', 'Shop'], ['workout', 'Workout'], ['friends', 'Friends']];
 
-/* To Do: 기존 투두 카테고리(data/todos.json)를 그대로 씀 */
-const TODO_URL = 'https://ofhadtlrsccipnvdohqh.supabase.co';
+/* To Do 탭: Todo 카테고리 화면(category/todo/app.html)을 그대로 띄움 — 기능·저장(data/todos.json) 모두 같음 */
 
 /* ---------------- 작은 도우미 ---------------- */
 const pad = n => String(n).padStart(2, '0');
@@ -190,7 +189,6 @@ export function init() {
     const root = document.getElementById('mj-root');
     if (!root) return;
     const repo = window.ghdb.repo();
-    const todoDb = window.ghdb.createClient(TODO_URL);
     const $ = id => document.getElementById(id);
     const game = $('mj-game'), layer = $('mj-layer'), fileIn = $('mj-file');
     const isPC = () => window.matchMedia('(min-width: 744px)').matches;   // 아이패드 이상: 윈도우 팝업
@@ -199,7 +197,6 @@ export function init() {
     const wins = {};            // 열린 창: id → { el, st }
     let zTop = 1100, opened = 0, pending = 0;
     const localImg = {};         // 방금 올린 사진: 경로 → 미리보기 주소 (사이트 반영 전까지)
-    let todos = null, todoErr = '';
 
     /* ---------------- 이미지 주소 ---------------- */
     const imgSrc = p => localImg[p] || (/^https?:/.test(p) ? p : repo.url(p));
@@ -394,19 +391,43 @@ export function init() {
         const bar = game.querySelector('.mj-edit-bar'); if (bar) bar.remove();
         if (!keep || !ed) { applyRoom(); return; }
         const k = ed.k, before = S().stickers[k], other = S().stickers[k === 'pc' ? 'mobile' : 'pc'];
-        const files = {};
-        ed.stickers.forEach(t => { if (ed.files[t.img]) files[t.img] = ed.files[t.img]; });          // 새로 올린 스티커
-        before.forEach(t => {                                                                         // 지운 스티커 그림 파일도 지움
-            if (!ed.stickers.some(x => x.img === t.img) && !other.some(x => x.img === t.img)) files[t.img] = null;
+        const files = {}, added = [];
+        ed.stickers.forEach(t => { if (ed.files[t.img]) { files[t.img] = ed.files[t.img]; added.push(t.img); } });   // 새로 올린 스티커 → 모음에도
+        const lib = S().sticker_lib || [];
+        before.forEach(t => {                                                                         // 지운 스티커 그림 파일도 지움 (모음에 있는 건 남김)
+            if (!ed.stickers.some(x => x.img === t.img) && !other.some(x => x.img === t.img) && !lib.includes(t.img)) files[t.img] = null;
         });
         const round = o => { Object.keys(o).forEach(key => { if (typeof o[key] === 'number') o[key] = Math.round(o[key] * 10) / 10; }); return o; };
         save('배치 수정 (' + k + ')', d => {
             d.settings.layout[k] = round(Object.assign({}, ed.char));
             d.settings.stickers[k] = ed.stickers.map(t => round(Object.assign({}, t)));
+            if (added.length) d.settings.sticker_lib = [...new Set((d.settings.sticker_lib || []).concat(added))];
         }, files);
+    }
+    // 내 스티커 모음 = settings.sticker_lib (다이어리 스티커 서랍과 같이 씀) + 방에 붙인 것
+    function stickerLib() {
+        return [...new Set((S().sticker_lib || []).concat(S().stickers.pc.map(t => t.img), S().stickers.mobile.map(t => t.img)))].filter(Boolean);
     }
     function addSticker() {
         if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        const lib = stickerLib();
+        if (!lib.length) return uploadSticker();
+        const old = game.querySelector('.mj-ask'); if (old) old.remove();
+        const box = document.createElement('div');
+        box.className = 'mj-ask';
+        box.innerHTML = `<div class="mj-ask-card"><div class="mj-ask-t">Sticker</div><div class="mj-ask-s">My stickers (shared with Diary)</div>
+            <div class="mj-stk-lib">${lib.map(p => `<button data-p="${esc(p)}">${imgTag(p)}</button>`).join('')}</div>
+            <div class="mj-ask-list"><button class="main" data-up="1">Upload new</button><button class="ghost">Cancel</button></div></div>`;
+        game.appendChild(box);
+        box.addEventListener('click', e => {
+            const b = e.target.closest('[data-p]'), up = e.target.closest('[data-up]');
+            if (!b && !up && !e.target.closest('.ghost') && e.target.closest('.mj-ask-card')) return;
+            box.remove();
+            if (b) { if (!edit) startEdit(); edit.stickers.push({ id: uid('st'), img: b.dataset.p, x: 50, y: 40, w: 28 }); drawStickers(); }
+            if (up) uploadSticker();
+        });
+    }
+    function uploadSticker() {
         pickFile(async f => {
             try {
                 toast('uploading…');
@@ -711,7 +732,6 @@ export function init() {
         renderWin(id);
         if (isPC()) placeWin(id);
         focusWin(id);
-        if (id === 'diary') loadTodos();
     }
     function placeWin(id) {
         const el = wins[id].el;
@@ -765,6 +785,9 @@ export function init() {
     function renderWin(id) {
         const w = wins[id]; if (!w) return;
         const def = WIN[id], st = w.st;
+        // To Do 탭(Todo 화면)은 한 번 띄우면 다시 그리지 않음 — 다시 그리면 화면이 처음부터 다시 열림
+        if (id === 'diary' && st.tab === 'To Do' && w.lastTab === 'To Do' && w.el.querySelector('.mj-todo-frame')) return;
+        w.lastTab = st.tab;
         const body = w.el.querySelector('.mj-win-body');
         const top = body ? body.scrollTop : 0;
         const tabsEl = w.el.querySelector('.mj-tabs'), tabsLeft = tabsEl ? tabsEl.scrollLeft : 0;
@@ -873,7 +896,7 @@ export function init() {
                 case 'le-save': saveListEdit(id, el); break;
                 case 'le-del': b.closest('.mj-le-row').remove(); break;
                 case 'le-add': { const box = el.querySelector('.mj-le'); box.insertAdjacentHTML('beforeend', leRow(id, { key: '', label: '', tab: true })); box.lastElementChild.querySelector('input').focus(); break; }
-                case 'tab': st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; st.qedit = false; fresh(); if (v === 'To Do') loadTodos(); break;
+                case 'tab': st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; st.qedit = false; fresh(); break;
                 case 'sub': st.sub = v; st.form = null; fresh(); break;
                 case 'icon': pickFile(f => setIcon(id, f, WIN[id].title)); break;
                 case 'day': st.date = v === '0' ? todayKey() : shiftDay(st.date, Number(v)); fresh(); break;
@@ -942,9 +965,6 @@ export function init() {
                 // 옷 사진
                 case 'pick': pickFile(f => { st.form = Object.assign(st.form || {}, { file: f, preview: URL.createObjectURL(f) }); fresh(); }); break;
                 // 투두
-                case 'todo-toggle': toggleTodo(Number(b.dataset.id)); break;
-                case 'todo-open': if (window.loadPageByHash) window.loadPageByHash('todo'); break;
-                case 'todo-reload': todos = null; loadTodos(); break;
                 case 'soon': toast(v + ' · Coming soon ♡'); break;
                 // 배경 목록
                 case 'bg-img': pickFile(f => setBgImage(Number(b.dataset.i), b.dataset.w, f)); break;
@@ -1329,7 +1349,7 @@ export function init() {
         },
         /* 다이어리 + 투두 */
         diary(st) {
-            if (st.tab === 'To Do') return todoView();
+            if (st.tab === 'To Do') return '<iframe class="mj-todo-frame" src="category/todo/app.html?skin=minjung" title="To Do"></iframe>';
             if (st.form) {
                 const it = st.form;
                 return `
@@ -1549,48 +1569,6 @@ export function init() {
     }
 
     /* ---------------- 투두 (기존 Todo 카테고리와 같은 파일) ---------------- */
-    function todayTodos() {
-        const t = todayKey();
-        return (todos || []).filter(x => !x.parent_id && (
-            (!x.is_completed && (!x.target_date || x.target_date <= t)) ||
-            (x.is_completed && (x.completed_date || x.target_date) === t)
-        )).sort((a, b) => (a.is_completed - b.is_completed) || ((a.sort_order || 0) - (b.sort_order || 0)));
-    }
-    function todoView() {
-        if (todos === null) return `<p class="mj-empty">${todoErr ? esc(todoErr) + ' <button class="mj-link" data-act="todo-reload">retry</button>' : 'loading…'}</p>`;
-        const rows = todayTodos(), left = rows.filter(x => !x.is_completed).length;
-        return `
-            <div class="mj-sec">Today · ${left} left <button class="mj-link" data-act="todo-reload">↻</button></div>
-            <div class="mj-log">
-                ${rows.length ? rows.map(x => `
-                    <button class="mj-todo ${x.is_completed ? 'done' : ''}" data-act="todo-toggle" data-id="${x.id}">
-                        <span class="box">${x.is_completed ? '✓' : ''}</span>
-                        <span class="tx">${esc(x.content)}</span>
-                        ${x.target_date && x.target_date < todayKey() && !x.is_completed ? `<span class="late">${x.target_date.slice(5).replace('-', '.')}</span>` : ''}
-                    </button>`).join('') : empty('오늘 할 일이 없어요 ♡')}
-            </div>
-            <div class="mj-btns"><span class="sp"></span><button class="mj-btn ghost" data-act="todo-open">Open To Do ›</button></div>`;
-    }
-    async function loadTodos() {
-        if (todos !== null) return;
-        todoErr = '';
-        const { data, error } = await todoDb.from('todos').select('*').order('created_at', { ascending: true });
-        if (error) { todoErr = '투두를 불러오지 못했어요'; todos = null; }
-        else todos = data || [];
-        if (wins.diary) renderWin('diary');
-    }
-    async function toggleTodo(tid) {
-        const x = (todos || []).find(t => t.id === tid);
-        if (!x) return;
-        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
-        x.is_completed = !x.is_completed;
-        x.completed_date = x.is_completed ? todayKey() : null;
-        if (Array.isArray(x.subtasks)) x.subtasks.forEach(s => { s.is_completed = x.is_completed; });
-        renderWin('diary');
-        const { error } = await todoDb.from('todos').update({ is_completed: x.is_completed, completed_date: x.completed_date, subtasks: x.subtasks }).eq('id', tid);
-        if (error) { alert('투두를 저장하지 못했어요.\n' + (error.message || error)); todos = null; loadTodos(); }
-    }
-
     /* ---------------- 시작 ---------------- */
     bgSig = JSON.stringify(bgList());
     drawBgs();

@@ -408,16 +408,29 @@ textarea.dy-in { font-size: 11px; }
 .dy-card .lb { font-size: 11px; }
 .dy-swatch button, .dy-colors label { font-size: 11px; }
 
+/* 할 일 창 = Todo 화면 */
+.dy-win[data-win="todo"] .dy-body { overflow: hidden; }
+.dy-todo-frame { display: block; width: 100%; height: 100%; border: 0; background: var(--dy-bg); }
+/* 날짜 카드 일기 */
+.dy-ents { display: flex; flex-direction: column; gap: 8px; }
+.dy-ent { display: flex; flex-direction: column; gap: 5px; border: 1.3px dashed var(--dy-thin); border-radius: 12px; padding: 7px; }
+.dy-ent textarea.dy-in { min-height: 70px; }
+.dy-card .foot { align-items: center; }
+
+/* 달력 칸 글 (일정·일기): 꾸밈 없이 글만 */
+.dy-cell .tx { position: absolute; left: 4px; right: 3px; top: 17px; bottom: 2px; z-index: 2; display: flex; flex-direction: column; gap: 0; overflow: hidden; pointer-events: none; }
+.dy-cell .tx span { font-size: 9px; line-height: 1.35; color: var(--dy-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* ---------------- 말풍선 스티커 (글 길이만큼 늘어남, 글자 9px) ---------------- */
 .dy-stk.bub img { width: 100%; }
-.dy-stk .bb { position: absolute; top: 58%; min-width: 34px; min-height: 34px; max-width: 150px; width: max-content;
-    display: grid; place-items: center; padding: 7px 10px; background: #fff; border: 1.8px solid #2b2729; border-radius: 18px;
+.dy-stk .bb { position: absolute; top: 60%; min-width: 22px; min-height: 22px; max-width: 130px; width: max-content;
+    display: grid; place-items: center; padding: 3px 6px; background: #fff; border: 1.5px solid #2b2729; border-radius: 12px;
     pointer-events: none; }
 .dy-stk .bb.r { left: 62%; }
 .dy-stk .bb.l { right: 62%; }
 .dy-stk .bb.solo { position: relative; top: auto; left: auto; right: auto; }
-.dy-stk .bb span { font-family: var(--dy-body); font-size: 9px; line-height: 1.35; color: #3b3538; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; text-align: center; }
-.dy-stk .bb .ht { position: absolute; top: -7px; width: 14px; height: 14px; }
+.dy-stk .bb span { font-family: var(--dy-body); font-size: 9px; line-height: 1.3; color: #3b3538; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; text-align: center; }
+.dy-stk .bb .ht { position: absolute; top: -6px; width: 11px; height: 11px; }
 .dy-stk .bb.r .ht { right: -4px; }
 .dy-stk .bb.l .ht { left: -4px; }
 .dy-stk-tools { gap: 3px; padding: 3px; }
@@ -482,3 +495,9 @@ textarea.dy-in { font-size: 11px; }
     .dy-left .dy-w { grid-column: auto !important; }
     .dy-year b { display: none; }
 }
+
+/* 영수증 위 그림 (누르면 스티커/사진으로 바꾸기) */
+.dy-rcpt .top .rimg { display: block; margin: 0 auto 2px; padding: 0; border: 0; background: none; cursor: pointer; width: 64px; height: 64px; }
+.dy-rcpt .top .rimg img { width: 100%; height: 100%; object-fit: contain; }
+.dy-rcpt .top .rimg.photo img { object-fit: cover; border-radius: 50%; border: 1.5px solid #3b3538; }
+.dy-rcpt .top .rimg:hover { transform: translateY(-1px); }
