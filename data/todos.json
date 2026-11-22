@@ -866,21 +866,6 @@
   "completed_date": "2026-08-05"
  },
  {
-  "id": 83,
-  "created_at": "2026-08-07T20:16:39.631051+00:00",
-  "content": "워치 챙기기",
-  "category": "yellow",
-  "matrix_quadrant": 1,
-  "is_completed": false,
-  "target_date": "2026-08-08",
-  "parent_id": null,
-  "subtasks": [],
-  "repeat_type": null,
-  "repeat_days": null,
-  "sort_order": 1786133798847,
-  "completed_date": null
- },
- {
   "id": 87,
   "created_at": "2026-08-26T03:15:22.799824+00:00",
   "content": "복숭아토너",
