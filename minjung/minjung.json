@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T13:38:59+09:00",
+ "updated_at": "2026-11-22T13:52:39+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -691,19 +691,6 @@
    "type": "meal",
    "slot": "lunch",
    "memo": "연유바게트"
-  },
-  {
-   "id": "cd_dy_d65",
-   "date": "2026-06-20",
-   "time": "15:07",
-   "at": "2026-06-20T15:07:33+09:00",
-   "type": "meal",
-   "slot": "lunch",
-   "memo": "소불고기 맛있당",
-   "imgs": [
-    "data/images/daily/1781935652875_t80q48xy3x.jpg"
-   ],
-   "from": "daily-65"
   },
   {
    "id": "cd_dy_d94",
