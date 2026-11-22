@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-23T02:49:56+09:00",
+ "updated_at": "2026-11-23T04:23:56+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -977,15 +977,7 @@
    ]
   }
  ],
- "outfit": [
-  {
-   "id": "ofmwr3wc07hevt",
-   "date": "2026-11-22",
-   "time": "09:36",
-   "at": "2026-11-22T09:36:19+09:00",
-   "img": "minjung/images/outfit/1795307779080_6ufi2.jpg"
-  }
- ],
+ "outfit": [],
  "diary": [
   {
    "id": "dy_d49",
@@ -1222,6 +1214,48 @@
    {
     "key": "다쿠아프리",
     "label": "다쿠아프리"
+   }
+  ],
+  "mood_list": [
+   {
+    "key": "love",
+    "emoji": "🥰",
+    "label": "love"
+   },
+   {
+    "key": "good",
+    "emoji": "😊",
+    "label": "good"
+   },
+   {
+    "key": "okay",
+    "emoji": "🙂",
+    "label": "okay"
+   },
+   {
+    "key": "meh",
+    "emoji": "😐",
+    "label": "meh"
+   },
+   {
+    "key": "tired",
+    "emoji": "😪",
+    "label": "tired"
+   },
+   {
+    "key": "sad",
+    "emoji": "😢",
+    "label": "sad"
+   },
+   {
+    "key": "anxious",
+    "emoji": "😰",
+    "label": "anxious"
+   },
+   {
+    "key": "angry",
+    "emoji": "😠",
+    "label": "angry"
    }
   ]
  },
