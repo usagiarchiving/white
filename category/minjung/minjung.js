@@ -207,9 +207,15 @@ export function init() {
     const iconHtml = id => db.icons[id] ? imgTag(db.icons[id], 'mj-ico-img') : (ICON[id] || '');
 
     /* ---------------- 불러오기 / 저장 ---------------- */
+    // 첫 화면 꾸미기(배경 끔·배치 등)는 이 기기에도 기억해 둠 → 새로고침 때 기본 화면이 잠깐 튀어나오지 않게
+    const ROOM_KEY = 'mj_room_settings';
+    function rememberRoom() { try { localStorage.setItem(ROOM_KEY, JSON.stringify(db.settings)); } catch (e) {} }
+    function recallRoom() { try { const v = JSON.parse(localStorage.getItem(ROOM_KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } }
     async function load() {
         try { db = normalize(await repo.readJSON(DATA, {})); } catch (e) { console.error(e); }
+        rememberRoom();
         redraw();
+        root.classList.remove('mj-booting');
     }
     function setPending(n) {
         pending = n;
@@ -225,7 +231,7 @@ export function init() {
         const j = {}; j[DATA] = { mutate: cur => { cur = normalize(cur); fn(cur); cur.updated_at = stamp(); return cur; }, fallback: {} };
         return repo.commit('김민정: ' + message, files || {}, j).then(res => {
             setPending(pending - 1);
-            if (!pending && res && res[DATA]) { db = normalize(clone(res[DATA])); redraw(true); }
+            if (!pending && res && res[DATA]) { db = normalize(clone(res[DATA])); rememberRoom(); redraw(true); }
         }, e => {
             setPending(pending - 1);
             alert('저장하지 못했어요.\n' + (e.message || e));
@@ -1592,10 +1598,14 @@ export function init() {
     }
 
     /* ---------------- 시작 ---------------- */
+    const remembered = recallRoom();
+    // 기억한 설정이 있으면 바로 보여 주고, 없으면 불러올 때까지 방을 숨겨 둠 (index.html의 mj-booting)
+    if (remembered) { db = normalize(Object.assign(db, { settings: remembered })); }
     bgSig = JSON.stringify(bgList());
     drawBgs();
     drawMenus();
     drawScreen();
+    if (remembered) requestAnimationFrame(() => root.classList.remove('mj-booting'));
     load();
 
     // 화면 크기가 바뀌면 (모바일↔PC) 배경 그림과 배치를 다시 고름

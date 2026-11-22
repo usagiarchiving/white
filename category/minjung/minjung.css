@@ -518,3 +518,7 @@
 .mj-qe-row .days .mj-chip { padding: 3px 7px; }
 .mj-qe-row .rep:has([data-v=week].on) .every { display: none; }
 .mj-qe-row .rep:has([data-v=every].on) .days { display: none; }
+
+/* 처음 불러오는 동안은 방(배경·캐릭터)을 숨겼다가 부드럽게 */
+.mj-scene { transition: opacity .2s; }
+.mj-booting .mj-scene { opacity: 0; transition: none; }
