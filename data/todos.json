@@ -551,21 +551,6 @@
   "completed_date": "2026-07-16"
  },
  {
-  "id": 57,
-  "created_at": "2026-07-16T05:48:30.613984+00:00",
-  "content": "재직증명서",
-  "category": "gray",
-  "matrix_quadrant": 2,
-  "is_completed": false,
-  "target_date": "2026-07-16",
-  "parent_id": null,
-  "subtasks": [],
-  "repeat_type": null,
-  "repeat_days": null,
-  "sort_order": 1795344334613,
-  "completed_date": null
- },
- {
   "id": 58,
   "created_at": "2026-07-17T04:25:23.767466+00:00",
   "content": "상원쌤 초콜릿",
