@@ -17,6 +17,8 @@ const CHARS = [
 // 스티커 서랍 기본 스티커: 친구들 + 말풍선 든 친구들 + 하트 말풍선
 const BASE_STICKERS = CHARS.concat(['cb-blue', 'cb-pink', 'cb-white', 'cb-gray', 'b-pink', 'b-blue'].map(id => ({ id, src: ASSET + id + '.png' })));
 const CHAR = Object.fromEntries(BASE_STICKERS.map(c => [c.id, c.src]));
+// 바탕 아이콘 그림 (스티커가 아닌 것도: 리포트 폴더)
+const ICON_SRC = Object.assign({ folder: ASSET + 'folder.png?v=1' }, CHAR);
 // 말풍선 스티커: 붙이면 친구 그림 + 글이 들어가는 말풍선(글 길이만큼 늘어남)으로 그림
 const BUBBLE = {
     'cb-blue':  { char: 'c-blue',  side: 'r', heart: '#a9cfe6' },
@@ -30,8 +32,9 @@ const BUBBLE = {
 // 창 목록 (w/h는 넓은 화면 기준, x/y는 바탕 크기 비율)
 const APPS = {
     diary: { title: '다이어리',      icon: 'c-blue',  w: 1120, h: 780, center: true, y: 0.015 },
-    todo:  { title: '할 일',         icon: 'c-pink',  w: 440,  h: 680, x: 0.02, y: 0.03 },
+    todo:  { title: '할 일',         icon: 'c-pink',  w: 380,  h: 640, x: 0.02, y: 0.03 },
     done:  { title: '오늘의 영수증', icon: 'c-white', w: 400,  h: 640, x: 0.58, y: 0.05 },
+    report: { title: '리포트',      icon: 'folder',  w: 560,  h: 680, x: 0.30, y: 0.04 },
     memo:  { title: '메모',          icon: 'c-gray',  w: 440,  h: 480, x: 0.36, y: 0.16 }
 };
 
@@ -121,6 +124,7 @@ const ICO = {
     copy: '<rect x="5.5" y="5.5" width="7" height="7" rx="1.5"/><path d="M10.5 3.5h-6a1 1 0 0 0-1 1v6"/>', swap: '<path d="M3.5 6h8l-2-2M12.5 10h-8l2 2"/>',
     text: '<path d="M4 4.5h8M8 4.5v7.5"/>', lock: '<rect x="4" y="7" width="8" height="5.5" rx="1.3"/><path d="M5.8 7V5.5a2.2 2.2 0 0 1 4.4 0V7"/>',
     unlock: '<rect x="4" y="7" width="8" height="5.5" rx="1.3"/><path d="M5.8 7V5.5a2.2 2.2 0 0 1 4.3-.7"/>', heart: '<path d="M8 12.5S3 9.6 3 6.4A2.4 2.4 0 0 1 8 5a2.4 2.4 0 0 1 5 1.4c0 3.2-5 6.1-5 6.1z"/>',
+    grid: '<rect x="2.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="2.8" y="8.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="8.8" width="4.4" height="4.4" rx="1"/>',
     eye: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="2"/>',
     eyeoff: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><path d="M3 13L13 3"/>',
     photo: '<rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><circle cx="6" cy="7" r="1.2"/><path d="M13.5 10.5l-3-3-5 5"/>',
@@ -340,7 +344,6 @@ export function init() {
         const v = themeVars();
         Object.keys(v).forEach(k => wrap.style.setProperty('--dy-' + k, v[k]));
         wrap.dataset.pattern = (db.theme && db.theme.pattern) || 'heart';
-        if (typeof postSkin === 'function') postSkin();
     }
 
     /* ==========================================================================
@@ -374,7 +377,7 @@ export function init() {
         el.style.left = clamp(mem.x != null ? mem.x : d.center ? Math.round((dw - w) / 2) : Math.round(dw * d.x), 0, Math.max(0, dw - 80)) + 'px';
         el.style.top = clamp(mem.y != null ? mem.y : Math.round(dh * d.y), 0, Math.max(0, dh - 40)) + 'px';
         el.innerHTML =
-            '<div class="dy-tb"><img src="' + CHAR[d.icon] + '" alt=""><span class="t">' + esc(d.title) + '</span><span class="sp"></span>' +
+            '<div class="dy-tb"><img src="' + ICON_SRC[d.icon] + '" alt=""><span class="t">' + esc(d.title) + '</span><span class="sp"></span>' +
             '<span class="ttools"></span><button class="dy-rb round" data-close title="닫기">' + ic('x') + '</button></div>' +
             '<div class="dy-body"></div><div class="dy-rs" title="크기 바꾸기"></div>';
         desk.appendChild(el);
@@ -611,12 +614,13 @@ export function init() {
             if (day.photo) inner += '<img class="ph" src="' + esc(src(day.photo)) + '" alt="" loading="lazy">';
             else if (day.sticker) inner += '<img class="st" src="' + esc(src(day.sticker)) + '" alt="" loading="lazy">';
             const ev = day.events || [];
-            // 글: 일정 + 그날 일기(김민정 Diary와 같은 기록) — 사진/스티커 없는 날은 칸에 글 그대로
-            const texts = ev.map(e => e.text).concat(diaryOf(k).map(x => x.title || firstLine(x.body)), day.memo ? [day.memo] : []).filter(Boolean);
+            // 일정은 날짜 밑에 꾸밈 칩으로, 일기(김민정 Diary와 같은 기록)는 글만
+            const diaryTx = diaryOf(k).map(x => x.title || firstLine(x.body)).concat(day.memo ? [day.memo] : []).filter(Boolean);
             if (pic) {
-                if (texts.length || day.link) inner += '<span class="dots">' + texts.slice(0, 4).map(() => '<i></i>').join('') + (day.link ? '<i class="l"></i>' : '') + '</span>';
-            } else if (texts.length) {
-                inner += '<span class="tx">' + texts.map(t => '<span>' + esc(t) + '</span>').join('') + '</span>';
+                if (ev.length || diaryTx.length || day.link) inner += '<span class="dots">' + ev.concat(diaryTx).slice(0, 4).map(() => '<i></i>').join('') + (day.link ? '<i class="l"></i>' : '') + '</span>';
+            } else if (ev.length || diaryTx.length) {
+                inner += '<span class="cb">' + ev.map(e => '<span class="ev1">' + esc(e.text) + '</span>').join('') +
+                    diaryTx.map(t => '<span class="dtx">' + esc(t) + '</span>').join('') + '</span>';
             }
             const bg = day.color && d.getMonth() === V.m ? ' style="background-color:' + esc(day.color) + '"' : '';
             cells += '<div class="' + cls.join(' ') + '" data-a="day" data-k="' + k + '"' + bg + '>' + inner + '</div>';
@@ -730,25 +734,62 @@ export function init() {
             : x.is_completed ? (x.completed_date || x.target_date) === k : x.target_date === k))
             .sort((a, b) => (a.is_completed - b.is_completed) || ((a.sort_order || 0) - (b.sort_order || 0)));
     }
-    // 할 일 창: Todo 카테고리를 그대로 띄움 (매트릭스·주간·달력·통계·상세 편집 전부, 같은 data/todos.json)
+    // 할 일 창: 보기 편한 목록 (저장은 Todo 카테고리와 같은 data/todos.json)
+    // Todo 카테고리와 같은 규칙: 오늘은 밀린 일도 같이, 다른 날은 그날 계획/완료한 일
+    const findTodo = (list, id) => list.find(x => String(x.id) === String(id));
     RENDER.todo = (body, tools) => {
-        tools.innerHTML = '';
-        if (body.querySelector('iframe.dy-todo-frame')) return;           // 한 번 띄우면 다시 그리지 않음 (입력 중인 것 유지)
-        body.innerHTML = '<iframe class="dy-todo-frame" src="category/todo/app.html?skin=diary" title="할 일"></iframe>';
-    };
-    function postSkin() {
-        const f = document.querySelector('.dy-todo-frame'); if (!f || !f.contentWindow) return;
-        const v = themeVars();
-        f.contentWindow.postMessage({ type: 'skin-vars', vars: { '--back-color': v.bg, '--dropdown-bg': v.paper, '--input-bg': v.soft, '--divider-bg': v.thin, '--main-color': v.line } }, location.origin);
-    }
-    on(window, 'message', async e => {
-        if (e.origin !== location.origin || !e.data) return;
-        if (e.data.type === 'todo-ready') postSkin();
-        if (e.data.type === 'todos-changed') {           // Todo 창에서 저장하면 영수증도 새로
-            try { ext.todos = prepShared('todos', await repo.readJSON(SHARED.todos, [])); } catch (er) {}
-            render('done');
+        tools.innerHTML = '<button class="dy-rb" data-tool="quad" title="사분면 보기">' + ic('grid') + '<span class="lbl">사분면</span></button>';
+        tools.onclick = e => { if (e.target.closest('[data-tool="quad"]')) openQuadCard(); };
+        const k = V.tDate, list = todosFor(k), tk = todayKey();
+        const done = list.filter(t => t.is_completed).length;
+        const d = parseKey(k);
+        const sun = addDays(k, -d.getDay());
+        let week = '';
+        for (let i = 0; i < 7; i++) {
+            const kk = addDays(sun, i), n = ext.todos.some(x => !x.parent_id && (x.target_date === kk || (x.is_completed && x.completed_date === kk)));
+            week += '<button data-a="t-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[i] + '<small>' + parseKey(kk).getDate() + '</small><i>' + (n ? '♥' : '') + '</i></button>';
         }
-    });
+        const pct = list.length ? Math.round(done / list.length * 100) : 0;
+        body.innerHTML =
+            '<div class="dy-todo">' +
+                '<div class="dy-dnav"><button class="dy-rb round" data-a="t-prev">' + ic('left') + '</button><div class="d">' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + WEEK_KO[d.getDay()] + '요일</div>' +
+                '<button class="dy-rb round" data-a="t-next">' + ic('right') + '</button><button class="dy-rb" data-a="t-today">오늘</button></div>' +
+                '<div class="dy-week">' + week + '</div>' +
+                '<div style="display:flex;align-items:center;gap:8px"><div class="dy-prog" style="flex:1"><i style="width:' + pct + '%"></i></div><span style="font-family:var(--dy-title);font-size:11px">' + done + ' / ' + list.length + '</span></div>' +
+                '<div class="dy-add" style="margin:0"><input class="dy-in" data-enter="t-add"><button class="dy-rb round" data-a="t-add" title="추가">' + ic('plus') + '</button></div>' +
+                (list.length ? '<div class="dy-list">' + list.map(t => {
+                    const late = !t.is_completed && t.target_date && t.target_date < k;
+                    const sub = (t.subtasks || []).length ? '<span class="tm">' + t.subtasks.filter(x => x.is_completed).length + '/' + t.subtasks.length + '</span>' : '';
+                    return '<div class="dy-li' + (t.is_completed ? ' done' : '') + '" data-id="' + esc(t.id) + '">' +
+                        '<button class="dy-chk" data-a="t-chk">' + (t.is_completed ? ic('check') : '') + '</button>' +
+                        '<span class="tx" data-a="t-edit">' + esc(t.content) + '</span>' + sub +
+                        (late ? '<span class="tm late">' + t.target_date.slice(5).replace('-', '.') + '</span>' : '') +
+                        (t.is_completed && t.completed_at ? '<span class="tm">' + hhmm(t.completed_at) + '</span>' : '') +
+                        '<button class="dy-del" data-a="t-up" title="위로">' + ic('up') + '</button><button class="dy-del" data-a="t-del" title="지우기">' + ic('x') + '</button></div>';
+                }).join('') + '</div>' : '') +
+                (k < tk && list.some(t => !t.is_completed) ? '<button class="dy-rb" data-a="t-carry" style="align-self:flex-start">못 한 일 오늘로 옮기기</button>' : '') +
+                '<div class="mascot"><img src="' + CHAR['c-pink'] + '" alt=""></div>' +
+            '</div>';
+    };
+    // 사분면 (보기 전용): Todo 카테고리 매트릭스와 같은 기준 — 오늘까지의 못 한 일
+    const QUADS = [[1, '실행', '긴급 · 중요'], [2, '계획', '중요'], [3, '위임', '긴급'], [4, '제거', '']];
+    function openQuadCard() {
+        const tk = todayKey();
+        const open = ext.todos.filter(t => !t.parent_id && !t.is_completed && (!t.target_date || t.target_date <= tk))
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        const item = t => '<div class="q-i"><i style="background:' + (TODO_COLORS[t.category] || TODO_COLORS.gray) + '"></i><span>' + esc(t.content) + '</span>' +
+            (t.target_date && t.target_date < tk ? '<em>' + t.target_date.slice(5).replace('-', '.') + '</em>' : '') + '</div>';
+        const box = q => { const L = open.filter(t => Number(t.matrix_quadrant || 0) === q); return L.length ? L.map(item).join('') : ''; };
+        openCard(() => {
+            cardBox.innerHTML = '<h3><img src="' + CHAR['c-pink'] + '" alt="">사분면</h3>' +
+                '<div class="dy-quad"><span></span><b>긴급함</b><b>긴급하지 않음</b>' +
+                    '<b class="side">중요함</b><div class="q q1"><div class="qh">실행</div>' + box(1) + '</div><div class="q q2"><div class="qh">계획</div>' + box(2) + '</div>' +
+                    '<b class="side">중요하지 않음</b><div class="q q3"><div class="qh">위임</div>' + box(3) + '</div><div class="q q4"><div class="qh">제거</div>' + box(4) + '</div></div>' +
+                (box(0) ? '<div class="lb">미지정</div><div class="q q0">' + box(0) + '</div>' : '') +
+                '<div class="foot"><span></span><button class="dy-rb on" data-c="close">닫기</button></div>';
+            cardBox.onclick = e => { if (e.target.closest('[data-c="close"]')) closeCard(); };
+        });
+    }
 
     /* ==========================================================================
        오늘의 영수증 창 — 할 일 · 김민정 루틴/식사/뷰티 · 마이홈 집안일 · 목표/버킷을 한 장에
@@ -814,6 +855,80 @@ export function init() {
             };
         });
     }
+
+    /* ==========================================================================
+       리포트 (폴더) — 한 달 기록 분석: 할 일 · 생활 · 일기
+       ========================================================================== */
+    const MOOD_EMO = { love: '🥰', good: '😊', okay: '🙂', meh: '😐', tired: '😪', sad: '😢', anxious: '😰', angry: '😠' };
+    const R = { m: todayKey().slice(0, 7), tab: 'todo' };
+    function bars(rows, color) {     // rows: [[이름, 값, 최대(없으면 가장 큰 값)]]
+        if (!rows.length) return '';
+        const mx = Math.max(1, ...rows.map(x => x[2] || x[1]));
+        return '<div class="rp-bars">' + rows.map(([n, v, max]) => '<div class="rp-bar"><span class="n">' + esc(n) + '</span><span class="t"><i style="width:' + Math.round(v / (max || mx) * 100) + '%;' + (color ? 'background:' + color : '') + '"></i></span><span class="v">' + v + (max ? '/' + max : '') + '</span></div>').join('') + '</div>';
+    }
+    function heat(mk, countOf, color) {     // 한 달 달력 칸 진하기
+        const [y, m] = mk.split('-').map(Number), first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
+        let h = '<div class="rp-heat">' + WEEK_KO.map(w => '<b>' + w + '</b>').join('') + '<span></span>'.repeat(first);
+        for (let i = 1; i <= days; i++) {
+            const n = countOf(mk + '-' + pad(i));
+            h += '<span class="' + (n ? 'on' : '') + '" style="' + (n ? 'background:' + (color || 'var(--dy-accent)') + ';opacity:' + Math.max(.35, Math.min(1, n / 3)) : '') + '">' + (n || i) + '</span>';
+        }
+        return h + '</div>';
+    }
+    RENDER.report = (body, tools) => {
+        tools.innerHTML = '';
+        const mk = R.m, [y, m] = mk.split('-').map(Number);
+        const inM = k => k && k.slice(0, 7) === mk;
+        const elapsed = mk === todayKey().slice(0, 7) ? parseKey(todayKey()).getDate() : new Date(y, m, 0).getDate();
+        let html = '';
+        if (R.tab === 'todo') {
+            const done = ext.todos.filter(t => !t.parent_id && t.is_completed && inM(t.completed_date || t.target_date));
+            const byDay = {}; done.forEach(t => { const k = t.completed_date || t.target_date; byDay[k] = (byDay[k] || 0) + 1; });
+            const best = Object.keys(byDay).sort((a, b) => byDay[b] - byDay[a])[0];
+            const planned = ext.todos.filter(t => !t.parent_id && inM(t.target_date));
+            html += '<div class="rp-sum"><div><b>' + done.length + '</b><small>끝낸 일</small></div><div><b>' + Object.keys(byDay).length + '일</b><small>실천한 날</small></div>' +
+                '<div><b>' + (planned.length ? Math.round(planned.filter(t => t.is_completed).length / planned.length * 100) : 0) + '%</b><small>계획 달성</small></div>' +
+                '<div><b>' + (best ? parseKey(best).getDate() + '일' : '-') + '</b><small>제일 많이 한 날</small></div></div>';
+            html += '<div class="rp-h">하루하루</div>' + heat(mk, k => byDay[k] || 0);
+            const cats = Object.keys(TODO_COLORS).map(c => [c, done.filter(t => (t.category || 'gray') === c).length]).filter(x => x[1]);
+            if (cats.length) html += '<div class="rp-h">색깔별</div><div class="rp-cats">' + cats.map(([c, n]) => '<span><i style="background:' + TODO_COLORS[c] + '"></i>' + n + '</span>').join('') + '</div>';
+            // 최근 8주 끝낸 일
+            const wk = []; let end = todayKey();
+            for (let i = 0; i < 8; i++) { const st = addDays(end, -6); wk.unshift([st.slice(5).replace('-', '.'), ext.todos.filter(t => t.is_completed && !t.parent_id && (t.completed_date || '') >= st && (t.completed_date || '') <= end).length]); end = addDays(st, -1); }
+            const wmx = Math.max(1, ...wk.map(x => x[1]));
+            html += '<div class="rp-h">최근 8주</div><div class="rp-chart">' + wk.map(([n, v]) => '<div><i style="height:' + Math.round(v / wmx * 100) + '%"></i><b>' + v + '</b><small>' + n + '</small></div>').join('') + '</div>';
+        }
+        if (R.tab === 'life') {
+            const mj = ext.mj;
+            const q = mj.quests.map(x => [x.title, Object.keys(mj.quest_log).filter(k => inM(k) && mj.quest_log[k][x.id]).length, x.kind === 'daily' ? elapsed : 0]);
+            if (q.length) html += '<div class="rp-h">루틴</div>' + bars(q);
+            const mh = Object.keys(ext.mh.log).map(id => [MYHOME_ACTS[id] || id, Object.keys(ext.mh.log[id] || {}).filter(k => inM(k) && ext.mh.log[id][k].done).length]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
+            if (mh.length) html += '<div class="rp-h">집안일</div>' + bars(mh, '#a9cfe6');
+            const meals = Object.keys(MEAL_KO).map(sl => [MEAL_KO[sl], mj.condition.filter(c => c.type === 'meal' && c.slot === sl && inM(c.date)).length]).filter(x => x[1]);
+            if (meals.length) html += '<div class="rp-h">식사</div>' + bars(meals, '#f6c4a0');
+            const bt = Object.keys(BEAUTY_KO).map(sl => [BEAUTY_KO[sl], mj.beauty.filter(b => b.slot === sl && inM(b.date)).length]).filter(x => x[1]);
+            if (bt.length) html += '<div class="rp-h">뷰티</div>' + bars(bt, '#cfe9d8');
+            const moods = mj.condition.filter(c => c.type === 'mood' && inM(c.date));
+            if (moods.length) {
+                const cnt = {}; moods.forEach(c => { cnt[c.mood] = (cnt[c.mood] || 0) + 1; });
+                html += '<div class="rp-h">기분</div><div class="rp-cats">' + Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map(k => '<span>' + (MOOD_EMO[k] || k) + ' ' + cnt[k] + '</span>').join('') + '</div>';
+            }
+            const meds = mj.condition.filter(c => c.type === 'medicine' && inM(c.date)).length;
+            if (meds) html += '<div class="rp-h">약</div><div class="rp-cats"><span>💊 ' + meds + '번</span></div>';
+        }
+        if (R.tab === 'diary') {
+            const ents = ext.mj.diary.filter(x => inM(x.date)).sort((a, b) => a.date < b.date ? -1 : 1);
+            const days = uniq(ents.map(x => x.date));
+            html += '<div class="rp-sum"><div><b>' + ents.length + '</b><small>쓴 일기</small></div><div><b>' + days.length + '일</b><small>쓴 날</small></div>' +
+                '<div><b>' + (db.days ? Object.keys(db.days).filter(k => inM(k) && db.days[k].photo).length : 0) + '</b><small>사진 붙인 날</small></div></div>';
+            html += '<div class="rp-h">쓴 날</div>' + heat(mk, k => ents.filter(x => x.date === k).length, '#b7d3ea');
+            if (ents.length) html += '<div class="rp-h">제목</div><div class="rp-list">' + ents.map(x => '<div><span>' + x.date.slice(8) + '일</span>' + esc(x.title || firstLine(x.body)) + '</div>').join('') + '</div>';
+        }
+        body.innerHTML = '<div class="dy-report">' +
+            '<div class="dy-dnav"><button class="dy-rb round" data-a="rp-prev">' + ic('left') + '</button><div class="d">' + y + '년 ' + m + '월</div><button class="dy-rb round" data-a="rp-next">' + ic('right') + '</button></div>' +
+            '<div class="rp-tabs">' + [['todo', '할 일'], ['life', '생활'], ['diary', '일기']].map(([k, n]) => '<button class="dy-rb' + (R.tab === k ? ' on' : '') + '" data-a="rp-tab" data-k="' + k + '">' + n + '</button>').join('') + '</div>' +
+            html + '</div>';
+    };
 
     /* ==========================================================================
        메모 창
@@ -923,7 +1038,7 @@ export function init() {
                 const old = db.profile.photo; if (!old || !confirm('프로필 사진을 뺄까요?')) return;
                 return save('프로필 사진 빼기', d => { delete d.profile.photo; }, dropFile(old));
             }
-            case 'prof-name': { const v = prompt('이름 — 김민정 프로필과 같이 바뀌어요', mjProf('이름')); if (v == null) return; return save('이름', null, null, { mj: d => setMjProf(d, '이름', v.trim()) }); }
+            case 'prof-name': return openProfileCard();
             case 'prof-note': { const v = prompt('한 줄 소개', db.profile.note || ''); if (v == null) return; return save('한 줄 소개', d => { d.profile.note = v.trim(); }); }
             /* D-day */
             case 'dday-prev': V.dd--; return render('diary');
@@ -1005,10 +1120,58 @@ export function init() {
                 return save('스티커 떼기', d => { d.stickers = d.stickers.filter(x => x.id !== id); });
             }
             /* 영수증 */
+            /* 할 일 (data/todos.json — Todo 카테고리와 같은 파일) */
+            case 't-prev': V.tDate = addDays(V.tDate, -1); return render('todo');
+            case 't-next': V.tDate = addDays(V.tDate, 1); return render('todo');
+            case 't-today': V.tDate = todayKey(); return render('todo');
+            case 't-go': V.tDate = t.dataset.k; return render('todo');
+            case 't-add': {
+                const inp = inputOf(t); const v = inp && inp.value.trim(); if (!v) { inp && inp.focus(); return; }
+                const now = Date.now();
+                const row = { id: now, created_at: new Date().toISOString(), content: v, category: 'gray', matrix_quadrant: 0, is_completed: false,
+                    target_date: V.tDate, parent_id: null, subtasks: [], repeat_type: null, repeat_days: null, sort_order: now, completed_date: null };
+                inp.value = '';
+                save('할 일 추가', null, null, { todos: L => { L.push(JSON.parse(JSON.stringify(row))); } });
+                setTimeout(() => { const n = document.querySelector('[data-enter="t-add"]'); n && n.focus(); }, 30);
+                return;
+            }
+            case 't-chk': {
+                const id = rowId(t), x0 = findTodo(ext.todos, id); if (!x0) return;
+                const on = !x0.is_completed, day = V.tDate, at = stamp();
+                return save('할 일 ' + (on ? '완료' : '취소'), null, null, { todos: L => {
+                    const x = findTodo(L, id); if (!x) return;
+                    x.is_completed = on; x.completed_date = on ? day : null;
+                    if (on) x.completed_at = at; else delete x.completed_at;
+                    if (Array.isArray(x.subtasks)) x.subtasks.forEach(st => { st.is_completed = on; });
+                } });
+            }
+            case 't-edit': {
+                const id = rowId(t), x0 = findTodo(ext.todos, id); if (!x0) return;
+                const v = prompt('고치기', x0.content); if (v == null || !v.trim()) return;
+                return save('할 일 고치기', null, null, { todos: L => { const x = findTodo(L, id); if (x) x.content = v.trim(); } });
+            }
+            case 't-up': {
+                const id = rowId(t), list = todosFor(V.tDate), i = list.findIndex(x => String(x.id) === String(id));
+                if (i < 1) return;
+                const a1 = list[i].id, a2 = list[i - 1].id, s1 = list[i].sort_order || 0, s2 = list[i - 1].sort_order || 0;
+                return save('할 일 순서', null, null, { todos: L => { const x = findTodo(L, a1), y = findTodo(L, a2); if (x && y) { x.sort_order = s2; y.sort_order = s1 === s2 ? s2 + 1 : s1; } } });
+            }
+            case 't-del': {
+                const id = rowId(t), x0 = findTodo(ext.todos, id); if (!x0 || !confirm('"' + x0.content + '" 을(를) 지울까요?')) return;
+                return save('할 일 지우기', null, null, { todos: L => { const i = L.findIndex(x => String(x.id) === String(id)); if (i > -1) L.splice(i, 1); } });
+            }
+            case 't-carry': {
+                const k = V.tDate, tk = todayKey(), move = todosFor(k).filter(x => !x.is_completed && x.target_date === k).map(x => x.id);
+                if (!move.length || !confirm('못 한 일 ' + move.length + '개를 오늘로 옮길까요?')) return;
+                V.tDate = tk;
+                return save('할 일 오늘로 옮기기', null, null, { todos: L => { move.forEach(id => { const x = findTodo(L, id); if (x) x.target_date = tk; }); } });
+            }
             case 'r-prev': V.rDate = addDays(V.rDate, -1); return render('done');
             case 'r-next': V.rDate = addDays(V.rDate, 1); return render('done');
             case 'r-today': V.rDate = todayKey(); return render('done');
             case 'r-img': return openReceiptImgCard();
+            case 'rp-prev': case 'rp-next': { const [ry, rm] = R.m.split('-').map(Number), dd = new Date(ry, rm - 1 + (a === 'rp-next' ? 1 : -1), 1); R.m = dd.getFullYear() + '-' + pad(dd.getMonth() + 1); return render('report'); }
+            case 'rp-tab': R.tab = t.dataset.k; return render('report');
             /* 메모 */
             case 'memo-save': { const ta = document.getElementById('dy-memo-ta'); if (ta) { clearTimeout(memoTimer); saveMemo(ta.value); } return; }
         }
@@ -1145,6 +1308,50 @@ export function init() {
         };
     }
 
+    // 프로필: 김민정 Profile과 같은 기록 (항목 이름 · 내용 목록, 편집·추가·순서·삭제)
+    function openProfileCard() {
+        let editing = false;
+        openCard(function draw() {
+            const rows = ext.mj.profile || [];
+            if (!editing) {
+                cardBox.innerHTML = '<h3><img src="' + CHAR['c-white'] + '" alt="">프로필</h3>' +
+                    '<div class="dy-pf">' + rows.map(x => '<div class="it"><span class="k">' + esc(x.label) + '</span><span class="v">' + (x.value ? esc(x.value).replace(/\n/g, '<br>') : '<i>—</i>') + '</span></div>').join('') + '</div>' +
+                    '<div class="foot"><span style="font-size:10px;color:var(--dy-sub)">김민정 프로필과 같이 바뀌어요</span><span style="flex:1"></span>' +
+                    '<button class="dy-rb" data-c="edit">' + ic('pen') + '<span class="lbl">편집</span></button><button class="dy-rb on" data-c="close">닫기</button></div>';
+            } else {
+                cardBox.innerHTML = '<h3><img src="' + CHAR['c-white'] + '" alt="">프로필 편집</h3>' +
+                    '<div class="dy-pf-edit">' + rows.map(x => pfRow(x)).join('') + '</div>' +
+                    '<button class="dy-rb" data-c="add" style="margin-top:8px">' + ic('plus') + '<span class="lbl">항목 추가</span></button>' +
+                    '<div class="foot"><span style="flex:1"></span><button class="dy-rb" data-c="cancel">취소</button><button class="dy-rb on" data-c="save">저장</button></div>';
+            }
+        });
+        function pfRow(x) {
+            return '<div class="dy-pf-row" data-id="' + esc(x.id || ('pf' + uid())) + '"><input class="dy-in" data-k="label" value="' + esc(x.label || '') + '">' +
+                '<textarea class="dy-in" data-k="value" rows="1">' + esc(x.value || '') + '</textarea>' +
+                '<span class="tools"><button class="dy-del" data-c="up" title="위로">' + ic('up') + '</button><button class="dy-del" data-c="down" title="아래로" style="transform:rotate(180deg)">' + ic('up') + '</button>' +
+                '<button class="dy-del" data-c="del" title="지우기">' + ic('x') + '</button></span></div>';
+        }
+        const draw = () => cardFn && cardFn();
+        cardBox.onclick = e => {
+            const c = e.target.closest('[data-c]'); if (!c) return;
+            const a = c.dataset.c, row = c.closest('.dy-pf-row');
+            if (a === 'close') return closeCard();
+            if (a === 'edit') { editing = true; cardGuard = () => true; return draw(); }
+            if (a === 'cancel') { editing = false; cardGuard = null; return draw(); }
+            if (a === 'add') { cardBox.querySelector('.dy-pf-edit').insertAdjacentHTML('beforeend', pfRow({})); return; }
+            if (a === 'del') return row.remove();
+            if (a === 'up' && row.previousElementSibling) return row.parentElement.insertBefore(row, row.previousElementSibling);
+            if (a === 'down' && row.nextElementSibling) return row.parentElement.insertBefore(row.nextElementSibling, row);
+            if (a === 'save') {
+                const list = [...cardBox.querySelectorAll('.dy-pf-row')].map(el => ({ id: el.dataset.id, label: el.querySelector('[data-k=label]').value.trim(), value: el.querySelector('[data-k=value]').value.trim() }))
+                    .filter(x => x.label || x.value);
+                editing = false; cardGuard = null;
+                save('프로필 수정', null, null, { mj: d => { d.profile = list.map(x => Object.assign({}, x)); } });
+                return draw();
+            }
+        };
+    }
+
     // 말풍선 글 쓰기 (줄 바꿈 가능)
     function openTextCard(cur, onSave) {
         openCard(function draw() {
@@ -1239,16 +1446,16 @@ export function init() {
        바탕화면 / 작업표시줄 / 시작 메뉴
        ========================================================================== */
     const ICONS = [
-        ['diary', '다이어리'], ['todo', '할 일'], ['done', '영수증'], ['memo', '메모'], ['deco', '꾸미기']
+        ['diary', '다이어리'], ['todo', '할 일'], ['done', '영수증'], ['memo', '메모'], ['deco', '꾸미기'], ['report', '리포트']
     ];
     const iconOf = id => id === 'deco' ? 'c-puppy' : APPS[id].icon;
     document.getElementById('dy-icons').innerHTML = ICONS.map(([id, n]) =>
-        '<button class="dy-icon" data-open="' + id + '" title="' + n + ' 열기"><img src="' + CHAR[iconOf(id)] + '" alt=""><span>' + n + '</span></button>').join('');
+        '<button class="dy-icon" data-open="' + id + '" title="' + n + ' 열기"><img src="' + ICON_SRC[iconOf(id)] + '" alt=""><span>' + n + '</span></button>').join('');
     document.getElementById('dy-apps').innerHTML = ICONS.map(([id, n]) =>
-        '<button class="dy-app" data-open="' + id + '" title="' + n + '"><img src="' + CHAR[iconOf(id)] + '" alt=""></button>').join('');
+        '<button class="dy-app" data-open="' + id + '" title="' + n + '"><img src="' + ICON_SRC[iconOf(id)] + '" alt=""></button>').join('');
     const menu = document.getElementById('dy-menu'), startBtn = document.getElementById('dy-start');
     menu.innerHTML = '<div class="head"><img src="' + CHAR['c-blue'] + '" alt="">diary ♡</div>' +
-        ICONS.map(([id, n]) => '<button data-open="' + id + '"><img src="' + CHAR[iconOf(id)] + '" alt="">' + n + '</button>').join('') +
+        ICONS.map(([id, n]) => '<button data-open="' + id + '"><img src="' + ICON_SRC[iconOf(id)] + '" alt="">' + n + '</button>').join('') +
         '<button data-m="sticker"><span class="ic">' + ic('heart') + '</span>스티커 붙이기</button>' +
         '<button data-m="reload"><span class="ic">' + ic('reload') + '</span>새로 불러오기</button>';
     const closeMenu = () => { menu.classList.remove('open'); startBtn.classList.remove('open'); };
