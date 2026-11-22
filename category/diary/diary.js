@@ -1216,13 +1216,15 @@ export function init() {
        타임테이블 — 하루를 새벽 4시 ~ 다음날 새벽 4시, 한 시간 한 줄 · 10분 칸 (종이 다이어리처럼)
        일정: 아이폰 캘린더 동기화(diary/calendar.json, GitHub이 한 시간마다) + 여기서 직접 넣은 것(db.tt)
        ========================================================================== */
-    const TT_START = 4;                                   // 하루 시작: 새벽 4시
-    const TT_COLORS = ['#F6B3C4', '#A9CFE6', '#F6C4A0', '#C9B6E8', '#B7DC8A', '#F0D98A', '#9FD6C8', '#E8B4D8'];
+    const TT_START = 4;
+    const hexA = (h, a) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); if (!m) return h; const n = parseInt(m[1], 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; };                                   // 하루 시작: 새벽 4시
+    const TT_COLORS = ['#F6B3C4', '#A9CFE6', '#F6C4A0', '#C9B6E8', '#F3DD8C', '#E8B4D8', '#BCD3F2', '#F2C1A8'];   // 초록 없이 파스텔
     // 캘린더 이름이 할 일 분류(일상·공부·운동·작업·취미…)와 같으면 그 색, 아니면 이름마다 정해진 파스텔
     const CAL_COLOR = { 'AT-sleep': '#C9B6E8', 'ATracker': '#A9CFE6', '마음': '#F6C4A0', '학교': '#C9B6E8' };
     const calColor = name => {
         const cat = Object.keys(TODO_CAT).find(c => TODO_CAT[c] && TODO_CAT[c] === name);
-        if (cat) return TODO_COLORS[cat];
+        const NO_GREEN = { green: '#F3DD8C', mint: '#E8B4D8' };          // 타임테이블은 초록 대신
+        if (cat) return NO_GREEN[cat] || TODO_COLORS[cat];
         if (CAL_COLOR[name]) return CAL_COLOR[name];
         let h = 0; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return TT_COLORS[h % TT_COLORS.length];
     };
@@ -1237,7 +1239,7 @@ export function init() {
         const all = [], timed = [];
         ttEvents().forEach(e => {
             if (e.allDay) { if (e.date <= k && (e.endDate || e.date) >= k) all.push(e); return; }
-            const s = toMin(e.date, e.start), en = Math.max(s + 5, toMin(e.endDate || e.date, e.end || e.start));
+            const s = toMin(e.date, e.start), en = Math.max(s + 1, toMin(e.endDate || e.date, e.end || e.start));      // 분 단위 그대로
             if (en > d0 && s < d1) timed.push(Object.assign({ s: Math.max(s, d0) - d0, e: Math.min(en, d1) - d0 }, e));
         });
         timed.sort((a, b) => a.s - b.s || b.e - a.e);
@@ -1263,7 +1265,7 @@ export function init() {
             const segs = day.timed.filter(ev => ev.e > rs && ev.s < re).map(ev => {
                 const a = Math.max(ev.s, rs) - rs, b = Math.min(ev.e, re) - rs, first = ev.s >= rs;
                 const lh = 100 / day.lanes;
-                return '<button class="tt-ev" data-a="tt-ev" data-id="' + esc(ev.id) + '" style="left:' + (a / 60 * 100) + '%;width:' + ((b - a) / 60 * 100) + '%;top:' + (ev.lane * lh) + '%;height:' + lh + '%;background:' + ev.color + '" title="' + esc(ev.title) + '">' +
+                return '<button class="tt-ev" data-a="tt-ev" data-id="' + esc(ev.id) + '" style="left:' + (a / 60 * 100) + '%;width:' + ((b - a) / 60 * 100) + '%;top:' + (ev.lane * lh) + '%;height:' + lh + '%;background:' + hexA(ev.color, .55) + '" title="' + esc(ev.title) + '">' +
                     (first || r === 0 ? '<span>' + esc(ev.title) + '</span>' : '') + '</button>';
             }).join('');
             const now = k === tk || addDays(k, 1) === tk ? (() => { const nm = Math.round(Date.now() / 60000) - toMin(k, TT_START + ':00'); return nm >= rs && nm < re ? '<i class="tt-now" style="left:' + ((nm - rs) / 60 * 100) + '%"></i>' : ''; })() : '';
@@ -2212,6 +2214,8 @@ export function init() {
         ['diary', '다이어리'], ['todo', '할 일'], ['done', '영수증'], ['memo', '메모'], ['report', '리포트'], ['deco', '꾸미기'], ['tt', '타임테이블']
     ];
     const DEFAULT_ICON = { diary: 'c-blue', todo: 'c-pink', done: 'c-white', memo: 'c-gray', report: 'c-puppy', deco: 'folder', tt: 'cb-blue' };
+    // 메뉴 순서 (꾹 눌러서 ▲▼로 바꿈): db.appOrder
+    const appOrder = () => { const o = (db.appOrder || []).filter(id => ICONS.some(x => x[0] === id)); return o.concat(ICONS.map(x => x[0]).filter(id => !o.includes(id))); };
     const appDef = id => (ICONS.find(x => x[0] === id) || [])[1] || id;
     const appName = id => ((db.apps || {})[id] || {}).name || appDef(id);
     const appIconKey = id => ((db.apps || {})[id] || {}).icon || DEFAULT_ICON[id];
@@ -2220,15 +2224,16 @@ export function init() {
     const closeMenu = () => { menu.classList.remove('open'); startBtn.classList.remove('open'); };
     function drawShell() {
         const ph = id => ICON_SRC[appIconKey(id)] ? '' : ' class="phic"';
-        document.getElementById('dy-icons').innerHTML = ICONS.map(([id]) =>
+        const order = appOrder();
+        document.getElementById('dy-icons').innerHTML = order.map(id =>
             '<button class="dy-icon" data-open="' + id + '" title="' + esc(appName(id)) + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt=""><span>' + esc(appName(id)) + '</span></button>').join('');
-        document.getElementById('dy-apps').innerHTML = ICONS.map(([id]) =>
+        document.getElementById('dy-apps').innerHTML = order.map(id =>
             '<button class="dy-app" data-open="' + id + '" title="' + esc(appName(id)) + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt=""></button>').join('');
         menu.innerHTML = '<div class="head"><img src="' + CHAR['c-blue'] + '" alt="">diary ♡</div>' +
-            ICONS.map(([id]) => '<button data-open="' + id + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt="">' + esc(appName(id)) + '</button>').join('') +
+            order.filter(id => id !== 'deco').map(id => '<button data-open="' + id + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt="">' + esc(appName(id)) + '</button>').join('') +
             (isMobile() ? '' : '<button data-m="sticker"><span class="ic">' + ic('heart') + '</span>스티커 붙이기</button>' +      // 휴대폰은 스티커가 안 보이니 뺌
             '<button data-m="reload"><span class="ic">' + ic('reload') + '</span>새로 불러오기</button>') +
-            '<div class="tip">꾹 누르면 이름·그림 바꾸기</div>';
+            '<button class="deco-txt" data-open="deco">' + esc(appName('deco')) + '</button>';     // 꾸미기는 맨 밑에 글자로
         syncBar();
         // 창 제목줄도 같이
         Object.keys(wins).forEach(id => { const el = wins[id]; const im = el.querySelector('.dy-tb > img'), t = el.querySelector('.dy-tb .t'); if (im) im.src = appIconSrc(id); if (t) t.textContent = appName(id); });
@@ -2268,7 +2273,8 @@ export function init() {
                 '<div class="lb">이름</div><input class="dy-in" id="dy-app-name" value="' + esc(st.name) + '">' +
                 '<div class="lb">그림</div><div class="dy-pick">' + uniq(['folder'].concat(BASE_STICKERS.map(c => c.id), myStickerPaths(), ICON_SRC[st.icon] ? [] : [st.icon])).map(k =>
                     '<button data-ico="' + esc(k) + '" class="' + (st.icon === k ? 'on' : '') + '"><img src="' + esc(ICON_SRC[k] || src(k)) + '" alt=""></button>').join('') + '</div>' +
-                '<div class="row" style="margin-top:8px"><button class="dy-rb" data-c="photo">' + ic('photo') + '<span class="lbl">사진으로</span></button></div>' +
+                '<div class="row" style="margin-top:8px"><button class="dy-rb" data-c="photo">' + ic('photo') + '<span class="lbl">사진으로</span></button>' +
+                    '<span style="flex:1"></span><span class="lbl" style="font-size:11px;color:var(--dy-sub)">순서</span><button class="dy-rb round" data-c="up">' + ic('up') + '</button><button class="dy-rb round" data-c="down">' + ic('down') + '</button></div>' +
                 '<div class="foot"><button class="dy-rb" data-c="reset">처음대로</button><span style="flex:1"></span><button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
             cardBox.querySelector('#dy-app-name').oninput = e => { st.name = e.target.value; };
         });
@@ -2280,6 +2286,12 @@ export function init() {
             const a = c.dataset.c;
             if (a === 'close') return closeCard();
             if (a === 'photo') { const up = await uploadImage('photos', 300, false); if (!up) return; files = Object.assign(files, up.files); st.icon = up.path; return cardFn && cardFn(); }
+            if (a === 'up' || a === 'down') {
+                const o = appOrder(), i = o.indexOf(id), j = a === 'up' ? i - 1 : i + 1;
+                if (j < 0 || j >= o.length) return;
+                [o[i], o[j]] = [o[j], o[i]];
+                return save('메뉴 순서', d => { d.appOrder = o.slice(); });
+            }
             if (a === 'reset') { st.name = appDef(id); st.icon = DEFAULT_ICON[id]; return cardFn && cardFn(); }
             if (a === 'save') {
                 const name = st.name.trim(), icon = st.icon, old = ((db.apps || {})[id] || {}).icon;

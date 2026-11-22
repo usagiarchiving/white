@@ -25,8 +25,8 @@
     overflow: hidden;
     background: var(--dy-bg);
     color: var(--dy-text);
-    user-select: none;
-    -webkit-user-select: none;
+    user-select: text;           /* 글은 선택·복사 되게 (버튼·아이콘·끌기만 막음) */
+    -webkit-user-select: text;
 }
 /* 사이트 전체 글꼴/크기 규칙을 이 안에서는 덮어씀 */
 .dy-wrap, .dy-wrap * { font-family: var(--dy-body); letter-spacing: 0; box-sizing: border-box; }
@@ -792,7 +792,7 @@ textarea.dy-in { font-size: 11px; }
 
 /* 시작 메뉴: 꾹 누르기 안내, 사진 아이콘은 동그랗게 */
 .dy-menu .tip { font-size: 9.5px; color: var(--dy-sub); text-align: center; padding: 6px 4px 2px; border-top: 1px dashed var(--dy-thin); margin-top: 4px; }
-.dy-wrap img.phic { object-fit: cover !important; border-radius: 50%; border: 1.5px solid var(--dy-line); }
+.dy-wrap img.phic { object-fit: cover !important; border-radius: 8px; border: 0; }
 .dy-icon img.phic { width: 62px; height: 62px; margin: 4px auto; }
 .dy-icon, .dy-app, #dy-menu [data-open] { -webkit-touch-callout: none; touch-action: manipulation; }
 /* 달력 칸 사진·스티커: 눌러도 사진이 아니라 그 날짜가 열리게 */
@@ -832,3 +832,13 @@ textarea.dy-in { font-size: 11px; }
 /* 아이폰 캘린더에서 온 일정 (누르면 자세히) */
 .dv-ev .hl.cal { border: 0; cursor: pointer; font-family: var(--dy-body); }
 .dv-ev .hl.cal::before { content: '◷ '; font-weight: 400; color: var(--dy-sub); }
+
+/* 글 선택은 되고, 끄는 것·누르는 것만 선택 안 되게 */
+.dy-wrap button, .dy-tb, .dy-icon, .dy-app, .dy-bar, .dy-stk, .dy-cell .n, .dy-tabs, .dy-week, .tt-row .h { user-select: none; -webkit-user-select: none; }
+.dy-wrap .dy-cell { -webkit-user-select: none; user-select: none; }
+/* diary♡ 메뉴 맨 밑 꾸미기: 아이콘 없이 포인트 색 글자 */
+.dy-menu .deco-txt { justify-content: center; color: #d77c96; font-family: var(--dy-title); font-size: 13px; border-top: 1px dashed var(--dy-thin) !important; border-radius: 0 0 12px 12px; margin-top: 4px; }
+/* 타임테이블 일정: 파스텔 형광펜처럼 반투명 */
+.tt-ev { box-shadow: none; border-radius: 2px; }
+.tt-ev span { color: #2b2729; }
+.tt-ev:hover { filter: saturate(1.4); }
