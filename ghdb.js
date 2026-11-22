@@ -29,11 +29,10 @@
     var PROJECTS = {
         'pqqvmppgpqmtyttfjyve': { files: ['daily', 'memo', 'txt'], images: 'daily' },
         'dvalxqujceuhfshatilq': { files: ['hasion'], images: 'hasion' },
-        'yjjxlklzgcfwwcunmrht': { files: ['record'], images: 'record' },
         'ofhadtlrsccipnvdohqh': { files: ['todos'], images: 'todos' }
     };
     // posts 이외의 테이블은 테이블 이름이 곧 파일 이름
-    var TABLE_FILE = { todos: 'todos', record: 'record' };
+    var TABLE_FILE = { todos: 'todos' };
 
     // GitHub API 응답은 브라우저가 60초간 기억(캐시)해서, 연달아 저장하면 옛 상태를 받음 → 항상 새로 받기
     function nfetch(url, opts) { opts = opts || {}; opts.cache = 'no-store'; return fetch(url, opts); }

@@ -61,21 +61,31 @@
 [ { "id": "pf0", "label": "이름", "value": "김민정" }, { "id": "pf1", "label": "생년월일", "value": "2002년생" } ]
 ```
 
-## Library (Book / YouTube / Movie / Anime)
+## Library
 
-화면에서는 아래 메뉴 **Menu → Library** 로 열어요.
+화면에서는 아래 메뉴 **Menu → Library** 로 열어요. 탭: All · Book · YouTube · Movie · Drama · Anime · Webtoon · Game · Song · Show · etc.
+(예전 '흐린 날의 고백' 카테고리를 없애고 쓸모 있던 기능 — 작품 검색, 표지, 만든 사람·연도, 태그, N회차 — 을 여기로 옮겼어요.)
 
 `library`
 
 ```json
-{ "id": "lb...", "type": "youtube", "title": "...", "url": "https://youtu.be/...", "status": "done", "rating": 4, "memo": "...", "date": "...", "time": "...", "at": "..." }
+{ "id": "lb...", "type": "movie", "title": "노트북", "creator": "닉 카사베츠", "year": "2004",
+  "cover": "https://image.tmdb.org/t/p/w200/....jpg", "status": "done", "rating": 5, "tags": ["로맨스"],
+  "memo": "...", "date": "2026-11-22", "time": "20:00", "at": "..." }
 ```
 
 | 필드 | 값 |
 | --- | --- |
-| `type` | `book` · `youtube` · `movie` · `anime` |
+| `type` | `book` · `youtube` · `movie` · `drama` · `anime` · `webtoon` · `game` · `song` · `show` · `etc` |
 | `status` | `want` 보고 싶음 · `now` 보는 중 · `done` 다 봄 |
 | `rating` | 하트 1~5 (없으면 키 없음) |
+| `creator` · `year` | 만든 사람(감독·작가·채널·가수) · 연도 |
+| `cover` | 표지. 검색으로 고르면 바깥 주소(https://…), 직접 올리면 `minjung/images/covers/…` |
+| `url` | YouTube 링크 (표지가 없으면 썸네일을 씀) |
+| `tags` | 태그 목록 (`#` 없이) |
+
+- 작품 검색: 영화·드라마·애니는 TMDB, 책은 카카오 책 검색.
+- 같은 종류·같은 제목을 여러 번 기록하면 날짜 순서대로 `1회차`, `2회차`… 로 보여요 (저장은 따로 안 함).
 
 ## Condition (몸 상태)
 

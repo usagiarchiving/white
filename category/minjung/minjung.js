@@ -28,7 +28,12 @@ const DEFAULT_STEPS = { morning: ['세안', '토너', '로션', '선크림'], ni
 
 const MEAL_SLOTS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner'], ['snack', 'Snack'], ['night', 'Late night']];
 const MOODS = [['love', '🥰', 'love'], ['good', '😊', 'good'], ['okay', '🙂', 'okay'], ['meh', '😐', 'meh'], ['tired', '😪', 'tired'], ['sad', '😢', 'sad'], ['anxious', '😰', 'anxious'], ['angry', '😠', 'angry']];
-const LIB_TYPES = [['book', 'Book'], ['youtube', 'YouTube'], ['movie', 'Movie'], ['anime', 'Anime']];
+const LIB_TYPES = [['book', 'Book'], ['youtube', 'YouTube'], ['movie', 'Movie'], ['drama', 'Drama'], ['anime', 'Anime'],
+    ['webtoon', 'Webtoon'], ['game', 'Game'], ['song', 'Song'], ['show', 'Show'], ['etc', 'etc.']];
+// 작품 검색 (예전 '흐린 날의 고백'에서 쓰던 키): 영화·드라마·애니 = TMDB, 책 = 카카오
+const TMDB_KEY = 'd6224997a8f1d896b0244b268bcefd54';
+const KAKAO_KEY = '261889b87c5bf523ddd8846c0c45ec2e';
+const LIB_SEARCH = { movie: 'movie', drama: 'tv', anime: 'tv', book: 'book' };
 const LIB_STATUS = [['want', 'Want'], ['now', 'Now'], ['done', 'Done']];
 const BEAUTY_SLOTS = [['morning', 'Morning'], ['night', 'Night'], ['etc', 'etc.'], ['shower', 'Shower']];
 const BEAUTY_SUBS = [['all', 'All'], ['morning', 'Morning'], ['night', 'Night'], ['etc', 'etc.']];   // Shower는 탭 없이 + 버튼으로만 (All에서 보임)
@@ -61,7 +66,7 @@ const X_SVG = '<svg viewBox="0 0 24 24" width="14" height="14"><g fill="none" st
 /* 창 설정 — main: 아래 메뉴/바탕화면 아이콘에 나오는 5개 */
 const WIN = {
     profile:   { title: 'Profile',   main: true, w: 360 },
-    library:   { title: 'Library',   tabs: LIB_TYPES.map(x => x[1]), w: 400 },
+    library:   { title: 'Library',   tabs: ['All'].concat(LIB_TYPES.map(x => x[1])), w: 420 },
     food:      { title: 'Meal · Medicine', tabs: ['All', 'Meal', 'Medicine'], types: ['meal', 'medicine'], w: 380 },
     state:     { title: 'Symptom · Mood',  tabs: ['All', 'Symptom', 'Mood'], types: ['symptom', 'mood'], w: 380 },
     daily:     { title: 'Daily',     tabs: ['Beauty', 'Outfit'], main: true, w: 460 },
@@ -179,8 +184,8 @@ export function init() {
     let todos = null, todoErr = '';
 
     /* ---------------- 이미지 주소 ---------------- */
-    const imgSrc = p => localImg[p] || repo.url(p);
-    const imgTag = (p, cls) => `<img class="${cls || ''}" src="${esc(imgSrc(p))}" onerror="this.onerror=null;this.src='${esc(repo.rawUrl(p))}'" alt="" loading="lazy">`;
+    const imgSrc = p => localImg[p] || (/^https?:/.test(p) ? p : repo.url(p));
+    const imgTag = (p, cls) => /^https?:/.test(p) ? `<img class="${cls || ''}" src="${esc(p)}" alt="" loading="lazy">` : `<img class="${cls || ''}" src="${esc(imgSrc(p))}" onerror="this.onerror=null;this.src='${esc(repo.rawUrl(p))}'" alt="" loading="lazy">`;
     const iconHtml = id => db.icons[id] ? imgTag(db.icons[id], 'mj-ico-img') : (ICON[id] || '');
 
     /* ---------------- 불러오기 / 저장 ---------------- */
@@ -736,11 +741,24 @@ export function init() {
                 case 'bg-img': pickFile(f => setBgImage(Number(b.dataset.i), b.dataset.w, f)); break;
                 case 'bg-add': pickFile(f => setBgImage(-1, 'mobile', f)); break;
                 case 'bg-del': delBg(Number(b.dataset.i)); break;
+                // 라이브러리
+                case 'lib-add': showPick(b, LIB_TYPES.map(([k, l]) => ({ label: l, run: () => { st.form = { type: k }; fresh(); } }))); break;
+                case 'lib-cover': pickFile(f => { keepForm(id); st.form.coverFile = f; st.form.cover = ''; st.form.preview = URL.createObjectURL(f); fresh(); }); break;
+                case 'lib-uncover': keepForm(id); st.form.cover = ''; st.form.coverFile = null; st.form.preview = ''; fresh(); break;
+                case 'lib-go': libSearch(id, st, el); break;
+                case 'lib-pick': libPick(id, st, el, Number(b.dataset.i)); break;
             }
         });
         el.addEventListener('change', e => {
             if (e.target.matches('[data-day]') && e.target.value) { w.st.date = e.target.value; renderWin(id); }
         });
+        // 라이브러리 안에서 찾기 (목록만 다시 그림)
+        el.addEventListener('input', e => {
+            if (!e.target.matches('[data-libq]')) return;
+            w.st.q = e.target.value;
+            const box = el.querySelector('.mj-liblist'); if (box) box.innerHTML = libList(w.st);
+        });
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-ls]')) { e.preventDefault(); libSearch(id, w.st, el); } });
     }
 
     function pickFile(cb) {
@@ -826,8 +844,21 @@ export function init() {
             msg = '대사 ' + when;
         } else if (id === 'library') {
             if (!f.title) { alert('제목을 적어 주세요.'); return; }
-            item = tidy(Object.assign(base, { type: st.form.type || libType(st), title: f.title, status: f.status, rating: f.rating || undefined, url: f.url, memo: f.memo }));
+            const files = {}, old = st.form.id ? db.library.find(x => x.id === st.form.id) : null;
+            let cover = st.form.cover || '';
+            if (st.form.coverFile) {
+                if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+                try { const up = await uploadImage(st.form.coverFile, 'covers', 900, 'image/jpeg'); files[up.path] = up.sha; cover = up.path; }
+                catch (e) { alert('표지를 올리지 못했어요.\n' + (e.message || e)); return; }
+            }
+            if (old && old.cover && old.cover !== cover && old.cover.startsWith(IMG_DIR)) files[old.cover] = null;
+            const tags = (f.tags || '').split(/[\s,]+/).map(t => t.replace(/^#/, '').trim()).filter(Boolean);
+            item = tidy(Object.assign(base, { type: st.form.type || libType(st), title: f.title, creator: f.creator, year: f.year, cover, url: f.url,
+                status: f.status, rating: f.rating || undefined, tags, memo: f.memo }));
             msg = label(LIB_TYPES, item.type) + ' ' + item.title;
+            st.form = null;
+            upsert('library', item, msg, files);
+            return;
         } else if (WIN[id].types) {
             const type = st.form.type;
             const extra = type === 'meal' ? { slot: f.slot, memo: f.memo }
@@ -877,6 +908,7 @@ export function init() {
         if (!it || !it.id || !confirm('지울까요?')) return;
         const files = {};
         if (list === 'outfit' && it.img) files[it.img] = null;
+        if (list === 'library' && it.cover && it.cover.startsWith(IMG_DIR)) files[it.cover] = null;
         st.form = (id === 'hp' || id === 'lines') ? {} : null;
         remove(list, it.id, list + ' 삭제 ' + (it.date || '') + ' ' + (it.time || ''), files);
     }
@@ -1074,41 +1106,111 @@ export function init() {
     }
     function guessSlot() { const h = new Date().getHours(); return h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 21 ? 'dinner' : 'night'; }
 
-    const libType = st => (LIB_TYPES.find(x => x[1] === st.tab) || LIB_TYPES[0])[0];
+    const libType = st => (LIB_TYPES.find(x => x[1] === st.tab) || ['all'])[0];
+    const libCover = r => r.cover ? r.cover : (r.type === 'youtube' && ytId(r.url) ? `https://i.ytimg.com/vi/${ytId(r.url)}/mqdefault.jpg` : '');
+    const titleKey = r => r.type + '|' + String(r.title || '').trim().toLowerCase();
     function libraryView(st) {
-        if (st.form) {
-            const it = st.form, type = it.type || libType(st);
-            return `
-                <div class="mj-form mj-card">
-                    <div class="mj-sec">${label(LIB_TYPES, type)}</div>
-                    <input data-f="title" placeholder="제목" value="${esc(it.title || '')}">
-                    ${type === 'youtube' ? `<input data-f="url" placeholder="유튜브 링크" value="${esc(it.url || '')}">` : ''}
-                    ${chips('status', LIB_STATUS, it.status || 'want', true)}
-                    <div class="mj-hearts-pick sm" data-hearts="rating" data-v="${it.rating || 0}">${Array.from({ length: 5 }, (_, i) => `<button data-act="heart" data-v="${i + 1}">${pixelHeart(i < (it.rating || 0))}</button>`).join('')}</div>
-                    <textarea data-f="memo" rows="3" placeholder="감상, 메모">${esc(it.memo || '')}</textarea>
-                    ${whenRow(it)}
-                    ${formBtns(it)}
-                </div>`;
-        }
+        if (st.form) return libForm(st);
         const t = libType(st);
-        const rows = db.library.filter(x => x.type === t).sort(byNewest);
+        const year = String(new Date().getFullYear());
+        const counts = LIB_TYPES.map(([k, l]) => [l, db.library.filter(x => x.type === k && (x.date || '').startsWith(year)).length]).filter(x => x[1]);
         return `
-            <div class="mj-newbar"><button class="mj-add" data-act="new" data-v="${t}">+ ${label(LIB_TYPES, t)}</button></div>
-            <div class="mj-log">
-                ${rows.length ? rows.map(r => {
-                    const yt = r.type === 'youtube' && ytId(r.url);
-                    return `
-                    <button class="mj-lib" data-act="edit" data-id="${r.id}">
-                        ${yt ? `<img class="thumb" src="https://i.ytimg.com/vi/${yt}/mqdefault.jpg" alt="" loading="lazy">` : ''}
-                        <span class="body">
-                            <span class="tt">${esc(r.title)} <em class="mj-tag st-${r.status || 'want'}">${label(LIB_STATUS, r.status || 'want')}</em></span>
-                            ${r.rating ? `<span class="mj-mini">${hearts(r.rating)}</span>` : ''}
-                            ${r.memo ? `<span class="tx">${esc(r.memo)}</span>` : ''}
-                            <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}</span>
-                        </span>
-                    </button>`;
-                }).join('') : empty('아직 없어요.')}
+            <div class="mj-libtop">
+                <input class="mj-libq" data-libq placeholder="찾기 (제목·만든 사람·태그·메모)" value="${esc(st.q || '')}">
+            </div>
+            ${t === 'all' ? `<div class="mj-libstat">${year} · ${counts.length ? counts.map(([l, n]) => `${l} <b>${n}</b>`).join(' · ') : '아직 기록이 없어요'}</div>` : ''}
+            <div class="mj-newbar">${t === 'all' ? '<button class="mj-add" data-act="lib-add">+ add</button>' : `<button class="mj-add" data-act="new" data-v="${t}">+ ${label(LIB_TYPES, t)}</button>`}</div>
+            <div class="mj-log mj-liblist">${libList(st)}</div>`;
+    }
+    function libList(st) {
+        const t = libType(st), q = (st.q || '').trim().toLowerCase();
+        // N회차: 같은 종류·제목을 날짜 순서대로 셈
+        const nth = {}, total = {};
+        db.library.slice().sort(byOldest).forEach(r => { const k = titleKey(r); total[k] = (total[k] || 0) + 1; nth[r.id] = total[k]; });
+        const rows = db.library.filter(x => (t === 'all' || x.type === t) &&
+            (!q || [x.title, x.creator, x.memo, (x.tags || []).join(' ')].join(' ').toLowerCase().includes(q))).sort(byNewest);
+        if (!rows.length) return empty(q ? '찾는 기록이 없어요.' : '아직 없어요.');
+        return rows.map(r => {
+            const cv = libCover(r), k = titleKey(r);
+            return `
+            <button class="mj-lib" data-act="edit" data-id="${r.id}">
+                ${cv ? imgTag(cv, 'thumb' + (r.type === 'youtube' && !r.cover ? ' wide' : '')) : ''}
+                <span class="body">
+                    <span class="tt">${esc(r.title)}${total[k] > 1 ? ` <em class="nth">${nth[r.id]}회차</em>` : ''}</span>
+                    <span class="meta">${t === 'all' ? `<em class="mj-tag">${label(LIB_TYPES, r.type)}</em>` : ''}<em class="mj-tag st-${r.status || 'want'}">${label(LIB_STATUS, r.status || 'want')}</em>${[r.creator, r.year].filter(Boolean).map(esc).join(' · ')}</span>
+                    ${r.rating ? `<span class="mj-mini">${hearts(r.rating)}</span>` : ''}
+                    ${r.memo ? `<span class="tx">${esc(r.memo)}</span>` : ''}
+                    ${(r.tags || []).length ? `<span class="tags">${r.tags.map(x => '#' + esc(x)).join(' ')}</span>` : ''}
+                    <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}</span>
+                </span>
+            </button>`;
+        }).join('');
+    }
+    function libForm(st) {
+        const it = st.form, type = it.type || libType(st);
+        const cv = it.preview || it.cover || (type === 'youtube' && ytId(it.url) ? `https://i.ytimg.com/vi/${ytId(it.url)}/mqdefault.jpg` : '');
+        return `
+            <div class="mj-form mj-card">
+                <div class="mj-sec">${label(LIB_TYPES, type)}</div>
+                ${LIB_SEARCH[type] ? `
+                <div class="mj-libsearch"><input data-ls placeholder="작품 검색해서 채우기" value=""><button class="mj-btn ghost" data-act="lib-go">Search</button></div>
+                <div class="mj-libres"></div>` : ''}
+                <div class="mj-libform">
+                    <div class="cover">
+                        ${cv ? `<img src="${esc(/^https?:|^blob:/.test(cv) ? cv : imgSrc(cv))}" alt="">` : '<span>cover</span>'}
+                        <div class="cv-btns"><button class="mj-link" data-act="lib-cover">사진</button>${cv && !(type === 'youtube' && !it.cover && !it.preview) ? '<button class="mj-link" data-act="lib-uncover">빼기</button>' : ''}</div>
+                    </div>
+                    <div class="fields">
+                        <input data-f="title" placeholder="제목" value="${esc(it.title || '')}">
+                        <div class="two"><input data-f="creator" placeholder="${type === 'book' || type === 'webtoon' ? '작가' : type === 'youtube' ? '채널' : type === 'song' ? '가수' : '감독·만든 사람'}" value="${esc(it.creator || '')}"><input data-f="year" placeholder="연도" value="${esc(it.year || '')}" inputmode="numeric"></div>
+                        ${type === 'youtube' ? `<input data-f="url" placeholder="유튜브 링크" value="${esc(it.url || '')}">` : ''}
+                    </div>
+                </div>
+                ${chips('status', LIB_STATUS, it.status || 'want', true)}
+                <div class="mj-hearts-pick sm" data-hearts="rating" data-v="${it.rating || 0}">${Array.from({ length: 5 }, (_, i) => `<button data-act="heart" data-v="${i + 1}">${pixelHeart(i < (it.rating || 0))}</button>`).join('')}</div>
+                <input data-f="tags" placeholder="#태그 (띄어쓰기로 여러 개)" value="${esc(Array.isArray(it.tags) ? it.tags.map(x => '#' + x).join(' ') : (it.tags || ''))}">
+                <textarea data-f="memo" rows="5" placeholder="감상, 기억하고 싶은 장면, 문장…">${esc(it.memo || '')}</textarea>
+                ${whenRow(it)}
+                ${formBtns(it)}
             </div>`;
+    }
+    // 작품 검색
+    let libResults = [];
+    async function libSearch(id, st, el) {
+        const type = st.form.type || libType(st), kind = LIB_SEARCH[type];
+        const q = (el.querySelector('[data-ls]') || {}).value;
+        const box = el.querySelector('.mj-libres');
+        if (!q || !q.trim() || !box) return;
+        box.innerHTML = '<p class="mj-empty">searching…</p>';
+        try {
+            if (kind === 'book') {
+                const r = await fetch('https://dapi.kakao.com/v3/search/book?size=8&query=' + encodeURIComponent(q), { headers: { Authorization: 'KakaoAK ' + KAKAO_KEY } });
+                libResults = ((await r.json()).documents || []).map(x => ({ title: x.title, year: (x.datetime || '').slice(0, 4), creator: (x.authors || []).join(', '), cover: x.thumbnail || '' }));
+            } else {
+                const r = await fetch(`https://api.themoviedb.org/3/search/${kind}?api_key=${TMDB_KEY}&language=ko-KR&query=` + encodeURIComponent(q));
+                libResults = ((await r.json()).results || []).slice(0, 8).map(x => ({ id: x.id, kind, title: x.title || x.name, year: (x.release_date || x.first_air_date || '').slice(0, 4),
+                    creator: '', cover: x.poster_path ? 'https://image.tmdb.org/t/p/w200' + x.poster_path : '' }));
+            }
+            box.innerHTML = libResults.length ? libResults.map((x, i) => `
+                <button class="mj-libres-item" data-act="lib-pick" data-i="${i}">
+                    ${x.cover ? `<img src="${esc(x.cover)}" alt="">` : '<span class="no"></span>'}
+                    <span><b>${esc(x.title)}</b><small>${[x.year, x.creator].filter(Boolean).map(esc).join(' · ')}</small></span>
+                </button>`).join('') : '<p class="mj-empty">결과가 없어요.</p>';
+        } catch (e) { box.innerHTML = '<p class="mj-empty">검색하지 못했어요.</p>'; }
+    }
+    async function libPick(id, st, el, i) {
+        const x = libResults[i]; if (!x) return;
+        keepForm(id);
+        Object.assign(st.form, { title: x.title, year: x.year, creator: x.creator || st.form.creator, cover: x.cover, coverFile: null, preview: '' });
+        if (x.kind) {           // 감독(영화) · 만든 사람(드라마·애니)
+            try {
+                const r = await fetch(`https://api.themoviedb.org/3/${x.kind}/${x.id}?api_key=${TMDB_KEY}&language=ko-KR&append_to_response=credits`);
+                const d = await r.json();
+                const who = x.kind === 'movie' ? ((d.credits && d.credits.crew) || []).find(c => c.job === 'Director') : (d.created_by || [])[0];
+                if (who) st.form.creator = who.name;
+            } catch (e) { /* 없으면 비워 둠 */ }
+        }
+        renderWin(id);
     }
 
     function outfitView(st) {
