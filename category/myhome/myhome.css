@@ -240,7 +240,8 @@ html:has(.mh-stage), body:has(.mh-stage) { overflow-x: hidden; }
 .mh-meal:last-child { border-bottom: none; }
 .mh-meal-label { flex: none; width: 26px; font-size: 11px; color: var(--pink-ink); padding-top: 2px; }
 .mh-meal-text { flex: 1; min-width: 0; border: none; background: transparent; outline: none; resize: none; font-family: inherit; font-size: 12.5px; line-height: 1.6; color: var(--ink); padding: 0; min-height: 20px; }
-.mh-meal-time { flex: none; width: 64px; border: none; background: transparent; font-family: inherit; font-size: 10.5px; color: var(--sub); padding: 2px 0; text-align: right; cursor: pointer; }
+.mh-meal-time { flex: none; width: 78px; border: none; border-radius: 999px; background: #fff; font-family: inherit; font-size: 10.5px; color: var(--pink-ink); padding: 3px 6px; text-align: center; cursor: pointer; }
+.mh-meal-time:hover { background: var(--pink-soft); }
 .mh-meal-time:disabled { opacity: 0; }
 .mh-meal-time::-webkit-calendar-picker-indicator { display: none; }
 

@@ -963,13 +963,29 @@ export function init() {
         repo.commit(message, {}, j).then(res => {
             setPending(pending - 1);
             // 저장소가 기억해 둔 최신본과 같은 객체를 쓰면 다음 수정이 두 번 반영되므로 복사해서 씀
-            if (!pending && res && res[DATA]) { db = normalize(JSON.parse(JSON.stringify(res[DATA]))); drawList(); if (card) drawCard(); }
+            if (!pending && res && res[DATA]) { db = normalize(JSON.parse(JSON.stringify(res[DATA]))); drawList(); redrawCardSafely(); }
         }, e => {
             setPending(pending - 1);
             alert('저장하지 못했어요.\n' + (e.message || e));
             load().then(() => card && drawCard());
         });
     }
+    // 카드 안에서 입력 중(메모·시간 등)이면 다시 그리지 않고, 입력이 끝난 뒤에 그림
+    let redrawLater = false;
+    function redrawCardSafely() {
+        if (!card) return;
+        const cardBox = document.getElementById('mh-card');
+        if (cardBox && cardBox.contains(document.activeElement) && document.activeElement !== document.body) { redrawLater = true; return; }
+        drawCard();
+    }
+    document.getElementById('mh-card').addEventListener('focusout', () => {
+        if (!redrawLater) return;
+        setTimeout(() => {
+            const cardBox = document.getElementById('mh-card');
+            if (cardBox && cardBox.contains(document.activeElement)) return;      // 다른 칸으로 옮겨 간 경우는 계속 기다림
+            redrawLater = false; if (card) drawCard();
+        }, 50);
+    });
     function setRec(id, k, patch) {
         db.log[id] = db.log[id] || {};
         const cur = Object.assign({}, db.log[id][k] || {}, patch);
@@ -1093,7 +1109,12 @@ export function init() {
                 saveMeal(slot, { memo: v, time });
                 drawCard();
             });
-            tm.addEventListener('change', () => { saveMeal(slot, { time: tm.value }); });
+            // 시간 누르면 바로 시간 고르기 창 (컴퓨터에서도)
+            tm.addEventListener('click', () => { try { tm.showPicker && tm.showPicker(); } catch (e) {} });
+            let lastTime = tm.value;
+            const saveTime = () => { if (tm.value && tm.value !== lastTime) { lastTime = tm.value; saveMeal(slot, { time: tm.value }); } };
+            tm.addEventListener('change', saveTime);
+            tm.addEventListener('blur', saveTime);
         });
     }
 
