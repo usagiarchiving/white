@@ -61,8 +61,34 @@ function loadPageByHash(hashName) {
     }
 }
 
+// 김민정 · 마이홈은 화면 가득 쓰는 게임 화면: 헤더를 얇게 하고 헤더 높이를 CSS에 알려 줌
+const GAME_PAGES = /category\/(minjung|myhome)\//;
+function setHeaderHeight() {
+    const h = document.getElementById('header');
+    if (h) document.documentElement.style.setProperty('--hdr-h', h.offsetHeight + 'px');
+}
+window.addEventListener('resize', setHeaderHeight);
+window.addEventListener('load', setHeaderHeight);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(setHeaderHeight);   // 아이콘 글꼴이 늦게 와도 높이 다시 잼
+
 function loadPage(url) {
     const contentArea = $('#content-area');
+    const game = GAME_PAGES.test(url);
+    if (game) {
+        // 게임 화면은 기다림 없이 바로 바꿈 (전환이 버벅이지 않게)
+        document.body.classList.add('game-page');
+        setHeaderHeight();
+        $.ajax({ url: url, dataType: 'html', cache: false,
+            success: function (data) {
+                contentArea.stop(true, true).html(data).addClass('fade-in-element').show();
+                setTimeout(() => { contentArea.removeClass('fade-in-element'); }, 300);
+            },
+            error: function () { contentArea.html('<p style="text-align:center; padding-top:50px; color:var(--sub-color);">내용을 불러오지 못했습니다.</p>').show(); }
+        });
+        return;
+    }
+    document.body.classList.remove('game-page');
+    setHeaderHeight();
     contentArea.fadeOut(200, function() {
         $.ajax({
             url: url,

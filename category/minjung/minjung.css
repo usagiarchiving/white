@@ -26,8 +26,8 @@
     --mj-frame: #b4899a;      /* 창 테두리 (아이패드·PC) */
 
     position: relative;
-    width: 100vw; margin-left: calc(50% - 50vw); margin-top: -30px;
-    height: calc(100vh - 90px); height: calc(100svh - 90px); min-height: 460px;
+    width: 100vw; margin-left: calc(50% - 50vw); margin-top: 0;
+    height: calc(100vh - var(--hdr-h, 40px)); height: calc(100svh - var(--hdr-h, 40px)); min-height: 420px;
     font-family: 'Galmuri11', 'Noto Serif KR', sans-serif; font-size: 12px; color: var(--mj-ink);
     letter-spacing: 0; -webkit-font-smoothing: none;
 }
@@ -41,13 +41,12 @@
 
 /* ---------------- 게임 화면 ---------------- */
 .mj-game { position: relative; width: 100%; height: 100%; overflow: hidden; background: #f6f0f1; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-.mj-bgs { position: absolute; inset: 0; display: flex; transition: transform .45s cubic-bezier(.3, .7, .3, 1); }
+.mj-bgs { position: absolute; inset: 0; display: flex; transition: transform .4s cubic-bezier(.3, .7, .3, 1); will-change: transform; }
 .mj-bg { flex: 0 0 100%; height: 100%; background-size: cover; background-position: center; }
 .mj-bg-bedroom { background-position: 38% center; }
 .mj-char {
-    position: absolute; left: 50%; bottom: 62px; height: 74%; max-width: 96%; object-fit: contain; object-position: bottom;
+    position: absolute; left: 50%; bottom: calc(58px + env(safe-area-inset-bottom)); height: 74%; max-width: 96%; object-fit: contain; object-position: bottom;
     transform: translateX(-50%); pointer-events: none;
-    filter: drop-shadow(0 4px 14px rgba(160, 120, 130, .18));
 }
 
 /* 왼쪽 위 날짜, 오른쪽 위 하트 */
@@ -55,10 +54,10 @@
     position: absolute; top: 10px; z-index: 3;
     background: rgba(255, 255, 255, .78); border: 1px solid rgba(231, 218, 221, .95); border-radius: 3px;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, .45);
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
 .mj-date { left: 10px; padding: 5px 9px; font-family: 'Galmuri9', sans-serif; font-size: 10px; letter-spacing: .5px; }
-.mj-hp { right: 10px; padding: 5px 7px; display: flex; gap: 3px; border-style: solid; }
+.mj-hp { right: 8px; padding: 4px; display: flex; gap: 3px; background: none; border: 0; box-shadow: none; }
+.mj-hp .mj-heart { filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, .95)); }
 .mj-heart { width: 14px; height: 12px; display: block; image-rendering: pixelated; }
 .mj-saving { position: absolute; top: 40px; right: 12px; z-index: 3; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-deep); opacity: 0; transition: opacity .3s; pointer-events: none; }
 .mj-saving.on { opacity: .9; animation: mjBlink 1.2s steps(2) infinite; }
@@ -70,15 +69,14 @@
 
 /* 미연시 대사창 */
 .mj-dialog {
-    position: absolute; left: 10px; right: 10px; bottom: 70px; z-index: 4; min-height: 74px;
+    position: absolute; left: 10px; right: 10px; bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 4; min-height: 74px;
     display: block; text-align: left; padding: 16px 16px 14px; border-radius: 4px;
     background: rgba(255, 253, 253, .68); border: 1px solid rgba(231, 218, 221, .9);
     box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .55), inset 0 0 0 4px rgba(239, 226, 229, .8), 0 6px 18px rgba(170, 130, 140, .12);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
 .mj-name {
     position: absolute; top: -11px; left: 12px; padding: 3px 12px; font-weight: 700; font-size: 12px; color: #fff;
-    background: var(--mj-deep); border-radius: 2px; box-shadow: 0 0 0 2px #fff;
+    background: #f3b3c5; border-radius: 2px; box-shadow: 0 0 0 2px #fff; text-shadow: 0 1px 0 rgba(214, 120, 150, .45);
 }
 .mj-say { display: block; line-height: 1.75; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; max-height: 5.4em; overflow: hidden; }
 .mj-next { position: absolute; right: 12px; bottom: 7px; font-size: 9px; color: var(--mj-deep); animation: mjBob 1s steps(2) infinite; }
@@ -87,7 +85,7 @@
 
 /* 모바일 아래 메뉴 5개 */
 .mj-nav {
-    position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; height: 60px; padding-bottom: env(safe-area-inset-bottom);
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; height: calc(58px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box;
     display: flex; background: rgba(255, 253, 253, .94); border-top: 1px solid var(--mj-line);
     box-shadow: 0 -1px 0 #fff inset;
 }
@@ -105,9 +103,9 @@
     position: fixed; inset: 0; z-index: 1100; display: flex; flex-direction: column;
     background: var(--mj-paper) repeating-linear-gradient(90deg, transparent 0 14px, var(--mj-stripe) 14px 15px);
     font-family: 'Galmuri11', sans-serif; font-size: 12px; color: var(--mj-ink);
-    animation: mjPop .16s steps(3);
+    animation: mjPop .14s ease-out;
 }
-@keyframes mjPop { from { opacity: 0; transform: scale(.98); } }
+@keyframes mjPop { from { opacity: 0; transform: translateY(6px); } }
 .mj-win-head { position: relative; flex: none; padding: calc(14px + env(safe-area-inset-top)) 16px 8px; text-align: center; }
 .mj-badge {
     width: 40px; height: 40px; padding: 7px; border: 1px solid var(--mj-line); border-radius: 50%; background: var(--mj-card);
@@ -123,6 +121,9 @@
 .mj-x:hover { color: var(--mj-deep); }
 .mj-tabs { flex: none; display: flex; gap: 2px; padding: 4px 14px 0; border-bottom: 1px solid var(--mj-line); overflow-x: auto; scrollbar-width: none; }
 .mj-tabs button { flex: none; border: 1px solid transparent; border-bottom: 0; background: none; padding: 6px 11px 5px; color: var(--mj-sub); border-radius: 3px 3px 0 0; margin-bottom: -1px; }
+.mj-tabs .sp { flex: 1; }
+.mj-tabs .mj-plus { flex: none; align-self: center; border: 0; background: none; padding: 4px 6px; margin-bottom: 2px; color: var(--mj-deep); display: inline-flex; }
+.mj-tabs .mj-plus:active { opacity: .6; }
 .mj-tabs button.on { color: var(--mj-ink); background: var(--mj-card); border-color: var(--mj-line); font-weight: 700; }
 .mj-win-body { flex: 1; overflow-y: auto; padding: 12px 14px calc(24px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
 
@@ -246,15 +247,30 @@
 .mj-tile .mj-ico { width: 26px; height: 26px; }
 .mj-tile:hover { border-color: var(--mj-pink); }
 
-/* Condition 창: 블랙 + 핑크 */
-.mj-win-condition {
+/* Condition 창(Meal·Medicine / Symptom·Mood): 블랙 + 핑크 */
+.mj-win-food, .mj-win-state {
     --mj-paper: #2e282c; --mj-card: #383135; --mj-ink: #f7e9ee; --mj-sub: #bba7ae; --mj-line: #54474d;
     --mj-soft: #403739; --mj-pink: #f5a9c0; --mj-deep: #f28cac; --mj-on: #5a3644; --mj-on2: #45363d;
     --mj-ring: #4a3e43; --mj-stripe: rgba(255, 255, 255, .03); --mj-bar: #f28cac; --mj-bar-ink: #2e282c; --mj-frame: #1e191c;
     color-scheme: dark;
 }
-.mj-win-condition .mj-row .ty-mood { background: #3f3849; border-color: #5a4f68; }
-.mj-win-condition .mj-btn.danger { color: #ff9fb5 !important; }
+.mj-win-state .mj-row .ty-mood { background: #3f3849; border-color: #5a4f68; }
+.mj-win-food .mj-btn.danger, .mj-win-state .mj-btn.danger { color: #ff9fb5 !important; }
+
+/* 작은 고르기 팝업 (Condition, Menu, + 버튼) — 바깥을 누르면 닫힘 */
+.mj-pick-bg { position: fixed; inset: 0; z-index: 100000; }
+.mj-pick-bg .mj-pick {
+    position: fixed; min-width: 150px; padding: 5px; display: flex; flex-direction: column; gap: 1px;
+    background: #fffdfd; border: 1px solid var(--mj-line); border-radius: 4px;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--mj-ring), 0 8px 22px rgba(150, 100, 115, .18);
+    animation: mjPop .12s ease-out;
+}
+.mj-pick-bg.dark .mj-pick { --mj-on: #5a3644; --mj-line: #54474d; --mj-ring: #4a3e43; background: #383135; color: #f7e9ee; box-shadow: 0 0 0 2px #2e282c, 0 0 0 3px #4a3e43, 0 8px 22px rgba(0, 0, 0, .3); }
+.mj-pick-title { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); padding: 3px 8px 4px; letter-spacing: 1px; text-transform: uppercase; }
+.mj-pick button { display: flex; align-items: center; gap: 8px; border: 0; background: none; text-align: left; padding: 8px 10px; border-radius: 2px; white-space: nowrap; }
+.mj-pick button:hover, .mj-pick button:active { background: var(--mj-on); }
+.mj-pick button .mj-ico { width: 18px; height: 18px; }
+.mj-pick button.small { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); border-top: 1px dotted var(--mj-line); border-radius: 0; margin-top: 3px; padding-top: 7px; }
 
 /* 알림 */
 .mj-toast {

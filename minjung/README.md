@@ -76,6 +76,7 @@
 ## Condition (몸 상태)
 
 `condition` — 하루에 여러 번, 시간대별로 기록. `type`으로 나뉘어요.
+화면에서는 Condition을 누르면 **Meal · Medicine** / **Symptom · Mood** 두 창 중 하나를 골라요 (저장은 둘 다 이 목록 하나).
 
 ```json
 { "id": "cd...", "type": "meal",     "date": "2026-11-22", "time": "08:20", "slot": "breakfast", "memo": "토스트" }
@@ -99,7 +100,7 @@
 { "id": "bt...", "slot": "night", "date": "2026-11-22", "time": "23:40", "steps": ["클렌징", "토너", "크림"], "memo": "..." }
 ```
 
-`slot`: `morning` · `night` · `etc`
+`slot`: `morning` · `night` · `etc` (화면의 All 탭은 셋 다 모아 보기)
 
 ## Daily — Outfit
 
@@ -123,7 +124,7 @@ To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대�
 
 ## 아이콘
 
-`icons` — 메뉴 아이콘을 내 이미지로 바꾼 것. 키는 `profile` · `condition` · `daily` · `diary` · `menu`.
+`icons` — 메뉴 아이콘을 내 이미지로 바꾼 것. 키는 `profile` · `condition` · `daily` · `diary` · `menu` (아래 메뉴), `food` · `state` (Condition 안의 두 창).
 
 ```json
 "icons": { "profile": "minjung/images/icons/1795000000000_ab12c.png" }

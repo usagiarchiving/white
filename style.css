@@ -214,4 +214,17 @@ html, body, #wrap {
     -webkit-backdrop-filter: blur(15px) saturate(140%);
     z-index: 10000; /* 🚨 오타 수정됨 (Chil-index -> z-index) */
     align-items: center;
-    justify-content
+    justify-content: center;
+}
+
+/* ==========================================================================
+   게임 화면(김민정 · 마이홈): 위 헤더를 얇게, 본문은 헤더 바로 아래부터 화면 가득
+   (script.js가 body에 game-page를 붙이고, 헤더 높이를 --hdr-h로 알려 줌)
+   ========================================================================== */
+body.game-page .inner_header { padding: 6px 16px; gap: 14px; min-height: 38px; }
+body.game-page .nav-icon-btn, body.game-page .dropdown-bars { line-height: 1; font-size: 15px; }
+body.game-page .inner_index { margin: 0 auto; }
+body.game-page .fade-in-element { animation-name: fadeOnlyEffect; animation-duration: .25s; }
+@keyframes fadeOnlyEffect { from { opacity: 0; } to { opacity: 1; } }
+body.game-page .mh-wrap { padding-top: 0; }
+body.game-page .mh-stage { margin-top: 0; height: calc(100vh - var(--hdr-h, 40px)); height: calc(100svh - var(--hdr-h, 40px)); }

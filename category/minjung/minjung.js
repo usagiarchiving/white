@@ -25,6 +25,7 @@ const MOODS = [['love', '🥰', 'love'], ['good', '😊', 'good'], ['okay', '�
 const LIB_TYPES = [['book', 'Book'], ['youtube', 'YouTube'], ['movie', 'Movie']];
 const LIB_STATUS = [['want', 'Want'], ['now', 'Now'], ['done', 'Done']];
 const BEAUTY_SLOTS = [['morning', 'Morning'], ['night', 'Night'], ['etc', 'etc.']];
+const BEAUTY_SUBS = [['all', 'All']].concat(BEAUTY_SLOTS);
 const COND_TYPES = [['meal', 'Meal'], ['medicine', 'Medicine'], ['symptom', 'Symptom'], ['mood', 'Mood']];
 
 /* ---------------- 아이콘 (기본 그림, 창 위 아이콘을 누르면 내 이미지로 바꿀 수 있음) ---------------- */
@@ -34,6 +35,8 @@ const ICON = {
     condition: SV('<path d="M12 20s-7-4.4-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4C19 15.6 12 20 12 20z"/><path d="M12 11v4.4M9.8 13.2h4.4"/>'),
     daily: SV('<path d="M12 11.5c-2-3.2-6.5-4.6-7.4-2.6-.8 1.9 2.4 4.2 7.4 2.6zM12 11.5c2-3.2 6.5-4.6 7.4-2.6.8 1.9-2.4 4.2-7.4 2.6z"/><circle cx="12" cy="11.5" r="1.2"/><path d="M11.2 12.6 8.6 19M12.8 12.6l2.6 6.4"/>'),
     diary: SV('<path d="M5 4.5h11a2 2 0 0 1 2 2v13H7a2 2 0 0 1-2-2z"/><path d="M5 17.5a2 2 0 0 1 2-2h11M9 8.5h5"/><path d="M12 12.6s-2-1.2-2-2.4a1 1 0 0 1 2-.3 1 1 0 0 1 2 .3c0 1.2-2 2.4-2 2.4z"/>'),
+    food: SV('<path d="M7 4v6a2 2 0 0 0 4 0V4M9 4v16M16 20V4c-1.8 0-3 2.2-3 5.5S14.2 13 16 13"/>'),
+    state: SV('<circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01M9 14.5c1.6 1.4 4.4 1.4 6 0"/>'),
     menu: SV('<rect x="4.5" y="4.5" width="6" height="6" rx="1.5"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.5"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.5"/><path d="M16.5 14v5M14 16.5h5"/>'),
     hp: SV('<path d="M12 20s-7-4.4-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4C19 15.6 12 20 12 20z"/>'),
     lines: SV('<path d="M5 6h14a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 19 16h-8l-4 3v-3H5a1.5 1.5 0 0 1-1.5-1.5v-7A1.5 1.5 0 0 1 5 6z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/>'),
@@ -44,21 +47,29 @@ const ICON = {
     workout: SV('<path d="M7 8v8M17 8v8M4.5 10v4M19.5 10v4M7 12h10"/>'),
     friends: SV('<circle cx="9" cy="9" r="2.6"/><path d="M4.5 18c.7-2.6 2.4-4 4.5-4s3.8 1.4 4.5 4"/><path d="M17 15.5s-2.6-1.6-2.6-3.2a1.3 1.3 0 0 1 2.6-.4 1.3 1.3 0 0 1 2.6.4c0 1.6-2.6 3.2-2.6 3.2z"/>')
 };
+const PLUS_SVG = '<svg viewBox="0 0 24 24" width="16" height="16"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></g></svg>';
 const X_SVG = '<svg viewBox="0 0 24 24" width="14" height="14"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"><path d="M18 6 6 18M6 6l12 12"/></g></svg>';
 
 /* 창 설정 — main: 아래 메뉴/바탕화면 아이콘에 나오는 5개 */
 const WIN = {
     profile:   { title: 'Profile',   tabs: ['Profile', 'Library'], main: true, w: 360 },
-    condition: { title: 'Condition', tabs: ['All', 'Meal', 'Medicine', 'Symptom', 'Mood'], main: true, w: 380 },
+    food:      { title: 'Meal · Medicine', tabs: ['All', 'Meal', 'Medicine'], types: ['meal', 'medicine'], w: 380 },
+    state:     { title: 'Symptom · Mood',  tabs: ['All', 'Symptom', 'Mood'], types: ['symptom', 'mood'], w: 380 },
     daily:     { title: 'Daily',     tabs: ['Beauty', 'Outfit'], main: true, w: 460 },
     diary:     { title: 'Diary',     tabs: ['Diary', 'To Do'], main: true, w: 400 },
-    menu:      { title: 'Menu',      main: true, w: 340 },
     hp:        { title: 'HP Log',    w: 340 },
     lines:     { title: 'Lines',     w: 360 }
 };
-const MAIN = Object.keys(WIN).filter(k => WIN[k].main);
+/* 아래 메뉴 / 바탕화면 아이콘 5개 — pick이 있으면 누를 때 작은 고르기 팝업이 먼저 뜸 */
+const NAV = [
+    { id: 'profile', title: 'Profile' },
+    { id: 'condition', title: 'Condition', pick: [['food', 'Meal · Medicine'], ['state', 'Symptom · Mood']] },
+    { id: 'daily', title: 'Daily' },
+    { id: 'diary', title: 'Diary' },
+    { id: 'menu', title: 'Menu', pick: 'soon' }
+];
 // 아이패드·PC에서 창이 처음 뜨는 자리 (0~1 비율: 왼쪽→오른쪽, 위→아래)
-const SPOT = { profile: [0, 0], condition: [1, 0], diary: [0, 1], daily: [1, 1], menu: [0.22, 0.45], hp: [1, 0.08], lines: [0.5, 0.85] };
+const SPOT = { profile: [0, 0], food: [1, 0], state: [0.62, 0.3], diary: [0, 1], daily: [1, 1], hp: [1, 0.08], lines: [0.5, 0.85] };
 const SOON = [['schedule', 'Schedule'], ['inventory', 'Inventory'], ['bag', 'Bag'], ['shop', 'Shop'], ['workout', 'Workout'], ['friends', 'Friends']];
 
 /* To Do: 기존 투두 카테고리(data/todos.json)를 그대로 씀 */
@@ -257,13 +268,49 @@ export function init() {
 
     // 아래 메뉴(모바일) + 바탕화면 아이콘(PC)
     function drawMenus() {
-        $('mj-nav').innerHTML = MAIN.map(id => `<button data-open="${id}"><span class="mj-ico">${iconHtml(id)}</span><span>${WIN[id].title}</span></button>`).join('');
-        $('mj-icons').innerHTML = MAIN.map(id => `<button class="mj-file" data-open="${id}"><span class="mj-ico">${iconHtml(id)}</span><span class="mj-file-name">${WIN[id].title}</span></button>`).join('');
+        $('mj-nav').innerHTML = NAV.map(n => `<button data-nav="${n.id}"><span class="mj-ico">${iconHtml(n.id)}</span><span>${n.title}</span></button>`).join('');
+        $('mj-icons').innerHTML = NAV.map(n => `<button class="mj-file" data-nav="${n.id}"><span class="mj-ico">${iconHtml(n.id)}</span><span class="mj-file-name">${n.title}</span></button>`).join('');
     }
     root.addEventListener('click', e => {
-        const b = e.target.closest('[data-open]');
-        if (b) openWin(b.dataset.open);
+        const b = e.target.closest('[data-nav]');
+        if (!b) return;
+        const n = NAV.find(x => x.id === b.dataset.nav);
+        if (!n.pick) { closePick(); openWin(n.id); return; }
+        const items = n.pick === 'soon' ? SOON.map(([k, l]) => ({ icon: ICON[k], label: l, run: () => toast(l + ' · Coming soon ♡') }))
+            : n.pick.map(([k, l]) => ({ icon: iconHtml(k), label: l, run: () => openWin(k) }));
+        items.push({ small: true, label: '아이콘 바꾸기', run: () => pickFile(f => setIcon(n.id, f, n.title)) });
+        showPick(b, items, n.title);
     });
+
+    /* 작은 고르기 팝업: 누른 아이콘 바로 위(모바일)·옆(PC)에 뜨고, 바깥을 누르면 닫힘 */
+    let pickEl = null;
+    function closePick() { if (pickEl) { pickEl.remove(); pickEl = null; } }
+    function showPick(anchor, items, title) {
+        const same = pickEl && pickEl.dataset.for === (title || '');
+        closePick();
+        if (same) return;                       // 같은 아이콘을 다시 누르면 닫기만
+        pickEl = document.createElement('div');
+        pickEl.className = 'mj-pick-bg';
+        pickEl.dataset.for = title || '';
+        if (anchor.closest('.mj-win-food, .mj-win-state')) pickEl.classList.add('dark');   // 블랙·핑크 창에서는 어둡게
+        pickEl.innerHTML = `<div class="mj-pick">${title ? `<div class="mj-pick-title">${title}</div>` : ''}${items.map((it, i) =>
+            `<button class="${it.small ? 'small' : ''}" data-i="${i}">${it.icon ? `<span class="mj-ico">${it.icon}</span>` : ''}<span>${it.label}</span></button>`).join('')}</div>`;
+        root.appendChild(pickEl);
+        const box = pickEl.querySelector('.mj-pick'), a = anchor.getBoundingClientRect(), r = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+        const bw = box.offsetWidth, bh = box.offsetHeight;
+        let left, top;
+        if (anchor.closest('.mj-icons')) { left = a.left - r.left - bw - 8; top = a.top - r.top; }                       // PC: 아이콘 왼쪽
+        else if (anchor.closest('.mj-nav')) { left = a.left - r.left + a.width / 2 - bw / 2; top = a.top - r.top - bh - 6; }   // 모바일: 아이콘 바로 위
+        else { left = a.right - r.left - bw; top = a.bottom - r.top + 4; }                                                // 창 안 + 버튼: 아래
+        left = Math.max(6, Math.min(left, r.width - bw - 6));
+        top = Math.max(6, Math.min(top, r.height - bh - 6));
+        box.style.left = left + 'px'; box.style.top = top + 'px';
+        pickEl.addEventListener('click', e => {
+            const btn = e.target.closest('[data-i]');
+            closePick();
+            if (btn) items[Number(btn.dataset.i)].run();
+        });
+    }
 
     function toast(msg) {
         const t = $('mj-toast');
@@ -275,12 +322,13 @@ export function init() {
     function newState(id) {
         const st = { tab: WIN[id].tabs ? WIN[id].tabs[0] : null, date: todayKey(), form: null };
         if (id === 'profile') st.sub = 'book';
-        if (id === 'daily') st.sub = 'morning';
+        if (id === 'daily') st.sub = 'all';
         if (id === 'hp' || id === 'lines') st.form = {};
         return st;
     }
     function openWin(id) {
         if (!WIN[id]) return;
+        closePick();
         if (wins[id]) { focusWin(id); return; }
         const el = document.createElement('div');
         el.className = 'mj-win mj-win-' + id;
@@ -321,14 +369,36 @@ export function init() {
         const top = body ? body.scrollTop : 0;
         w.el.innerHTML = `
             <div class="mj-win-head" data-drag>
-                <button class="mj-badge" ${def.main ? 'data-act="icon" title="아이콘 바꾸기"' : 'tabindex="-1"'}>${iconHtml(id)}</button>
+                <button class="mj-badge" ${(id !== 'hp' && id !== 'lines') ? 'data-act="icon" title="아이콘 바꾸기"' : 'tabindex="-1"'}>${iconHtml(id)}</button>
                 <div class="mj-title">${def.title}</div>
                 <span class="mj-dots3"><i></i><i></i></span>
                 <button class="mj-x" data-act="close" aria-label="닫기">${X_SVG}</button>
             </div>
-            ${def.tabs ? `<div class="mj-tabs">${def.tabs.map(t => `<button data-act="tab" data-v="${t}" class="${st.tab === t ? 'on' : ''}">${t}</button>`).join('')}</div>` : ''}
+            ${def.tabs ? `<div class="mj-tabs">${def.tabs.map(t => `<button data-act="tab" data-v="${t}" class="${st.tab === t ? 'on' : ''}">${t}</button>`).join('')}
+                <span class="sp"></span>${canAdd(id, st) ? `<button class="mj-plus" data-act="plus" aria-label="추가">${PLUS_SVG}</button>` : ''}</div>` : ''}
             <div class="mj-win-body">${VIEW[id](st)}</div>`;
         w.el.querySelector('.mj-win-body').scrollTop = top;
+    }
+    // 탭 줄 오른쪽 + 버튼이 보이는 곳
+    function canAdd(id, st) {
+        if (st.form || st.pedit) return false;
+        if (id === 'profile') return st.tab === 'Library';
+        if (id === 'diary') return st.tab === 'Diary';
+        return id === 'food' || id === 'state' || id === 'daily';
+    }
+    function plus(id, st, btn) {
+        const fresh = () => renderWin(id);
+        if (WIN[id].types) {
+            if (st.tab !== 'All') { st.form = { type: st.tab.toLowerCase() }; fresh(); return; }
+            showPick(btn, WIN[id].types.map(k => ({ label: label(COND_TYPES, k), run: () => { st.form = { type: k }; fresh(); } })));
+            return;
+        }
+        if (id === 'daily' && st.tab === 'Outfit') { pickFile(f => { st.form = { file: f, preview: URL.createObjectURL(f) }; fresh(); }); return; }
+        if (id === 'daily' && st.sub === 'all') {
+            showPick(btn, BEAUTY_SLOTS.map(([k, l]) => ({ label: l, run: () => { st.form = { slot: k }; fresh(); } })));
+            return;
+        }
+        st.form = {}; fresh();
     }
     // 저장 뒤 다시 그림 (적고 있는 칸이 있는 창은 건드리지 않음)
     function redraw(fromServer) {
@@ -367,9 +437,10 @@ export function init() {
             const fresh = () => renderWin(id);
             switch (act) {
                 case 'close': closeWin(id); break;
+                case 'plus': plus(id, st, b); break;
                 case 'tab': st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; fresh(); if (v === 'To Do') loadTodos(); break;
                 case 'sub': st.sub = v; st.form = null; fresh(); break;
-                case 'icon': pickFile(f => setIcon(id, f)); break;
+                case 'icon': pickFile(f => setIcon(id, f, WIN[id].title)); break;
                 case 'day': st.date = v === '0' ? todayKey() : shiftDay(st.date, Number(v)); fresh(); break;
                 case 'new': st.form = { type: v || null }; fresh(); break;
                 case 'edit': {
@@ -405,7 +476,7 @@ export function init() {
                     break;
                 }
                 case 'steps': {
-                    const slot = st.sub;
+                    const slot = (st.form && st.form.slot) || st.sub;
                     const t = prompt(label(BEAUTY_SLOTS, slot) + ' 루틴 단계 (쉼표로 구분)', db.beauty_steps[slot].join(', '));
                     if (t == null) break;
                     const steps = t.split(',').map(s => s.trim()).filter(Boolean);
@@ -452,14 +523,14 @@ export function init() {
         fileIn.onchange = () => { const f = fileIn.files && fileIn.files[0]; if (f) cb(f); };
         fileIn.click();
     }
-    async function setIcon(id, file) {
+    async function setIcon(id, file, title) {
         if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
         try {
             toast('uploading…');
             const { path, sha } = await uploadImage(file, 'icons', 256, 'image/png');
             const old = db.icons[id];
             const files = {}; files[path] = sha; if (old) files[old] = null;
-            save(WIN[id].title + ' 아이콘', d => { d.icons[id] = path; }, files);
+            save(title + ' 아이콘', d => { d.icons[id] = path; }, files);
         } catch (e) { alert('아이콘을 올리지 못했어요.\n' + (e.message || e)); }
     }
 
@@ -506,7 +577,7 @@ export function init() {
         if (id === 'hp') return 'hp';
         if (id === 'lines') return 'lines';
         if (id === 'profile') return 'library';
-        if (id === 'condition') return 'condition';
+        if (WIN[id].types) return 'condition';
         if (id === 'daily') return st.tab === 'Outfit' ? 'outfit' : 'beauty';
         if (id === 'diary') return 'diary';
     }
@@ -532,7 +603,7 @@ export function init() {
             if (!f.title) { alert('제목을 적어 주세요.'); return; }
             item = tidy(Object.assign(base, { type: st.form.type || st.sub, title: f.title, status: f.status, rating: f.rating || undefined, url: f.url, memo: f.memo }));
             msg = label(LIB_TYPES, item.type) + ' ' + item.title;
-        } else if (id === 'condition') {
+        } else if (WIN[id].types) {
             const type = st.form.type;
             const extra = type === 'meal' ? { slot: f.slot, memo: f.memo }
                 : type === 'medicine' ? { name: f.name, memo: f.memo }
@@ -544,7 +615,7 @@ export function init() {
             msg = label(COND_TYPES, type) + ' ' + when + ' ' + (f.name || (f.tags || []).join(',') || f.slot || f.mood || '');
             st.date = item.date;
         } else if (id === 'daily' && st.tab === 'Beauty') {
-            item = tidy(Object.assign(base, { slot: st.form.slot || st.sub, steps: f.steps, memo: f.memo }));
+            item = tidy(Object.assign(base, { slot: st.form.slot || (st.sub === 'all' ? 'etc' : st.sub), steps: f.steps, memo: f.memo }));
             msg = 'Beauty ' + label(BEAUTY_SLOTS, item.slot) + ' ' + when;
             st.date = item.date;
         } else if (id === 'daily') {
@@ -651,24 +722,8 @@ export function init() {
                 <div class="mj-btns"><span class="sp"></span><button class="mj-btn ghost" data-act="pedit">Edit</button></div>`;
         },
         /* 몸 상태 */
-        condition(st) {
-            if (st.form) return condForm(st);
-            const type = st.tab === 'All' ? null : st.tab.toLowerCase();
-            const rows = db.condition.filter(x => x.date === st.date && (!type || x.type === type)).sort(byOldest);
-            return `
-                ${dayNav(st)}
-                <div class="mj-newbar">
-                    ${type ? `<button class="mj-add" data-act="new" data-v="${type}">+ ${st.tab}</button>` : COND_TYPES.map(([k, l]) => `<button class="mj-add" data-act="new" data-v="${k}">+ ${l}</button>`).join('')}
-                </div>
-                <div class="mj-log">
-                    ${rows.length ? rows.map(r => `
-                        <button class="mj-row" data-act="edit" data-id="${r.id}">
-                            <span class="tm">${esc(r.time)}</span>
-                            ${!type ? `<span class="ty ty-${r.type}">${label(COND_TYPES, r.type)}</span>` : ''}
-                            <span class="tx">${condText(r)}</span>
-                        </button>`).join('') : empty('이 날은 기록이 없어요.')}
-                </div>`;
-        },
+        food(st) { return condView('food', st); },
+        state(st) { return condView('state', st); },
         /* 자기관리 */
         daily(st) {
             if (st.tab === 'Outfit') return outfitView(st);
@@ -683,15 +738,15 @@ export function init() {
                         ${formBtns(it)}
                     </div>`;
             }
-            const rows = db.beauty.filter(x => x.date === st.date && x.slot === st.sub).sort(byOldest);
+            const rows = db.beauty.filter(x => x.date === st.date && (st.sub === 'all' || x.slot === st.sub)).sort(byOldest);
             return `
-                <div class="mj-subs">${BEAUTY_SLOTS.map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>
+                <div class="mj-subs">${BEAUTY_SUBS.map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>
                 ${dayNav(st)}
-                <div class="mj-newbar"><button class="mj-add" data-act="new">+ ${label(BEAUTY_SLOTS, st.sub)}</button></div>
                 <div class="mj-log">
                     ${rows.length ? rows.map(r => `
                         <button class="mj-row" data-act="edit" data-id="${r.id}">
                             <span class="tm">${esc(r.time)}</span>
+                            ${st.sub === 'all' ? `<span class="ty">${label(BEAUTY_SLOTS, r.slot)}</span>` : ''}
                             <span class="tx">${(r.steps || []).map(s => `<em class="mj-tag">${esc(s)}</em>`).join('')} ${esc(r.memo || '')}</span>
                         </button>`).join('') : empty('이 날은 기록이 없어요.')}
                 </div>`;
@@ -711,7 +766,6 @@ export function init() {
             }
             const rows = db.diary.slice().sort(byNewest);
             return `
-                <div class="mj-newbar"><button class="mj-add" data-act="new">+ write</button></div>
                 <div class="mj-log">
                     ${rows.length ? rows.map(r => `
                         <button class="mj-diary" data-act="edit" data-id="${r.id}">
@@ -720,17 +774,24 @@ export function init() {
                             <span class="tx">${esc((r.body || '').slice(0, 120))}</span>
                         </button>`).join('') : empty('아직 일기가 없어요.')}
                 </div>`;
-        },
-        /* 나머지 메뉴 */
-        menu() {
-            return `
-                <div class="mj-grid">
-                    ${SOON.map(([k, l]) => `<button class="mj-tile" data-act="soon" data-v="${l}"><span class="mj-ico">${ICON[k]}</span><span>${l}</span></button>`).join('')}
-                </div>
-                <p class="mj-empty">coming soon ♡</p>`;
         }
     };
 
+    function condView(id, st) {
+        if (st.form) return condForm(st);
+        const types = WIN[id].types, type = st.tab === 'All' ? null : st.tab.toLowerCase();
+        const rows = db.condition.filter(x => x.date === st.date && types.includes(x.type) && (!type || x.type === type)).sort(byOldest);
+        return `
+            ${dayNav(st)}
+            <div class="mj-log">
+                ${rows.length ? rows.map(r => `
+                    <button class="mj-row" data-act="edit" data-id="${r.id}">
+                        <span class="tm">${esc(r.time)}</span>
+                        ${!type ? `<span class="ty ty-${r.type}">${label(COND_TYPES, r.type)}</span>` : ''}
+                        <span class="tx">${condText(r)}</span>
+                    </button>`).join('') : empty('이 날은 기록이 없어요.')}
+            </div>`;
+    }
     function condText(r) {
         const memo = r.memo ? ` <span class="memo">${esc(r.memo)}</span>` : '';
         if (r.type === 'meal') return `<b>${label(MEAL_SLOTS, r.slot || '') || ''}</b>${memo}`;
@@ -788,7 +849,6 @@ export function init() {
         const rows = db.library.filter(x => x.type === st.sub).sort(byNewest);
         return `
             <div class="mj-subs">${LIB_TYPES.map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>
-            <div class="mj-newbar"><button class="mj-add" data-act="new">+ ${label(LIB_TYPES, st.sub)}</button></div>
             <div class="mj-log">
                 ${rows.length ? rows.map(r => {
                     const yt = r.type === 'youtube' && ytId(r.url);
@@ -819,10 +879,10 @@ export function init() {
                     ${formBtns(it)}
                 </div>`;
         }
-        const rows = db.outfit.slice().sort(byNewest);
+        const rows = db.outfit.slice().sort(byNewest);     // 최신 날짜·시간이 맨 앞
+        if (!rows.length) return empty('오른쪽 위 + 로 오늘의 옷을 올려 줘');
         return `
             <div class="mj-outfits">
-                <button class="mj-outfit add" data-act="pick"><span>+</span></button>
                 ${rows.map(r => `
                     <button class="mj-outfit" data-act="edit" data-id="${r.id}">
                         ${imgTag(r.img)}
