@@ -31,10 +31,10 @@
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-22T16:50:13+09:00",
+ "updated_at": "2026-11-22T16:50:15+09:00",
  "view": {
   "stk_off": {
-   "pc": true
+   "pc": false
   }
  }
 }
