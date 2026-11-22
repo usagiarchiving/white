@@ -228,3 +228,10 @@ body.game-page .fade-in-element { animation-name: fadeOnlyEffect; animation-dura
 @keyframes fadeOnlyEffect { from { opacity: 0; } to { opacity: 1; } }
 body.game-page .mh-wrap { padding-top: 0; }
 body.game-page .mh-stage { margin-top: 0; height: calc(100vh - var(--hdr-h, 40px)); height: calc(100svh - var(--hdr-h, 40px)); }
+
+/* 스크롤바 얇게 (PC) */
+* { scrollbar-width: thin; scrollbar-color: rgba(214, 186, 196, .7) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(214, 186, 196, .7); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(214, 160, 180, .85); }

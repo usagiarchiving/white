@@ -446,3 +446,30 @@
 
 /* Lines: 아래 Backlog를 내려도 쓰는 칸은 위에 고정 */
 .mj-win-lines .mj-win-body > .mj-form { position: sticky; top: -12px; z-index: 3; box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 4px var(--mj-ring), 0 6px 10px -6px rgba(150, 100, 115, .25); }
+
+/* 다이어리: 블로그처럼 글 사이 사진, 글씨는 덜 진하게 */
+.mj-dedit {
+    min-height: 220px; padding: 10px 12px; border: 1px solid var(--mj-line); border-radius: 2px; background: var(--mj-paper);
+    color: #8a7f83; line-height: 1.85; outline: none; word-break: keep-all; overflow-wrap: anywhere;
+}
+.mj-dedit:focus { border-color: var(--mj-pink); background: #fff; }
+.mj-dedit div { min-height: 1em; }
+.mj-dimg { display: block; max-width: 100%; max-height: 70vh; margin: 8px auto; border-radius: 3px; border: 1px solid var(--mj-line); }
+.mj-dtools { display: flex; gap: 6px; }
+.mj-win-diary .mj-form [data-f=title] { font-weight: 700; color: var(--mj-ink); }
+.mj-diary .dthumb { width: 64px; height: 64px; }
+
+/* 빈 칸 안내 글씨(title, #tags 등)는 아주 옅게 */
+.mj-root ::placeholder { color: #ddd1d5; opacity: 1; }
+.mj-win-food ::placeholder, .mj-win-state ::placeholder { color: #66595e; }
+
+/* 식사 기록 사진 */
+.mj-cimgs { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+.mj-cimgs img { width: 72px; height: 72px; object-fit: cover; border-radius: 2px; border: 1px solid var(--mj-line); }
+
+/* 모든 기록 최신순 버튼 */
+.mj-day .lst { display: inline-flex; align-items: center; justify-content: center; color: var(--mj-sub); }
+.mj-day .lst.on { color: var(--mj-deep); border-color: var(--mj-pink); }
+.mj-day.all { justify-content: space-between; }
+.mj-day .alllabel { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); letter-spacing: 1px; text-transform: uppercase; }
+.mj-tabs::-webkit-scrollbar { display: none; }

@@ -384,7 +384,10 @@
                 return {
                     created_at: x.date + 'T' + (x.time || '00:00') + ':00',
                     title: x.title || '',
-                    content: ((x.imgs && x.imgs[0]) || '') + '|||' + homeEsc(x.body).replace(/\n/g, '<br>') + '|||' + (x.tags || []).map(function (t) { return '#' + t; }).join(' ')
+                    // 본문 속 사진 자리 `![](경로)` 는 그 자리에 사진으로, 없으면 첫 사진을 위에
+                    content: (/^!\[\]\(/m.test(x.body || '') ? '' : ((x.imgs && x.imgs[0]) || '')) + '|||' +
+                        homeEsc(x.body).replace(/^!\[\]\((.+)\)$/gm, '<img src="$1" style="max-width:100%;display:block;margin:8px auto;">').replace(/\n/g, '<br>') + '|||' +
+                        (x.tags || []).map(function (t) { return '#' + t; }).join(' ')
                 };
             });
         } catch (e) { console.error(e); }

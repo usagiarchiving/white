@@ -677,7 +677,7 @@ export function init() {
             const st = wins[id].st;
             const typing = wins[id].el.contains(document.activeElement) || st.pedit || (st.form && st.form.id) ||
                 (st.form && Object.keys(st.form).length && id !== 'hp' && id !== 'lines');
-            if (fromServer && typing) return;
+            if ((fromServer && typing) || (id === 'diary' && st.form)) return;   // 다이어리 쓰는 중엔 안 건드림
             renderWin(id);
         });
     }
@@ -812,9 +812,8 @@ export function init() {
                 case 'bg-add': pickFile(f => setBgImage(-1, 'mobile', f)); break;
                 case 'bg-del': delBg(Number(b.dataset.i)); break;
                 // 라이브러리
-                case 'dy-photo': pickFile(f => { keepForm(id); st.form.addFiles = (st.form.addFiles || []).concat([f]); st.form.addPreviews = (st.form.addPreviews || []).concat([URL.createObjectURL(f)]); fresh(); }); break;
-                case 'dy-rm': keepForm(id); st.form.imgs = (st.form.imgs || []).filter((_, i) => i !== Number(v || b.dataset.i)); fresh(); break;
-                case 'dy-rmnew': { keepForm(id); const k = Number(b.dataset.i); st.form.addFiles.splice(k, 1); st.form.addPreviews.splice(k, 1); fresh(); break; }
+                case 'dy-photo': pickFile(f => insertDiaryPhoto(el, st, f)); break;
+                case 'alllist': st.all = !st.all; fresh(); break;
                 case 'lib-add': showPick(b, libTypes().map(([k, l]) => ({ label: l, run: () => { st.form = { type: k }; fresh(); } }))); break;
                 case 'lib-cover': pickFile(f => { keepForm(id); st.form.coverFile = f; st.form.cover = ''; st.form.preview = URL.createObjectURL(f); fresh(); }); break;
                 case 'lib-uncover': keepForm(id); st.form.cover = ''; st.form.coverFile = null; st.form.preview = ''; fresh(); break;
@@ -832,6 +831,57 @@ export function init() {
             const box = el.querySelector('.mj-liblist'); if (box) box.innerHTML = libList(w.st);
         });
         el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-ls]')) { e.preventDefault(); libSearch(id, w.st, el); } });
+    }
+
+    /* 다이어리 본문: 글 사이사이 사진. 저장은 본문 글자 + 사진 자리 표시 `![](경로)` 한 줄 */
+    const IMG_LINE = /^!\[\]\((.+)\)$/;
+    function diaryHtml(it) {
+        const body = it.body || '', lines = body.split('\n');
+        const inline = lines.some(l => IMG_LINE.test(l.trim()));
+        const img = p => `<img class="mj-dimg" data-path="${esc(p)}" src="${esc(imgSrc(p))}" ${/^https?:/.test(p) ? '' : `onerror="this.onerror=null;this.src='${esc(repo.rawUrl(p))}'"`} alt="">`;
+        let html = inline ? '' : (it.imgs || []).map(img).join('');           // 옛 글: 사진은 맨 위에
+        html += lines.map(l => { const m = IMG_LINE.exec(l.trim()); return m ? img(m[1]) : `<div>${l ? esc(l) : '<br>'}</div>`; }).join('');
+        return html;
+    }
+    function diaryText(editor) {
+        let out = '';
+        const walk = n => {
+            n.childNodes.forEach(c => {
+                if (c.nodeType === 3) { out += c.nodeValue.replace(/\u00a0/g, ' '); return; }
+                if (c.nodeType !== 1) return;
+                const tag = c.tagName;
+                if (tag === 'IMG') { out += '\n![](' + (c.dataset.path || ('new:' + c.dataset.new)) + ')\n'; return; }
+                if (tag === 'BR') { out += '\n'; return; }
+                const block = /^(DIV|P|LI|H\d)$/.test(tag);
+                if (block && out && !out.endsWith('\n')) out += '\n';
+                walk(c);
+                if (block && !out.endsWith('\n')) out += '\n';
+            });
+        };
+        walk(editor);
+        return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n')
+            .replace(/\n\n(!\[\]\()/g, '\n$1').replace(/(!\[\]\([^)\n]+\))\n\n/g, '$1\n').trim();   // 사진 앞뒤 빈 줄은 하나로
+    }
+    let diaryRange = null;
+    document.addEventListener('selectionchange', () => {
+        const sel = window.getSelection(); if (!sel.rangeCount) return;
+        const r = sel.getRangeAt(0), ed = r.startContainer && (r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement);
+        if (ed && ed.closest && ed.closest('.mj-dedit')) diaryRange = r.cloneRange();
+    });
+    function insertDiaryPhoto(el, st, file) {
+        const ed = el.querySelector('.mj-dedit'); if (!ed) return;
+        st.form.addFiles = st.form.addFiles || [];
+        const k = st.form.addFiles.push(file) - 1;
+        const img = document.createElement('img');
+        img.className = 'mj-dimg'; img.dataset.new = k; img.src = URL.createObjectURL(file);
+        const after = document.createElement('div'); after.innerHTML = '<br>';
+        if (diaryRange && ed.contains(diaryRange.startContainer)) {
+            let blk = diaryRange.startContainer; while (blk && blk.parentNode !== ed) blk = blk.parentNode;
+            if (blk) { ed.insertBefore(img, blk.nextSibling); ed.insertBefore(after, img.nextSibling); }
+            else { ed.appendChild(img); ed.appendChild(after); }
+        } else { ed.appendChild(img); ed.appendChild(after); }
+        const r = document.createRange(); r.setStart(after, 0); r.collapse(true);
+        const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); diaryRange = r.cloneRange();
     }
 
     function pickFile(cb) {
@@ -880,13 +930,21 @@ export function init() {
             <button class="mj-btn ghost" data-act="cancel">Cancel</button>
             <button class="mj-btn" data-act="save">${it.id ? 'Update' : 'Save'}</button>
         </div>`;
-    const dayNav = st => `
+    const LIST_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 7h11M8 12h11M8 17h11M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></svg>';
+    const dayNav = st => st.all ? `
+        <div class="mj-day all"><span class="alllabel">All records</span><button class="lst on" data-act="alllist" title="날짜별로 보기">${LIST_SVG}</button></div>` : `
         <div class="mj-day">
             <button data-act="day" data-v="-1">‹</button>
             <input type="date" data-day value="${st.date}">
             <button data-act="day" data-v="1">›</button>
             <button class="today" data-act="day" data-v="0">Today</button>
+            <button class="lst" data-act="alllist" title="모든 기록 최신순">${LIST_SVG}</button>
         </div>`;
+    // 날짜별 묶음 (모든 기록 보기)
+    function grouped(rows, rowHtml) {
+        const g = {}; rows.forEach(r => (g[r.date] = g[r.date] || []).push(r));
+        return Object.keys(g).sort().reverse().map(k => `<div class="mj-log-day">${dayTitle(k)}</div>` + g[k].map(rowHtml).join('')).join('');
+    }
     const empty = t => `<p class="mj-empty">${t}</p>`;
 
     function listOf(id, st) {
@@ -940,6 +998,9 @@ export function init() {
                 : { mood: f.mood, memo: f.memo };
             if (type === 'medicine' && !f.name) { alert('약 이름을 적어 주세요.'); return; }
             if (type === 'mood' && !f.mood) { alert('기분을 골라 주세요.'); return; }
+            const oldC = st.form.id ? db.condition.find(x => x.id === st.form.id) : null;
+            if (oldC && oldC.imgs) extra.imgs = oldC.imgs;
+            if (oldC && oldC.from) extra.from = oldC.from;
             item = tidy(Object.assign(base, { type }, extra));
             msg = label(COND_TYPES, type) + ' ' + when + ' ' + (f.name || (f.tags || []).join(',') || f.slot || f.mood || '');
             st.date = item.date;
@@ -969,17 +1030,25 @@ export function init() {
             upsert('outfit', item, msg, files);
             return;
         } else if (id === 'diary') {
-            const add = st.form.addFiles || [], imgs = (st.form.imgs || []).slice();
-            if (!f.title && !f.body && !imgs.length && !add.length) { alert('내용을 적어 주세요.'); return; }
+            let body = diaryText(box.querySelector('.mj-dedit'));
+            const add = st.form.addFiles || [];
+            const used = [...body.matchAll(/^!\[\]\(new:(\d+)\)$/gm)].map(m => Number(m[1]));
+            if (!f.title && !body) { alert('내용을 적어 주세요.'); return; }
             const files = {};
-            if (add.length) {
+            if (used.length) {
                 if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
                 const btn = box.querySelector('[data-act=save]'); btn.disabled = true; btn.textContent = 'Uploading…';
-                try { for (const file of add) { const up = await uploadImage(file, 'diary', 1600, 'image/jpeg'); files[up.path] = up.sha; imgs.push(up.path); } }
-                catch (e) { alert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return; }
+                try {
+                    for (const k of used) {
+                        const up = await uploadImage(add[k], 'diary', 1600, 'image/jpeg'); files[up.path] = up.sha;
+                        body = body.replace('![](new:' + k + ')', '![](' + up.path + ')');
+                    }
+                } catch (e) { alert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return; }
             }
+            const imgs = [...body.matchAll(/^!\[\]\((.+)\)$/gm)].map(m => m[1]);
             const old = st.form.id ? db.diary.find(x => x.id === st.form.id) : null;
             ((old && old.imgs) || []).forEach(p => { if (!imgs.includes(p) && p.startsWith(IMG_DIR)) files[p] = null; });
+            f.body = body;
             const tags = (f.tags || '').split(/[\s,]+/).map(t => t.replace(/^#/, '').trim()).filter(Boolean);
             item = tidy(Object.assign(base, { title: f.title, body: f.body, imgs, tags }));
             if (old && old.from) item.from = old.from;
@@ -1097,18 +1166,19 @@ export function init() {
                         ${formBtns(it)}
                     </div>`;
             }
-            const rows = db.beauty.filter(x => x.date === st.date && (st.sub === 'all' || x.slot === st.sub)).sort(byNewest);   // 최신순
+            const rows = db.beauty.filter(x => (st.all || x.date === st.date) && (st.sub === 'all' || x.slot === st.sub)).sort(byNewest);   // 최신순
+            const brow = r => `
+                        <button class="mj-row" data-act="edit" data-id="${r.id}">
+                            <span class="tm">${esc(r.time)}</span>
+                            ${st.sub === 'all' ? `<span class="ty">${label(beautySlots(), r.slot)}</span>` : ''}
+                            <span class="tx">${(r.steps || []).length ? `<span class="steps">${r.steps.map(esc).join(' · ')}</span> ` : ''}${r.memo ? `<span class="memo">${esc(r.memo)}</span>` : ''}</span>
+                        </button>`;
             return `
                 <div class="mj-subs">${beautySubs().map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>
                 ${dayNav(st)}
                 <div class="mj-newbar">${(st.sub === 'all' ? beautySlots() : S().beauty_slots.filter(x => x.key === st.sub || !x.tab).map(x => [x.key, x.label])).map(([k, l]) => `<button class="mj-add" data-act="new" data-v="${k}">+ ${l}</button>`).join('')}</div>
                 <div class="mj-log">
-                    ${rows.length ? rows.map(r => `
-                        <button class="mj-row" data-act="edit" data-id="${r.id}">
-                            <span class="tm">${esc(r.time)}</span>
-                            ${st.sub === 'all' ? `<span class="ty">${label(beautySlots(), r.slot)}</span>` : ''}
-                            <span class="tx">${(r.steps || []).length ? `<span class="steps">${r.steps.map(esc).join(' · ')}</span> ` : ''}${r.memo ? `<span class="memo">${esc(r.memo)}</span>` : ''}</span>
-                        </button>`).join('') : empty('이 날은 기록이 없어요.')}
+                    ${rows.length ? (st.all ? grouped(rows, brow) : rows.map(brow).join('')) : empty(st.all ? '아직 기록이 없어요.' : '이 날은 기록이 없어요.')}
                 </div>`;
         },
         /* 다이어리 + 투두 */
@@ -1120,12 +1190,8 @@ export function init() {
                     <div class="mj-form mj-card">
                         ${whenRow(it)}
                         <input data-f="title" placeholder="title" value="${esc(it.title || '')}">
-                        <textarea data-f="body" rows="12">${esc(it.body || '')}</textarea>
-                        <div class="mj-dphotos">
-                            ${(it.imgs || []).map((p, i) => `<span class="ph">${imgTag(p)}<button data-act="dy-rm" data-i="${i}">✕</button></span>`).join('')}
-                            ${(it.addPreviews || []).map((u, i) => `<span class="ph"><img src="${esc(u)}" alt=""><button data-act="dy-rmnew" data-i="${i}">✕</button></span>`).join('')}
-                            <button class="mj-add ph-add" data-act="dy-photo">+ photo</button>
-                        </div>
+                        <div class="mj-dedit" contenteditable="true" spellcheck="false">${diaryHtml(it)}</div>
+                        <div class="mj-dtools"><button class="mj-add" data-act="dy-photo">+ photo</button></div>
                         <input data-f="tags" placeholder="#tags" value="${esc(Array.isArray(it.tags) ? it.tags.map(x => '#' + x).join(' ') : (it.tags || ''))}">
                         ${formBtns(it)}
                     </div>`;
@@ -1140,7 +1206,7 @@ export function init() {
                             <span class="dbody">
                                 <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}${r.imgs && r.imgs.length > 1 ? ` · ${r.imgs.length} photos` : ''}</span>
                                 ${r.title ? `<span class="tt">${esc(r.title)}</span>` : ''}
-                                ${r.body ? `<span class="tx">${esc(r.body.slice(0, 120))}</span>` : ''}
+                                ${r.body ? `<span class="tx">${esc(r.body.split('\n').filter(l => !IMG_LINE.test(l.trim())).join(' ').slice(0, 120))}</span>` : ''}
                                 ${(r.tags || []).length ? `<span class="tags">${r.tags.map(x => '#' + esc(x)).join(' ')}</span>` : ''}
                             </span>
                         </button>`).join('') : empty('아직 일기가 없어요.')}
@@ -1151,22 +1217,23 @@ export function init() {
     function condView(id, st) {
         if (st.form) return condForm(st);
         const types = WIN[id].types, type = st.tab === 'All' ? null : st.tab.toLowerCase();
-        const rows = db.condition.filter(x => x.date === st.date && types.includes(x.type) && (!type || x.type === type)).sort(byNewest);   // 최신순
+        const rows = db.condition.filter(x => (st.all || x.date === st.date) && types.includes(x.type) && (!type || x.type === type)).sort(byNewest);   // 최신순
         return `
             ${dayNav(st)}
             <div class="mj-newbar">${(type ? [type] : types).map(k => `<button class="mj-add" data-act="new" data-v="${k}">+ ${label(COND_TYPES, k)}</button>`).join('')}</div>
             <div class="mj-log">
-                ${rows.length ? rows.map(r => `
+                ${rows.length ? (st.all ? grouped(rows, row) : rows.map(row).join('')) : empty(st.all ? '아직 기록이 없어요.' : '이 날은 기록이 없어요.')}
+            </div>`;
+        function row(r) { return `
                     <button class="mj-row" data-act="edit" data-id="${r.id}">
                         <span class="tm">${esc(r.time)}</span>
                         ${!type ? `<span class="ty ty-${r.type}">${label(COND_TYPES, r.type)}</span>` : ''}
                         <span class="tx">${condText(r)}</span>
-                    </button>`).join('') : empty('이 날은 기록이 없어요.')}
-            </div>`;
+                    </button>`; }
     }
     function condText(r) {
         const memo = r.memo ? ` <span class="memo">${esc(r.memo)}</span>` : '';
-        if (r.type === 'meal') return `<b>${label(MEAL_SLOTS, r.slot || '') || ''}</b>${memo}`;
+        if (r.type === 'meal') return `<b>${label(MEAL_SLOTS, r.slot || '') || ''}</b>${memo}${(r.imgs || []).length ? `<span class="mj-cimgs">${r.imgs.map(p => imgTag(p)).join('')}</span>` : ''}`;
         if (r.type === 'medicine') return `<b>${esc(r.name || '')}</b>${memo}`;
         if (r.type === 'symptom') return `<b>${esc((r.tags || []).join(', ') || '—')}</b> ${r.level ? `<span class="lv">${'●'.repeat(r.level)}${'○'.repeat(5 - r.level)}</span>` : ''}${memo}`;
         if (r.type === 'mood') { const m = MOODS.find(x => x[0] === r.mood) || ['', '', r.mood]; return `<span class="emo">${m[1]}</span> <b>${esc(m[2])}</b>${memo}`; }
