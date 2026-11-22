@@ -1,0 +1,40 @@
+# 아이폰 캘린더(+ ATracker가 기록해 두는 캘린더)를 한 시간마다 받아서 diary/calendar.json 으로 — 다이어리 타임테이블에 보임
+# 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
+#   이름: CALENDAR_ICS   값: 한 줄에 하나씩  이름|webcal://p..-caldav.icloud.com/published/2/…
+name: calendar
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: calendar
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet icalendar recurring-ical-events
+      - name: 캘린더 받기
+        env:
+          CALENDAR_ICS: ${{ secrets.CALENDAR_ICS }}
+        run: python .github/scripts/calendar_sync.py diary/calendar.json
+      - name: 바뀌었으면 저장
+        run: |
+          if [ ! -f diary/calendar.json ] || git diff --quiet -- diary/calendar.json && git ls-files --error-unmatch diary/calendar.json > /dev/null 2>&1; then
+            echo '변경 없음'; exit 0
+          fi
+          git config user.name 'calendar-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diary/calendar.json
+          git commit -m 'diary: 캘린더 동기화'
+          for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done
