@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T14:38:42+09:00",
+ "updated_at": "2026-11-22T14:42:33+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -1004,5 +1004,53 @@
     "tab": false
    }
   ]
+ },
+ "quests": [
+  {
+   "id": "q1",
+   "kind": "daily",
+   "slot": "morning",
+   "title": "이부자리 정리"
+  },
+  {
+   "id": "q2",
+   "kind": "daily",
+   "slot": "morning",
+   "title": "물 한 잔"
+  },
+  {
+   "id": "q3",
+   "kind": "daily",
+   "slot": "lunch",
+   "title": "점심 챙겨 먹기"
+  },
+  {
+   "id": "q4",
+   "kind": "daily",
+   "slot": "evening",
+   "title": "스킨케어"
+  },
+  {
+   "id": "q5",
+   "kind": "repeat",
+   "mode": "every",
+   "every": 3,
+   "title": "빨래"
+  },
+  {
+   "id": "q6",
+   "kind": "repeat",
+   "mode": "week",
+   "days": [
+    1,
+    4
+   ],
+   "title": "분리수거"
+  }
+ ],
+ "quest_log": {
+  "2026-11-22": {
+   "q2": "14:42"
+  }
  }
 }
