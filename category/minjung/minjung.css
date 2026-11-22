@@ -6,7 +6,7 @@
 @font-face { font-family: 'Galmuri9'; src: url('../../vendor/galmuri/Galmuri9.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
 .mj-root {
-    --mj-ink: #7b5f68;        /* 글씨 */
+    --mj-ink: #6a6265;        /* 글씨 (버건디 빼고 따뜻한 회색) */
     --mj-sub: #b2a1a6;        /* 흐린 글씨 */
     --mj-line: #e7dadd;       /* 선 */
     --mj-soft: #f8f1f2;       /* 연한 바탕 */
@@ -15,7 +15,7 @@
     --mj-tag: #f3b3c5;        /* 이름표 핑크 */       /* 진한 포인트 */
     --mj-paper: #fffdfd;
     --mj-heart: #f8a0b8;
-    --mj-heart-line: #e47395;
+    --mj-heart-line: #ec8bab;
     --mj-heart-empty: #d9c6cb;
     --mj-card: #fff;          /* 카드·칸 바탕 */
     --mj-on: #fde6ee;         /* 고른 칩 */
@@ -23,8 +23,8 @@
     --mj-ring: #f2e6e9;       /* 레이스 테두리 바깥선 */
     --mj-stripe: rgba(240, 228, 231, .35);
     --mj-bar: #fadbe4;        /* 창 제목줄 (아이패드·PC) */
-    --mj-bar-ink: #7b5f68;
-    --mj-frame: #b4899a;      /* 창 테두리 (아이패드·PC) */
+    --mj-bar-ink: #6a6265;
+    --mj-frame: #d7a5b5;      /* 창 테두리 (아이패드·PC) */
 
     position: relative;
     width: 100vw; margin-left: calc(50% - 50vw); margin-top: 0;
@@ -201,7 +201,7 @@
 .mj-btns .sp { flex: 1; }
 .mj-btn { border: 1px solid var(--mj-tag); background: var(--mj-tag); color: #fff !important; text-shadow: 0 1px 0 rgba(214, 120, 150, .45); font-weight: 700; padding: 5px 14px; border-radius: 2px; box-shadow: 0 0 0 2px var(--mj-card), 0 0 0 3px var(--mj-ring); }
 .mj-btn.ghost { background: var(--mj-card); color: var(--mj-ink) !important; border-color: var(--mj-line); box-shadow: none; }
-.mj-btn.danger { color: #c96d82 !important; }
+.mj-btn.danger { color: #ec8bab !important; }
 .mj-btn:disabled { opacity: .6; }
 .mj-link { border: 0; background: none; color: var(--mj-deep); padding: 0 2px; text-decoration: underline dotted; font-size: 11px; }
 .mj-add { border: 1px dashed var(--mj-pink); background: var(--mj-card); color: var(--mj-deep); padding: 5px 10px; border-radius: 2px; }
@@ -256,6 +256,7 @@
 .mj-row .ty-symptom { background: var(--mj-on); border-color: var(--mj-pink); }
 .mj-row .ty-mood { background: #f4f0fa; border-color: #e2d8ee; }
 .mj-row .memo { color: var(--mj-sub); }
+.mj-row .steps { color: var(--mj-deep); }   /* 뷰티 세부 단계: 칸 없이 글자색만 */
 .mj-row .lv { color: var(--mj-deep); font-size: 10px; letter-spacing: -1px; }
 .mj-line, .mj-diary { flex-direction: column; gap: 3px; }
 .mj-line .tx { line-height: 1.75; }
@@ -298,7 +299,7 @@
 .mj-todo.done .box { background: var(--mj-deep); }
 .mj-todo.done .tx { color: var(--mj-sub); text-decoration: line-through; }
 .mj-todo .tx { flex: 1; }
-.mj-todo .late { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: #c96d82; }
+.mj-todo .late { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: #ec8bab; }
 
 /* 메뉴 */
 .mj-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }

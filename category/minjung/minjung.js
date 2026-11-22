@@ -978,7 +978,7 @@ export function init() {
                         ${formBtns(it)}
                     </div>`;
             }
-            const rows = db.beauty.filter(x => x.date === st.date && (st.sub === 'all' || x.slot === st.sub)).sort(byOldest);
+            const rows = db.beauty.filter(x => x.date === st.date && (st.sub === 'all' || x.slot === st.sub)).sort(byNewest);   // 최신순
             return `
                 <div class="mj-subs">${BEAUTY_SUBS.map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>
                 ${dayNav(st)}
@@ -988,7 +988,7 @@ export function init() {
                         <button class="mj-row" data-act="edit" data-id="${r.id}">
                             <span class="tm">${esc(r.time)}</span>
                             ${st.sub === 'all' ? `<span class="ty">${label(BEAUTY_SLOTS, r.slot)}</span>` : ''}
-                            <span class="tx">${(r.steps || []).map(s => `<em class="mj-tag">${esc(s)}</em>`).join('')} ${esc(r.memo || '')}</span>
+                            <span class="tx">${(r.steps || []).length ? `<span class="steps">${r.steps.map(esc).join(' · ')}</span> ` : ''}${r.memo ? `<span class="memo">${esc(r.memo)}</span>` : ''}</span>
                         </button>`).join('') : empty('이 날은 기록이 없어요.')}
                 </div>`;
         },
@@ -1022,7 +1022,7 @@ export function init() {
     function condView(id, st) {
         if (st.form) return condForm(st);
         const types = WIN[id].types, type = st.tab === 'All' ? null : st.tab.toLowerCase();
-        const rows = db.condition.filter(x => x.date === st.date && types.includes(x.type) && (!type || x.type === type)).sort(byOldest);
+        const rows = db.condition.filter(x => x.date === st.date && types.includes(x.type) && (!type || x.type === type)).sort(byNewest);   // 최신순
         return `
             ${dayNav(st)}
             <div class="mj-newbar">${(type ? [type] : types).map(k => `<button class="mj-add" data-act="new" data-v="${k}">+ ${label(COND_TYPES, k)}</button>`).join('')}</div>
