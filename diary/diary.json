@@ -10,18 +10,8 @@
  "ddays": [],
  "bucket": [],
  "music": [],
- "stickers": [
-  {
-   "id": "mwrgswtenehm",
-   "src": "b-blue",
-   "x": 49.51,
-   "y": 50,
-   "w": 9,
-   "r": -6,
-   "z": 1
-  }
- ],
+ "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-22T15:37:37+09:00"
+ "updated_at": "2026-11-22T15:37:39+09:00"
 }
