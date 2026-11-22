@@ -59,7 +59,9 @@
 [ { "id": "pf0", "label": "이름", "value": "김민정" }, { "id": "pf1", "label": "생년월일", "value": "2002년생" } ]
 ```
 
-## Library (Book / YouTube / Movie)
+## Library (Book / YouTube / Movie / Anime)
+
+화면에서는 아래 메뉴 **Menu → Library** 로 열어요.
 
 `library`
 
@@ -69,7 +71,7 @@
 
 | 필드 | 값 |
 | --- | --- |
-| `type` | `book` · `youtube` · `movie` |
+| `type` | `book` · `youtube` · `movie` · `anime` |
 | `status` | `want` 보고 싶음 · `now` 보는 중 · `done` 다 봄 |
 | `rating` | 하트 1~5 (없으면 키 없음) |
 
@@ -122,9 +124,13 @@
 
 To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대로 읽고 체크해요.
 
+## 설정
+
+`settings` — `{ "bg_off": true }` 이면 첫 화면 방 배경을 끈 상태 (배경을 꾹 누르면 켜고 끔).
+
 ## 아이콘
 
-`icons` — 메뉴 아이콘을 내 이미지로 바꾼 것. 키는 `profile` · `condition` · `daily` · `diary` · `menu` (아래 메뉴), `food` · `state` (Condition 안의 두 창).
+`icons` — 메뉴 아이콘을 내 이미지로 바꾼 것. 키는 `profile` · `condition` · `daily` · `diary` · `menu` (아래 메뉴), `food` · `state` (Condition 안의 두 창), `library`.
 
 ```json
 "icons": { "profile": "minjung/images/icons/1795000000000_ab12c.png" }
