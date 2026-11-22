@@ -1,0 +1,40 @@
+{
+ "profile": {},
+ "mood": {},
+ "goals": {},
+ "days": {
+  "2026-11-22": {
+   "events": [
+    {
+     "id": "mwrhrzaz1nl4",
+     "text": "ㄴㄴㄴ"
+    }
+   ]
+  },
+  "2026-11-21": {
+   "memo": "김민정 카테고리 좆뱅이 치다"
+  }
+ },
+ "todos": {},
+ "theme": {
+  "preset": "sky"
+ },
+ "ddays": [
+  {
+   "id": "mwrh72vci19i",
+   "title": "해양 졸업전시",
+   "date": "2026-11-25"
+  }
+ ],
+ "bucket": [],
+ "music": [],
+ "stickers": [],
+ "myStickers": [],
+ "memo": "",
+ "updated_at": "2026-11-22T16:50:20+09:00",
+ "view": {
+  "stk_off": {
+   "pc": false
+  }
+ }
+}

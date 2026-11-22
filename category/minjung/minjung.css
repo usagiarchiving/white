@@ -522,3 +522,8 @@
 /* 처음 불러오는 동안은 방(배경·캐릭터)을 숨겼다가 부드럽게 */
 .mj-scene { transition: opacity .2s; }
 .mj-booting .mj-scene { opacity: 0; transition: none; }
+
+/* 스티커 고르기: 다이어리와 같이 쓰는 내 스티커 */
+.mj-stk-lib { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 10px; max-height: 220px; overflow-y: auto; }
+.mj-stk-lib button { aspect-ratio: 1; border: 1px solid var(--mj-line); background: var(--mj-soft); border-radius: 4px; padding: 4px; cursor: pointer; }
+.mj-stk-lib button img { width: 100%; height: 100%; object-fit: contain; display: block; }

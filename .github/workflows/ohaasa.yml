@@ -1,0 +1,41 @@
+# 매일 아침 오하아사(おは朝) 별자리 운세를 받아 diary/ohaasa.json 으로 저장
+# (사이트에서 바로 받으면 브라우저가 막기 때문에 GitHub이 대신 받아 둠)
+name: ohaasa
+
+on:
+  schedule:
+    # 한국 시간 아침 7:20, 8:20, 9:20 (방송 뒤 갱신되도록 몇 번 확인)
+    - cron: '20 22 * * *'
+    - cron: '20 23 * * *'
+    - cron: '20 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ohaasa
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 운세 받기
+        run: |
+          curl -fsSL --retry 3 -A 'Mozilla/5.0' \
+            https://www.asahi.co.jp/data/ohaasa2020/horoscope.json -o /tmp/oha.json
+          jq -e 'length > 0' /tmp/oha.json > /dev/null
+          mkdir -p diary
+          jq '.' /tmp/oha.json > diary/ohaasa.json
+      - name: 바뀌었으면 저장
+        run: |
+          if git diff --quiet -- diary/ohaasa.json && git ls-files --error-unmatch diary/ohaasa.json > /dev/null 2>&1; then
+            echo '변경 없음'; exit 0
+          fi
+          git config user.name 'ohaasa-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diary/ohaasa.json
+          git commit -m 'diary: 오하아사 운세'
+          for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done

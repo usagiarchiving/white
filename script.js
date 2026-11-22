@@ -61,8 +61,8 @@ function loadPageByHash(hashName) {
     }
 }
 
-// 김민정 · 마이홈은 화면 가득 쓰는 게임 화면: 헤더를 얇게 하고 헤더 높이를 CSS에 알려 줌
-const GAME_PAGES = /category\/(minjung|myhome)\//;
+// 김민정 · 마이홈 · 다이어리는 화면 가득 쓰는 게임 화면: 헤더를 얇게 하고 헤더 높이를 CSS에 알려 줌
+const GAME_PAGES = /category\/(minjung|myhome|diary)\//;
 function setHeaderHeight() {
     const h = document.getElementById('header');
     if (h) document.documentElement.style.setProperty('--hdr-h', h.offsetHeight + 'px');

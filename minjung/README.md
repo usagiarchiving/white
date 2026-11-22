@@ -187,6 +187,7 @@ To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대�
 | `character` | 캐릭터 그림 (배경 투명한 PNG 추천) |
 | `layout.mobile` / `layout.pc` | 캐릭터 가운데 위치 `x`(%) · 높이 `h`(화면 높이의 %). 바닥에 붙어 있어서 아래 빈 공간 없음 |
 | `stickers.mobile` / `stickers.pc` | 스티커 목록. 가운데 위치 `x`·`y`(%) · 너비 `w`(화면 너비의 %) |
+| `sticker_lib` | 내 스티커 모음 (그림 경로 목록). **다이어리 스티커 서랍과 같이 씀** — 여기 있는 그림은 방에서 떼도 파일을 지우지 않아요 |
 
 모바일(폭 744px 미만)과 PC·아이패드는 배치를 따로 저장해요.
 새로 올린 그림: `minjung/images/stickers/`, `minjung/images/character/`, `minjung/images/room/`

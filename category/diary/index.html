@@ -1,0 +1,40 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Zen+Maru+Gothic:wght@400;700&display=swap">
+<link rel="stylesheet" href="category/diary/diary.css?v=9">
+
+<div class="dy-wrap" id="dy-wrap">
+    <div class="dy-desk" id="dy-desk">
+        <!-- 바탕화면 아이콘 (말풍선 안에 이름) -->
+        <div class="dy-icons" id="dy-icons"></div>
+        <!-- 창들은 diary.js가 여기에 붙임 -->
+    </div>
+
+    <!-- 작업표시줄 -->
+    <div class="dy-bar">
+        <button class="dy-start" id="dy-start" title="메뉴">diary <i>♡</i></button>
+        <span class="dy-sep"></span>
+        <div class="dy-apps" id="dy-apps"></div>
+        <div class="dy-tray">
+            <span class="dy-saving" id="dy-saving"></span>
+            <div class="dy-clock"><b id="dy-clock">--:--</b><small id="dy-date"></small></div>
+        </div>
+    </div>
+
+    <!-- 시작 메뉴 -->
+    <div class="dy-menu" id="dy-menu"></div>
+
+    <!-- 카드(날짜 기록, 꾸미기 등) -->
+    <div class="dy-modal" id="dy-modal">
+        <div class="dy-card">
+            <button class="dy-x" id="dy-x" aria-label="닫기"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button>
+            <div id="dy-card"></div>
+        </div>
+    </div>
+    <input type="file" id="dy-file" accept="image/*" hidden>
+</div>
+
+<!-- 모듈은 한 번만 실행되므로, 들어올 때마다 init()을 불러 새로 그림 -->
+<script type="module">
+    import { init } from './category/diary/diary.js?v=9';
+    init();
+</script>
