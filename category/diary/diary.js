@@ -1201,7 +1201,7 @@ export function init() {
        (감각의 잔여물 → 탭 1, 이름을 부르는 법 → 탭 2 로 옮겨 옴 · 저장: diary/memos.json)
        ========================================================================== */
     let memoTimer = null;
-    const M = { tab: '', q: '', tag: '', open: {}, base: true };
+    const M = { tab: 'base', q: '', tag: '', open: {}, base: true };    // tab 'base' = 첫 탭 '메모'(기본 메모 쓰는 칸)
     try { M.base = localStorage.getItem('dy-memo-base') !== '0'; } catch (e) {}
     const mtabs = () => ext.memos.tabs;
     const curTab = () => (mtabs().find(t => t.id === M.tab) || mtabs()[0] || {}).id;
@@ -1235,6 +1235,24 @@ export function init() {
             if (t.dataset.tool === 'mnew') openMemoEditor(null);
             if (t.dataset.tool === 'mfont') save('메모 글꼴', null, null, { memos: d => { d.font = font === 'pretendard' ? 'default' : 'pretendard'; } });
         };
+        // 첫 탭 '메모' = 기본 메모 쓰는 칸만, 1·2… 탭 = 목록만
+        const onBase = M.tab === 'base';
+        const tabBar = '<div class="mtabs"><button class="' + (onBase ? 'on' : '') + '" data-a="mt-go" data-k="base">메모</button>' +
+            mtabs().map(t => '<button class="' + (!onBase && t.id === curTab() ? 'on' : '') + '" data-a="mt-go" data-k="' + esc(t.id) + '">' + esc(t.name) + '</button>').join('') +
+            '<span class="sp"></span><button class="dy-ibtn" data-a="mt-edit" title="탭 편집">' + ic('pen') + '</button></div>';
+        if (onBase) {
+            body.innerHTML = '<div class="dy-memo2 f-' + font + '">' + tabBar +
+                '<div class="mbase open base-only"><textarea id="dy-memo-ta">' + esc(db.memo) + '</textarea><span class="st" id="dy-memo-st"></span></div></div>';
+            const ta = body.querySelector('#dy-memo-ta');
+            ta.addEventListener('input', () => {
+                document.getElementById('dy-memo-st').textContent = '쓰는 중…';
+                clearTimeout(memoTimer);
+                memoTimer = setTimeout(() => saveMemo(ta.value), 2500);
+            });
+            ta.addEventListener('blur', () => { clearTimeout(memoTimer); if (ta.value !== db.memo) saveMemo(ta.value); });
+            body.oninput = null;
+            return;
+        }
         const tab = curTab();
         const all = ext.memos.items.filter(x => x.tab === tab);
         const tags = uniq([].concat(...all.map(x => x.tags || [])));
@@ -1244,11 +1262,7 @@ export function init() {
             (!q || [x.title, memoPlain(x.html), (x.tags || []).join(' '), x.date].join(' ').toLowerCase().includes(q)))
             .sort((a, b) => (b.date + (b.time || '')) < (a.date + (a.time || '')) ? -1 : 1);
         body.innerHTML =
-            '<div class="dy-memo2 f-' + font + '">' +
-                '<div class="mtabs">' + mtabs().map(t => '<button class="' + (t.id === tab ? 'on' : '') + '" data-a="mt-go" data-k="' + esc(t.id) + '">' + esc(t.name) + '</button>').join('') +
-                    '<span class="sp"></span><button class="dy-ibtn" data-a="mt-edit" title="탭 편집">' + ic('pen') + '</button></div>' +
-                '<div class="mbase' + (M.base ? ' open' : '') + '"><button class="hd" data-a="mb-tog"><span class="dy-heart">♥</span>기본 메모<span class="st" id="dy-memo-st"></span></button>' +
-                    (M.base ? '<textarea id="dy-memo-ta">' + esc(db.memo) + '</textarea>' : '') + '</div>' +
+            '<div class="dy-memo2 f-' + font + '">' + tabBar +
                 '<div class="mfind"><span class="ic-s">' + ic('search') + '</span><input class="dy-in" id="dy-mq" value="' + esc(M.q) + '"></div>' +
                 (tags.length ? '<div class="mtags">' + tags.map(g => '<button class="' + (g === M.tag ? 'on' : '') + '" data-a="mt-tag" data-k="' + esc(g) + '">#' + esc(g) + '</button>').join('') + '</div>' : '') +
                 '<div class="mlist">' + list.map(x => {

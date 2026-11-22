@@ -753,3 +753,8 @@ textarea.dy-in { font-size: 11px; }
 
 /* 휴대폰에서는 프로필 안 보이게 */
 @media (max-width: 760px) { .dy-left .w-prof { display: none !important; } }
+
+/* 메모 첫 탭 '메모': 기본 메모 쓰는 칸만 크게 */
+.dy-memo2 .mbase.base-only { position: relative; }
+.dy-memo2 .mbase.base-only textarea { min-height: 52vh; }
+.dy-memo2 .mbase.base-only .st { position: absolute; right: 10px; bottom: 6px; pointer-events: none; }
