@@ -556,14 +556,14 @@
   "content": "재직증명서",
   "category": "gray",
   "matrix_quadrant": 2,
-  "is_completed": false,
+  "is_completed": true,
   "target_date": "2026-07-16",
   "parent_id": null,
   "subtasks": [],
   "repeat_type": null,
   "repeat_days": null,
   "sort_order": 1795344334613,
-  "completed_date": null
+  "completed_date": "2026-11-23"
  },
  {
   "id": 58,
