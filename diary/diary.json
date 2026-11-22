@@ -2,11 +2,7 @@
  "profile": {},
  "mood": {},
  "goals": {},
- "days": {
-  "2026-11-05": {
-   "memo": "음"
-  }
- },
+ "days": {},
  "todos": {},
  "theme": {
   "preset": "sky"
@@ -23,5 +19,5 @@
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-22T15:55:22+09:00"
+ "updated_at": "2026-11-22T15:55:35+09:00"
 }
