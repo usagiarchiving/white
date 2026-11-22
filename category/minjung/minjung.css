@@ -181,6 +181,12 @@
 .mj-tabs { flex: none; display: flex; gap: 2px; padding: 4px 14px 0; border-bottom: 1px solid var(--mj-line); overflow-x: auto; scrollbar-width: none; }
 .mj-tabs button { flex: none; border: 1px solid transparent; border-bottom: 0; background: none; padding: 6px 11px 5px; color: var(--mj-sub); border-radius: 3px 3px 0 0; margin-bottom: -1px; }
 .mj-tabs .sp { flex: 1; }
+.mj-tabs { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); cursor: grab; }
+.mj-tabs button { white-space: nowrap; }
+/* 목록 편집 */
+.mj-pf-row.mj-le-row { grid-template-columns: 1fr auto auto; }
+.mj-le-row .tabchk { display: flex; align-items: center; gap: 3px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+.mj-le-row .tabchk input { width: auto; accent-color: var(--mj-tag); }
 .mj-tabs .mj-plus { flex: none; align-self: center; border: 0; background: none; padding: 4px 6px; margin-bottom: 2px; color: var(--mj-deep); display: inline-flex; }
 .mj-tabs .mj-plus:active { opacity: .6; }
 .mj-tabs button.on { color: var(--mj-ink); background: var(--mj-card); border-color: var(--mj-line); font-weight: 700; }
@@ -261,6 +267,15 @@
 .mj-line, .mj-diary { flex-direction: column; gap: 3px; }
 .mj-line .tx { line-height: 1.75; }
 .mj-diary .tt { font-weight: 700; }
+.mj-diary.has-img { flex-direction: row; align-items: flex-start; gap: 10px; }
+.mj-diary .dthumb { flex: none; width: 56px; height: 56px; object-fit: cover; border-radius: 2px; border: 1px solid var(--mj-line); }
+.mj-diary .dbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.mj-diary .tags { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: #d8b1bd; }
+.mj-dphotos { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.mj-dphotos .ph { position: relative; width: 64px; height: 64px; }
+.mj-dphotos .ph img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; border: 1px solid var(--mj-line); display: block; }
+.mj-dphotos .ph button { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--mj-line); background: #fff; color: var(--mj-deep); font-size: 9px; padding: 0; }
+.mj-dphotos .ph-add { height: 64px; }
 .mj-diary .tx { color: var(--mj-sub); font-size: 11px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .mj-say-name { font-weight: 700; color: var(--mj-deep); }
 
@@ -368,7 +383,15 @@
 /* ==========================================================================
    아이패드 · PC: 배경 사진이 화면 전체, 그 위에 폴더 아이콘 + 윈도우 팝업(여기저기 뜸)
    ========================================================================== */
-.mj-dots3 { display: none; }
+/* 창 위 동그라미 3개 (노랑·초록·분홍 닫기) — 크기 똑같이. 초록 = 목록 편집 */
+.mj-dots3 { display: flex; gap: 6px; align-items: center; position: absolute; left: 14px; top: calc(18px + env(safe-area-inset-top)); }
+.mj-dots3 i, .mj-dots3 .g { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--mj-frame); box-sizing: border-box; padding: 0; flex: none; }
+.mj-dots3 i.y { background: #f7e7c6; }
+.mj-dots3 .g { background: #d9ead9; cursor: default; }
+.mj-dots3 .g.on { cursor: pointer; }
+.mj-dots3 .g.on:hover { background: #c4e2c4; }
+/* 모바일: 창 왼쪽 위에 노랑·초록만 (닫기는 오른쪽 ×) */
+@media (max-width: 743px) { .mj-dots3 i, .mj-dots3 .g { width: 14px; height: 14px; } }
 @media (min-width: 744px) {
     .mj-scene { bottom: 0; }
     .mj-frame { z-index: 1; }
@@ -408,15 +431,12 @@
         position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; min-width: 0; padding: 0;
         background: none; border: 0; box-shadow: none; color: var(--mj-bar-ink); font-size: 12px; pointer-events: none;
     }
-    .mj-dots3 { display: flex; gap: 6px; margin-left: auto; }
-    .mj-dots3 i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--mj-frame); box-sizing: border-box; background: #fff; }
-    .mj-dots3 i:first-child { background: #f7e7c6; }
-    .mj-dots3 i:last-child { background: #d9ead9; }
+    .mj-dots3 { position: static; margin-left: auto; }
     .mj-x {
-        position: static; width: 13px; height: 13px; margin-left: 6px; padding: 0; border-radius: 50%; border: 1.5px solid var(--mj-frame);
-        background: #f4b4c3; color: transparent;
+        position: static; width: 12px; height: 12px; margin-left: 6px; padding: 0; border-radius: 50%; border: 1.5px solid var(--mj-frame);
+        background: #f4b4c3; color: transparent; box-sizing: border-box; flex: none;
     }
-    .mj-x svg { width: 8px; height: 8px; }
+    .mj-x svg { width: 7px; height: 7px; }
     .mj-x:hover { color: var(--mj-frame); }
     .mj-win-body { padding-bottom: 16px; }
     .mj-tabs { padding-top: 8px; }

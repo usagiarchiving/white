@@ -66,10 +66,10 @@ const X_SVG = '<svg viewBox="0 0 24 24" width="14" height="14"><g fill="none" st
 /* 창 설정 — main: 아래 메뉴/바탕화면 아이콘에 나오는 5개 */
 const WIN = {
     profile:   { title: 'Profile',   main: true, w: 360 },
-    library:   { title: 'Library',   tabs: ['All'].concat(LIB_TYPES.map(x => x[1])), w: 420 },
+    library:   { title: 'Library',   tabs: ['All'], dyn: true, w: 560 },   // 탭은 settings.lib_types로
     food:      { title: 'Meal · Medicine', tabs: ['All', 'Meal', 'Medicine'], types: ['meal', 'medicine'], w: 380 },
     state:     { title: 'Symptom · Mood',  tabs: ['All', 'Symptom', 'Mood'], types: ['symptom', 'mood'], w: 380 },
-    daily:     { title: 'Daily',     tabs: ['Beauty', 'Outfit'], main: true, w: 460 },
+    daily:     { title: 'Daily',     tabs: ['Beauty', 'Outfit'], main: true, w: 480 },
     diary:     { title: 'Diary',     tabs: ['Diary', 'To Do'], main: true, w: 400 },
     hp:        { title: 'HP Log',    w: 340 },
     room:      { title: 'Backgrounds', w: 420 },
@@ -142,7 +142,10 @@ function normalize(d) {
     LISTS.forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
     d.symptom_tags = Array.isArray(d.symptom_tags) && d.symptom_tags.length ? d.symptom_tags : DEFAULT_SYMPTOMS.slice();
     d.beauty_steps = d.beauty_steps && typeof d.beauty_steps === 'object' ? d.beauty_steps : {};
-    BEAUTY_SLOTS.forEach(([k]) => { if (!Array.isArray(d.beauty_steps[k])) d.beauty_steps[k] = DEFAULT_STEPS[k].slice(); });
+    // 초록 버튼으로 고치는 목록: Library 종류, Beauty 구분 (tab: 위 탭에 보일지, false면 + 버튼으로만)
+    if (!Array.isArray(st.lib_types) || !st.lib_types.length) st.lib_types = LIB_TYPES.map(([key, label]) => ({ key, label }));
+    if (!Array.isArray(st.beauty_slots) || !st.beauty_slots.length) st.beauty_slots = BEAUTY_SLOTS.map(([key, label]) => ({ key, label, tab: key !== 'shower' }));
+    st.beauty_slots.forEach(({ key }) => { if (!Array.isArray(d.beauty_steps[key])) d.beauty_steps[key] = (DEFAULT_STEPS[key] || []).slice(); });
     return d;
 }
 /* 빈 칸은 저장하지 않음 (파일을 깔끔하게) */
@@ -237,6 +240,10 @@ export function init() {
     const lay = () => isPC() ? 'pc' : 'mobile';
     const S = () => db.settings;
     const bgOff = () => !!S().bg_off;
+    const libTypes = () => S().lib_types.map(x => [x.key, x.label]);
+    const beautySlots = () => S().beauty_slots.map(x => [x.key, x.label]);
+    const beautySubs = () => [['all', 'All']].concat(S().beauty_slots.filter(x => x.tab).map(x => [x.key, x.label]));
+    const tabsOf = id => WIN[id].dyn ? ['All'].concat(libTypes().map(x => x[1])) : WIN[id].tabs;
     let bgIdx = -1;                 // -1: 아직 안 정함 (밤 20시~아침 7시는 침실로 시작)
     let edit = null;                // 배치 편집 중: { k, char: {x,h}, stickers: [...], files: {} }
 
@@ -477,7 +484,7 @@ export function init() {
         const hp = db.hp.slice().sort(byNewest)[0];
         $('mj-hp').innerHTML = hearts(hp ? hp.v : 5);
         const line = db.lines.slice().sort(byNewest)[0];
-        const text = line ? line.text : '…(대사창을 눌러 속마음을 적어 줘)';
+        const text = line ? line.text : '…';
         if (text !== shownLine) {
             shownLine = text;
             const say = $('mj-say');
@@ -549,7 +556,7 @@ export function init() {
 
     /* ---------------- 창 ---------------- */
     function newState(id) {
-        const st = { tab: WIN[id].tabs ? WIN[id].tabs[0] : null, date: todayKey(), form: null };
+        const st = { tab: tabsOf(id) ? tabsOf(id)[0] : null, date: todayKey(), form: null };
         if (id === 'daily') st.sub = 'all';
         if (id === 'hp' || id === 'lines') st.form = {};
         return st;
@@ -590,25 +597,61 @@ export function init() {
         w.el.style.zIndex = ++zTop;
         Object.keys(wins).forEach(k => wins[k].el.classList.toggle('front', k === id));
     }
+    function listEditView(id) {
+        const rows = id === 'library' ? S().lib_types : S().beauty_slots;
+        const name = id === 'library' ? 'Library' : 'Beauty';
+        return `
+            <div class="mj-sec">${name} list</div>
+            <div class="mj-pf-edit mj-le">${rows.map(r => leRow(id, r)).join('')}</div>
+            <button class="mj-add" data-act="le-add">+ add</button>
+            <div class="mj-btns"><span class="sp"></span><button class="mj-btn ghost" data-act="le-cancel">Cancel</button><button class="mj-btn" data-act="le-save">Save</button></div>`;
+    }
+    const leRow = (id, r) => `
+        <div class="mj-pf-row mj-le-row" data-key="${esc(r.key || '')}">
+            <input data-k="label" value="${esc(r.label || '')}">
+            ${id === 'daily' ? `<label class="tabchk"><input type="checkbox" data-k="tab" ${r.tab !== false ? 'checked' : ''}>tab</label>` : '<span></span>'}
+            <div class="mj-pf-tools"><button data-act="pup">▲</button><button data-act="pdown">▼</button><button data-act="le-del">✕</button></div>
+        </div>`;
+    function saveListEdit(id, el) {
+        const rows = [...el.querySelectorAll('.mj-le-row')].map(r => ({
+            key: r.dataset.key || uid('c'), label: r.querySelector('[data-k=label]').value.trim(),
+            tab: r.querySelector('[data-k=tab]') ? r.querySelector('[data-k=tab]').checked : undefined
+        })).filter(r => r.label);
+        if (!rows.length) { alert('하나는 남겨 둬야 해요.'); return; }
+        const list = id === 'library' ? 'lib_types' : 'beauty_slots';
+        const records = id === 'library' ? db.library : db.beauty, field = id === 'library' ? 'type' : 'slot';
+        const gone = S()[list].filter(o => !rows.some(r => r.key === o.key) && records.some(x => x[field] === o.key));
+        if (gone.length && !confirm(gone.map(o => o.label).join(', ') + ' 에 쓴 기록은 지워지지 않고 All에서 계속 보여요. 저장할까요?')) return;
+        wins[id].st.listedit = false;
+        wins[id].st.tab = tabsOf(id)[0];
+        if (id === 'daily') wins[id].st.sub = 'all';
+        save((id === 'library' ? 'Library' : 'Beauty') + ' 목록 수정', d => {
+            d.settings[list] = rows.map(r => { const o = { key: r.key, label: r.label }; if (list === 'beauty_slots') o.tab = r.tab; return o; });
+            if (list === 'beauty_slots') rows.forEach(r => { if (!Array.isArray(d.beauty_steps[r.key])) d.beauty_steps[r.key] = []; });
+        });
+    }
     function renderWin(id) {
         const w = wins[id]; if (!w) return;
         const def = WIN[id], st = w.st;
         const body = w.el.querySelector('.mj-win-body');
         const top = body ? body.scrollTop : 0;
+        const tabsEl = w.el.querySelector('.mj-tabs'), tabsLeft = tabsEl ? tabsEl.scrollLeft : 0;
+        const tabs = tabsOf(id), canList = id === 'library' || id === 'daily';
         w.el.innerHTML = `
             <div class="mj-win-head" data-drag>
                 <button class="mj-badge" ${(id !== 'hp' && id !== 'lines') ? 'data-act="icon" title="아이콘 바꾸기"' : 'tabindex="-1"'}>${iconHtml(id)}</button>
                 <div class="mj-title">${def.title}</div>
-                <span class="mj-dots3"><i></i><i></i></span>
+                <span class="mj-dots3"><i class="y"></i><button class="g${canList ? ' on' : ''}" ${canList ? 'data-act="listedit" title="목록 편집"' : 'tabindex="-1"'}></button></span>
                 <button class="mj-x" data-act="close" aria-label="닫기">${X_SVG}</button>
             </div>
-            ${def.tabs ? `<div class="mj-tabs">${def.tabs.map(t => `<button data-act="tab" data-v="${t}" class="${st.tab === t ? 'on' : ''}">${t}</button>`).join('')}
+            ${tabs ? `<div class="mj-tabs">${tabs.map(t => `<button data-act="tab" data-v="${t}" class="${st.tab === t ? 'on' : ''}">${t}</button>`).join('')}
                 <span class="sp"></span>${canAdd(id, st) ? `<button class="mj-plus" data-act="plus" aria-label="추가">${PLUS_SVG}</button>` : ''}</div>` : ''}
-            <div class="mj-win-body">${VIEW[id](st)}</div>`;
+            <div class="mj-win-body">${st.listedit ? listEditView(id) : VIEW[id](st)}</div>`;
         w.el.querySelector('.mj-win-body').scrollTop = top;
+        const nt = w.el.querySelector('.mj-tabs'); if (nt) nt.scrollLeft = tabsLeft;
     }
     // 탭 줄 오른쪽 + 버튼이 보이는 곳
-    function canAdd(id, st) { return id === 'daily' && st.tab === 'Outfit' && !st.form; }
+    function canAdd(id, st) { return id === 'daily' && st.tab === 'Outfit' && !st.form && !st.listedit; }
     function plus(id, st, btn) {
         const fresh = () => renderWin(id);
         if (WIN[id].types) {
@@ -618,7 +661,7 @@ export function init() {
         }
         if (id === 'daily' && st.tab === 'Outfit') { pickFile(f => { st.form = { file: f, preview: URL.createObjectURL(f) }; fresh(); }); return; }
         if (id === 'daily' && st.sub === 'all') {
-            showPick(btn, BEAUTY_SLOTS.map(([k, l]) => ({ label: l, run: () => { st.form = { slot: k }; fresh(); } })));
+            showPick(btn, beautySlots().map(([k, l]) => ({ label: l, run: () => { st.form = { slot: k }; fresh(); } })));
             return;
         }
         st.form = {}; fresh();
@@ -643,6 +686,26 @@ export function init() {
     function bindWin(id) {
         const w = wins[id], el = w.el;
         el.addEventListener('pointerdown', () => focusWin(id));
+        // 탭 줄: 마우스 휠(위아래)로도 좌우 이동, 마우스로 잡아 끌기
+        el.addEventListener('wheel', e => {
+            const t = e.target.closest('.mj-tabs');
+            if (!t || t.scrollWidth <= t.clientWidth) return;
+            t.scrollLeft += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+            e.preventDefault();
+        }, { passive: false });
+        let tabDrag = null;
+        el.addEventListener('pointerdown', e => {
+            const t = e.target.closest('.mj-tabs');
+            if (!t || e.pointerType !== 'mouse') return;
+            tabDrag = { t, x: e.clientX, left: t.scrollLeft, moved: false };
+        });
+        window.addEventListener('pointermove', e => {
+            if (!tabDrag) return;
+            const dx = e.clientX - tabDrag.x;
+            if (Math.abs(dx) > 4) tabDrag.moved = true;
+            tabDrag.t.scrollLeft = tabDrag.left - dx;
+        });
+        window.addEventListener('pointerup', () => { if (tabDrag && tabDrag.moved) el.dataset.noclick = '1'; tabDrag = null; setTimeout(() => { delete el.dataset.noclick; }, 0); });
         // PC: 머리 부분 끌어서 옮기기
         el.addEventListener('pointerdown', e => {
             if (!isPC() || !e.target.closest('[data-drag]') || e.target.closest('button')) return;
@@ -657,6 +720,7 @@ export function init() {
             e.preventDefault();
         });
         el.addEventListener('click', e => {
+            if (el.dataset.noclick) return;
             const b = e.target.closest('[data-act]');
             if (!b || !el.contains(b)) return;
             const st = w.st, act = b.dataset.act, v = b.dataset.v;
@@ -664,6 +728,12 @@ export function init() {
             switch (act) {
                 case 'close': closeWin(id); break;
                 case 'plus': plus(id, st, b); break;
+                // 초록 버튼: 목록 편집 (순서·이름·추가·삭제)
+                case 'listedit': st.listedit = !st.listedit; st.form = null; fresh(); break;
+                case 'le-cancel': st.listedit = false; fresh(); break;
+                case 'le-save': saveListEdit(id, el); break;
+                case 'le-del': b.closest('.mj-le-row').remove(); break;
+                case 'le-add': { const box = el.querySelector('.mj-le'); box.insertAdjacentHTML('beforeend', leRow(id, { key: '', label: '', tab: true })); box.lastElementChild.querySelector('input').focus(); break; }
                 case 'tab': st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; fresh(); if (v === 'To Do') loadTodos(); break;
                 case 'sub': st.sub = v; st.form = null; fresh(); break;
                 case 'icon': pickFile(f => setIcon(id, f, WIN[id].title)); break;
@@ -703,11 +773,11 @@ export function init() {
                 }
                 case 'steps': {
                     const slot = (st.form && st.form.slot) || (st.sub === 'all' ? 'morning' : st.sub);
-                    const t = prompt(label(BEAUTY_SLOTS, slot) + ' 루틴 단계 (쉼표로 구분)', db.beauty_steps[slot].join(', '));
+                    const t = prompt(label(beautySlots(), slot) + ' 루틴 단계 (쉼표로 구분)', db.beauty_steps[slot].join(', '));
                     if (t == null) break;
                     const steps = t.split(',').map(s => s.trim()).filter(Boolean);
                     keepForm(id);
-                    save('Beauty ' + label(BEAUTY_SLOTS, slot) + ' 루틴', d => { d.beauty_steps[slot] = steps; });
+                    save('Beauty ' + label(beautySlots(), slot) + ' 루틴', d => { d.beauty_steps[slot] = steps; });
                     break;
                 }
                 // 프로필 고치기
@@ -742,7 +812,10 @@ export function init() {
                 case 'bg-add': pickFile(f => setBgImage(-1, 'mobile', f)); break;
                 case 'bg-del': delBg(Number(b.dataset.i)); break;
                 // 라이브러리
-                case 'lib-add': showPick(b, LIB_TYPES.map(([k, l]) => ({ label: l, run: () => { st.form = { type: k }; fresh(); } }))); break;
+                case 'dy-photo': pickFile(f => { keepForm(id); st.form.addFiles = (st.form.addFiles || []).concat([f]); st.form.addPreviews = (st.form.addPreviews || []).concat([URL.createObjectURL(f)]); fresh(); }); break;
+                case 'dy-rm': keepForm(id); st.form.imgs = (st.form.imgs || []).filter((_, i) => i !== Number(v || b.dataset.i)); fresh(); break;
+                case 'dy-rmnew': { keepForm(id); const k = Number(b.dataset.i); st.form.addFiles.splice(k, 1); st.form.addPreviews.splice(k, 1); fresh(); break; }
+                case 'lib-add': showPick(b, libTypes().map(([k, l]) => ({ label: l, run: () => { st.form = { type: k }; fresh(); } }))); break;
                 case 'lib-cover': pickFile(f => { keepForm(id); st.form.coverFile = f; st.form.cover = ''; st.form.preview = URL.createObjectURL(f); fresh(); }); break;
                 case 'lib-uncover': keepForm(id); st.form.cover = ''; st.form.coverFile = null; st.form.preview = ''; fresh(); break;
                 case 'lib-go': libSearch(id, st, el); break;
@@ -855,7 +928,7 @@ export function init() {
             const tags = (f.tags || '').split(/[\s,]+/).map(t => t.replace(/^#/, '').trim()).filter(Boolean);
             item = tidy(Object.assign(base, { type: st.form.type || libType(st), title: f.title, creator: f.creator, year: f.year, cover, url: f.url,
                 status: f.status, rating: f.rating || undefined, tags, memo: f.memo }));
-            msg = label(LIB_TYPES, item.type) + ' ' + item.title;
+            msg = label(libTypes(), item.type) + ' ' + item.title;
             st.form = null;
             upsert('library', item, msg, files);
             return;
@@ -872,7 +945,7 @@ export function init() {
             st.date = item.date;
         } else if (id === 'daily' && st.tab === 'Beauty') {
             item = tidy(Object.assign(base, { slot: st.form.slot || (st.sub === 'all' ? 'etc' : st.sub), steps: f.steps, memo: f.memo }));
-            msg = 'Beauty ' + label(BEAUTY_SLOTS, item.slot) + ' ' + when;
+            msg = 'Beauty ' + label(beautySlots(), item.slot) + ' ' + when;
             st.date = item.date;
         } else if (id === 'daily') {
             msg = 'Outfit ' + when;
@@ -896,9 +969,24 @@ export function init() {
             upsert('outfit', item, msg, files);
             return;
         } else if (id === 'diary') {
-            if (!f.title && !f.body) { alert('내용을 적어 주세요.'); return; }
-            item = tidy(Object.assign(base, { title: f.title, body: f.body }));
+            const add = st.form.addFiles || [], imgs = (st.form.imgs || []).slice();
+            if (!f.title && !f.body && !imgs.length && !add.length) { alert('내용을 적어 주세요.'); return; }
+            const files = {};
+            if (add.length) {
+                if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+                const btn = box.querySelector('[data-act=save]'); btn.disabled = true; btn.textContent = 'Uploading…';
+                try { for (const file of add) { const up = await uploadImage(file, 'diary', 1600, 'image/jpeg'); files[up.path] = up.sha; imgs.push(up.path); } }
+                catch (e) { alert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return; }
+            }
+            const old = st.form.id ? db.diary.find(x => x.id === st.form.id) : null;
+            ((old && old.imgs) || []).forEach(p => { if (!imgs.includes(p) && p.startsWith(IMG_DIR)) files[p] = null; });
+            const tags = (f.tags || '').split(/[\s,]+/).map(t => t.replace(/^#/, '').trim()).filter(Boolean);
+            item = tidy(Object.assign(base, { title: f.title, body: f.body, imgs, tags }));
+            if (old && old.from) item.from = old.from;
             msg = '일기 ' + when + (item.title ? ' ' + item.title : '');
+            st.form = null;
+            upsert('diary', item, msg, files);
+            return;
         }
         st.form = (id === 'hp' || id === 'lines') ? {} : null;
         upsert(list, item, msg);
@@ -916,8 +1004,8 @@ export function init() {
     /* ---------------- 창 내용 ---------------- */
     const pfRow = r => `
         <div class="mj-pf-row" data-id="${esc(r.id)}">
-            <input data-k="label" value="${esc(r.label)}" placeholder="항목">
-            <textarea data-k="value" rows="1" placeholder="내용">${esc(r.value)}</textarea>
+            <input data-k="label" value="${esc(r.label)}" placeholder="">
+            <textarea data-k="value" rows="1" placeholder="">${esc(r.value)}</textarea>
             <div class="mj-pf-tools">
                 <button data-act="pup" title="위로">▲</button><button data-act="pdown" title="아래로">▼</button><button data-act="pdel" title="지우기">✕</button>
             </div>
@@ -934,7 +1022,7 @@ export function init() {
             return `
                 <div class="mj-form mj-card">
                     <div class="mj-hearts-pick" data-hearts="v" data-v="${v}">${Array.from({ length: 5 }, (_, i) => `<button data-act="heart" data-v="${i + 1}">${pixelHeart(i < v)}</button>`).join('')}</div>
-                    <input data-f="memo" placeholder="한 줄 메모 (예: 잠을 못 잠)" value="${esc(it.memo || '')}">
+                    <input data-f="memo" placeholder="memo" value="${esc(it.memo || '')}">
                     ${whenRow(it)}
                     ${it.id ? formBtns(it) : '<div class="mj-btns"><span class="sp"></span><button class="mj-btn" data-act="save">Save</button></div>'}
                 </div>
@@ -952,7 +1040,7 @@ export function init() {
             return `
                 <div class="mj-form mj-card">
                     <div class="mj-say-name">김민정</div>
-                    <textarea data-f="text" rows="3" placeholder="지금 속마음은…">${esc(it.text || '')}</textarea>
+                    <textarea data-f="text" rows="3" placeholder="">${esc(it.text || '')}</textarea>
                     ${whenRow(it)}
                     ${it.id ? formBtns(it) : '<div class="mj-btns"><span class="sp"></span><button class="mj-btn" data-act="save">Save</button></div>'}
                 </div>
@@ -970,8 +1058,7 @@ export function init() {
         room() {
             const list = bgList();
             return `
-                <p class="mj-empty" style="padding:4px 0 10px">옆으로 밀면 순서대로 바뀌어요. 그림을 누르면 바꾸기.</p>
-                <div class="mj-bglist">
+                                <div class="mj-bglist">
                     ${list.map((b, i) => `
                         <div class="mj-bgrow">
                             <span class="n">${i + 1}</span>
@@ -1003,23 +1090,23 @@ export function init() {
                 const it = st.form, slot = it.slot || (st.sub === 'all' ? 'morning' : st.sub);
                 return `
                     <div class="mj-form mj-card">
-                        <div class="mj-sec">${label(BEAUTY_SLOTS, slot)} routine <button class="mj-link" data-act="steps">edit steps</button></div>
+                        <div class="mj-sec">${label(beautySlots(), slot)} routine <button class="mj-link" data-act="steps">edit steps</button></div>
                         ${chips('steps', db.beauty_steps[slot].map(s => [s, s]), it.id ? it.steps : [], false)}
-                        <textarea data-f="memo" rows="2" placeholder="메모 (쓴 제품, 피부 상태…)">${esc(it.memo || '')}</textarea>
+                        <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>
                         ${whenRow(it.id ? it : { date: st.date })}
                         ${formBtns(it)}
                     </div>`;
             }
             const rows = db.beauty.filter(x => x.date === st.date && (st.sub === 'all' || x.slot === st.sub)).sort(byNewest);   // 최신순
             return `
-                <div class="mj-subs">${BEAUTY_SUBS.map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>
+                <div class="mj-subs">${beautySubs().map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>
                 ${dayNav(st)}
-                <div class="mj-newbar">${(st.sub === 'all' ? BEAUTY_SLOTS : BEAUTY_SLOTS.filter(x => x[0] === st.sub || x[0] === 'shower')).map(([k, l]) => `<button class="mj-add" data-act="new" data-v="${k}">+ ${l}</button>`).join('')}</div>
+                <div class="mj-newbar">${(st.sub === 'all' ? beautySlots() : S().beauty_slots.filter(x => x.key === st.sub || !x.tab).map(x => [x.key, x.label])).map(([k, l]) => `<button class="mj-add" data-act="new" data-v="${k}">+ ${l}</button>`).join('')}</div>
                 <div class="mj-log">
                     ${rows.length ? rows.map(r => `
                         <button class="mj-row" data-act="edit" data-id="${r.id}">
                             <span class="tm">${esc(r.time)}</span>
-                            ${st.sub === 'all' ? `<span class="ty">${label(BEAUTY_SLOTS, r.slot)}</span>` : ''}
+                            ${st.sub === 'all' ? `<span class="ty">${label(beautySlots(), r.slot)}</span>` : ''}
                             <span class="tx">${(r.steps || []).length ? `<span class="steps">${r.steps.map(esc).join(' · ')}</span> ` : ''}${r.memo ? `<span class="memo">${esc(r.memo)}</span>` : ''}</span>
                         </button>`).join('') : empty('이 날은 기록이 없어요.')}
                 </div>`;
@@ -1032,8 +1119,14 @@ export function init() {
                 return `
                     <div class="mj-form mj-card">
                         ${whenRow(it)}
-                        <input data-f="title" placeholder="제목" value="${esc(it.title || '')}">
-                        <textarea data-f="body" rows="12" placeholder="오늘은…">${esc(it.body || '')}</textarea>
+                        <input data-f="title" placeholder="title" value="${esc(it.title || '')}">
+                        <textarea data-f="body" rows="12">${esc(it.body || '')}</textarea>
+                        <div class="mj-dphotos">
+                            ${(it.imgs || []).map((p, i) => `<span class="ph">${imgTag(p)}<button data-act="dy-rm" data-i="${i}">✕</button></span>`).join('')}
+                            ${(it.addPreviews || []).map((u, i) => `<span class="ph"><img src="${esc(u)}" alt=""><button data-act="dy-rmnew" data-i="${i}">✕</button></span>`).join('')}
+                            <button class="mj-add ph-add" data-act="dy-photo">+ photo</button>
+                        </div>
+                        <input data-f="tags" placeholder="#tags" value="${esc(Array.isArray(it.tags) ? it.tags.map(x => '#' + x).join(' ') : (it.tags || ''))}">
                         ${formBtns(it)}
                     </div>`;
             }
@@ -1042,10 +1135,14 @@ export function init() {
                 <div class="mj-newbar"><button class="mj-add" data-act="new">+ write</button></div>
                 <div class="mj-log">
                     ${rows.length ? rows.map(r => `
-                        <button class="mj-diary" data-act="edit" data-id="${r.id}">
-                            <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}</span>
-                            <span class="tt">${esc(r.title || '(제목 없음)')}</span>
-                            <span class="tx">${esc((r.body || '').slice(0, 120))}</span>
+                        <button class="mj-diary${(r.imgs || []).length ? ' has-img' : ''}" data-act="edit" data-id="${r.id}">
+                            ${(r.imgs || []).length ? imgTag(r.imgs[0], 'dthumb') : ''}
+                            <span class="dbody">
+                                <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}${r.imgs && r.imgs.length > 1 ? ` · ${r.imgs.length} photos` : ''}</span>
+                                ${r.title ? `<span class="tt">${esc(r.title)}</span>` : ''}
+                                ${r.body ? `<span class="tx">${esc(r.body.slice(0, 120))}</span>` : ''}
+                                ${(r.tags || []).length ? `<span class="tags">${r.tags.map(x => '#' + esc(x)).join(' ')}</span>` : ''}
+                            </span>
                         </button>`).join('') : empty('아직 일기가 없어요.')}
                 </div>`;
         }
@@ -1080,22 +1177,22 @@ export function init() {
         let fields = '';
         if (type === 'meal') fields = `
             ${chips('slot', MEAL_SLOTS, it.slot || guessSlot(), true)}
-            <textarea data-f="memo" rows="2" placeholder="뭐 먹었어?">${esc(it.memo || '')}</textarea>`;
+            <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>`;
         if (type === 'medicine') {
             const names = [...new Set(db.condition.filter(x => x.type === 'medicine' && x.name).map(x => x.name))];
             fields = `
-                <input data-f="name" list="mj-med-names" placeholder="약 이름" value="${esc(it.name || '')}">
+                <input data-f="name" list="mj-med-names" placeholder="name" value="${esc(it.name || '')}">
                 <datalist id="mj-med-names">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
-                <textarea data-f="memo" rows="2" placeholder="메모 (몇 알, 왜…)">${esc(it.memo || '')}</textarea>`;
+                <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>`;
         }
         if (type === 'symptom') fields = `
             ${chips('tags', db.symptom_tags.map(t => [t, t]), it.tags || [], false, '<button class="mj-chip add" data-act="add-tag">+ tag</button>')}
             <div class="mj-sec">level</div>
             ${chips('level', [1, 2, 3, 4, 5].map(n => [String(n), '●'.repeat(n)]), it.level ? String(it.level) : '', true)}
-            <textarea data-f="memo" rows="2" placeholder="어디가 어떻게 아파?">${esc(it.memo || '')}</textarea>`;
+            <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>`;
         if (type === 'mood') fields = `
             ${chips('mood', MOODS.map(([k, e, l]) => [k, `<span class="emo">${e}</span> ${l}`]), it.mood || '', true)}
-            <textarea data-f="memo" rows="2" placeholder="왜 그런 기분이야?">${esc(it.memo || '')}</textarea>`;
+            <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>`;
         return `
             <div class="mj-form mj-card">
                 <div class="mj-sec">${label(COND_TYPES, type)}</div>
@@ -1106,20 +1203,20 @@ export function init() {
     }
     function guessSlot() { const h = new Date().getHours(); return h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 21 ? 'dinner' : 'night'; }
 
-    const libType = st => (LIB_TYPES.find(x => x[1] === st.tab) || ['all'])[0];
+    const libType = st => (libTypes().find(x => x[1] === st.tab) || ['all'])[0];
     const libCover = r => r.cover ? r.cover : (r.type === 'youtube' && ytId(r.url) ? `https://i.ytimg.com/vi/${ytId(r.url)}/mqdefault.jpg` : '');
     const titleKey = r => r.type + '|' + String(r.title || '').trim().toLowerCase();
     function libraryView(st) {
         if (st.form) return libForm(st);
         const t = libType(st);
         const year = String(new Date().getFullYear());
-        const counts = LIB_TYPES.map(([k, l]) => [l, db.library.filter(x => x.type === k && (x.date || '').startsWith(year)).length]).filter(x => x[1]);
+        const counts = libTypes().map(([k, l]) => [l, db.library.filter(x => x.type === k && (x.date || '').startsWith(year)).length]).filter(x => x[1]);
         return `
             <div class="mj-libtop">
-                <input class="mj-libq" data-libq placeholder="찾기 (제목·만든 사람·태그·메모)" value="${esc(st.q || '')}">
+                <input class="mj-libq" data-libq placeholder="search" value="${esc(st.q || '')}">
             </div>
             ${t === 'all' ? `<div class="mj-libstat">${year} · ${counts.length ? counts.map(([l, n]) => `${l} <b>${n}</b>`).join(' · ') : '아직 기록이 없어요'}</div>` : ''}
-            <div class="mj-newbar">${t === 'all' ? '<button class="mj-add" data-act="lib-add">+ add</button>' : `<button class="mj-add" data-act="new" data-v="${t}">+ ${label(LIB_TYPES, t)}</button>`}</div>
+            <div class="mj-newbar">${t === 'all' ? '<button class="mj-add" data-act="lib-add">+ add</button>' : `<button class="mj-add" data-act="new" data-v="${t}">+ ${label(libTypes(), t)}</button>`}</div>
             <div class="mj-log mj-liblist">${libList(st)}</div>`;
     }
     function libList(st) {
@@ -1137,7 +1234,7 @@ export function init() {
                 ${cv ? imgTag(cv, 'thumb' + (r.type === 'youtube' && !r.cover ? ' wide' : '')) : ''}
                 <span class="body">
                     <span class="tt">${esc(r.title)}${total[k] > 1 ? ` <em class="nth">${nth[r.id]}회차</em>` : ''}</span>
-                    <span class="meta">${t === 'all' ? `<em class="mj-tag">${label(LIB_TYPES, r.type)}</em>` : ''}<em class="mj-tag st-${r.status || 'want'}">${label(LIB_STATUS, r.status || 'want')}</em>${[r.creator, r.year].filter(Boolean).map(esc).join(' · ')}</span>
+                    <span class="meta">${t === 'all' ? `<em class="mj-tag">${label(libTypes(), r.type)}</em>` : ''}<em class="mj-tag st-${r.status || 'want'}">${label(LIB_STATUS, r.status || 'want')}</em>${[r.creator, r.year].filter(Boolean).map(esc).join(' · ')}</span>
                     ${r.rating ? `<span class="mj-mini">${hearts(r.rating)}</span>` : ''}
                     ${r.memo ? `<span class="tx">${esc(r.memo)}</span>` : ''}
                     ${(r.tags || []).length ? `<span class="tags">${r.tags.map(x => '#' + esc(x)).join(' ')}</span>` : ''}
@@ -1151,9 +1248,9 @@ export function init() {
         const cv = it.preview || it.cover || (type === 'youtube' && ytId(it.url) ? `https://i.ytimg.com/vi/${ytId(it.url)}/mqdefault.jpg` : '');
         return `
             <div class="mj-form mj-card">
-                <div class="mj-sec">${label(LIB_TYPES, type)}</div>
+                <div class="mj-sec">${label(libTypes(), type)}</div>
                 ${LIB_SEARCH[type] ? `
-                <div class="mj-libsearch"><input data-ls placeholder="작품 검색해서 채우기" value=""><button class="mj-btn ghost" data-act="lib-go">Search</button></div>
+                <div class="mj-libsearch"><input data-ls placeholder="search" value=""><button class="mj-btn ghost" data-act="lib-go">Search</button></div>
                 <div class="mj-libres"></div>` : ''}
                 <div class="mj-libform">
                     <div class="cover">
@@ -1161,15 +1258,15 @@ export function init() {
                         <div class="cv-btns"><button class="mj-link" data-act="lib-cover">사진</button>${cv && !(type === 'youtube' && !it.cover && !it.preview) ? '<button class="mj-link" data-act="lib-uncover">빼기</button>' : ''}</div>
                     </div>
                     <div class="fields">
-                        <input data-f="title" placeholder="제목" value="${esc(it.title || '')}">
-                        <div class="two"><input data-f="creator" placeholder="${type === 'book' || type === 'webtoon' ? '작가' : type === 'youtube' ? '채널' : type === 'song' ? '가수' : '감독·만든 사람'}" value="${esc(it.creator || '')}"><input data-f="year" placeholder="연도" value="${esc(it.year || '')}" inputmode="numeric"></div>
-                        ${type === 'youtube' ? `<input data-f="url" placeholder="유튜브 링크" value="${esc(it.url || '')}">` : ''}
+                        <input data-f="title" placeholder="title" value="${esc(it.title || '')}">
+                        <div class="two"><input data-f="creator" placeholder="creator" value="${esc(it.creator || '')}"><input data-f="year" placeholder="year" value="${esc(it.year || '')}" inputmode="numeric"></div>
+                        ${type === 'youtube' ? `<input data-f="url" placeholder="link" value="${esc(it.url || '')}">` : ''}
                     </div>
                 </div>
                 ${chips('status', LIB_STATUS, it.status || 'want', true)}
                 <div class="mj-hearts-pick sm" data-hearts="rating" data-v="${it.rating || 0}">${Array.from({ length: 5 }, (_, i) => `<button data-act="heart" data-v="${i + 1}">${pixelHeart(i < (it.rating || 0))}</button>`).join('')}</div>
-                <input data-f="tags" placeholder="#태그 (띄어쓰기로 여러 개)" value="${esc(Array.isArray(it.tags) ? it.tags.map(x => '#' + x).join(' ') : (it.tags || ''))}">
-                <textarea data-f="memo" rows="5" placeholder="감상, 기억하고 싶은 장면, 문장…">${esc(it.memo || '')}</textarea>
+                <input data-f="tags" placeholder="#tags" value="${esc(Array.isArray(it.tags) ? it.tags.map(x => '#' + x).join(' ') : (it.tags || ''))}">
+                <textarea data-f="memo" rows="5" placeholder="memo">${esc(it.memo || '')}</textarea>
                 ${whenRow(it)}
                 ${formBtns(it)}
             </div>`;
@@ -1222,12 +1319,12 @@ export function init() {
                     ${src ? `<img class="mj-outfit-big" src="${esc(src)}" ${it.img && !it.preview ? `onerror="this.onerror=null;this.src='${esc(repo.rawUrl(it.img))}'"` : ''} alt="">` : ''}
                     <button class="mj-link" data-act="pick">${it.id ? '사진 바꾸기' : '다른 사진 고르기'}</button>
                     ${whenRow(it)}
-                    <textarea data-f="memo" rows="2" placeholder="오늘의 옷 메모">${esc(it.memo || '')}</textarea>
+                    <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>
                     ${formBtns(it)}
                 </div>`;
         }
         const rows = db.outfit.slice().sort(byNewest);     // 최신 날짜·시간이 맨 앞
-        if (!rows.length) return empty('오른쪽 위 + 로 오늘의 옷을 올려 줘');
+        if (!rows.length) return empty('아직 없어요.');
         return `
             <div class="mj-outfits">
                 ${rows.map(r => `

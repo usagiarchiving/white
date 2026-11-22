@@ -131,8 +131,13 @@
 `diary`
 
 ```json
-{ "id": "dy...", "date": "2026-11-22", "time": "23:50", "title": "...", "body": "..." }
+{ "id": "dy...", "date": "2026-11-22", "time": "23:50", "title": "...", "body": "...",
+  "imgs": ["minjung/images/diary/....jpg"], "tags": ["식사"] }
 ```
+
+- `imgs` 사진 목록 (앞의 것이 목록 썸네일), `tags` 태그 목록 (`#` 없이).
+- 예전 **영원이라 쓰고, 오늘이라 읽는다**(daily) 글 18개를 여기로 옮겼어요. `"from": "daily-<예전 번호>"`가 붙어 있고, 그때 사진은 원래 자리(`data/images/daily/…` 등)를 그대로 가리켜요.
+- 홈(토끼굴) 달력도 이 `diary`를 읽어서 표시하고, 달력에서 쓴 글도 여기로 저장돼요.
 
 To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대로 읽고 체크해요.
 
@@ -152,6 +157,8 @@ To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대�
 
 | 필드 | 뜻 |
 | --- | --- |
+| `lib_types` | Library 종류 목록 `[{ key, label }]` — 창 위 초록 동그라미로 순서·이름·추가·삭제 |
+| `beauty_slots` | Beauty 구분 목록 `[{ key, label, tab }]` — `tab: false`면 위 탭 없이 + 버튼으로만 (예: Shower) |
 | `bg_off` | `true`면 방 그림과 캐릭터를 끄고 점무늬 바탕 + 스티커만 보임 |
 | `backgrounds` | 옆으로 밀어 넘기는 배경 순서. 모바일용·PC용 그림 따로 (`id`가 `bedroom`이면 밤에 그걸로 시작) |
 | `character` | 캐릭터 그림 (배경 투명한 PNG 추천) |
