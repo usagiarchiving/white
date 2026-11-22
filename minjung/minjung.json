@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T17:50:17+09:00",
+ "updated_at": "2026-11-22T17:54:46+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -854,6 +854,14 @@
    "slot": "breakfast",
    "memo": "간장국수",
    "from": "myhome-cook"
+  },
+  {
+   "id": "cdmwrlpbn81tke",
+   "date": "2026-11-22",
+   "time": "17:54",
+   "at": "2026-11-22T17:54:45+09:00",
+   "type": "mood",
+   "mood": "good"
   }
  ],
  "beauty": [
