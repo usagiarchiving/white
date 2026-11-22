@@ -701,21 +701,6 @@
   "completed_date": "2026-07-21"
  },
  {
-  "id": 68,
-  "created_at": "2026-07-21T00:50:59.876915+00:00",
-  "content": "사과, 감자, 양배추",
-  "category": "yellow",
-  "matrix_quadrant": 0,
-  "is_completed": false,
-  "target_date": "2026-07-21",
-  "parent_id": null,
-  "subtasks": [],
-  "repeat_type": "none",
-  "repeat_days": null,
-  "sort_order": 1784180425576,
-  "completed_date": null
- },
- {
   "id": 69,
   "created_at": "2026-07-22T10:41:31.434106+00:00",
   "content": "양파랑 파 참기름",
