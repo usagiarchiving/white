@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T13:36:48+09:00",
+ "updated_at": "2026-11-22T13:38:59+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -730,18 +730,6 @@
   }
  ],
  "diary": [
-  {
-   "id": "dy_d24",
-   "date": "2026-06-16",
-   "time": "22:22",
-   "at": "2026-06-16T22:22:47+09:00",
-   "title": "오늘의 하루",
-   "body": "하시온이 귀여웠다.\n내 남편이다.",
-   "imgs": [
-    "https://pqqvmppgpqmtyttfjyve.supabase.co/storage/v1/object/public/images/1781616166791_43iaa6vw2pq.jpg"
-   ],
-   "from": "daily-24"
-  },
   {
    "id": "dy_d49",
    "date": "2026-06-18",
