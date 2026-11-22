@@ -556,14 +556,14 @@
   "content": "모바일 신분증",
   "category": "gray",
   "matrix_quadrant": 2,
-  "is_completed": true,
+  "is_completed": false,
   "target_date": "2026-07-16",
   "parent_id": null,
   "subtasks": [],
   "repeat_type": null,
   "repeat_days": null,
   "sort_order": 1784180425576,
-  "completed_date": "2026-11-22"
+  "completed_date": null
  },
  {
   "id": 57,
