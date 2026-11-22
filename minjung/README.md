@@ -102,7 +102,7 @@
 { "id": "bt...", "slot": "night", "date": "2026-11-22", "time": "23:40", "steps": ["클렌징", "토너", "크림"], "memo": "..." }
 ```
 
-`slot`: `morning` · `night` · `etc` (화면의 All 탭은 셋 다 모아 보기)
+`slot`: `morning` · `night` · `etc` · `shower` (Shower는 탭 없이 + 버튼으로만 추가, All 탭에서 모아 보기)
 
 ## Daily — Outfit
 

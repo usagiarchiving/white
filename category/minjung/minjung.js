@@ -15,7 +15,7 @@ const PREFIX = { hp: 'hp', lines: 'ln', library: 'lb', condition: 'cd', beauty: 
 
 const DEFAULT_PROFILE = [
     ['이름', '김민정'], ['생년월일', '2002년생'], ['성별', '여성'], ['외형', ''], ['성격', ''],
-    ['좋아하는 것', ''], ['좋아하는 음식', ''], ['싫어하는 것', '']
+    ['좋아하는 것', ''], ['좋아하는 음식', ''], ['싫어하는 것', ''], ['etc.', '']
 ];
 const DEFAULT_SYMPTOMS = ['배아픔', '두통'];
 const DEFAULT_BGS = [
@@ -23,15 +23,15 @@ const DEFAULT_BGS = [
     { id: 'bedroom', mobile: 'minjung/assets/bedroom.webp', pc: 'minjung/assets/bedroom.webp' }
 ];
 const DEFAULT_CHAR = 'minjung/assets/character.webp';
-const DEFAULT_LAYOUT = { mobile: { x: 50, h: 80 }, pc: { x: 50, h: 90 } };   // 캐릭터 가운데 위치(%) · 높이(%)
-const DEFAULT_STEPS = { morning: ['세안', '토너', '로션', '선크림'], night: ['클렌징', '토너', '세럼', '크림'], etc: ['팩', '각질 케어'] };
+const DEFAULT_LAYOUT = { mobile: { x: 50, h: 72 }, pc: { x: 50, h: 90 } };   // 캐릭터 가운데 위치(%) · 높이(%)
+const DEFAULT_STEPS = { morning: ['세안', '토너', '로션', '선크림'], night: ['클렌징', '토너', '세럼', '크림'], etc: ['팩', '각질 케어'], shower: ['샴푸', '트리트먼트', '바디워시', '바디로션'] };
 
 const MEAL_SLOTS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner'], ['snack', 'Snack'], ['night', 'Late night']];
 const MOODS = [['love', '🥰', 'love'], ['good', '😊', 'good'], ['okay', '🙂', 'okay'], ['meh', '😐', 'meh'], ['tired', '😪', 'tired'], ['sad', '😢', 'sad'], ['anxious', '😰', 'anxious'], ['angry', '😠', 'angry']];
 const LIB_TYPES = [['book', 'Book'], ['youtube', 'YouTube'], ['movie', 'Movie'], ['anime', 'Anime']];
 const LIB_STATUS = [['want', 'Want'], ['now', 'Now'], ['done', 'Done']];
-const BEAUTY_SLOTS = [['morning', 'Morning'], ['night', 'Night'], ['etc', 'etc.']];
-const BEAUTY_SUBS = [['all', 'All']].concat(BEAUTY_SLOTS);
+const BEAUTY_SLOTS = [['morning', 'Morning'], ['night', 'Night'], ['etc', 'etc.'], ['shower', 'Shower']];
+const BEAUTY_SUBS = [['all', 'All'], ['morning', 'Morning'], ['night', 'Night'], ['etc', 'etc.']];   // Shower는 탭 없이 + 버튼으로만 (All에서 보임)
 const COND_TYPES = [['meal', 'Meal'], ['medicine', 'Medicine'], ['symptom', 'Symptom'], ['mood', 'Mood']];
 
 /* ---------------- 아이콘 (기본 그림, 창 위 아이콘을 누르면 내 이미지로 바꿀 수 있음) ---------------- */
@@ -394,7 +394,7 @@ export function init() {
     // 끌기: 캐릭터는 좌우만, 스티커는 어디든. 모서리 점은 크기
     function editDown(e) {
         if (e.target.closest('.mj-edit-bar, .mj-ask')) return;
-        const r = game.getBoundingClientRect();
+        const r = $('mj-scene').getBoundingClientRect();
         const del = e.target.closest('[data-sdel]');
         const stkEl = e.target.closest('.mj-stk');
         if (del && stkEl) { edit.stickers = edit.stickers.filter(t => t.id !== stkEl.dataset.id); drawStickers(); return; }
@@ -982,7 +982,7 @@ export function init() {
             return `
                 <div class="mj-subs">${BEAUTY_SUBS.map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>
                 ${dayNav(st)}
-                <div class="mj-newbar">${(st.sub === 'all' ? BEAUTY_SLOTS : BEAUTY_SLOTS.filter(x => x[0] === st.sub)).map(([k, l]) => `<button class="mj-add" data-act="new" data-v="${k}">+ ${l}</button>`).join('')}</div>
+                <div class="mj-newbar">${(st.sub === 'all' ? BEAUTY_SLOTS : BEAUTY_SLOTS.filter(x => x[0] === st.sub || x[0] === 'shower')).map(([k, l]) => `<button class="mj-add" data-act="new" data-v="${k}">+ ${l}</button>`).join('')}</div>
                 <div class="mj-log">
                     ${rows.length ? rows.map(r => `
                         <button class="mj-row" data-act="edit" data-id="${r.id}">

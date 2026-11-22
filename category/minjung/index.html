@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="category/minjung/minjung.css?v=7">
+<link rel="stylesheet" href="category/minjung/minjung.css?v=8">
 
 <div class="mj-root" id="mj-root">
     <div class="mj-desk">
@@ -8,9 +8,12 @@
         <!-- 게임 화면: 방 배경(옆으로 밀어서 바꾸기) + 캐릭터 + 대사창 -->
         <div class="mj-frame">
             <div class="mj-game" id="mj-game">
-                <div class="mj-bgs" id="mj-bgs"></div>
-                <img class="mj-char" id="mj-char" alt="" draggable="false">
-                <div class="mj-stickers" id="mj-stickers"></div>
+                <!-- 방(배경·캐릭터·스티커): 모바일은 아래 메뉴 위까지만 -->
+                <div class="mj-scene" id="mj-scene">
+                    <div class="mj-bgs" id="mj-bgs"></div>
+                    <img class="mj-char" id="mj-char" alt="" draggable="false">
+                    <div class="mj-stickers" id="mj-stickers"></div>
+                </div>
                 <div class="mj-date" id="mj-date"></div>
                 <button class="mj-hp" id="mj-hp" title="HP"></button>
                 <span class="mj-saving" id="mj-saving"></span>
@@ -32,6 +35,6 @@
 
 <!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
 <script type="module">
-    import { init } from './category/minjung/minjung.js?v=7';
+    import { init } from './category/minjung/minjung.js?v=8';
     init();
 </script>
