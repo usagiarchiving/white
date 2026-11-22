@@ -34,7 +34,7 @@ const APPS = {
     diary: { title: '다이어리',      icon: 'c-blue',  w: 1120, h: 780, center: true, y: 0.015 },
     todo:  { title: '할 일',         icon: 'c-pink',  w: 380,  h: 640, x: 0.02, y: 0.03 },
     done:  { title: '오늘의 영수증', icon: 'c-white', w: 400,  h: 640, x: 0.58, y: 0.05 },
-    report: { title: '리포트',      icon: 'folder',  w: 560,  h: 680, x: 0.30, y: 0.04 },
+    report: { title: '리포트',      icon: 'c-puppy',  w: 560,  h: 680, x: 0.30, y: 0.04 },
     memo:  { title: '메모',          icon: 'c-gray',  w: 560,  h: 700, x: 0.33, y: 0.03 }
 };
 
@@ -55,7 +55,8 @@ const WEEK_KO = ['일', '월', '화', '수', '목', '금', '토'];
 /* ---------------- 같이 쓰는 기록 파일 ---------------- */
 // 할 일 = Todo 카테고리와 같은 파일, 일기·프로필·내 스티커 = 김민정과 같은 파일, 집안일 = 마이홈 (영수증에 모아 보기만)
 const SHARED = { todos: 'data/todos.json', mj: 'minjung/minjung.json', mh: 'myhome/myhome.json', memos: 'diary/memos.json' };
-const TODO_COLORS = { gray: '#bdb7b9', red: '#f08a8a', orange: '#f5b17a', yellow: '#f0cf62', green: '#9dd39a', mint: '#8fd6c6', blue: '#8fb8e8', navy: '#6b7fb8', purple: '#b79be0', pink: '#f4a3b8' };
+// 회색 기본 · 빨강 공부 · 주황 · 노랑 일상 · 연두 기록 · 초록 자기돌봄 · 하늘 운동 · 남색 작업 · 보라 학업 · 핑크 취미
+const TODO_COLORS = { gray: '#bdb7b9', red: '#f08a8a', orange: '#f5b17a', yellow: '#f0cf62', green: '#b7dc8a', mint: '#6fbf8e', blue: '#8cc8ec', navy: '#6b7fb8', purple: '#b79be0', pink: '#f4a3b8' };
 const MYHOME_ACTS = {
     entrance: '🚪 현관 정리', shoes: '👟 신발 정리', sink: '🫧 설거지', stove: '🧽 조리대 청소', cook: '🍳 요리', upper1: '✨ 상부장 정리', upper2: '✨ 상부장 정리',
     lower1: '✨ 하부장 정리', lower2: '✨ 하부장 정리', washer: '🧺 빨래', fridge: '🧊 냉장고 정리', trash: '🗑️ 쓰레기 버리기', kfloor: '🧹 주방 바닥 청소',
@@ -414,6 +415,7 @@ export function init() {
         const v = themeVars();
         Object.keys(v).forEach(k => wrap.style.setProperty('--dy-' + k, v[k]));
         wrap.dataset.pattern = (db.theme && db.theme.pattern) || 'heart';
+        try { localStorage.setItem('dy-theme-cache', JSON.stringify({ v, p: wrap.dataset.pattern })); } catch (e) {}
     }
 
     /* ==========================================================================
@@ -447,7 +449,7 @@ export function init() {
         el.style.left = clamp(mem.x != null ? mem.x : d.center ? Math.round((dw - w) / 2) : Math.round(dw * d.x), 0, Math.max(0, dw - 80)) + 'px';
         el.style.top = clamp(mem.y != null ? mem.y : Math.round(dh * d.y), 0, Math.max(0, dh - 40)) + 'px';
         el.innerHTML =
-            '<div class="dy-tb"><img src="' + ICON_SRC[d.icon] + '" alt=""><span class="t">' + esc(d.title) + '</span><span class="sp"></span>' +
+            '<div class="dy-tb"><img src="' + esc(appIconSrc(id)) + '" alt=""><span class="t">' + esc(appName(id)) + '</span><span class="sp"></span>' +
             '<span class="ttools"></span><button class="dy-rb round" data-close title="닫기">' + ic('x') + '</button></div>' +
             '<div class="dy-body"></div><div class="dy-rs" title="크기 바꾸기"></div>';
         desk.appendChild(el);
@@ -532,6 +534,7 @@ export function init() {
     }
     // fromRemote: 저장소에서 새로 받아 왔을 때만 열린 카드도 다시 그림 (입력 중이면 건너뜀)
     function renderAll(fromRemote) {
+        drawShell();
         Object.keys(wins).forEach(id => render(id));
         if (fromRemote && cardFn && !cardBox.contains(document.activeElement)) cardFn();
     }
@@ -546,8 +549,8 @@ export function init() {
 
     RENDER.diary = (body, tools) => {
         tools.innerHTML =
-            '<button class="dy-rb" data-tool="stkview" title="스티커 보이기/숨기기 (' + (isMobile() ? '휴대폰' : 'PC') + ')">' + ic(stkOff() ? 'eyeoff' : 'eye') + '<span class="lbl">스티커 ' + (stkOff() ? 'OFF' : 'ON') + '</span></button>' +
-            (stkOff() ? '' : '<button class="dy-rb' + (V.deco ? '' : ' on') + '" data-tool="deco" title="스티커를 고정하면 끌거나 눌러도 안 움직여요">' + ic(V.deco ? 'unlock' : 'lock') + '<span class="lbl">' + (V.deco ? '스티커 고정' : '고정 풀기') + '</span></button>') +
+            (isMobile() ? '' : '<button class="dy-rb" data-tool="stkview" title="스티커 보이기/숨기기 (' + (isMobile() ? '휴대폰' : 'PC') + ')">' + ic(stkOff() ? 'eyeoff' : 'eye') + '<span class="lbl">스티커 ' + (stkOff() ? 'OFF' : 'ON') + '</span></button>') +
+            (stkOff() || isMobile() ? '' : '<button class="dy-rb' + (V.deco ? '' : ' on') + '" data-tool="deco" title="스티커를 고정하면 끌거나 눌러도 안 움직여요">' + ic(V.deco ? 'unlock' : 'lock') + '<span class="lbl">' + (V.deco ? '스티커 고정' : '고정 풀기') + '</span></button>') +
             '<button class="dy-rb" data-tool="sticker" title="스티커 붙이기">' + ic('plus') + '<span class="lbl">스티커</span></button>' +
             '<button class="dy-rb" data-tool="theme" title="색 바꾸기">' + ic('palette') + '<span class="lbl">꾸미기</span></button>';
         tools.onclick = e => {
@@ -869,7 +872,7 @@ export function init() {
     }
 
     /* ---------------- 붙인 스티커 ---------------- */
-    const stkOff = () => !!db.view.stk_off[isMobile() ? 'mobile' : 'pc'];
+    const stkOff = () => isMobile() || !!db.view.stk_off.pc;      // 휴대폰에서는 스티커를 늘 숨김
     // 휴대폰은 위젯 배치가 달라서 스티커 자리를 따로 기억 (mx/my, 없으면 넓은 화면 자리)
     const posOf = st => isMobile() && st.mx != null ? { x: st.mx, y: st.my } : { x: st.x, y: st.y };
     function bubbleHTML(st, b) {
@@ -1007,7 +1010,7 @@ export function init() {
     };
     // 할 일 자세히 고치기 — Todo 카테고리의 상세 편집과 같은 항목
     // (색 · 내용 · 하위 할 일 · 영역 · 계획일 · 완료일 · 반복 · 순서 · 지우기)
-    const TODO_CAT = { gray: '기본', red: '긴급', orange: '주의', yellow: '아이디어', green: '실행', mint: '개인', blue: '업무', navy: '기록', purple: '창작', pink: '중요' };
+    const TODO_CAT = { gray: '기본', red: '공부', orange: '', yellow: '일상', green: '기록', mint: '자기돌봄', blue: '운동', navy: '작업', purple: '학업', pink: '취미' };
     const QUAD_OPT = [[0, '미지정'], [1, '실행'], [2, '계획'], [3, '위임'], [4, '제거']];
     const REPEAT_OPT = [['none', '반복 안 함'], ['daily', '매일'], ['weekly', '매주'], ['monthly', '매월']];
     function openTodoCard(x0) {
@@ -1020,14 +1023,14 @@ export function init() {
             cardBox.innerHTML = '<h3><img src="' + CHAR['c-pink'] + '" alt="">할 일</h3>' +
                 '<div class="td-top"><input class="dy-in td-content" value="' + esc(d.content) + '">' +
                     '<button class="dy-ibtn" data-ord="up" title="위로">' + ic('up') + '</button><button class="dy-ibtn" data-ord="down" title="아래로">' + ic('down') + '</button></div>' +
-                '<div class="td-cats">' + Object.keys(TODO_COLORS).map(c => '<button class="' + (c === d.category ? 'on' : '') + '" data-cat="' + c + '" title="' + TODO_CAT[c] + '"><i style="background:' + TODO_COLORS[c] + '"></i><span>' + TODO_CAT[c] + '</span></button>').join('') + '</div>' +
+                '<div class="td-cats">' + Object.keys(TODO_COLORS).map(c => '<button class="' + (c === d.category ? 'on' : '') + '" data-cat="' + c + '" title="' + TODO_CAT[c] + '"><i style="background:' + TODO_COLORS[c] + '"></i>' + (TODO_CAT[c] ? '<span>' + TODO_CAT[c] + '</span>' : '') + '</button>').join('') + '</div>' +
                 '<div class="lb">하위 할 일</div><div class="td-subs">' + d.subtasks.map((st, i) =>
                     '<div class="td-sub" data-i="' + i + '"><button class="dy-chk" data-sub="tog" style="border-color:' + col + ';' + (st.is_completed ? 'background:' + col : '') + '">' + (st.is_completed ? ic('check') : '') + '</button>' +
                     '<input class="dy-in' + (st.is_completed ? ' done' : '') + '" data-subtx value="' + esc(st.content || '') + '"><button class="dy-del" data-sub="del" title="지우기">' + ic('x') + '</button></div>').join('') +
                     '<div class="dy-add" style="margin:0"><input class="dy-in" id="td-new-sub"><button class="dy-rb round" data-sub="add" title="하위 할 일 추가">' + ic('plus') + '</button></div></div>' +
                 '<div class="lb">영역</div>' + seg('quad', QUAD_OPT, d.q) +
-                '<div class="td-dates"><label><span class="lb">계획일</span><input class="dy-in" type="date" id="td-target" value="' + esc(d.target) + '"></label>' +
-                    '<label><span class="lb">완료일</span><input class="dy-in" type="date" id="td-done" value="' + esc(d.done) + '"></label></div>' +
+                '<div class="td-dates"><span class="lb">계획일</span><span></span><span class="lb">완료일</span>' +
+                    '<input class="dy-in" type="date" id="td-target" value="' + esc(d.target) + '"><span class="dash"></span><input class="dy-in" type="date" id="td-done" value="' + esc(d.done) + '"></div>' +
                 '<div class="lb">반복</div>' + seg('rep', REPEAT_OPT, d.repeat) +
                 '<div class="foot"><button class="dy-rb" data-c="del">' + ic('x') + '<span class="lbl">지우기</span></button><span style="flex:1"></span>' +
                     '<button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
@@ -1121,12 +1124,12 @@ export function init() {
             .forEach(t => L.push({ x: t.content, p: hhmm(t.completed_at) }));
         const ql = mj.quest_log[k] || {};
         Object.keys(ql).forEach(id => { const q = mj.quests.find(x => x.id === id); if (q) L.push({ x: '[루틴] ' + q.title, p: String(ql[id] || '').slice(0, 5) }); });
-        Object.keys(ext.mh.log).forEach(id => { const r = (ext.mh.log[id] || {})[k]; if (r && r.done) L.push({ x: '[집] ' + (MYHOME_ACTS[id] || id) + (r.count > 1 ? ' ×' + r.count : ''), p: hhmm(r.at) }); });
+        Object.keys(ext.mh.log).forEach(id => { const r = (ext.mh.log[id] || {})[k]; if (r && r.done) L.push({ x: (MYHOME_ACTS[id] || id) + (r.count > 1 ? ' ×' + r.count : ''), p: hhmm(r.at) }); });
         mj.condition.filter(c => c.date === k).forEach(c => {
-            if (c.type === 'meal') L.push({ x: '[식사] ' + (MEAL_KO[c.slot] || '') + (c.memo ? ' · ' + c.memo : ''), p: c.time || '' });
-            if (c.type === 'medicine') L.push({ x: '[약] ' + (c.name || '') + (c.memo ? ' · ' + c.memo : ''), p: c.time || '' });
+            if (c.type === 'meal') L.push({ x: '[식사] ' + (MEAL_KO[c.slot] || '') + (c.memo ? ': ' + c.memo : ''), p: c.time || '' });
+            if (c.type === 'medicine') L.push({ x: '[약] ' + (c.name || '') + (c.memo ? ': ' + c.memo : ''), p: c.time || '' });
         });
-        mj.beauty.filter(b => b.date === k).forEach(b => L.push({ x: '[뷰티] ' + (BEAUTY_KO[b.slot] || b.slot || '') + ((b.steps || []).length ? ' · ' + b.steps.join(', ') : ''), p: b.time || '' }));
+        mj.beauty.filter(b => b.date === k).forEach(b => L.push({ x: '[뷰티] ' + (BEAUTY_KO[b.slot] || b.slot || '') + ((b.steps || []).length ? ': ' + b.steps.join(', ') : ''), p: b.time || '' }));
         Object.values(db.goals).forEach(arr => (arr || []).forEach(g => { if (g.done && g.at && g.at.slice(0, 10) === k) L.push({ x: '[목표] ' + g.text, p: hhmm(g.at) }); }));
         db.bucket.forEach(b => { if (b.done && b.at && b.at.slice(0, 10) === k) L.push({ x: '[버킷] ' + b.text, p: hhmm(b.at) }); });
         return L.sort((a, b) => (a.p || '99') < (b.p || '99') ? -1 : 1).map(l => Object.assign(l, { p: l.p || '✓' }));
@@ -1153,8 +1156,33 @@ export function init() {
                     '<hr><div class="msg">' + esc(entry ? (entry.title || (entry.body || '').split('\n')[0]) : (lines.length ? '오늘도 수고했어요 ♡' : '')) + '</div>' +
                     '<div class="bc"></div><div class="msg" style="margin:0">THANK YOU ♥</div>' +
                 '</div>' +
+                '<div class="rc-tools"><button data-a="rc-save" title="사진으로 저장">' + ic('down') + '저장</button><button data-a="rc-copy" title="사진으로 복사">' + ic('copy') + '복사</button></div>' +
             '</div>';
     };
+    // 영수증을 사진으로 (html2canvas): 저장 또는 복사
+    let h2c = null;
+    function loadH2c() {
+        if (window.html2canvas) return Promise.resolve();
+        if (h2c) return h2c;
+        h2c = new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+        return h2c;
+    }
+    async function receiptImage(copy) {
+        const el = wins.done && wins.done.querySelector('.dy-rcpt'); if (!el) return;
+        try {
+            await loadH2c();
+            const canvas = await window.html2canvas(el, { backgroundColor: null, scale: 2, useCORS: true });
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+            if (copy) {
+                try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); return toast('영수증을 사진으로 복사했어요'); }
+                catch (e) { /* 복사가 안 되는 브라우저는 저장으로 */ }
+            }
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'receipt-' + V.rDate + '.png';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+            toast(copy ? '복사가 안 돼서 사진으로 저장했어요' : '영수증을 사진으로 저장했어요');
+        } catch (e) { toast('사진으로 만들지 못했어요'); }
+    }
     // 영수증 위 그림: 스티커 또는 내 사진으로
     function openReceiptImgCard() {
         const cur = (db.receipt && db.receipt.img) || 'c-white';
@@ -1714,6 +1742,7 @@ export function init() {
             case 'r-next': V.rDate = addDays(V.rDate, 1); return render('done');
             case 'r-today': V.rDate = todayKey(); return render('done');
             case 'r-img': return openReceiptImgCard();
+            case 'rc-save': case 'rc-copy': return receiptImage(a === 'rc-copy');
             case 'rp-prev': case 'rp-next': { const [ry, rm] = R.m.split('-').map(Number), dd = new Date(ry, rm - 1 + (a === 'rp-next' ? 1 : -1), 1); R.m = dd.getFullYear() + '-' + pad(dd.getMonth() + 1); return render('report'); }
             case 'rp-tab': R.tab = t.dataset.k; return render('report');
             case 'rp-q': { const id = t.dataset.k; if (R.open[id]) delete R.open[id]; else R.open[id] = 1; return render('report'); }
@@ -2030,37 +2059,94 @@ export function init() {
     /* ==========================================================================
        바탕화면 / 작업표시줄 / 시작 메뉴
        ========================================================================== */
+    // 노란 강아지 = 리포트, 폴더 = 꾸미기 (이름·그림은 꾹 눌러 바꿀 수 있음: db.apps)
     const ICONS = [
-        ['diary', '다이어리'], ['todo', '할 일'], ['done', '영수증'], ['memo', '메모'], ['deco', '꾸미기'], ['report', '리포트']
+        ['diary', '다이어리'], ['todo', '할 일'], ['done', '영수증'], ['memo', '메모'], ['report', '리포트'], ['deco', '꾸미기']
     ];
-    const iconOf = id => id === 'deco' ? 'c-puppy' : APPS[id].icon;
-    document.getElementById('dy-icons').innerHTML = ICONS.map(([id, n]) =>
-        '<button class="dy-icon" data-open="' + id + '" title="' + n + ' 열기"><img src="' + ICON_SRC[iconOf(id)] + '" alt=""><span>' + n + '</span></button>').join('');
-    document.getElementById('dy-apps').innerHTML = ICONS.map(([id, n]) =>
-        '<button class="dy-app" data-open="' + id + '" title="' + n + '"><img src="' + ICON_SRC[iconOf(id)] + '" alt=""></button>').join('');
+    const DEFAULT_ICON = { diary: 'c-blue', todo: 'c-pink', done: 'c-white', memo: 'c-gray', report: 'c-puppy', deco: 'folder' };
+    const appDef = id => (ICONS.find(x => x[0] === id) || [])[1] || id;
+    const appName = id => ((db.apps || {})[id] || {}).name || appDef(id);
+    const appIconKey = id => ((db.apps || {})[id] || {}).icon || DEFAULT_ICON[id];
+    const appIconSrc = id => { const k = appIconKey(id); return ICON_SRC[k] || src(k); };
     const menu = document.getElementById('dy-menu'), startBtn = document.getElementById('dy-start');
-    menu.innerHTML = '<div class="head"><img src="' + CHAR['c-blue'] + '" alt="">diary ♡</div>' +
-        ICONS.map(([id, n]) => '<button data-open="' + id + '"><img src="' + ICON_SRC[iconOf(id)] + '" alt="">' + n + '</button>').join('') +
-        '<button data-m="sticker"><span class="ic">' + ic('heart') + '</span>스티커 붙이기</button>' +
-        '<button data-m="reload"><span class="ic">' + ic('reload') + '</span>새로 불러오기</button>';
     const closeMenu = () => { menu.classList.remove('open'); startBtn.classList.remove('open'); };
+    function drawShell() {
+        const ph = id => ICON_SRC[appIconKey(id)] ? '' : ' class="ph"';
+        document.getElementById('dy-icons').innerHTML = ICONS.map(([id]) =>
+            '<button class="dy-icon" data-open="' + id + '" title="' + esc(appName(id)) + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt=""><span>' + esc(appName(id)) + '</span></button>').join('');
+        document.getElementById('dy-apps').innerHTML = ICONS.map(([id]) =>
+            '<button class="dy-app" data-open="' + id + '" title="' + esc(appName(id)) + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt=""></button>').join('');
+        menu.innerHTML = '<div class="head"><img src="' + CHAR['c-blue'] + '" alt="">diary ♡</div>' +
+            ICONS.map(([id]) => '<button data-open="' + id + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt="">' + esc(appName(id)) + '</button>').join('') +
+            '<button data-m="sticker"><span class="ic">' + ic('heart') + '</span>스티커 붙이기</button>' +
+            '<button data-m="reload"><span class="ic">' + ic('reload') + '</span>새로 불러오기</button>' +
+            '<div class="tip">꾹 누르면 이름·그림 바꾸기</div>';
+        syncBar();
+        // 창 제목줄도 같이
+        Object.keys(wins).forEach(id => { const el = wins[id]; const im = el.querySelector('.dy-tb > img'), t = el.querySelector('.dy-tb .t'); if (im) im.src = appIconSrc(id); if (t) t.textContent = appName(id); });
+    }
     startBtn.onclick = e => { e.stopPropagation(); menu.classList.toggle('open'); startBtn.classList.toggle('open', menu.classList.contains('open')); };
     on(document, 'pointerdown', e => { if (!menu.contains(e.target) && e.target !== startBtn) closeMenu(); });
-    wrap.querySelectorAll('.dy-icon, #dy-menu [data-open]').forEach(b => b.addEventListener('click', () => {
-        closeMenu();
-        const id = b.dataset.open;
-        id === 'deco' ? openThemeCard() : openWin(id);
-    }));
-    wrap.querySelectorAll('#dy-apps .dy-app').forEach(b => b.addEventListener('click', () => {
-        closeMenu();
-        const id = b.dataset.open;
-        id === 'deco' ? openThemeCard() : toggleWin(id);
-    }));
-    menu.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => {
+    // 누르면 열기, 꾹 누르면(PC는 오른쪽 클릭도) 이름·그림 바꾸기
+    const APP_SEL = '#dy-menu [data-open], .dy-icon, .dy-app';
+    let pressT = null, pressed = false, px = 0, py = 0;
+    const openApp = (id, toggle) => { closeMenu(); id === 'deco' ? openThemeCard() : toggle ? toggleWin(id) : openWin(id); };
+    on(wrap, 'pointerdown', e => {
+        const b = e.target.closest(APP_SEL); if (!b) return;
+        pressed = false; clearTimeout(pressT); px = e.clientX; py = e.clientY;
+        pressT = setTimeout(() => { pressed = true; closeMenu(); openAppCard(b.dataset.open); }, 550);
+    });
+    on(wrap, 'pointermove', e => { if (pressT && Math.abs(e.clientX - px) + Math.abs(e.clientY - py) > 8) clearTimeout(pressT); });
+    ['pointerup', 'pointercancel'].forEach(ev => on(wrap, ev, () => clearTimeout(pressT)));
+    on(wrap, 'contextmenu', e => { const b = e.target.closest(APP_SEL); if (b) { e.preventDefault(); clearTimeout(pressT); pressed = true; closeMenu(); openAppCard(b.dataset.open); } });
+    on(wrap, 'click', e => {
+        const b = e.target.closest(APP_SEL); if (!b) return;
+        if (pressed) { pressed = false; return; }
+        openApp(b.dataset.open, b.classList.contains('dy-app'));
+    });
+    on(menu, 'click', e => {
+        const b = e.target.closest('[data-m]'); if (!b) return;
         closeMenu();
         if (b.dataset.m === 'sticker') openThemeCard();
         if (b.dataset.m === 'reload') load();
-    }));
+    });
+    // 메뉴 이름·그림 바꾸기: 그림은 스티커 또는 사진
+    function openAppCard(id) {
+        const st = { name: appName(id), icon: appIconKey(id) };
+        const first = JSON.stringify(st);
+        let files = {};
+        openCard(function draw() {
+            cardBox.innerHTML = '<h3><img src="' + esc(ICON_SRC[st.icon] || src(st.icon)) + '" alt="">메뉴 바꾸기</h3>' +
+                '<div class="lb">이름</div><input class="dy-in" id="dy-app-name" value="' + esc(st.name) + '">' +
+                '<div class="lb">그림</div><div class="dy-pick">' + uniq(['folder'].concat(BASE_STICKERS.map(c => c.id), myStickerPaths(), ICON_SRC[st.icon] ? [] : [st.icon])).map(k =>
+                    '<button data-ico="' + esc(k) + '" class="' + (st.icon === k ? 'on' : '') + '"><img src="' + esc(ICON_SRC[k] || src(k)) + '" alt=""></button>').join('') + '</div>' +
+                '<div class="row" style="margin-top:8px"><button class="dy-rb" data-c="photo">' + ic('photo') + '<span class="lbl">사진으로</span></button></div>' +
+                '<div class="foot"><button class="dy-rb" data-c="reset">처음대로</button><span style="flex:1"></span><button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
+            cardBox.querySelector('#dy-app-name').oninput = e => { st.name = e.target.value; };
+        });
+        cardGuard = () => JSON.stringify(st) !== first;
+        cardBox.onclick = async e => {
+            const ib = e.target.closest('[data-ico]'), c = e.target.closest('[data-c]');
+            if (ib) { st.icon = ib.dataset.ico; return cardFn && cardFn(); }
+            if (!c) return;
+            const a = c.dataset.c;
+            if (a === 'close') return closeCard();
+            if (a === 'photo') { const up = await uploadImage('photos', 300, false); if (!up) return; files = Object.assign(files, up.files); st.icon = up.path; return cardFn && cardFn(); }
+            if (a === 'reset') { st.name = appDef(id); st.icon = DEFAULT_ICON[id]; return cardFn && cardFn(); }
+            if (a === 'save') {
+                const name = st.name.trim(), icon = st.icon, old = ((db.apps || {})[id] || {}).icon;
+                let fl = {};
+                if (files[icon]) fl[icon] = files[icon];
+                if (old && old !== icon && !ICON_SRC[old]) fl = dropFile(old, fl);
+                save('메뉴 바꾸기 ' + id, d => {
+                    d.apps = d.apps || {};
+                    const v = {}; if (name && name !== appDef(id)) v.name = name; if (icon !== DEFAULT_ICON[id]) v.icon = icon;
+                    if (Object.keys(v).length) d.apps[id] = v; else delete d.apps[id];
+                }, fl);
+                return closeCard(true);
+            }
+        };
+    }
     on(window, 'keydown', e => {
         const ak = askOpen();
         if (ak) { if (e.key === 'Escape' && ak.dy) ak.dy.esc(); return; }
@@ -2082,8 +2168,10 @@ export function init() {
     const clock = setInterval(tick, 15000);
     offs.push(() => clearInterval(clock));
 
-    // 처음엔 다이어리만 열어 둠 (넓은 화면이면 할 일도)
+    // 처음엔 다이어리만 열어 둠. 지난번 꾸미기 색을 먼저 칠해 두고(깜빡임 없게) 기록을 불러옴
+    try { const tc = JSON.parse(localStorage.getItem('dy-theme-cache') || 'null'); if (tc) { db.theme = { vars: tc.v, pattern: tc.p }; } } catch (e) {}
     applyTheme();
+    drawShell();
     openWin('diary');
     load();
 }

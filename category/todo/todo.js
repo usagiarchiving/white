@@ -420,9 +420,9 @@
     // 카테고리 색상 -> 한글 이름 변환 헬퍼 함수
     function getCategoryName(cat) {
         const names = {
-            'gray': '기본', 'red': '긴급', 'orange': '주의', 'yellow': '아이디어',
-            'green': '실행', 'mint': '개인', 'blue': '업무', 'navy': '기록', 
-            'purple': '창작', 'pink': '중요'
+            'gray': '기본', 'red': '공부', 'orange': '', 'yellow': '일상',
+            'green': '기록', 'mint': '자기돌봄', 'blue': '운동', 'navy': '작업', 
+            'purple': '학업', 'pink': '취미'
         };
         return names[cat] || '분류';
     }

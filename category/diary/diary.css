@@ -487,8 +487,8 @@ textarea.dy-in { font-size: 11px; }
     .dy-clock b { font-size: 12px; }
     .dy-menu { left: 8px; right: 8px; width: auto; }
 
-    .dy-modal { padding: 0; align-items: flex-end; }
-    .dy-card { width: 100%; max-height: 88%; border-radius: 22px 22px 0 0; border-width: 2px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+    .dy-modal { padding: 12px; align-items: center; }      /* 휴대폰도 가운데 카드 */
+    .dy-card { width: 100%; max-height: 86%; }
     .dy-pick { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
     .dy-stk-tools { max-width: calc(100% - 8px); overflow-x: auto; }
 }
@@ -774,3 +774,24 @@ textarea.dy-in { font-size: 11px; }
 .dy-memo2 .mbase.base-only { position: relative; }
 .dy-memo2 .mbase.base-only textarea { min-height: 52vh; }
 .dy-memo2 .mbase.base-only .st { position: absolute; right: 10px; bottom: 6px; pointer-events: none; }
+
+/* 스타일이 다 오기 전에는 숨김 (처음 들어갈 때 큰 그림이 번쩍이지 않게) */
+#dy-wrap { visibility: visible !important; }
+
+/* 할 일 카드: 계획일 — 완료일 한 줄 */
+.td-dates { grid-template-columns: 1fr 14px 1fr; gap: 2px 6px; align-items: center; }
+.td-dates .lb { margin: 12px 0 3px; }
+.td-dates .dash { height: 1.6px; background: var(--dy-line); border-radius: 2px; }
+.td-dates .dy-in { min-width: 0; padding: 0 6px; }
+
+/* 영수증 아래 작은 버튼 (사진으로 저장 · 복사) */
+.rc-tools { display: flex; gap: 10px; justify-content: center; opacity: .55; transition: opacity .2s; }
+.rc-tools:hover { opacity: 1; }
+.rc-tools button { display: inline-flex; align-items: center; gap: 3px; border: 0; background: none; padding: 2px 4px; font-size: 10px; color: var(--dy-sub); }
+.rc-tools button svg.ic { width: 11px; height: 11px; }
+
+/* 시작 메뉴: 꾹 누르기 안내, 사진 아이콘은 동그랗게 */
+.dy-menu .tip { font-size: 9.5px; color: var(--dy-sub); text-align: center; padding: 6px 4px 2px; border-top: 1px dashed var(--dy-thin); margin-top: 4px; }
+.dy-wrap img.ph { object-fit: cover !important; border-radius: 50%; border: 1.5px solid var(--dy-line); }
+.dy-icon img.ph { width: 62px; height: 62px; margin: 4px auto; }
+.dy-icon, .dy-app, #dy-menu [data-open] { -webkit-touch-callout: none; touch-action: manipulation; }
