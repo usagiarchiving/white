@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T00:00:00+09:00",
+ "updated_at": "2026-11-22T09:36:22+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -49,7 +49,15 @@
  "library": [],
  "condition": [],
  "beauty": [],
- "outfit": [],
+ "outfit": [
+  {
+   "id": "ofmwr3wc07hevt",
+   "date": "2026-11-22",
+   "time": "09:36",
+   "at": "2026-11-22T09:36:19+09:00",
+   "img": "minjung/images/outfit/1795307779080_6ufi2.jpg"
+  }
+ ],
  "diary": [],
  "symptom_tags": [
   "배아픔",
