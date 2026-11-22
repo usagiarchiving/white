@@ -433,7 +433,7 @@
     }
     .mj-dots3 { position: static; margin-left: auto; }
     .mj-x {
-        position: static; width: 12px; height: 12px; margin-left: 6px; padding: 0; border-radius: 50%; border: 1.5px solid var(--mj-frame);
+        position: static; width: 12px; height: 12px; margin-left: 0; padding: 0; border-radius: 50%; border: 1.5px solid var(--mj-frame);
         background: #f4b4c3; color: transparent; box-sizing: border-box; flex: none;
     }
     .mj-x svg { width: 7px; height: 7px; }
@@ -473,3 +473,8 @@
 .mj-day.all { justify-content: space-between; }
 .mj-day .alllabel { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); letter-spacing: 1px; text-transform: uppercase; }
 .mj-tabs::-webkit-scrollbar { display: none; }
+
+/* 달 바뀌는 곳: 굵은 핑크 가름선 */
+.mj-month { display: flex; align-items: center; gap: 8px; margin: 14px 0 4px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-deep); letter-spacing: 1px; }
+.mj-month::after { content: ''; flex: 1; height: 2px; background: var(--mj-tag); border-radius: 2px; }
+.mj-log > .mj-month:first-child { margin-top: 2px; }

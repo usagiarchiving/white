@@ -940,10 +940,16 @@ export function init() {
             <button class="today" data-act="day" data-v="0">Today</button>
             <button class="lst" data-act="alllist" title="모든 기록 최신순">${LIST_SVG}</button>
         </div>`;
+    // 달이 바뀌는 곳에 굵은 핑크 가름선 + 'YYYY.MM'
+    const monthOf = d => (d || '').slice(0, 7);
+    const monthBar = m => `<div class="mj-month"><span>${m.replace('-', '.')}</span></div>`;
+    const monthHead = (rows, i) => (i === 0 || monthOf(rows[i].date) !== monthOf(rows[i - 1].date)) ? monthBar(monthOf(rows[i].date)) : '';
     // 날짜별 묶음 (모든 기록 보기)
     function grouped(rows, rowHtml) {
         const g = {}; rows.forEach(r => (g[r.date] = g[r.date] || []).push(r));
-        return Object.keys(g).sort().reverse().map(k => `<div class="mj-log-day">${dayTitle(k)}</div>` + g[k].map(rowHtml).join('')).join('');
+        const keys = Object.keys(g).sort().reverse();
+        return keys.map((k, i) => (i === 0 || monthOf(k) !== monthOf(keys[i - 1]) ? monthBar(monthOf(k)) : '') +
+            `<div class="mj-log-day">${dayTitle(k)}</div>` + g[k].map(rowHtml).join('')).join('');
     }
     const empty = t => `<p class="mj-empty">${t}</p>`;
 
@@ -1096,7 +1102,7 @@ export function init() {
                     ${it.id ? formBtns(it) : '<div class="mj-btns"><span class="sp"></span><button class="mj-btn" data-act="save">Save</button></div>'}
                 </div>
                 <div class="mj-log">
-                    ${rows.length ? Object.keys(groups).map(k => `
+                    ${rows.length ? Object.keys(groups).map((k, i, ks) => (i === 0 || monthOf(k) !== monthOf(ks[i - 1]) ? monthBar(monthOf(k)) : '') + `
                         <div class="mj-log-day">${dayTitle(k)}</div>
                         ${groups[k].map(r => `<button class="mj-row ${it.id === r.id ? 'sel' : ''}" data-act="edit" data-id="${r.id}"><span class="tm">${esc(r.time)}</span><span class="mj-mini">${hearts(r.v)}</span><span class="tx">${esc(r.memo || '')}</span></button>`).join('')}
                     `).join('') : empty('아직 기록이 없어요.')}
@@ -1115,7 +1121,7 @@ export function init() {
                 </div>
                 <div class="mj-sec">Backlog</div>
                 <div class="mj-log">
-                    ${rows.length ? rows.map(r => `
+                    ${rows.length ? rows.map((r, i) => monthHead(rows, i) + `
                         <button class="mj-line ${it.id === r.id ? 'sel' : ''}" data-act="edit" data-id="${r.id}">
                             <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}</span>
                             <span class="tx">「${nl(r.text)}」</span>
@@ -1200,7 +1206,7 @@ export function init() {
             return `
                 <div class="mj-newbar"><button class="mj-add" data-act="new">+ write</button></div>
                 <div class="mj-log">
-                    ${rows.length ? rows.map(r => `
+                    ${rows.length ? rows.map((r, i) => monthHead(rows, i) + `
                         <button class="mj-diary${(r.imgs || []).length ? ' has-img' : ''}" data-act="edit" data-id="${r.id}">
                             ${(r.imgs || []).length ? imgTag(r.imgs[0], 'dthumb') : ''}
                             <span class="dbody">
@@ -1294,9 +1300,9 @@ export function init() {
         const rows = db.library.filter(x => (t === 'all' || x.type === t) &&
             (!q || [x.title, x.creator, x.memo, (x.tags || []).join(' ')].join(' ').toLowerCase().includes(q))).sort(byNewest);
         if (!rows.length) return empty(q ? '찾는 기록이 없어요.' : '아직 없어요.');
-        return rows.map(r => {
+        return rows.map((r, i) => {
             const cv = libCover(r), k = titleKey(r);
-            return `
+            return monthHead(rows, i) + `
             <button class="mj-lib" data-act="edit" data-id="${r.id}">
                 ${cv ? imgTag(cv, 'thumb' + (r.type === 'youtube' && !r.cover ? ' wide' : '')) : ''}
                 <span class="body">
