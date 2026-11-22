@@ -25,7 +25,7 @@
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-23T04:28:18+09:00",
+ "updated_at": "2026-11-23T04:28:31+09:00",
  "view": {
   "stk_off": {
    "pc": false,
@@ -40,17 +40,7 @@
    "icon": "b-blue"
   }
  },
- "tt": [
-  {
-   "id": "tmws8c1znc4bl",
-   "title": "엄",
-   "date": "2026-11-24",
-   "start": "15:00",
-   "endDate": "2026-11-24",
-   "end": "16:00",
-   "color": "#F6B3C4"
-  }
- ],
+ "tt": [],
  "appOrder": [
   "diary",
   "todo",
