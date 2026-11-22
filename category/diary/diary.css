@@ -792,6 +792,9 @@ textarea.dy-in { font-size: 11px; }
 
 /* 시작 메뉴: 꾹 누르기 안내, 사진 아이콘은 동그랗게 */
 .dy-menu .tip { font-size: 9.5px; color: var(--dy-sub); text-align: center; padding: 6px 4px 2px; border-top: 1px dashed var(--dy-thin); margin-top: 4px; }
-.dy-wrap img.ph { object-fit: cover !important; border-radius: 50%; border: 1.5px solid var(--dy-line); }
-.dy-icon img.ph { width: 62px; height: 62px; margin: 4px auto; }
+.dy-wrap img.phic { object-fit: cover !important; border-radius: 50%; border: 1.5px solid var(--dy-line); }
+.dy-icon img.phic { width: 62px; height: 62px; margin: 4px auto; }
 .dy-icon, .dy-app, #dy-menu [data-open] { -webkit-touch-callout: none; touch-action: manipulation; }
+/* 달력 칸 사진·스티커: 눌러도 사진이 아니라 그 날짜가 열리게 */
+.dy-cell img { pointer-events: none; -webkit-user-drag: none; -webkit-touch-callout: none; user-select: none; }
+.dy-cell .ph { border-radius: 0; border: 0; }

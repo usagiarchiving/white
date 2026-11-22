@@ -2071,7 +2071,7 @@ export function init() {
     const menu = document.getElementById('dy-menu'), startBtn = document.getElementById('dy-start');
     const closeMenu = () => { menu.classList.remove('open'); startBtn.classList.remove('open'); };
     function drawShell() {
-        const ph = id => ICON_SRC[appIconKey(id)] ? '' : ' class="ph"';
+        const ph = id => ICON_SRC[appIconKey(id)] ? '' : ' class="phic"';
         document.getElementById('dy-icons').innerHTML = ICONS.map(([id]) =>
             '<button class="dy-icon" data-open="' + id + '" title="' + esc(appName(id)) + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt=""><span>' + esc(appName(id)) + '</span></button>').join('');
         document.getElementById('dy-apps').innerHTML = ICONS.map(([id]) =>
