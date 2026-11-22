@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T18:56:50+09:00",
+ "updated_at": "2026-11-22T18:56:58+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -886,6 +886,15 @@
    "type": "meal",
    "slot": "dinner",
    "memo": "맘모스빵"
+  },
+  {
+   "id": "cdmwrnxc0u92qf",
+   "date": "2026-11-22",
+   "time": "18:56",
+   "at": "2026-11-22T18:56:58+09:00",
+   "type": "meal",
+   "slot": "snack",
+   "memo": "포테이토칩"
   }
  ],
  "beauty": [
