@@ -95,7 +95,7 @@
 
 ```json
 { "id": "cd...", "type": "meal",     "date": "2026-11-22", "time": "08:20", "slot": "breakfast", "memo": "토스트" }
-{ "id": "cd...", "type": "medicine", "date": "2026-11-22", "time": "09:00", "name": "타이레놀", "memo": "1알" }
+{ "id": "cd...", "type": "medicine", "date": "2026-11-22", "time": "09:00", "meds": ["비타민C", "마그네슘"], "other": "타이레놀", "name": "비타민C, 마그네슘, 타이레놀", "memo": "1알" }
 { "id": "cd...", "type": "symptom",  "date": "2026-11-22", "time": "09:10", "tags": ["두통"], "level": 3, "memo": "오른쪽" }
 { "id": "cd...", "type": "mood",     "date": "2026-11-22", "time": "20:00", "mood": "tired", "memo": "..." }
 ```
@@ -180,6 +180,7 @@ To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대�
 
 | 필드 | 뜻 |
 | --- | --- |
+| `med_list` | Medicine 고르기 목록 `[{ key, label }]` — Meal·Medicine 창 초록 동그라미로 순서·이름·추가·삭제, 쓰는 중엔 `+ add` |
 | `lib_types` | Library 종류 목록 `[{ key, label }]` — 창 위 초록 동그라미로 순서·이름·추가·삭제 |
 | `beauty_slots` | Beauty 구분 목록 `[{ key, label, tab }]` — `tab: false`면 위 탭 없이 + 버튼으로만 (예: Shower) |
 | `bg_off` | `true`면 방 그림과 캐릭터를 끄고 점무늬 바탕 + 스티커만 보임 |

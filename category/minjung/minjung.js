@@ -160,6 +160,7 @@ function normalize(d) {
     // 초록 버튼으로 고치는 목록: Library 종류, Beauty 구분 (tab: 위 탭에 보일지, false면 + 버튼으로만)
     if (!Array.isArray(st.lib_types) || !st.lib_types.length) st.lib_types = LIB_TYPES.map(([key, label]) => ({ key, label }));
     if (!Array.isArray(st.beauty_slots) || !st.beauty_slots.length) st.beauty_slots = BEAUTY_SLOTS.map(([key, label]) => ({ key, label, tab: key !== 'shower' }));
+    if (!Array.isArray(st.med_list)) st.med_list = ['비타민C', '마그네슘'].map(label => ({ key: label, label }));   // Medicine 고르기 목록
     st.beauty_slots.forEach(({ key }) => { if (!Array.isArray(d.beauty_steps[key])) d.beauty_steps[key] = (DEFAULT_STEPS[key] || []).slice(); });
     return d;
 }
@@ -795,8 +796,8 @@ export function init() {
         Object.keys(wins).forEach(k => wins[k].el.classList.toggle('front', k === id));
     }
     function listEditView(id) {
-        const rows = id === 'library' ? S().lib_types : S().beauty_slots;
-        const name = id === 'library' ? 'Library' : 'Beauty';
+        const rows = id === 'library' ? S().lib_types : id === 'food' ? S().med_list : S().beauty_slots;
+        const name = id === 'library' ? 'Library' : id === 'food' ? 'Medicine' : 'Beauty';
         return `
             <div class="mj-sec">${name} list</div>
             <div class="mj-pf-edit mj-le">${rows.map(r => leRow(id, r)).join('')}</div>
@@ -815,14 +816,15 @@ export function init() {
             tab: r.querySelector('[data-k=tab]') ? r.querySelector('[data-k=tab]').checked : undefined
         })).filter(r => r.label);
         if (!rows.length) { mjAlert('하나는 남겨 둬야 해요.'); return; }
-        const list = id === 'library' ? 'lib_types' : 'beauty_slots';
-        const records = id === 'library' ? db.library : db.beauty, field = id === 'library' ? 'type' : 'slot';
+        const list = id === 'library' ? 'lib_types' : id === 'food' ? 'med_list' : 'beauty_slots';
+        if (list === 'med_list') rows.forEach(r => { r.key = r.label; });                 // 약은 이름 그대로 기록에 남김
+        const records = id === 'library' ? db.library : id === 'food' ? [] : db.beauty, field = id === 'library' ? 'type' : 'slot';
         const gone = S()[list].filter(o => !rows.some(r => r.key === o.key) && records.some(x => x[field] === o.key));
         if (gone.length && !await mjConfirm(gone.map(o => o.label).join(', ') + ' 에 쓴 기록은 지워지지 않고 All에서 계속 보여요. 저장할까요?', 'Save')) return;
         wins[id].st.listedit = false;
-        wins[id].st.tab = tabsOf(id)[0];
+        if (id !== 'food') wins[id].st.tab = tabsOf(id)[0];
         if (id === 'daily') wins[id].st.sub = 'all';
-        save((id === 'library' ? 'Library' : 'Beauty') + ' 목록 수정', d => {
+        save((id === 'library' ? 'Library' : id === 'food' ? 'Medicine' : 'Beauty') + ' 목록 수정', d => {
             d.settings[list] = rows.map(r => { const o = { key: r.key, label: r.label }; if (list === 'beauty_slots') o.tab = r.tab; return o; });
             if (list === 'beauty_slots') rows.forEach(r => { if (!Array.isArray(d.beauty_steps[r.key])) d.beauty_steps[r.key] = []; });
         });
@@ -833,7 +835,7 @@ export function init() {
         const body = w.el.querySelector('.mj-win-body');
         const top = body ? body.scrollTop : 0;
         const tabsEl = w.el.querySelector('.mj-tabs'), tabsLeft = tabsEl ? tabsEl.scrollLeft : 0;
-        const tabs = tabsOf(id), canList = id === 'library' || id === 'daily';
+        const tabs = tabsOf(id), canList = id === 'library' || id === 'daily' || id === 'food';
         w.el.innerHTML = `
             <div class="mj-win-head" data-drag>
                 <button class="mj-badge" ${(id !== 'hp' && id !== 'lines') ? 'data-act="icon" title="아이콘 바꾸기"' : 'tabindex="-1"'}>${iconHtml(id)}</button>
@@ -973,6 +975,16 @@ export function init() {
                     box.insertBefore(chip, b);
                     keepForm(id);
                     save('Symptom 태그 ' + t, d => { if (!d.symptom_tags.includes(t)) d.symptom_tags.push(t); });
+                })(); break;
+                case 'add-med': (async () => {
+                    const t = ((await mjPrompt('New medicine', '')) || '').trim();
+                    if (!t || S().med_list.some(x => x.label === t)) return;
+                    const box = el.querySelector('[data-multi="meds"]'); if (!box) return;
+                    const chip = document.createElement('button');
+                    chip.className = 'mj-chip on'; chip.dataset.act = 'chip'; chip.dataset.v = t; chip.textContent = t;
+                    box.insertBefore(chip, b);
+                    keepForm(id);
+                    save('Medicine 목록 ' + t, d => { if (!d.settings.med_list.some(x => x.label === t)) d.settings.med_list.push({ key: t, label: t }); });
                 })(); break;
                 case 'steps': (async () => {
                     const slot = (st.form && st.form.slot) || (st.sub === 'all' ? 'morning' : st.sub);
@@ -1235,16 +1247,16 @@ export function init() {
         } else if (WIN[id].types) {
             const type = st.form.type;
             const extra = type === 'meal' ? { slot: f.slot, memo: f.memo }
-                : type === 'medicine' ? { name: f.name, memo: f.memo }
+                : type === 'medicine' ? { meds: f.meds, other: f.other, name: (f.meds || []).concat(f.other ? [f.other] : []).join(', '), memo: f.memo }
                 : type === 'symptom' ? { tags: f.tags, level: Number(f.level) || undefined, memo: f.memo }
                 : { mood: f.mood, memo: f.memo };
-            if (type === 'medicine' && !f.name) { mjAlert('약 이름을 적어 주세요.'); return; }
+            if (type === 'medicine' && !(f.meds || []).length && !f.other) { mjAlert('약을 고르거나 적어 주세요.'); return; }
             if (type === 'mood' && !f.mood) { mjAlert('기분을 골라 주세요.'); return; }
             const oldC = st.form.id ? db.condition.find(x => x.id === st.form.id) : null;
             if (oldC && oldC.imgs) extra.imgs = oldC.imgs;
             if (oldC && oldC.from) extra.from = oldC.from;
             item = tidy(Object.assign(base, { type }, extra));
-            msg = label(COND_TYPES, type) + ' ' + when + ' ' + (f.name || (f.tags || []).join(',') || f.slot || f.mood || '');
+            msg = label(COND_TYPES, type) + ' ' + when + ' ' + (extra.name || (f.tags || []).join(',') || f.slot || f.mood || '');
             st.date = item.date;
         } else if (id === 'daily' && st.tab === 'Beauty') {
             item = tidy(Object.assign(base, { slot: st.form.slot || (st.sub === 'all' ? 'etc' : st.sub), steps: f.steps, memo: f.memo }));
@@ -1489,10 +1501,12 @@ export function init() {
             ${chips('slot', MEAL_SLOTS, it.slot || guessSlot(), true)}
             <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>`;
         if (type === 'medicine') {
-            const names = [...new Set(db.condition.filter(x => x.type === 'medicine' && x.name).map(x => x.name))];
+            const list = S().med_list.map(x => x.label);
+            const picked = it.meds || (it.id && !it.meds && it.name ? it.name.split(/,\s*/).filter(n => list.includes(n)) : []);
+            const other = it.meds ? (it.other || '') : (it.id && it.name ? it.name.split(/,\s*/).filter(n => !list.includes(n)).join(', ') : '');
             fields = `
-                <input data-f="name" list="mj-med-names" placeholder="name" value="${esc(it.name || '')}">
-                <datalist id="mj-med-names">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+                ${chips('meds', list.map(n => [n, n]), picked, false, '<button class="mj-chip add" data-act="add-med">+ add</button>')}
+                <input data-f="other" placeholder="other" value="${esc(other)}">
                 <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>`;
         }
         if (type === 'symptom') fields = `
