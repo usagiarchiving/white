@@ -481,3 +481,40 @@
 
 /* 탭 줄은 좌우로만 (위아래로 흔들리지 않게) */
 .mj-tabs { overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x; }
+
+/* 퀘스트: 첫 화면 날짜 아래 두루마리 + 오늘 진행도 */
+.mj-quest {
+    position: absolute; top: 44px; left: 10px; z-index: 3; display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px 4px 6px; border: 1px solid rgba(231, 218, 221, .95); border-radius: 3px;
+    background: rgba(255, 255, 255, .78); box-shadow: 0 0 0 2px rgba(255, 255, 255, .45);
+    font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-ink);
+}
+.mj-quest .mj-ico { width: 16px; height: 16px; }
+.mj-quest .clr { color: var(--mj-deep); }
+.mj-quest.done { border-color: var(--mj-tag); }
+@media (min-width: 744px) { .mj-quest { top: 48px; left: 14px; } }
+.mj-game.editing .mj-quest { opacity: .3; pointer-events: none; }
+
+/* 퀘스트 창 */
+.mj-qbar { height: 6px; margin: 10px 0 4px; background: var(--mj-soft); border: 1px solid var(--mj-line); border-radius: 3px; overflow: hidden; }
+.mj-qbar .fill { display: block; height: 100%; background: var(--mj-tag); transition: width .3s; }
+.mj-qstat { display: flex; align-items: center; gap: 8px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+.mj-qstat .mj-link { margin-left: auto; }
+.mj-q { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 1px solid var(--mj-line); background: var(--mj-card); padding: 9px 10px; border-radius: 2px; }
+.mj-q .box { flex: none; width: 15px; height: 15px; border: 1px solid var(--mj-tag); border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; background: #fff; }
+.mj-q.ok .box { background: var(--mj-tag); }
+.mj-q.ok .tt { color: var(--mj-sub); text-decoration: line-through; }
+.mj-q .tt { flex: 1; min-width: 0; }
+.mj-q .rule, .mj-q .when { flex: none; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+.mj-q .when { color: var(--mj-deep); }
+.mj-q.rest { opacity: .55; }
+.mj-qe { gap: 8px; }
+.mj-qe-row { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--mj-line); background: var(--mj-card); border-radius: 2px; }
+.mj-qe-row .top { display: flex; gap: 6px; align-items: center; }
+.mj-qe-row .top input { flex: 1; min-width: 0; border: 1px solid var(--mj-line); border-radius: 2px; background: var(--mj-paper); padding: 6px 8px; font-size: 12px; color: var(--mj-ink); outline: none; }
+.mj-qe-row .rep { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mj-qe-row .every { display: flex; align-items: center; gap: 4px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+.mj-qe-row .every input { width: 48px; border: 1px solid var(--mj-line); border-radius: 2px; padding: 4px 6px; font-size: 12px; color: var(--mj-ink); background: var(--mj-paper); }
+.mj-qe-row .days .mj-chip { padding: 3px 7px; }
+.mj-qe-row .rep:has([data-v=week].on) .every { display: none; }
+.mj-qe-row .rep:has([data-v=every].on) .days { display: none; }

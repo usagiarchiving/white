@@ -143,6 +143,26 @@
 
 To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대로 읽고 체크해요.
 
+## Quest (루틴)
+
+첫 화면 날짜 아래 두루마리 칸(오늘 한 것/할 것)을 누르면 열려요. Daily = 매일, Weekly = 며칠마다·요일마다.
+
+```json
+"quests": [
+  { "id": "q1", "kind": "daily",  "slot": "morning", "title": "이부자리 정리" },
+  { "id": "q5", "kind": "repeat", "mode": "every", "every": 3, "title": "빨래" },
+  { "id": "q6", "kind": "repeat", "mode": "week",  "days": [1, 4], "title": "분리수거" }
+],
+"quest_log": { "2026-11-22": { "q1": "08:10", "q5": "21:30" } }
+```
+
+| 필드 | 뜻 |
+| --- | --- |
+| `kind` | `daily` 매일 · `repeat` 반복 |
+| `slot` (daily) | `morning` · `lunch` · `evening` · `etc` |
+| `mode` (repeat) | `every` = 마지막으로 한 날부터 `every`일 지나면 다시 할 차례 · `week` = `days` 요일마다 (0 일요일 ~ 6 토요일) |
+| `quest_log.<날짜>.<퀘스트id>` | 그 날 완료한 시각. 체크를 풀면 지워짐 |
+
 ## 설정 (첫 화면 꾸미기)
 
 `settings` — 첫 화면 배경을 **꾹 누르면** 나오는 Room 메뉴에서 바꿔요.

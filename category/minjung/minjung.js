@@ -18,6 +18,17 @@ const DEFAULT_PROFILE = [
     ['좋아하는 것', ''], ['좋아하는 음식', ''], ['싫어하는 것', ''], ['etc.', '']
 ];
 const DEFAULT_SYMPTOMS = ['배아픔', '두통'];
+/* 퀘스트(루틴): daily = 매일 / repeat = N일마다(마지막으로 한 날부터) 또는 요일마다 */
+const QSLOTS = [['morning', 'Morning'], ['lunch', 'Lunch'], ['evening', 'Evening'], ['etc', 'etc.']];
+const DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
+const DEFAULT_QUESTS = [
+    { id: 'q1', kind: 'daily', slot: 'morning', title: '이부자리 정리' },
+    { id: 'q2', kind: 'daily', slot: 'morning', title: '물 한 잔' },
+    { id: 'q3', kind: 'daily', slot: 'lunch', title: '점심 챙겨 먹기' },
+    { id: 'q4', kind: 'daily', slot: 'evening', title: '스킨케어' },
+    { id: 'q5', kind: 'repeat', mode: 'every', every: 3, title: '빨래' },
+    { id: 'q6', kind: 'repeat', mode: 'week', days: [1, 4], title: '분리수거' }
+];
 const DEFAULT_BGS = [
     { id: 'living', mobile: 'minjung/assets/living-mobile.webp', pc: 'minjung/assets/living-pc.webp' },
     { id: 'bedroom', mobile: 'minjung/assets/bedroom.webp', pc: 'minjung/assets/bedroom.webp' }
@@ -51,6 +62,7 @@ const ICON = {
     room: SV('<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m3.5 16 5-5 4 4 3-3 5 5"/><circle cx="15.5" cy="9" r="1.5"/>'),
     library: SV('<path d="M5 5.5h4v13H5zM10 5.5h4v13h-4z"/><path d="m15.2 6.4 3.6-1 3 12.6-3.6 1z"/>'),
     menu: SV('<rect x="4.5" y="4.5" width="6" height="6" rx="1.5"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.5"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.5"/><path d="M16.5 14v5M14 16.5h5"/>'),
+    quest: SV('<path d="M7 4.5h10a2 2 0 0 1 2 2V17a2.5 2.5 0 0 1-2.5 2.5H7"/><path d="M7 4.5a2 2 0 0 0-2 2v1.5h4V6.5a2 2 0 0 0-2-2zM7 19.5A2.5 2.5 0 0 0 9.5 17V8M12 9.5l1 1 2.2-2.2M12 14h4"/>'),
     hp: SV('<path d="M12 20s-7-4.4-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4C19 15.6 12 20 12 20z"/>'),
     lines: SV('<path d="M5 6h14a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 19 16h-8l-4 3v-3H5a1.5 1.5 0 0 1-1.5-1.5v-7A1.5 1.5 0 0 1 5 6z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/>'),
     schedule: SV('<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 9.5h16M8.5 3.5v4M15.5 3.5v4M8 13h2M12 13h2M8 16h2"/>'),
@@ -72,6 +84,7 @@ const WIN = {
     daily:     { title: 'Daily',     tabs: ['Beauty', 'Outfit'], main: true, w: 480 },
     diary:     { title: 'Diary',     tabs: ['Diary', 'To Do'], main: true, w: 400 },
     hp:        { title: 'HP Log',    w: 340 },
+    quest:     { title: 'Quest',     tabs: ['Daily', 'Weekly'], w: 400 },
     room:      { title: 'Backgrounds', w: 420 },
     lines:     { title: 'Lines',     w: 360 }
 };
@@ -84,7 +97,7 @@ const NAV = [
     { id: 'menu', title: 'Menu', pick: 'soon' }
 ];
 // 아이패드·PC에서 창이 처음 뜨는 자리 (0~1 비율: 왼쪽→오른쪽, 위→아래)
-const SPOT = { room: [0.5, 0.1], profile: [0, 0], library: [0.3, 0.4], food: [1, 0], state: [0.62, 0.3], diary: [0, 1], daily: [1, 1], hp: [1, 0.08], lines: [0.5, 0.85] };
+const SPOT = { quest: [0.12, 0.12], room: [0.5, 0.1], profile: [0, 0], library: [0.3, 0.4], food: [1, 0], state: [0.62, 0.3], diary: [0, 1], daily: [1, 1], hp: [1, 0.08], lines: [0.5, 0.85] };
 const SOON = [['schedule', 'Schedule'], ['inventory', 'Inventory'], ['bag', 'Bag'], ['shop', 'Shop'], ['workout', 'Workout'], ['friends', 'Friends']];
 
 /* To Do: 기존 투두 카테고리(data/todos.json)를 그대로 씀 */
@@ -140,6 +153,8 @@ function normalize(d) {
         if (!Array.isArray(st.stickers[k])) st.stickers[k] = [];
     });
     LISTS.forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
+    if (!Array.isArray(d.quests)) d.quests = clone(DEFAULT_QUESTS);
+    d.quest_log = d.quest_log && typeof d.quest_log === 'object' && !Array.isArray(d.quest_log) ? d.quest_log : {};   // { 'YYYY-MM-DD': { 퀘스트id: '완료 시각 HH:MM' } }
     d.symptom_tags = Array.isArray(d.symptom_tags) && d.symptom_tags.length ? d.symptom_tags : DEFAULT_SYMPTOMS.slice();
     d.beauty_steps = d.beauty_steps && typeof d.beauty_steps === 'object' ? d.beauty_steps : {};
     // 초록 버튼으로 고치는 목록: Library 종류, Beauty 구분 (tab: 위 탭에 보일지, false면 + 버튼으로만)
@@ -483,6 +498,9 @@ export function init() {
         applyRoom();
         const hp = db.hp.slice().sort(byNewest)[0];
         $('mj-hp').innerHTML = hearts(hp ? hp.v : 5);
+        const qt = todayKey(), qs = db.quests.filter(q => qDue(q, qt)), qd = qs.filter(q => qDone(qt, q.id)).length;
+        $('mj-quest').innerHTML = `<span class="mj-ico">${ICON.quest}</span><span class="n">${qd}/${qs.length}</span>${qs.length && qd === qs.length ? '<span class="clr">clear</span>' : ''}`;
+        $('mj-quest').classList.toggle('done', !!qs.length && qd === qs.length);
         const line = db.lines.slice().sort(byNewest)[0];
         const text = line ? line.text : '…';
         if (text !== shownLine) {
@@ -499,6 +517,120 @@ export function init() {
         }
     }
     $('mj-hp').addEventListener('click', () => openWin('hp'));
+    $('mj-quest').addEventListener('click', () => openWin('quest'));
+
+    /* ---------------- 퀘스트 ---------------- */
+    const qDone = (date, id) => !!(db.quest_log[date] || {})[id];
+    const dayDiff = (a, b) => Math.round((new Date(b + 'T00:00') - new Date(a + 'T00:00')) / 864e5);
+    function qLastBefore(id, date) {          // date 전날까지 중 마지막으로 한 날
+        return Object.keys(db.quest_log).filter(k => k < date && db.quest_log[k][id]).sort().pop() || '';
+    }
+    function qDue(q, date) {
+        if (q.kind !== 'repeat') return true;
+        if (qDone(date, q.id)) return true;
+        if (q.mode === 'week') return (q.days || []).includes(new Date(date + 'T00:00').getDay());
+        const last = qLastBefore(q.id, date);
+        return !last || dayDiff(last, date) >= (q.every || 1);
+    }
+    function qWhen(q, date) {                  // 다음에 할 때까지
+        if (q.mode === 'week') {
+            for (let n = 1; n <= 7; n++) if ((q.days || []).includes((new Date(date + 'T00:00').getDay() + n) % 7)) return n === 1 ? 'tomorrow' : 'D-' + n;
+            return '';
+        }
+        const last = qLastBefore(q.id, date) || (qDone(date, q.id) ? date : '');
+        const left = (q.every || 1) - (last ? dayDiff(last, date) : 0);
+        return left <= 1 ? 'tomorrow' : 'D-' + left;
+    }
+    const qRule = q => q.mode === 'week' ? (q.days || []).slice().sort().map(d => DOW_KO[d]).join('·') : (q.every || 1) + '일마다';
+    function toggleQuest(st, id) {
+        const q = db.quests.find(x => x.id === id); if (!q) return;
+        const date = st.date, on = !qDone(date, id), time = hmOf(new Date());
+        save('퀘스트 ' + (on ? '완료 ' : '취소 ') + date + ' ' + q.title, d => {
+            d.quest_log[date] = d.quest_log[date] || {};
+            if (on) d.quest_log[date][id] = time; else delete d.quest_log[date][id];
+            if (!Object.keys(d.quest_log[date]).length) delete d.quest_log[date];
+        });
+    }
+    function questView(st) {
+        const daily = st.tab === 'Daily';
+        if (st.qedit) return questEdit(st, daily);
+        const date = st.date;
+        let list = db.quests.filter(q => (q.kind === 'repeat') !== daily);
+        if (daily && st.sub !== 'all') list = list.filter(q => (q.slot || 'etc') === st.sub);
+        const due = daily ? list : list.filter(q => qDue(q, date));
+        const done = due.filter(q => qDone(date, q.id)).length;
+        const pct = due.length ? Math.round(done / due.length * 100) : 0;
+        const row = q => {
+            const ok = qDone(date, q.id), isDue = qDue(q, date);
+            return `
+                <button class="mj-q ${ok ? 'ok' : ''} ${isDue ? '' : 'rest'}" data-act="q-toggle" data-id="${q.id}">
+                    <span class="box">${ok ? '✓' : ''}</span>
+                    <span class="tt">${esc(q.title)}</span>
+                    ${!daily ? `<span class="rule">${qRule(q)}</span><span class="when">${ok ? (db.quest_log[date][q.id] || '') : isDue ? 'today' : qWhen(q, date)}</span>` : (ok ? `<span class="when">${db.quest_log[date][q.id]}</span>` : '')}
+                </button>`;
+        };
+        let body = '';
+        if (daily && st.sub === 'all') {
+            body = QSLOTS.map(([k, l]) => { const g = list.filter(q => (q.slot || 'etc') === k); return g.length ? `<div class="mj-log-day">${l}</div>` + g.map(row).join('') : ''; }).join('');
+        } else if (daily) body = list.map(row).join('');
+        else body = due.map(row).join('') + (list.length > due.length ? `<div class="mj-log-day">later</div>` + list.filter(q => !qDue(q, date)).map(row).join('') : '');
+        return `
+            ${daily ? `<div class="mj-subs">${[['all', 'All']].concat(QSLOTS).map(([k, l]) => `<button class="${st.sub === k ? 'on' : ''}" data-act="sub" data-v="${k}">${l}</button>`).join('')}</div>` : ''}
+            <div class="mj-day">
+                <button data-act="day" data-v="-1">‹</button>
+                <input type="date" data-day value="${date}">
+                <button data-act="day" data-v="1">›</button>
+                <button class="today" data-act="day" data-v="0">Today</button>
+            </div>
+            <div class="mj-qbar"><span class="fill" style="width:${pct}%"></span></div>
+            <div class="mj-qstat">${done}/${due.length}${due.length && done === due.length ? ' · clear ♡' : ''}<button class="mj-link" data-act="q-edit">edit</button></div>
+            <div class="mj-log">${body || empty('퀘스트가 없어요.')}</div>`;
+    }
+    function questEdit(st, daily) {
+        const list = db.quests.filter(q => (q.kind === 'repeat') !== daily);
+        return `
+            <div class="mj-sec">${daily ? 'Daily' : 'Weekly'} quests</div>
+            <div class="mj-pf-edit mj-qe">${list.map(q => qeRow(q, daily)).join('')}</div>
+            <button class="mj-add" data-act="q-add">+ quest</button>
+            <div class="mj-btns"><span class="sp"></span><button class="mj-btn ghost" data-act="q-cancel">Cancel</button><button class="mj-btn" data-act="q-save">Save</button></div>`;
+    }
+    const qeRow = (q, daily) => `
+        <div class="mj-qe-row" data-id="${esc(q.id || '')}">
+            <div class="top">
+                <input data-k="title" value="${esc(q.title || '')}" placeholder="quest">
+                <div class="mj-pf-tools"><button data-act="pup">▲</button><button data-act="pdown">▼</button><button data-act="q-del">✕</button></div>
+            </div>
+            ${daily
+                ? `<div class="mj-chips" data-single="slot">${QSLOTS.map(([k, l]) => `<button class="mj-chip ${(q.slot || 'morning') === k ? 'on' : ''}" data-act="chip" data-v="${k}">${l}</button>`).join('')}</div>`
+                : `<div class="rep">
+                    <div class="mj-chips" data-single="mode">
+                        <button class="mj-chip ${q.mode !== 'week' ? 'on' : ''}" data-act="chip" data-v="every">every</button>
+                        <button class="mj-chip ${q.mode === 'week' ? 'on' : ''}" data-act="chip" data-v="week">weekday</button>
+                    </div>
+                    <label class="every"><input data-k="every" type="number" min="1" max="60" value="${q.every || 3}" inputmode="numeric">일마다</label>
+                    <div class="mj-chips days" data-multi="days">${DOW_KO.map((d, i) => `<button class="mj-chip ${(q.days || []).includes(i) ? 'on' : ''}" data-act="chip" data-v="${i}">${d}</button>`).join('')}</div>
+                </div>`}
+        </div>`;
+    function saveQuests(id, el, st) {
+        const daily = st.tab === 'Daily';
+        const rows = [...el.querySelectorAll('.mj-qe-row')].map(r => {
+            const title = r.querySelector('[data-k=title]').value.trim(); if (!title) return null;
+            const q = { id: r.dataset.id || uid('q'), kind: daily ? 'daily' : 'repeat', title };
+            const pick = sel => { const c = r.querySelector(`[data-single=${sel}] .mj-chip.on`); return c ? c.dataset.v : ''; };
+            if (daily) q.slot = pick('slot') || 'morning';
+            else {
+                q.mode = pick('mode') === 'week' ? 'week' : 'every';
+                if (q.mode === 'week') q.days = [...r.querySelectorAll('[data-multi=days] .mj-chip.on')].map(c => Number(c.dataset.v));
+                else q.every = Math.max(1, Number(r.querySelector('[data-k=every]').value) || 1);
+            }
+            return q;
+        }).filter(Boolean);
+        st.qedit = false;
+        save((daily ? 'Daily' : 'Weekly') + ' 퀘스트 수정', d => {
+            const others = d.quests.filter(q => (q.kind === 'repeat') === daily);
+            d.quests = daily ? rows.concat(others) : others.concat(rows);
+        });
+    }
     $('mj-dialog').addEventListener('click', () => openWin('lines'));
 
     // 아래 메뉴(모바일) + 바탕화면 아이콘(PC)
@@ -557,7 +689,7 @@ export function init() {
     /* ---------------- 창 ---------------- */
     function newState(id) {
         const st = { tab: tabsOf(id) ? tabsOf(id)[0] : null, date: todayKey(), form: null };
-        if (id === 'daily') st.sub = 'all';
+        if (id === 'daily' || id === 'quest') st.sub = 'all';
         if (id === 'hp' || id === 'lines') st.form = {};
         return st;
     }
@@ -677,7 +809,7 @@ export function init() {
             const st = wins[id].st;
             const typing = wins[id].el.contains(document.activeElement) || st.pedit || (st.form && st.form.id) ||
                 (st.form && Object.keys(st.form).length && id !== 'hp' && id !== 'lines');
-            if ((fromServer && typing) || (id === 'diary' && st.form)) return;   // 다이어리 쓰는 중엔 안 건드림
+            if ((fromServer && typing) || (id === 'diary' && st.form) || st.qedit) return;   // 다이어리 쓰는 중엔 안 건드림
             renderWin(id);
         });
     }
@@ -728,13 +860,20 @@ export function init() {
             switch (act) {
                 case 'close': closeWin(id); break;
                 case 'plus': plus(id, st, b); break;
+                // 퀘스트
+                case 'q-toggle': toggleQuest(st, b.dataset.id); break;
+                case 'q-edit': st.qedit = true; fresh(); break;
+                case 'q-cancel': st.qedit = false; fresh(); break;
+                case 'q-save': saveQuests(id, el, st); break;
+                case 'q-del': b.closest('.mj-qe-row').remove(); break;
+                case 'q-add': { const box = el.querySelector('.mj-qe'); box.insertAdjacentHTML('beforeend', qeRow({}, st.tab === 'Daily')); box.lastElementChild.querySelector('input').focus(); break; }
                 // 초록 버튼: 목록 편집 (순서·이름·추가·삭제)
                 case 'listedit': st.listedit = !st.listedit; st.form = null; fresh(); break;
                 case 'le-cancel': st.listedit = false; fresh(); break;
                 case 'le-save': saveListEdit(id, el); break;
                 case 'le-del': b.closest('.mj-le-row').remove(); break;
                 case 'le-add': { const box = el.querySelector('.mj-le'); box.insertAdjacentHTML('beforeend', leRow(id, { key: '', label: '', tab: true })); box.lastElementChild.querySelector('input').focus(); break; }
-                case 'tab': st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; fresh(); if (v === 'To Do') loadTodos(); break;
+                case 'tab': st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; st.qedit = false; fresh(); if (v === 'To Do') loadTodos(); break;
                 case 'sub': st.sub = v; st.form = null; fresh(); break;
                 case 'icon': pickFile(f => setIcon(id, f, WIN[id].title)); break;
                 case 'day': st.date = v === '0' ? todayKey() : shiftDay(st.date, Number(v)); fresh(); break;
@@ -790,8 +929,8 @@ export function init() {
                     break;
                 }
                 case 'pdel': b.closest('.mj-pf-row').remove(); break;
-                case 'pup': { const r = b.closest('.mj-pf-row'); if (r.previousElementSibling) r.parentElement.insertBefore(r, r.previousElementSibling); break; }
-                case 'pdown': { const r = b.closest('.mj-pf-row'); if (r.nextElementSibling) r.parentElement.insertBefore(r.nextElementSibling, r); break; }
+                case 'pup': { const r = b.closest('.mj-pf-row, .mj-qe-row'); if (r.previousElementSibling) r.parentElement.insertBefore(r, r.previousElementSibling); break; }
+                case 'pdown': { const r = b.closest('.mj-pf-row, .mj-qe-row'); if (r.nextElementSibling) r.parentElement.insertBefore(r.nextElementSibling, r); break; }
                 case 'psave': {
                     const rows = [...el.querySelectorAll('.mj-pf-edit .mj-pf-row')].map(r => ({
                         id: r.dataset.id, label: r.querySelector('[data-k=label]').value.trim(), value: r.querySelector('[data-k=value]').value.trim()
@@ -1130,6 +1269,7 @@ export function init() {
         },
         /* 프로필 + 라이브러리 */
         library(st) { return libraryView(st); },
+        quest(st) { return questView(st); },
         room() {
             const list = bgList();
             return `

@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="category/minjung/minjung.css?v=17">
+<link rel="stylesheet" href="category/minjung/minjung.css?v=18">
 
 <div class="mj-root" id="mj-root">
     <div class="mj-desk">
@@ -15,6 +15,8 @@
                     <div class="mj-stickers" id="mj-stickers"></div>
                 </div>
                 <div class="mj-date" id="mj-date"></div>
+                <!-- 날짜 아래: 오늘의 퀘스트 (루틴) -->
+                <button class="mj-quest" id="mj-quest" title="Quest"></button>
                 <button class="mj-hp" id="mj-hp" title="HP"></button>
                 <span class="mj-saving" id="mj-saving"></span>
                 <button class="mj-dialog" id="mj-dialog">
@@ -35,6 +37,6 @@
 
 <!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
 <script type="module">
-    import { init } from './category/minjung/minjung.js?v=17';
+    import { init } from './category/minjung/minjung.js?v=18';
     init();
 </script>
