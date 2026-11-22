@@ -27,7 +27,7 @@
     //  files : 이 클라이언트가 다루는 카테고리 파일들 (posts 테이블은 category 값으로 나뉨)
     //  images: 업로드 이미지 폴더
     var PROJECTS = {
-        'pqqvmppgpqmtyttfjyve': { files: ['oneline', 'daily', 'memo', 'txt'], images: 'daily' },
+        'pqqvmppgpqmtyttfjyve': { files: ['daily', 'memo', 'txt'], images: 'daily' },
         'dvalxqujceuhfshatilq': { files: ['hasion'], images: 'hasion' },
         'yjjxlklzgcfwwcunmrht': { files: ['record'], images: 'record' },
         'ofhadtlrsccipnvdohqh': { files: ['todos'], images: 'todos' }
