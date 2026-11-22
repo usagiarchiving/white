@@ -47,7 +47,7 @@ def main():
         return
     today = datetime.datetime.now(TZ).date()
     start, end = today - datetime.timedelta(days=BACK), today + datetime.timedelta(days=AHEAD)
-    events, cals, failed = [], [], []
+    events, cals, failed, colors = [], [], [], {}
     for name, url in srcs:
         try:
             cal = icalendar.Calendar.from_ical(fetch(url))
@@ -56,6 +56,10 @@ def main():
             failed.append(name)
             continue
         cals.append(name)
+        # 아이폰에서 정한 캘린더 색 (예: #FF2968FF) → #RRGGBB
+        col = str(cal.get('X-APPLE-CALENDAR-COLOR') or '').strip()
+        if len(col) >= 7 and col.startswith('#'):
+            colors[name] = col[:7].upper()
         for ev in recurring_ical_events.of(cal).between(start, end + datetime.timedelta(days=1)):
             s, e = as_dt(ev.get('DTSTART').dt), ev.get('DTEND')
             e = as_dt(e.dt) if e else None
@@ -84,11 +88,11 @@ def main():
             old = json.load(open(OUT))
         except Exception:
             pass
-    if old and old.get('events') == events and old.get('calendars') == cals:
+    if old and old.get('events') == events and old.get('calendars') == cals and old.get('colors', {}) == colors:
         print('변경 없음')
         return
     os.makedirs(os.path.dirname(OUT) or '.', exist_ok=True)
-    json.dump({'updated_at': datetime.datetime.now(TZ).isoformat(timespec='seconds'), 'calendars': cals, 'events': events},
+    json.dump({'updated_at': datetime.datetime.now(TZ).isoformat(timespec='seconds'), 'calendars': cals, 'colors': colors, 'events': events},
               open(OUT, 'w'), ensure_ascii=False, indent=1)
     open(OUT, 'a').write('\n')
     print('일정', len(events), '개 ·', ', '.join(cals))

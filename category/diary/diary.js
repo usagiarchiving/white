@@ -1218,13 +1218,15 @@ export function init() {
        ========================================================================== */
     const TT_START = 4;
     const hexA = (h, a) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); if (!m) return h; const n = parseInt(m[1], 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; };                                   // 하루 시작: 새벽 4시
-    const TT_COLORS = ['#F6B3C4', '#A9CFE6', '#F6C4A0', '#C9B6E8', '#F3DD8C', '#E8B4D8', '#BCD3F2', '#F2C1A8'];   // 초록 없이 파스텔
-    // 캘린더 이름이 할 일 분류(일상·공부·운동·작업·취미…)와 같으면 그 색, 아니면 이름마다 정해진 파스텔
+    const TT_COLORS = ['#F6B3C4', '#A9CFE6', '#F6C4A0', '#C9B6E8', '#B7DC8A', '#F0D98A', '#9FD6C8', '#E8B4D8'];
+    // 캘린더 색: 아이폰 캘린더 색 → (없으면) 할 일 분류 색 → 이름마다 정해진 파스텔. 칠할 때는 반투명 형광펜처럼
     const CAL_COLOR = { 'AT-sleep': '#C9B6E8', 'ATracker': '#A9CFE6', '마음': '#F6C4A0', '학교': '#C9B6E8' };
     const calColor = name => {
+        // 1순위: 아이폰 캘린더에 정해 둔 색 그대로 (동기화할 때 같이 받아 옴)
+        const own = (ext.cal.colors || {})[name];
+        if (own) return own;
         const cat = Object.keys(TODO_CAT).find(c => TODO_CAT[c] && TODO_CAT[c] === name);
-        const NO_GREEN = { green: '#F3DD8C', mint: '#E8B4D8' };          // 타임테이블은 초록 대신
-        if (cat) return NO_GREEN[cat] || TODO_COLORS[cat];
+        if (cat) return TODO_COLORS[cat];
         if (CAL_COLOR[name]) return CAL_COLOR[name];
         let h = 0; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return TT_COLORS[h % TT_COLORS.length];
     };
