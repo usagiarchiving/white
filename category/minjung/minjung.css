@@ -252,11 +252,11 @@
 .mj-row.sel, .mj-line.sel { border-color: var(--mj-deep); background: var(--mj-on2); }
 .mj-row .tm, .mj-line .tm, .mj-diary .tm, .mj-lib .tm { flex: none; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
 .mj-row .tx { flex: 1; min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
-.mj-row .ty { flex: none; font-family: 'Galmuri9', sans-serif; font-size: 10px; padding: 0 5px; border: 1px solid var(--mj-line); border-radius: 2px; background: var(--mj-soft); }
+.mj-row .ty { flex: none; font-family: 'Galmuri9', sans-serif; font-size: 10px; padding: 0 5px; border: 1px solid #f5d3dd; border-radius: 2px; background: #fdf1f5; color: #e09bb1; }
 .mj-row .ty-symptom { background: var(--mj-on); border-color: var(--mj-pink); }
 .mj-row .ty-mood { background: #f4f0fa; border-color: #e2d8ee; }
 .mj-row .memo { color: var(--mj-sub); }
-.mj-row .steps { color: var(--mj-deep); }   /* 뷰티 세부 단계: 칸 없이 글자색만 */
+.mj-row .steps { color: #d8b1bd; font-family: 'Galmuri9', sans-serif; font-size: 10px; }   /* 뷰티 세부 단계: 칸 없이 글자색만 */
 .mj-row .lv { color: var(--mj-deep); font-size: 10px; letter-spacing: -1px; }
 .mj-line, .mj-diary { flex-direction: column; gap: 3px; }
 .mj-line .tx { line-height: 1.75; }
@@ -314,6 +314,7 @@
     --mj-ring: #4a3e43; --mj-stripe: rgba(255, 255, 255, .03); --mj-bar: #f3b3c5; --mj-bar-ink: #2e282c; --mj-frame: #1e191c;
     color-scheme: dark;
 }
+.mj-win-food .mj-row .ty, .mj-win-state .mj-row .ty { background: var(--mj-soft); border-color: var(--mj-line); color: var(--mj-ink); }
 .mj-win-state .mj-row .ty-mood { background: #3f3849; border-color: #5a4f68; }
 .mj-win-food .mj-btn.danger, .mj-win-state .mj-btn.danger { color: #ff9fb5 !important; }
 
