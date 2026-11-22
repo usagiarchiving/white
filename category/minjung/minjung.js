@@ -874,7 +874,7 @@ export function init() {
             const st = wins[id].st;
             const typing = wins[id].el.contains(document.activeElement) || st.pedit || (st.form && st.form.id) ||
                 (st.form && Object.keys(st.form).length && id !== 'hp' && id !== 'lines');
-            if ((fromServer && typing) || (id === 'diary' && st.form) || st.qedit) return;   // 다이어리 쓰는 중엔 안 건드림
+            if ((fromServer && typing) || ((id === 'diary' || id === 'library') && st.form) || st.qedit) return;   // 다이어리 쓰는 중엔 안 건드림
             renderWin(id);
         });
     }
@@ -1040,7 +1040,9 @@ export function init() {
     function diaryHtml(it) {
         const body = it.body || '', lines = body.split('\n');
         const inline = lines.some(l => IMG_LINE.test(l.trim()));
-        const img = p => `<img class="mj-dimg" data-path="${esc(p)}" src="${esc(imgSrc(p))}" ${/^https?:/.test(p) ? '' : `onerror="this.onerror=null;this.src='${esc(repo.rawUrl(p))}'"`} alt="">`;
+        const img = p => p.startsWith('new:')
+            ? `<img class="mj-dimg" data-new="${esc(p.slice(4))}" src="${esc((it.newUrls || {})[p.slice(4)] || '')}" alt="">`
+            : `<img class="mj-dimg" data-path="${esc(p)}" src="${esc(imgSrc(p))}" ${/^https?:/.test(p) ? '' : `onerror="this.onerror=null;this.src='${esc(repo.rawUrl(p))}'"`} alt="">`;
         let html = inline ? '' : (it.imgs || []).map(img).join('');           // 옛 글: 사진은 맨 위에
         html += lines.map(l => { const m = IMG_LINE.exec(l.trim()); return m ? img(m[1]) : `<div>${l ? esc(l) : '<br>'}</div>`; }).join('');
         return html;
@@ -1064,6 +1066,23 @@ export function init() {
         return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n')
             .replace(/\n\n(!\[\]\()/g, '\n$1').replace(/(!\[\]\([^)\n]+\))\n\n/g, '$1\n').trim();   // 사진 앞뒤 빈 줄은 하나로
     }
+    // 블로그식 편집기 내용을 본문으로 (새 사진은 올려서 경로로 바꿈). 실패하면 null
+    async function editorBody(box, st, folder) {
+        let body = diaryText(box.querySelector('.mj-dedit'));
+        const add = st.form.addFiles || [], files = {};
+        const used = [...body.matchAll(/^!\[\]\(new:(\d+)\)$/gm)].map(m => Number(m[1]));
+        if (used.length) {
+            if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return null; }
+            const btn = box.querySelector('[data-act=save]'); btn.disabled = true; btn.textContent = 'Uploading…';
+            try {
+                for (const k of used) {
+                    const up = await uploadImage(add[k], folder, 1600, 'image/jpeg'); files[up.path] = up.sha;
+                    body = body.replace('![](new:' + k + ')', '![](' + up.path + ')');
+                }
+            } catch (e) { mjAlert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return null; }
+        }
+        return { body, files, imgs: [...body.matchAll(/^!\[\]\((.+)\)$/gm)].map(m => m[1]) };
+    }
     let diaryRange = null;
     document.addEventListener('selectionchange', () => {
         const sel = window.getSelection(); if (!sel.rangeCount) return;
@@ -1075,7 +1094,8 @@ export function init() {
         st.form.addFiles = st.form.addFiles || [];
         const k = st.form.addFiles.push(file) - 1;
         const img = document.createElement('img');
-        img.className = 'mj-dimg'; img.dataset.new = k; img.src = URL.createObjectURL(file);
+        st.form.newUrls = st.form.newUrls || {};
+        img.className = 'mj-dimg'; img.dataset.new = k; img.src = st.form.newUrls[k] = URL.createObjectURL(file);
         const after = document.createElement('div'); after.innerHTML = '<br>';
         if (diaryRange && ed.contains(diaryRange.startContainer)) {
             let blk = diaryRange.startContainer; while (blk && blk.parentNode !== ed) blk = blk.parentNode;
@@ -1107,6 +1127,8 @@ export function init() {
     function keepForm(id) {
         const w = wins[id], box = w && w.el.querySelector('.mj-form');
         if (box && w.st.form) Object.assign(w.st.form, collect(box));
+        const ed = w && w.el.querySelector('.mj-dedit');                 // Library 본문(사진 포함)도 그대로 남김
+        if (ed && id === 'library' && w.st.form) w.st.form.memo = diaryText(ed);
     }
     function collect(box) {
         const f = {};
@@ -1198,9 +1220,14 @@ export function init() {
                 catch (e) { mjAlert('표지를 올리지 못했어요.\n' + (e.message || e)); return; }
             }
             if (old && old.cover && old.cover !== cover && old.cover.startsWith(IMG_DIR)) files[old.cover] = null;
+            const eb = await editorBody(box, st, 'library'); if (!eb) return;
+            Object.assign(files, eb.files);
+            ((old && old.memo) ? [...old.memo.matchAll(/^!\[\]\((.+)\)$/gm)].map(m => m[1]) : []).forEach(p => { if (!eb.imgs.includes(p) && p.startsWith(IMG_DIR)) files[p] = null; });
+            f.memo = eb.body;
             const tags = (f.tags || '').split(/[\s,]+/).map(t => t.replace(/^#/, '').trim()).filter(Boolean);
             item = tidy(Object.assign(base, { type: st.form.type || libType(st), title: f.title, creator: f.creator, year: f.year, cover, url: f.url,
                 status: f.status, rating: f.rating || undefined, tags, memo: f.memo }));
+            if (old && old.from) item.from = old.from;
             msg = label(libTypes(), item.type) + ' ' + item.title;
             st.form = null;
             upsert('library', item, msg, files);
@@ -1487,7 +1514,9 @@ export function init() {
     function guessSlot() { const h = new Date().getHours(); return h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 21 ? 'dinner' : 'night'; }
 
     const libType = st => (libTypes().find(x => x[1] === st.tab) || ['all'])[0];
-    const libCover = r => r.cover ? r.cover : (r.type === 'youtube' && ytId(r.url) ? `https://i.ytimg.com/vi/${ytId(r.url)}/mqdefault.jpg` : '');
+    const firstImg = t => { const m = /^!\[\]\((.+)\)$/m.exec(t || ''); return m ? m[1] : ''; };
+    const plainMemo = t => (t || '').split('\n').filter(l => !/^!\[\]\(/.test(l.trim())).join(' ').trim();
+    const libCover = r => r.cover ? r.cover : (r.type === 'youtube' && ytId(r.url) ? `https://i.ytimg.com/vi/${ytId(r.url)}/mqdefault.jpg` : firstImg(r.memo));
     const titleKey = r => r.type + '|' + String(r.title || '').trim().toLowerCase();
     function libraryView(st) {
         if (st.form) return libForm(st);
@@ -1519,7 +1548,8 @@ export function init() {
                     <span class="tt">${esc(r.title)}${total[k] > 1 ? ` <em class="nth">${nth[r.id]}회차</em>` : ''}</span>
                     <span class="meta">${t === 'all' ? `<em class="mj-tag">${label(libTypes(), r.type)}</em>` : ''}<em class="mj-tag st-${r.status || 'want'}">${label(LIB_STATUS, r.status || 'want')}</em>${[r.creator, r.year].filter(Boolean).map(esc).join(' · ')}</span>
                     ${r.rating ? `<span class="mj-mini">${hearts(r.rating)}</span>` : ''}
-                    ${r.memo ? `<span class="tx">${esc(r.memo)}</span>` : ''}
+                    ${plainMemo(r.memo) ? `<span class="tx">${esc(plainMemo(r.memo).slice(0, 120))}</span>` : ''}
+                    ${(r.memo || '').match(/^!\[\]\(/gm) ? `<span class="tm">${(r.memo.match(/^!\[\]\(/gm)).length} photos</span>` : ''}
                     ${(r.tags || []).length ? `<span class="tags">${r.tags.map(x => '#' + esc(x)).join(' ')}</span>` : ''}
                     <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}</span>
                 </span>
@@ -1549,7 +1579,8 @@ export function init() {
                 ${chips('status', LIB_STATUS, it.status || 'want', true)}
                 <div class="mj-hearts-pick sm" data-hearts="rating" data-v="${it.rating || 0}">${Array.from({ length: 5 }, (_, i) => `<button data-act="heart" data-v="${i + 1}">${pixelHeart(i < (it.rating || 0))}</button>`).join('')}</div>
                 <input data-f="tags" placeholder="#tags" value="${esc(Array.isArray(it.tags) ? it.tags.map(x => '#' + x).join(' ') : (it.tags || ''))}">
-                <textarea data-f="memo" rows="5" placeholder="memo">${esc(it.memo || '')}</textarea>
+                <div class="mj-dedit" contenteditable="true" spellcheck="false">${diaryHtml({ body: it.memo || '', newUrls: it.newUrls })}</div>
+                <div class="mj-dtools"><button class="mj-add" data-act="dy-photo">+ photo</button></div>
                 ${whenRow(it)}
                 ${formBtns(it)}
             </div>`;
