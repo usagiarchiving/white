@@ -1,6 +1,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
-<link rel="stylesheet" href="category/diary/diary.css?v=3">
+<link rel="stylesheet" href="category/diary/diary.css?v=5">
 
 <div class="dy-wrap" id="dy-wrap">
     <div class="dy-desk" id="dy-desk">
@@ -26,7 +26,7 @@
     <!-- 카드(날짜 기록, 꾸미기 등) -->
     <div class="dy-modal" id="dy-modal">
         <div class="dy-card">
-            <button class="dy-x" id="dy-x" aria-label="닫기">×</button>
+            <button class="dy-x" id="dy-x" aria-label="닫기"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button>
             <div id="dy-card"></div>
         </div>
     </div>
@@ -35,6 +35,6 @@
 
 <!-- 모듈은 한 번만 실행되므로, 들어올 때마다 init()을 불러 새로 그림 -->
 <script type="module">
-    import { init } from './category/diary/diary.js?v=4';
+    import { init } from './category/diary/diary.js?v=5';
     init();
 </script>

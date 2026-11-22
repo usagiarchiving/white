@@ -326,22 +326,159 @@ textarea.dy-in { height: auto; min-height: 70px; padding: 8px 10px; resize: vert
 .dy-colors input[type=color] { width: 30px; height: 22px; border: 0; padding: 0; background: none; cursor: pointer; }
 .dy-seg { display: flex; gap: 4px; flex-wrap: wrap; }
 
-/* ---------------- 좁은 화면 ---------------- */
+/* ==========================================================================
+   글자 크기 다듬기 (김민정처럼 작고 단정하게: 기본 11px, 작은 글 9~10px)
+   ========================================================================== */
+.dy-wrap { font-size: 11px; }
+.dy-wrap svg.ic { width: 12px; height: 12px; display: block; flex: none; }
+
+/* 알약 버튼: 글자/아이콘이 정가운데 */
+.dy-rb { height: 22px; min-width: 22px; padding: 0 9px; gap: 3px; font-family: var(--dy-body); font-size: 10.5px; font-weight: 700; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
+.dy-rb.round { width: 22px; padding: 0; }
+.dy-rb .lbl { display: block; line-height: 1; padding-top: 1px; }
+.dy-rb svg.ic { width: 11px; height: 11px; }
+.dy-del, .dy-chk { display: inline-grid; place-items: center; line-height: 0; }
+.dy-del { width: 18px; height: 18px; padding: 0; }
+.dy-del svg.ic { width: 11px; height: 11px; }
+.dy-chk svg.ic { width: 11px; height: 11px; }
+.dy-x { display: grid; place-items: center; padding: 0; }
+.dy-x svg.ic { width: 13px; height: 13px; }
+
+/* 바탕 아이콘: 간격 넓게 */
+.dy-icons { gap: 16px; top: 16px; left: 16px; }
+.dy-icon img { width: 70px; height: 70px; }
+.dy-icon span { font-family: var(--dy-body); font-weight: 700; font-size: 10.5px; padding: 2px 9px; margin-top: 2px; }
+
+/* 창 / 카드 제목 옆 친구는 작고 날씬하게 */
+.dy-tb { height: 32px; padding: 0 8px 0 12px; }
+.dy-tb .t { font-size: 13px; }
+.dy-tb img { width: auto; height: 22px; margin: 0 0 0 -4px; }
+.dy-card h3 { font-size: 15px; }
+.dy-card h3 img { width: auto; height: 26px; }
+.dy-menu .head img, .dy-menu button img { width: auto; height: 24px; }
+.dy-menu button { font-size: 12.5px; padding: 6px 10px; }
+.dy-menu .head { font-size: 15px; }
+.dy-menu button .ic { display: grid; place-items: center; width: 24px; }
+.dy-start { height: 34px; font-size: 14px; }
+.dy-app img { width: auto; height: 30px; }
+
+/* 위젯 */
+.dy-w > .h { height: 24px; font-size: 11.5px; }
+.dy-w > .b { padding: 9px; }
+.dy-in { height: 26px; font-size: 11px; border-radius: 9px; }
+textarea.dy-in { font-size: 11px; }
+.dy-li { min-height: 26px; gap: 6px; }
+.dy-li .tx { font-size: 11px; }
+.dy-li .tm { font-size: 9.5px; }
+.dy-chk { width: 16px; height: 16px; border-radius: 5px; padding: 0; }
+.dy-prof .nm { font-size: 12px; min-height: 22px; display: grid; place-items: center; line-height: 1.2; }
+.dy-prof .nm.none { color: var(--dy-sub); }
+.dy-prof .nt { font-size: 10.5px; min-height: 14px; }
+.dy-dday .tt { font-size: 11px; }
+.dy-dday .dd { font-size: 24px; }
+.dy-dday .dt { font-size: 9.5px; }
+.dy-dday .nav button { display: grid; place-items: center; padding: 2px 4px; }
+.dy-cd .scr { font-size: 11px; min-height: 28px; display: flex; align-items: center; }
+.dy-oha .rk { width: 52px; height: 52px; padding-top: 10px; font-size: 10px; }
+.dy-oha .rk b { font-size: 22px; }
+.dy-oha .tx { font-size: 11px; }
+.dy-oha .all div { font-size: 10px; }
+
+/* 달력 */
+.dy-month { font-size: 13px; height: 30px; min-width: 84px; }
+.dy-mood { font-size: 12px; height: 30px; }
+.dy-year { height: 30px; }
+.dy-year button { display: grid; place-items: center; width: 26px; padding: 0; }
+.dy-year b { font-size: 11.5px; }
+.dy-tabs button { font-size: 10px; height: 20px; }
+.dy-cal { grid-template-rows: 22px repeat(6, 1fr); }
+.dy-cal .wk div { font-size: 9.5px; }
+.dy-cell .n { font-size: 10px; }
+.dy-cell .ev span { font-size: 9px; }
+
+/* 할 일 / 영수증 / 메모 */
+.dy-dnav .d { font-size: 13px; }
+.dy-week button { font-size: 9.5px; }
+.dy-week button small { font-size: 11.5px; }
+.dy-rcpt .ln { font-size: 11px; }
+.dy-rcpt .top b { font-size: 16px; }
+.dy-rcpt .tot { font-size: 12.5px; }
+.dy-memo textarea { font-size: 12px; line-height: 26px; background: var(--dy-paper) repeating-linear-gradient(transparent 0 25px, var(--dy-thin) 25px 26px); background-attachment: local; background-position: 0 11px; }
+.dy-card .lb { font-size: 11px; }
+.dy-swatch button, .dy-colors label { font-size: 11px; }
+
+/* ---------------- 말풍선 스티커 (글 길이만큼 늘어남, 글자 9px) ---------------- */
+.dy-stk.bub img { width: 100%; }
+.dy-stk .bb { position: absolute; top: 58%; min-width: 34px; min-height: 34px; max-width: 150px; width: max-content;
+    display: grid; place-items: center; padding: 7px 10px; background: #fff; border: 1.8px solid #2b2729; border-radius: 18px;
+    pointer-events: none; }
+.dy-stk .bb.r { left: 62%; }
+.dy-stk .bb.l { right: 62%; }
+.dy-stk .bb.solo { position: relative; top: auto; left: auto; right: auto; }
+.dy-stk .bb span { font-family: var(--dy-body); font-size: 9px; line-height: 1.35; color: #3b3538; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; text-align: center; }
+.dy-stk .bb .ht { position: absolute; top: -7px; width: 14px; height: 14px; }
+.dy-stk .bb.r .ht { right: -4px; }
+.dy-stk .bb.l .ht { left: -4px; }
+.dy-stk-tools { gap: 3px; padding: 3px; }
+
+/* ---------------- 좁은 화면 (휴대폰) ---------------- */
 @media (max-width: 760px) {
-    .dy-wrap { --dy-bar-h: 50px; }
+    .dy-wrap { --dy-bar-h: 52px; font-size: 11px; }
     .dy-icons { display: none; }
-    .dy-win { left: 4px !important; top: 4px !important; width: calc(100% - 8px) !important; height: calc(100% - 8px) !important; border-radius: 18px; }
-    .dy-tb { cursor: default; }
+    .dy-win { left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; border-radius: 0; border-width: 0 0 0 0; box-shadow: none; }
+    .dy-tb { cursor: default; height: 38px; border-bottom-width: 1.8px; }
+    .dy-tb .ttools .lbl { display: none; }
+    .dy-tb .ttools .dy-rb { width: 26px; height: 26px; padding: 0; }
+    .dy-tb [data-close] { display: none; }            /* 아래 아이콘으로 창을 바꿔요 */
     .dy-rs { display: none; }
-    .dy-spread { grid-template-columns: 1fr; padding: 10px; }
-    .dy-left { grid-template-columns: 1fr 1fr; }
-    .dy-cal { min-height: 420px; }
+    .dy-body { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
+    .dy-spread { grid-template-columns: 1fr; padding: 10px; gap: 10px; }
+    .dy-right { order: -1; }                          /* 달력 먼저 */
+    .dy-left { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dy-left .dy-w:nth-child(2) { grid-column: span 2; }  /* 목표는 넓게 */
+    .dy-left .dy-w:first-child { grid-column: span 2; }
+    .dy-prof { display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px; align-items: center; text-align: left; }
+    .dy-prof .ph { grid-row: span 3; width: 64px; }
+    .dy-prof .nm { margin-top: 0; justify-self: start; padding: 2px 12px; }
+    .dy-prof .nt { margin-top: 0; }
+
+    .dy-mhead { gap: 5px; }
+    .dy-month { min-width: 0; padding: 0 10px; font-size: 12px; }
+    .dy-tabs { gap: 2px; }
+    .dy-tabs button { font-size: 9px; border-radius: 6px 6px 0 0; }
+    .dy-cal { min-height: 0; grid-template-rows: 20px repeat(6, minmax(54px, 1fr)); }
+    .dy-cell { min-height: 54px; }
+    .dy-cell .n { left: 3px; top: 2px; font-size: 9.5px; padding: 1px 3px; }
+    .dy-cell .ev { left: 2px; right: 2px; bottom: 2px; }
+    .dy-cell .ev span { font-size: 8.5px; padding: 0 2px; }
     .dy-quick { flex-wrap: wrap; }
-    .dy-quick input[type=date] { width: 100%; }
-    .dy-start { font-size: 14px; padding: 0 10px; white-space: nowrap; flex: none; }
-    .dy-right { order: -1; }                     /* 휴대폰에서는 달력 먼저 */
+    .dy-quick input[type=date] { width: auto; flex: 1 1 120px; }
+    .dy-quick #dy-qtext { flex: 1 1 100%; order: 3; }
+
     .dy-cd { grid-template-columns: 1fr; justify-items: center; text-align: center; }
     .dy-cd > div:last-child { width: 100%; }
     .dy-cd .ctl { justify-content: center; }
+    .dy-oha .all { grid-template-columns: repeat(2, 1fr); }
+
+    .dy-bar { gap: 4px; padding: 0 8px; padding-bottom: env(safe-area-inset-bottom); }
+    .dy-start { font-size: 13px; padding: 0 10px; white-space: nowrap; flex: none; height: 32px; }
+    .dy-sep { display: none; }
+    .dy-apps { flex: 1; justify-content: space-around; }
+    .dy-app { width: 42px; height: 40px; }
+    .dy-app img { height: 28px; }
     .dy-clock small { display: none; }
+    .dy-clock b { font-size: 12px; }
+    .dy-menu { left: 8px; right: 8px; width: auto; }
+
+    .dy-modal { padding: 0; align-items: flex-end; }
+    .dy-card { width: 100%; max-height: 88%; border-radius: 22px 22px 0 0; border-width: 2px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+    .dy-pick { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
+    .dy-stk-tools { max-width: calc(100% - 8px); overflow-x: auto; }
+}
+@media (max-width: 380px) {
+    .dy-left { grid-template-columns: 1fr; }
+    .dy-left .dy-w { grid-column: auto !important; }
+    .dy-year b { display: none; }
 }
