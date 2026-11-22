@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T16:45:42+09:00",
+ "updated_at": "2026-11-22T16:51:12+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -681,19 +681,7 @@
    "text": "눈이 따가워... 안약갖고다니기"
   }
  ],
- "library": [
-  {
-   "id": "lbmwrj8j4nb6z3",
-   "type": "youtube",
-   "title": "[Playlist] 🎆 콘서트에서 나오면 무조건 떼창 나오는 노래🎧",
-   "url": "https://www.youtube.com/watch?v=v9nwiR2QIYk",
-   "status": "done",
-   "date": "2026-11-22",
-   "time": "16:45",
-   "at": "2026-11-22T16:45:42+09:00",
-   "creator": "차가운 국물"
-  }
- ],
+ "library": [],
  "condition": [
   {
    "id": "cdmwrbfc1sicoa",
