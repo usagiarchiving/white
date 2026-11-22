@@ -155,11 +155,12 @@ function normalize(d) {
     LISTS.forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
     if (!Array.isArray(d.quests)) d.quests = clone(DEFAULT_QUESTS);
     d.quest_log = d.quest_log && typeof d.quest_log === 'object' && !Array.isArray(d.quest_log) ? d.quest_log : {};   // { 'YYYY-MM-DD': { 퀘스트id: '완료 시각 HH:MM' } }
-    d.symptom_tags = Array.isArray(d.symptom_tags) && d.symptom_tags.length ? d.symptom_tags : DEFAULT_SYMPTOMS.slice();
+    d.symptom_tags = Array.isArray(d.symptom_tags) ? d.symptom_tags : DEFAULT_SYMPTOMS.slice();
     d.beauty_steps = d.beauty_steps && typeof d.beauty_steps === 'object' ? d.beauty_steps : {};
     // 초록 버튼으로 고치는 목록: Library 종류, Beauty 구분 (tab: 위 탭에 보일지, false면 + 버튼으로만)
     if (!Array.isArray(st.lib_types) || !st.lib_types.length) st.lib_types = LIB_TYPES.map(([key, label]) => ({ key, label }));
     if (!Array.isArray(st.beauty_slots) || !st.beauty_slots.length) st.beauty_slots = BEAUTY_SLOTS.map(([key, label]) => ({ key, label, tab: key !== 'shower' }));
+    if (!Array.isArray(st.mood_list) || !st.mood_list.length) st.mood_list = MOODS.map(([key, emoji, label]) => ({ key, emoji, label }));   // Mood 목록
     if (!Array.isArray(st.med_list)) st.med_list = ['비타민C', '마그네슘'].map(label => ({ key: label, label }));   // Medicine 고르기 목록
     st.beauty_slots.forEach(({ key }) => { if (!Array.isArray(d.beauty_steps[key])) d.beauty_steps[key] = (DEFAULT_STEPS[key] || []).slice(); });
     return d;
@@ -298,6 +299,7 @@ export function init() {
     const S = () => db.settings;
     const bgOff = () => !!S().bg_off;
     const libTypes = () => S().lib_types.map(x => [x.key, x.label]);
+    const moodList = () => S().mood_list.map(x => [x.key, x.emoji || '', x.label]);
     const beautySlots = () => S().beauty_slots.map(x => [x.key, x.label]);
     const beautySubs = () => [['all', 'All']].concat(S().beauty_slots.filter(x => x.tab).map(x => [x.key, x.label]));
     const tabsOf = id => WIN[id].dyn ? ['All'].concat(libTypes().map(x => x[1])) : WIN[id].tabs;
@@ -796,6 +798,14 @@ export function init() {
         Object.keys(wins).forEach(k => wins[k].el.classList.toggle('front', k === id));
     }
     function listEditView(id) {
+        if (id === 'state') return `
+            <div class="mj-sec">Symptom tags</div>
+            <div class="mj-pf-edit mj-le" data-list="symptom">${db.symptom_tags.map(t => leRow(id, { key: t, label: t })).join('')}</div>
+            <button class="mj-add" data-act="le-add" data-v="symptom">+ add</button>
+            <div class="mj-sec" style="margin-top:14px">Mood</div>
+            <div class="mj-pf-edit mj-le" data-list="mood">${S().mood_list.map(r => leRow(id, r, true)).join('')}</div>
+            <button class="mj-add" data-act="le-add" data-v="mood">+ add</button>
+            <div class="mj-btns"><span class="sp"></span><button class="mj-btn ghost" data-act="le-cancel">Cancel</button><button class="mj-btn" data-act="le-save">Save</button></div>`;
         const rows = id === 'library' ? S().lib_types : id === 'food' ? S().med_list : S().beauty_slots;
         const name = id === 'library' ? 'Library' : id === 'food' ? 'Medicine' : 'Beauty';
         return `
@@ -804,13 +814,23 @@ export function init() {
             <button class="mj-add" data-act="le-add">+ add</button>
             <div class="mj-btns"><span class="sp"></span><button class="mj-btn ghost" data-act="le-cancel">Cancel</button><button class="mj-btn" data-act="le-save">Save</button></div>`;
     }
-    const leRow = (id, r) => `
-        <div class="mj-pf-row mj-le-row" data-key="${esc(r.key || '')}">
+    const leRow = (id, r, mood) => `
+        <div class="mj-pf-row mj-le-row${mood ? ' mood' : ''}" data-key="${esc(r.key || '')}">
+            ${mood ? `<input data-k="emoji" class="emo-in" value="${esc(r.emoji || '')}" maxlength="4">` : ''}
             <input data-k="label" value="${esc(r.label || '')}">
             ${id === 'daily' ? `<label class="tabchk"><input type="checkbox" data-k="tab" ${r.tab !== false ? 'checked' : ''}>tab</label>` : '<span></span>'}
             <div class="mj-pf-tools"><button data-act="pup">▲</button><button data-act="pdown">▼</button><button data-act="le-del">✕</button></div>
         </div>`;
     async function saveListEdit(id, el) {
+        if (id === 'state') {
+            const read = sel => [...el.querySelectorAll(`.mj-le[data-list=${sel}] .mj-le-row`)];
+            const tags = [...new Set(read('symptom').map(r => r.querySelector('[data-k=label]').value.trim()).filter(Boolean))];
+            const moods = read('mood').map(r => ({ key: r.dataset.key || uid('m'), emoji: r.querySelector('[data-k=emoji]').value.trim(), label: r.querySelector('[data-k=label]').value.trim() })).filter(m => m.label);
+            if (!moods.length) { mjAlert('Mood는 하나는 남겨 둬야 해요.'); return; }
+            wins[id].st.listedit = false;
+            save('Symptom·Mood 목록 수정', d => { d.symptom_tags = tags; d.settings.mood_list = moods; });
+            return;
+        }
         const rows = [...el.querySelectorAll('.mj-le-row')].map(r => ({
             key: r.dataset.key || uid('c'), label: r.querySelector('[data-k=label]').value.trim(),
             tab: r.querySelector('[data-k=tab]') ? r.querySelector('[data-k=tab]').checked : undefined
@@ -835,7 +855,7 @@ export function init() {
         const body = w.el.querySelector('.mj-win-body');
         const top = body ? body.scrollTop : 0;
         const tabsEl = w.el.querySelector('.mj-tabs'), tabsLeft = tabsEl ? tabsEl.scrollLeft : 0;
-        const tabs = tabsOf(id), canList = id === 'library' || id === 'daily' || id === 'food';
+        const tabs = tabsOf(id), canList = id === 'library' || id === 'daily' || id === 'food' || id === 'state';
         w.el.innerHTML = `
             <div class="mj-win-head" data-drag>
                 <button class="mj-badge" ${(id !== 'hp' && id !== 'lines') ? 'data-act="icon" title="아이콘 바꾸기"' : 'tabindex="-1"'}>${iconHtml(id)}</button>
@@ -939,7 +959,7 @@ export function init() {
                 case 'le-cancel': st.listedit = false; fresh(); break;
                 case 'le-save': saveListEdit(id, el); break;
                 case 'le-del': b.closest('.mj-le-row').remove(); break;
-                case 'le-add': { const box = el.querySelector('.mj-le'); box.insertAdjacentHTML('beforeend', leRow(id, { key: '', label: '', tab: true })); box.lastElementChild.querySelector('input').focus(); break; }
+                case 'le-add': { const box = el.querySelector(v ? `.mj-le[data-list=${v}]` : '.mj-le'); box.insertAdjacentHTML('beforeend', leRow(id, { key: '', label: '', tab: true }, v === 'mood')); box.lastElementChild.querySelector('input').focus(); break; }
                 case 'tab': st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; st.qedit = false; fresh(); if (v === 'To Do') loadTodos(); break;
                 case 'sub': st.sub = v; st.form = null; fresh(); break;
                 case 'icon': pickFile(f => setIcon(id, f, WIN[id].title)); break;
@@ -1491,7 +1511,7 @@ export function init() {
         if (r.type === 'meal') return `<b>${label(MEAL_SLOTS, r.slot || '') || ''}</b>${memo}${(r.imgs || []).length ? `<span class="mj-cimgs">${r.imgs.map(p => imgTag(p)).join('')}</span>` : ''}`;
         if (r.type === 'medicine') return `<b>${esc(r.name || '')}</b>${memo}`;
         if (r.type === 'symptom') return `<b>${esc((r.tags || []).join(', ') || '—')}</b> ${r.level ? `<span class="lv">${'●'.repeat(r.level)}${'○'.repeat(5 - r.level)}</span>` : ''}${memo}`;
-        if (r.type === 'mood') { const m = MOODS.find(x => x[0] === r.mood) || ['', '', r.mood]; return `<span class="emo">${m[1]}</span> <b>${esc(m[2])}</b>${memo}`; }
+        if (r.type === 'mood') { const m = moodList().find(x => x[0] === r.mood) || ['', '', r.mood]; return `<span class="emo">${m[1]}</span> <b>${esc(m[2])}</b>${memo}`; }
         return memo;
     }
     function condForm(st) {
@@ -1515,7 +1535,7 @@ export function init() {
             ${chips('level', [1, 2, 3, 4, 5].map(n => [String(n), '●'.repeat(n)]), it.level ? String(it.level) : '', true)}
             <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>`;
         if (type === 'mood') fields = `
-            ${chips('mood', MOODS.map(([k, e, l]) => [k, `<span class="emo">${e}</span> ${l}`]), it.mood || '', true)}
+            ${chips('mood', moodList().map(([k, e, l]) => [k, `<span class="emo">${e}</span> ${l}`]), it.mood || '', true)}
             <textarea data-f="memo" rows="2" placeholder="memo">${esc(it.memo || '')}</textarea>`;
         return `
             <div class="mj-form mj-card">

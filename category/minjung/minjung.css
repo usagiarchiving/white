@@ -541,3 +541,7 @@
 .mj-dlg-in:focus { border-color: var(--mj-pink); background: #fff; }
 .mj-dlg-h { margin-top: 5px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
 .mj-dlg .mj-btns { margin-top: 12px; }
+
+/* Mood 목록 편집: 이모지 칸 */
+.mj-pf-row.mj-le-row.mood { grid-template-columns: 44px 1fr auto auto; }
+.mj-le-row .emo-in { text-align: center; font-family: system-ui, sans-serif; }

@@ -105,7 +105,7 @@
 | `slot` (meal) | `breakfast` · `lunch` · `dinner` · `snack` · `night` |
 | `tags` (symptom) | `symptom_tags` 중에서 (화면에서 `+ tag`로 추가) |
 | `level` (symptom) | 아픈 정도 1~5 |
-| `mood` | `love` · `good` · `okay` · `meh` · `tired` · `sad` · `anxious` · `angry` |
+| `mood` | `settings.mood_list`의 `key` (처음엔 `love` · `good` · `okay` · `meh` · `tired` · `sad` · `anxious` · `angry`) |
 
 ## Daily — Beauty
 
@@ -180,6 +180,7 @@ To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대�
 
 | 필드 | 뜻 |
 | --- | --- |
+| `mood_list` | Mood 목록 `[{ key, emoji, label }]` — Symptom·Mood 창 초록 동그라미로 편집 (증상 태그 `symptom_tags`도 같은 곳에서) |
 | `med_list` | Medicine 고르기 목록 `[{ key, label }]` — Meal·Medicine 창 초록 동그라미로 순서·이름·추가·삭제, 쓰는 중엔 `+ add` |
 | `lib_types` | Library 종류 목록 `[{ key, label }]` — 창 위 초록 동그라미로 순서·이름·추가·삭제 |
 | `beauty_slots` | Beauty 구분 목록 `[{ key, label, tab }]` — `tab: false`면 위 탭 없이 + 버튼으로만 (예: Shower) |
