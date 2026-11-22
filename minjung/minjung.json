@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T10:08:18+09:00",
+ "updated_at": "2026-11-22T13:07:04+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -60,7 +60,17 @@
   }
  ],
  "library": [],
- "condition": [],
+ "condition": [
+  {
+   "id": "cdmwrbfc1sicoa",
+   "date": "2026-11-22",
+   "time": "11:08",
+   "at": "2026-11-22T13:07:02+09:00",
+   "type": "meal",
+   "slot": "lunch",
+   "memo": "연유바게트"
+  }
+ ],
  "beauty": [
   {
    "id": "btmwr50en6ijyj",
