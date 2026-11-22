@@ -57,6 +57,8 @@ const WIN = {
     lines:     { title: 'Lines',     w: 360 }
 };
 const MAIN = Object.keys(WIN).filter(k => WIN[k].main);
+// 아이패드·PC에서 창이 처음 뜨는 자리 (0~1 비율: 왼쪽→오른쪽, 위→아래)
+const SPOT = { profile: [0, 0], condition: [1, 0], diary: [0, 1], daily: [1, 1], menu: [0.22, 0.45], hp: [1, 0.08], lines: [0.5, 0.85] };
 const SOON = [['schedule', 'Schedule'], ['inventory', 'Inventory'], ['bag', 'Bag'], ['shop', 'Shop'], ['workout', 'Workout'], ['friends', 'Friends']];
 
 /* To Do: 기존 투두 카테고리(data/todos.json)를 그대로 씀 */
@@ -137,7 +139,7 @@ export function init() {
     const todoDb = window.ghdb.createClient(TODO_URL);
     const $ = id => document.getElementById(id);
     const game = $('mj-game'), layer = $('mj-layer'), fileIn = $('mj-file');
-    const isPC = () => window.matchMedia('(min-width: 900px)').matches;
+    const isPC = () => window.matchMedia('(min-width: 744px)').matches;   // 아이패드 이상: 윈도우 팝업
 
     let db = normalize({});
     const wins = {};            // 열린 창: id → { el, st }
@@ -286,16 +288,25 @@ export function init() {
         wins[id] = { el, st: newState(id) };
         layer.appendChild(el);
         if (isPC()) {
+            // 한쪽에 쌓이지 않게 창마다 화면 여기저기 자리를 정해 둠 (가로·세로 비율)
             const w = Math.min(WIN[id].w, window.innerWidth - 40);
             el.style.width = w + 'px';
-            const n = opened++ % 6;
-            el.style.left = Math.max(16, window.innerWidth - w - 60 - n * 28) + 'px';
-            el.style.top = (96 + n * 26) + 'px';
         }
         bindWin(id);
         renderWin(id);
+        if (isPC()) placeWin(id);
         focusWin(id);
         if (id === 'diary') loadTodos();
+    }
+    function placeWin(id) {
+        const el = wins[id].el;
+        const [fx, fy] = SPOT[id] || [Math.random(), Math.random()];
+        const j = (opened++ % 3) * 14;
+        const top0 = Math.max(0, root.getBoundingClientRect().top) + 46;        // 날짜·하트 아래부터
+        const roomX = Math.max(0, window.innerWidth - el.offsetWidth - 130);   // 오른쪽 폴더 아이콘 자리는 비움
+        const roomY = Math.max(0, window.innerHeight - top0 - el.offsetHeight - 16);
+        el.style.left = Math.round(16 + fx * roomX + (fx > .5 ? -j : j)) + 'px';
+        el.style.top = Math.round(top0 + fy * roomY + (fy > .5 ? -j : j)) + 'px';
     }
     function closeWin(id) { const w = wins[id]; if (!w) return; w.el.remove(); delete wins[id]; }
     function focusWin(id) {
@@ -310,9 +321,10 @@ export function init() {
         const top = body ? body.scrollTop : 0;
         w.el.innerHTML = `
             <div class="mj-win-head" data-drag>
-                <button class="mj-x" data-act="close" aria-label="닫기">${X_SVG}</button>
                 <button class="mj-badge" ${def.main ? 'data-act="icon" title="아이콘 바꾸기"' : 'tabindex="-1"'}>${iconHtml(id)}</button>
                 <div class="mj-title">${def.title}</div>
+                <span class="mj-dots3"><i></i><i></i></span>
+                <button class="mj-x" data-act="close" aria-label="닫기">${X_SVG}</button>
             </div>
             ${def.tabs ? `<div class="mj-tabs">${def.tabs.map(t => `<button data-act="tab" data-v="${t}" class="${st.tab === t ? 'on' : ''}">${t}</button>`).join('')}</div>` : ''}
             <div class="mj-win-body">${VIEW[id](st)}</div>`;
