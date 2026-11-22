@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T17:06:01+09:00",
+ "updated_at": "2026-11-22T19:45:00+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -56,6 +56,13 @@
    "time": "16:51",
    "at": "2026-11-22T16:51:28+09:00",
    "v": 3
+  },
+  {
+   "id": "hpmwrpn3sv09qk",
+   "date": "2026-11-22",
+   "time": "19:44",
+   "at": "2026-11-22T19:45:00+09:00",
+   "v": 1
   }
  ],
  "lines": [
@@ -687,6 +694,20 @@
    "time": "13:29",
    "at": "2026-11-22T13:29:26+09:00",
    "text": "눈이 따가워... 안약갖고다니기"
+  },
+  {
+   "id": "lnmwrm77nllczr",
+   "date": "2026-11-22",
+   "time": "18:08",
+   "at": "2026-11-22T18:08:39+09:00",
+   "text": "알바끄으으읕"
+  },
+  {
+   "id": "lnmwrpj4zggdaw",
+   "date": "2026-11-22",
+   "time": "19:41",
+   "at": "2026-11-22T19:41:54+09:00",
+   "text": "집이 너무 츄어요. 피곤해서 멀 못하겠네"
   }
  ],
  "library": [
@@ -701,8 +722,7 @@
    "tags": [
     "빛과밤의사랑"
    ],
-   "memo": "ㄹㅇ 개재밌음.빛밤은 스토리 원탑이 맞다\n빛밤 벤치마킹해서 놀아야지",
-   "cover": "data/images/hasion/1781724109683_pvojb6a9bb.png",
+   "memo": "![](data/images/hasion/1781724109683_pvojb6a9bb.png)\n![](data/images/hasion/1781724110081_nwpv7ydwgzd.png)\n![](data/images/hasion/1781724110481_6p6cnoweefw.png)\n![](data/images/hasion/1781724110894_z52j0y0pejb.png)\n![](data/images/hasion/1781724111681_62d7pikdb8j.png)\n![](data/images/hasion/1781724112572_93aeuz2wsxv.png)\n![](data/images/hasion/1781724113310_jduwca2mlv.png)\nㄹㅇ 개재밌음.빛밤은 스토리 원탑이 맞다\n빛밤 벤치마킹해서 놀아야지",
    "imgs": [
     "data/images/hasion/1781724109683_pvojb6a9bb.png",
     "data/images/hasion/1781724110081_nwpv7ydwgzd.png",
@@ -724,8 +744,7 @@
    "tags": [
     "빛과밤의사랑"
    ],
-   "memo": "하민성은 속에 회피충 ㅈㄴ멘헤라있고 육시헌은 그냥 대놓고 이상주의 정신병자 ㅇㅇ차이수는 코둘이 남친. 개그맨\n\n \n \n\n하...",
-   "cover": "data/images/hasion/1781732348499_0xoxsnrl5cd.png",
+   "memo": "하민성은 속에 회피충 ㅈㄴ멘헤라있고 육시헌은 그냥 대놓고 이상주의 정신병자 ㅇㅇ\n차이수는 코둘이 남친. 개그맨\n![](data/images/hasion/1781732348499_0xoxsnrl5cd.png)\n![](data/images/hasion/1781732349639_gvcbx0widb.png)\n하...",
    "imgs": [
     "data/images/hasion/1781732348499_0xoxsnrl5cd.png",
     "data/images/hasion/1781732349639_gvcbx0widb.png"
@@ -854,6 +873,54 @@
    "slot": "breakfast",
    "memo": "간장국수",
    "from": "myhome-cook"
+  },
+  {
+   "id": "cdmwrlpbn81tke",
+   "date": "2026-11-22",
+   "time": "17:54",
+   "at": "2026-11-22T17:54:45+09:00",
+   "type": "mood",
+   "mood": "good"
+  },
+  {
+   "id": "cdmwrlpjgb7887",
+   "date": "2026-11-22",
+   "time": "17:54",
+   "at": "2026-11-22T17:54:55+09:00",
+   "type": "symptom",
+   "tags": [
+    "배고픔"
+   ]
+  },
+  {
+   "id": "cdmwrnx51l3hmy",
+   "date": "2026-11-22",
+   "time": "18:56",
+   "at": "2026-11-22T18:56:48+09:00",
+   "type": "meal",
+   "slot": "dinner",
+   "memo": "맘모스빵"
+  },
+  {
+   "id": "cdmwrnxc0u92qf",
+   "date": "2026-11-22",
+   "time": "18:56",
+   "at": "2026-11-22T18:56:58+09:00",
+   "type": "meal",
+   "slot": "snack",
+   "memo": "포테이토칩"
+  },
+  {
+   "id": "cdmwrpd6ywsuap",
+   "date": "2026-11-22",
+   "time": "19:37",
+   "at": "2026-11-22T19:44:31+09:00",
+   "type": "medicine",
+   "meds": [
+    "다쿠아프리"
+   ],
+   "name": "다쿠아프리",
+   "memo": "안약"
   }
  ],
  "beauty": [
@@ -982,11 +1049,19 @@
    "time": "14:05",
    "at": "2026-11-22T16:44:41+09:00",
    "body": "물 많이 마시기..."
+  },
+  {
+   "id": "dymwrljk72f8ge",
+   "date": "2026-11-21",
+   "time": "17:50",
+   "at": "2026-11-22T17:50:17+09:00",
+   "body": "김민정 카테고리 좆뱅이 치다"
   }
  ],
  "symptom_tags": [
   "배아픔",
-  "두통"
+  "두통",
+  "배고픔"
  ],
  "beauty_steps": {
   "morning": [
@@ -1041,7 +1116,7 @@
    "mobile": [],
    "pc": []
   },
-  "bg_off": true,
+  "bg_off": false,
   "lib_types": [
    {
     "key": "book",
@@ -1104,6 +1179,20 @@
     "key": "shower",
     "label": "Shower",
     "tab": false
+   }
+  ],
+  "med_list": [
+   {
+    "key": "비타민C",
+    "label": "비타민C"
+   },
+   {
+    "key": "마그네슘",
+    "label": "마그네슘"
+   },
+   {
+    "key": "다쿠아프리",
+    "label": "다쿠아프리"
    }
   ]
  },

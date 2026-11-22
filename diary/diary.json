@@ -4,16 +4,7 @@
  "goals": {},
  "days": {
   "2026-11-22": {
-   "events": [
-    {
-     "id": "mwrhrzaz1nl4",
-     "text": "ㄴㄴㄴ"
-    }
-   ],
    "photo": "diary/photos/2026-11-22-mwrk7l458pxc.jpg"
-  },
-  "2026-11-21": {
-   "memo": "김민정 카테고리 좆뱅이 치다"
   }
  },
  "todos": {},
@@ -32,7 +23,7 @@
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-22T17:13:09+09:00",
+ "updated_at": "2026-11-22T17:50:17+09:00",
  "view": {
   "stk_off": {
    "pc": false
