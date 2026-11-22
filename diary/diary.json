@@ -25,7 +25,7 @@
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-23T04:05:59+09:00",
+ "updated_at": "2026-11-23T04:08:16+09:00",
  "view": {
   "stk_off": {
    "pc": false,
@@ -37,5 +37,14 @@
    "icon": "diary/photos/2026-11-23-mws67h6z4fu6.jpg"
   }
  },
- "tt": []
+ "tt": [],
+ "appOrder": [
+  "diary",
+  "todo",
+  "done",
+  "memo",
+  "report",
+  "tt",
+  "deco"
+ ]
 }
