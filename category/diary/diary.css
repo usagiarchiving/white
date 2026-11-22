@@ -564,3 +564,73 @@ textarea.dy-in { font-size: 11px; }
 .rp-list span { display: inline-block; width: 34px; color: var(--dy-sub); font-size: 10px; }
 /* 리포트 폴더 아이콘은 그림 비율 그대로 */
 .dy-icon img[src*="folder"] { width: 64px; height: 64px; }
+
+/* ---------------- 다이어리 안 팝업 (확인 · 입력 · 알림) ---------------- */
+.dy-ask { position: absolute; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: rgba(221, 236, 245, .35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.dy-ask-card { width: min(100%, 320px); max-height: 100%; overflow: auto; background: var(--dy-paper); border: 2px solid var(--dy-line); border-radius: 18px;
+    padding: 16px 16px 12px; box-shadow: 4px 6px 0 rgba(59,53,56,.12); animation: dyPop .16s ease; }
+@keyframes dyPop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+.dy-ask-card .m { font-size: 12px; line-height: 1.6; text-align: center; padding: 4px 2px 10px; word-break: keep-all; }
+.dy-ask-card .t { font-family: var(--dy-title); font-size: 14px; margin-bottom: 10px; }
+.dy-ask-card .f { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+.dy-ask-card .f > span { font-family: var(--dy-title); font-size: 10.5px; color: var(--dy-sub); }
+.dy-ask-card .f > span:empty { display: none; }
+.dy-ask-card textarea.dy-in { min-height: 64px; }
+.dy-ask-card .dy-in.need { border-color: #e98aa5; background: #fff3f6; }
+.dy-ask-card .foot { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
+.dy-rb.danger { background: #f8b9c8; }
+.dy-toast { position: absolute; left: 50%; bottom: calc(var(--dy-bar-h) + 14px); transform: translateX(-50%); z-index: 1300; max-width: calc(100% - 32px);
+    background: var(--dy-paper); border: 1.6px solid var(--dy-line); border-radius: 999px; padding: 6px 14px; font-size: 11px; box-shadow: 3px 4px 0 rgba(59,53,56,.1);
+    transition: opacity .35s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dy-toast.out { opacity: 0; }
+
+/* 아이콘만 있는 작은 버튼 (사분면) */
+.dy-ibtn { width: 26px; height: 26px; border: 0; background: none; padding: 0; display: grid; place-items: center; color: var(--dy-text); border-radius: 8px; }
+.dy-ibtn svg.ic { width: 16px; height: 16px; }
+.dy-ibtn:hover { background: var(--dy-head2); }
+
+/* ---------------- YouTube 위젯 (김민정 Library와 같은 기록) ---------------- */
+.dy-yt { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.dy-yt.empty { align-items: center; justify-content: center; min-height: 70px; }
+.dy-yt .yt-p { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--dy-line); background: #000; padding: 0; display: block; }
+.dy-yt .yt-p iframe { width: 100%; height: 100%; border: 0; display: block; }
+.dy-yt .yt-p.thumb { cursor: pointer; background: var(--dy-soft); }
+.dy-yt .yt-p.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dy-yt .yt-p .pl { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,.92); border: 1.5px solid var(--dy-line); display: grid; place-items: center; color: var(--dy-text); }
+.dy-yt .tt { font-size: 11px; line-height: 1.35; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all; }
+.dy-yt .sub { font-size: 9.5px; color: var(--dy-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 12px; }
+.dy-yt .ctl { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--dy-sub); }
+.dy-ytl { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; max-height: 55vh; overflow-y: auto; }
+.dy-ytl .it { display: grid; grid-template-columns: 84px 1fr auto; gap: 8px; align-items: start; border: 1.3px solid var(--dy-thin); border-radius: 12px; padding: 6px; }
+.dy-ytl .it img, .dy-ytl .noimg { width: 84px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 7px; display: block; cursor: pointer; background: var(--dy-soft); }
+.dy-ytl .mt { min-width: 0; }
+.dy-ytl .tt { font-size: 11px; font-weight: 700; line-height: 1.35; cursor: pointer; word-break: break-all; }
+.dy-ytl .sub { font-size: 9.5px; color: var(--dy-sub); }
+.dy-ytl .tg { font-size: 9.5px; color: #d77c96; }
+.dy-ytl .mm { font-size: 10px; color: var(--dy-text); white-space: pre-wrap; word-break: break-all; margin-top: 2px; }
+.dy-ytl .bt { display: flex; flex-direction: column; gap: 2px; }
+.dy-ytl a.dy-del { color: var(--dy-sub); }
+
+/* ---------------- 리포트: 다이어리 색으로 (분홍·하늘), 해빗 트래커 ---------------- */
+.dy-report .rp-h { display: flex; align-items: center; gap: 5px; font-size: 12px; margin-top: 6px; }
+.rp-cats span b { font-family: var(--dy-title); font-weight: 400; color: #d77c96; }
+.rp-habit { background: var(--dy-paper); border: 1.5px solid var(--dy-line); border-radius: 14px; padding: 6px 8px; display: flex; flex-direction: column; }
+.rp-habit .hd, .rp-habit .hb { display: grid; grid-template-columns: minmax(78px, 1fr) repeat(7, 22px) 26px; align-items: center; gap: 2px; }
+.rp-habit .hd b { font-weight: 400; font-size: 9px; color: var(--dy-sub); text-align: center; }
+.rp-habit .hb { border-top: 1px dashed var(--dy-thin); padding: 3px 0; }
+.rp-habit .hd + .hb { border-top: 0; }
+.rp-habit .hb .nm { border: 0; background: none; padding: 2px 0; text-align: left; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-habit .hb .nm::after { content: ' ›'; color: var(--dy-sub); }
+.rp-habit .hb.open .nm::after { content: ' ⌄'; }
+.rp-habit .hb > span { display: grid; place-items: center; }
+.rp-habit .hb .c { font-family: var(--dy-title); font-size: 11px; color: #d77c96; }
+.rp-habit .fut { opacity: .35; }
+.hh { width: 13px; height: 13px; fill: none; stroke: #e98aa5; stroke-width: 1.3; stroke-linejoin: round; }
+.hh.on { fill: #f6b3c4; }
+.rp-habit .hm { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; padding: 6px 2px 8px; border-top: 1px dashed var(--dy-thin); }
+.rp-habit .hm span { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.rp-habit .hm small { font-size: 8px; color: var(--dy-sub); line-height: 1.2; }
+.rp-habit .hm .hh { width: 15px; height: 15px; }
+.rp-habit .hm b { font-weight: 400; font-size: 9px; color: var(--dy-sub); text-align: center; }

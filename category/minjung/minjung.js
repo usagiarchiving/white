@@ -1143,6 +1143,13 @@ export function init() {
             item = Object.assign(base, { text: f.text });
             msg = '대사 ' + when;
         } else if (id === 'library') {
+            // YouTube는 제목을 비우면 영상 제목·채널을 가져와서 채움 (다이어리 YouTube와 같은 규칙)
+            if (!f.title && (st.form.type || libType(st)) === 'youtube' && /^https?:\/\//.test(f.url || '')) {
+                toast('loading title…');
+                for (const u of ['https://www.youtube.com/oembed?format=json&url=', 'https://noembed.com/embed?url=']) {
+                    try { const r = await fetch(u + encodeURIComponent(f.url)); if (r.ok) { const j = await r.json(); if (j.title) { f.title = j.title; if (!f.creator && j.author_name) f.creator = j.author_name; break; } } } catch (e) {}
+                }
+            }
             if (!f.title) { alert('제목을 적어 주세요.'); return; }
             const files = {}, old = st.form.id ? db.library.find(x => x.id === st.form.id) : null;
             let cover = st.form.cover || '';

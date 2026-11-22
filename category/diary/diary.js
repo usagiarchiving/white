@@ -68,12 +68,20 @@ function prepShared(k, cur) {
     if (k === 'todos') return Array.isArray(cur) ? cur : [];
     cur = cur && typeof cur === 'object' && !Array.isArray(cur) ? cur : {};
     if (k === 'mh') { if (!cur.log || typeof cur.log !== 'object') cur.log = {}; return cur; }
-    ['profile', 'diary', 'condition', 'beauty', 'quests'].forEach(f => { if (!Array.isArray(cur[f])) cur[f] = []; });
+    ['profile', 'diary', 'condition', 'beauty', 'quests', 'library'].forEach(f => { if (!Array.isArray(cur[f])) cur[f] = []; });
     if (!cur.quest_log || typeof cur.quest_log !== 'object') cur.quest_log = {};
     if (!cur.settings || typeof cur.settings !== 'object') cur.settings = {};
     return cur;
 }
 const uniq = a => a.filter((x, i) => x && a.indexOf(x) === i);
+const ytId = url => { const m = /(?:youtu\.be\/|v=|shorts\/|embed\/|live\/)([\w-]{11})/.exec(url || ''); return m ? m[1] : ''; };
+// 영상 제목·채널 (제목을 안 적었을 때): YouTube oEmbed → 안 되면 noembed
+async function ytInfo(url) {
+    for (const u of ['https://www.youtube.com/oembed?format=json&url=', 'https://noembed.com/embed?url=']) {
+        try { const r = await fetch(u + encodeURIComponent(url)); if (r.ok) { const j = await r.json(); if (j.title) return { title: j.title, author: j.author_name || '' }; } } catch (e) {}
+    }
+    return null;
+}
 
 /* ---------------- 오하아사 ---------------- */
 const BIRTH = '2002-04-11';
@@ -124,6 +132,8 @@ const ICO = {
     copy: '<rect x="5.5" y="5.5" width="7" height="7" rx="1.5"/><path d="M10.5 3.5h-6a1 1 0 0 0-1 1v6"/>', swap: '<path d="M3.5 6h8l-2-2M12.5 10h-8l2 2"/>',
     text: '<path d="M4 4.5h8M8 4.5v7.5"/>', lock: '<rect x="4" y="7" width="8" height="5.5" rx="1.3"/><path d="M5.8 7V5.5a2.2 2.2 0 0 1 4.4 0V7"/>',
     unlock: '<rect x="4" y="7" width="8" height="5.5" rx="1.3"/><path d="M5.8 7V5.5a2.2 2.2 0 0 1 4.3-.7"/>', heart: '<path d="M8 12.5S3 9.6 3 6.4A2.4 2.4 0 0 1 8 5a2.4 2.4 0 0 1 5 1.4c0 3.2-5 6.1-5 6.1z"/>',
+    list: '<path d="M5.5 4.5h7M5.5 8h7M5.5 11.5h7"/><circle cx="3" cy="4.5" r=".6" fill="currentColor"/><circle cx="3" cy="8" r=".6" fill="currentColor"/><circle cx="3" cy="11.5" r=".6" fill="currentColor"/>',
+    out: '<path d="M9 3.5h3.5V7M12.5 3.5L7.5 8.5"/><path d="M11 9.5v3H3.5V5h3"/>',
     grid: '<rect x="2.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="2.8" y="8.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="8.8" width="4.4" height="4.4" rx="1"/>',
     eye: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="2"/>',
     eyeoff: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><path d="M3 13L13 3"/>',
@@ -204,6 +214,53 @@ export function init() {
         el.src = repo.rawUrl(s.slice(i).split('?')[0]) + '?t=' + Date.now();
     }, true);
 
+    /* ---------------- 다이어리 안 팝업 (브라우저 기본 팝업 대신) ---------------- */
+    // ask(글, 버튼) → 예/아니오, askForm(제목, 칸들) → 값 또는 null, toast(글) → 잠깐 뜨는 알림
+    function askBox(inner, onKey) {
+        const el = document.createElement('div');
+        el.className = 'dy-ask';
+        el.innerHTML = '<div class="dy-ask-card">' + inner + '</div>';
+        wrap.appendChild(el);
+        return el;
+    }
+    function ask(msg, ok, danger) {
+        return new Promise(res => {
+            const el = askBox('<div class="m">' + esc(msg).replace(/\n/g, '<br>') + '</div>' +
+                '<div class="foot"><button class="dy-rb" data-v="0">취소</button><button class="dy-rb on' + (danger ? ' danger' : '') + '" data-v="1">' + esc(ok || '확인') + '</button></div>');
+            const done = v => { el.remove(); res(v); };
+            el.onclick = e => { const b = e.target.closest('[data-v]'); if (b) done(b.dataset.v === '1'); else if (e.target === el) done(false); };
+            el.dy = { esc: () => done(false), enter: () => done(true) };
+            setTimeout(() => { const b = el.querySelector('[data-v="1"]'); b && b.focus(); }, 20);
+        });
+    }
+    // fields: [{ k, label, value, type: 'text'|'date'|'time'|'textarea', ph, need }]
+    function askForm(title, fields, ok) {
+        return new Promise(res => {
+            const el = askBox('<div class="t">' + esc(title) + '</div>' + fields.map(f => '<label class="f"><span>' + esc(f.label || '') + '</span>' +
+                (f.type === 'textarea' ? '<textarea class="dy-in" data-k="' + f.k + '" placeholder="' + esc(f.ph || '') + '">' + esc(f.value || '') + '</textarea>'
+                    : '<input class="dy-in" data-k="' + f.k + '" type="' + (f.type || 'text') + '" value="' + esc(f.value || '') + '" placeholder="' + esc(f.ph || '') + '">') + '</label>').join('') +
+                '<div class="foot"><button class="dy-rb" data-v="0">취소</button><button class="dy-rb on" data-v="1">' + esc(ok || '저장') + '</button></div>');
+            const get = () => { const o = {}; el.querySelectorAll('[data-k]').forEach(i => { o[i.dataset.k] = i.value.trim(); }); return o; };
+            const done = v => {
+                if (v) { const o = get(), miss = fields.find(f => f.need && !o[f.k]); if (miss) { const i = el.querySelector('[data-k="' + miss.k + '"]'); i.classList.add('need'); i.focus(); return; } el.remove(); return res(o); }
+                el.remove(); res(null);
+            };
+            el.onclick = e => { const b = e.target.closest('[data-v]'); if (b) done(b.dataset.v === '1'); else if (e.target === el) done(false); };
+            el.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing && e.target.tagName === 'INPUT') { e.preventDefault(); done(true); } };
+            el.dy = { esc: () => done(false) };
+            setTimeout(() => { const i = el.querySelector('[data-k]'); if (i) { i.focus(); if (i.select && i.type === 'text') i.select(); } }, 30);
+        });
+    }
+    function toast(msg) {
+        const old = wrap.querySelector('.dy-toast'); if (old) old.remove();
+        const el = document.createElement('div');
+        el.className = 'dy-toast'; el.textContent = msg;
+        wrap.appendChild(el);
+        setTimeout(() => el.classList.add('out'), 2600);
+        setTimeout(() => el.remove(), 3000);
+    }
+    const askOpen = () => wrap.querySelector('.dy-ask');
+
     /* ---------------- 불러오기 / 저장 ---------------- */
     const ext = { todos: [], mj: prepShared('mj', {}), mh: prepShared('mh', {}) };
     async function load() {
@@ -235,7 +292,7 @@ export function init() {
     }
     function canWrite() {
         if (window.ghdb.hasToken()) return true;
-        alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.');
+        toast('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요');
         return false;
     }
     // fn은 화면용(db)과 저장소 최신본(cur) 양쪽에 똑같이 적용됨 → id는 fn 밖에서 미리 만들어 둘 것
@@ -261,7 +318,7 @@ export function init() {
             }
         }, e => {
             setPending(pending - 1);
-            alert('저장하지 못했어요.\n' + (e.message || e));
+            toast('저장하지 못했어요 · ' + (e.message || e));
             load();
         });
     }
@@ -303,7 +360,7 @@ export function init() {
             const sha = await repo.putBlob(r.bytes);
             return { path, files: { [path]: sha } };
         } catch (e) {
-            alert('사진을 올리지 못했어요.\n' + (e.message || e));
+            toast('사진을 올리지 못했어요 · ' + (e.message || e));
             return null;
         } finally { setPending(pending - 1); }
     }
@@ -492,7 +549,7 @@ export function init() {
             if (t.dataset.tool === 'theme') openThemeCard();
         };
         const mk = monthKey(V.y, V.m);
-        body.innerHTML =
+        const html =
             '<div class="dy-spread' + (V.deco && !stkOff() ? ' dy-deco' : '') + (stkOff() ? ' dy-stk-off' : '') + '" id="dy-spread">' +
                 '<div class="dy-left">' + profileW() + goalsW(mk) + ddayW() + musicW() + ohaW() + bucketW() + '</div>' +
                 '<div class="dy-right">' + calendarHTML(mk) + '</div>' +
@@ -507,10 +564,26 @@ export function init() {
                     '<button class="dy-rb round" data-a="stk-del" title="떼기" style="color:#d77c96">' + ic('x') + '</button>' +
                 '</div>' +
             '</div>';
+        const keepYt = YT.on && body.querySelector('.dy-yt-frame[data-k="' + YT.on + '"]');
+        if (keepYt) patchKeep(body.querySelector('#dy-spread'), html, keepYt.closest('.dy-w'));
+        else body.innerHTML = html;
         bindStickers(body);
         placeTools();
     };
 
+    // 다시 그리기: keep(영상 위젯)은 문서에서 한 번도 떼지 않고, 그 주변만 새것으로 바꿈 (떼면 영상이 처음부터 다시 로드됨)
+    function patchKeep(oldSp, html, keep) {
+        const tmp = document.createElement('div'); tmp.innerHTML = html;
+        const nsp = tmp.firstElementChild, nLeft = nsp.querySelector('.dy-left'), nKeep = nLeft.querySelector('.dy-w.yt');
+        const oLeft = keep.parentElement;
+        oldSp.className = nsp.className;
+        [...oldSp.children].forEach(c => { if (c !== oLeft) c.remove(); });
+        [...oLeft.children].forEach(c => { if (c !== keep) c.remove(); });
+        let before = true;
+        [...nLeft.children].forEach(c => { if (c === nKeep) { before = false; return; } if (before) oLeft.insertBefore(c, keep); else oLeft.appendChild(c); });
+        let afterLeft = false;
+        [...nsp.children].forEach(c => { if (c === nLeft) { afterLeft = true; return; } if (afterLeft) oldSp.appendChild(c); else oldSp.insertBefore(c, oLeft); });
+    }
     function widget(title, inner, cls, extra) {
         return '<div class="dy-w ' + (cls || '') + '"><div class="h"><span class="dy-heart">♥</span>' + title + (extra || '') + '</div><div class="b">' + inner + '</div></div>';
     }
@@ -546,17 +619,93 @@ export function init() {
             '<div class="dd">' + ddayText(d.date) + '</div><div class="dt">' + d.date.replace(/-/g, '. ') + '.</div>' +
             '<div style="display:flex;gap:4px;justify-content:center;margin-top:6px"><button class="dy-rb round" data-a="dday-add" title="추가">' + ic('plus') + '</button><button class="dy-rb round" data-a="dday-del" title="지우기">' + ic('x') + '</button></div></div>');
     }
+    /* YouTube: 김민정 Library(YouTube)와 같은 기록 — 위젯은 오늘 본 영상만 (하루마다 새로), 추가한 날짜·시간 그대로 */
+    const YT = { i: 0, on: null, day: todayKey() };
+    const ytList = k => ext.mj.library.filter(x => x.type === 'youtube' && x.date === k).sort((a, b) => ((a.time || '') + (a.at || '')) < ((b.time || '') + (b.at || '')) ? -1 : 1);
     function musicW() {
-        const list = db.music;
-        if (list.length) V.mu = ((V.mu % list.length) + list.length) % list.length;
-        const t = list[V.mu];
-        return widget('MUSIC',
-            '<div class="dy-cd"><div class="dy-disc' + (V.playing && t ? ' spin' : '') + '"><img src="' + CHAR['c-puppy'] + '" alt=""></div><div style="min-width:0">' +
-            '<div class="scr" title="' + esc(t ? t.title : '') + '">' + (t ? '♪ ' + esc(t.title) : '♪') + '</div>' +
-            '<div class="ctl"><button class="dy-rb round" data-a="mu-prev">' + ic('left') + '</button><button class="dy-rb round" data-a="mu-play">' + ic(V.playing && t ? 'stop' : 'play') + '</button>' +
-            '<button class="dy-rb round" data-a="mu-next">' + ic('right') + '</button><button class="dy-rb round" data-a="mu-add">' + ic('plus') + '</button>' + (t ? '<button class="dy-rb round" data-a="mu-del">' + ic('x') + '</button>' : '') + '</div>' +
-            (list.length ? '<div style="font-size:10.5px;color:var(--dy-sub);margin-top:4px">' + (V.mu + 1) + ' / ' + list.length + '</div>' : '') +
-            '</div></div>');
+        const L = ytList(todayKey());
+        if (L.length) YT.i = ((YT.i % L.length) + L.length) % L.length;
+        const t = L[YT.i];
+        const head = 'YOUTUBE<button class="dy-rb round hx" data-a="yt-list" title="목록" style="height:18px;width:18px;min-width:18px">' + ic('list') + '</button>';
+        if (!t) return widget(head, '<div class="dy-yt empty"><button class="dy-rb round" data-a="yt-add" title="영상 추가">' + ic('plus') + '</button></div>', 'yt');
+        const vid = ytId(t.url);
+        const player = YT.on === t.id && vid
+            ? '<div class="yt-p"><iframe class="dy-yt-frame" data-k="' + esc(t.id) + '" src="https://www.youtube-nocookie.com/embed/' + vid + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="YouTube"></iframe></div>'
+            : '<button class="yt-p thumb" data-a="yt-play" title="재생">' + (vid ? '<img src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg" alt="">' : '') + '<span class="pl">' + ic('play') + '</span></button>';
+        return widget(head,
+            '<div class="dy-yt">' + player +
+            '<div class="tt" title="' + esc(t.title || '') + '">' + esc(t.title || 'YouTube') + '</div>' +
+            '<div class="sub">' + esc([t.time, t.creator].filter(Boolean).join(' · ')) + '</div>' +
+            '<div class="ctl"><button class="dy-rb round" data-a="yt-prev">' + ic('left') + '</button><span>' + (YT.i + 1) + ' / ' + L.length + '</span>' +
+            '<button class="dy-rb round" data-a="yt-next">' + ic('right') + '</button><span style="flex:1"></span><button class="dy-rb round" data-a="yt-add" title="영상 추가">' + ic('plus') + '</button></div></div>', 'yt');
+    }
+    // 영상 추가/고치기 카드: 링크 · 제목(비우면 영상 제목) · 태그 · 메모 · 날짜/시간
+    async function ytForm(it) {
+        const now = stamp();
+        const f = await askForm(it ? 'YouTube 고치기' : 'YouTube 추가', [
+            { k: 'url', label: '링크', value: it ? it.url : '', ph: 'https://youtu.be/…', need: true },
+            { k: 'title', label: '제목', value: it ? it.title : '', ph: '비우면 영상 제목으로' },
+            { k: 'tags', label: '태그', value: it && it.tags ? it.tags.map(x => '#' + x).join(' ') : '', ph: '#태그' },
+            { k: 'memo', label: '메모', type: 'textarea', value: it ? it.memo || '' : '' },
+            { k: 'date', label: '날짜', type: 'date', value: it ? it.date : now.slice(0, 10) },
+            { k: 'time', label: '시간', type: 'time', value: it ? it.time : now.slice(11, 16) }
+        ], it ? '저장' : '추가');
+        if (!f) return;
+        if (!safeUrl(f.url)) return toast('링크는 http:// 또는 https:// 로 시작해야 해요');
+        let title = f.title, creator = it ? it.creator : '';
+        if (!title || !creator) {
+            toast('영상 정보 가져오는 중…');
+            const info = await ytInfo(f.url);
+            if (info) { if (!title) title = info.title; if (!creator) creator = info.author; }
+        }
+        const row = { type: 'youtube', title: title || 'YouTube', url: f.url, status: 'done', date: f.date || now.slice(0, 10), time: f.time || now.slice(11, 16), at: stamp() };
+        if (creator) row.creator = creator;
+        const tags = f.tags.split(/[#,\s]+/).map(x => x.trim()).filter(Boolean); if (tags.length) row.tags = tags;
+        if (f.memo) row.memo = f.memo;
+        const id = it ? it.id : 'lb' + uid();
+        save('YouTube ' + (it ? '고치기' : '추가'), null, null, { mj: d => {
+            const ex = d.library.find(x => x.id === id);
+            if (ex) { ['title', 'url', 'date', 'time', 'at', 'creator', 'tags', 'memo'].forEach(k => { if (row[k] != null) ex[k] = JSON.parse(JSON.stringify(row[k])); else delete ex[k]; }); }
+            else d.library.push(Object.assign({ id }, JSON.parse(JSON.stringify(row))));
+        } });
+        if (!it && row.date === todayKey()) { YT.i = Math.max(0, ytList(todayKey()).findIndex(x => x.id === id)); YT.on = null; render('diary'); }
+    }
+    // 목록 (플레이리스트): 날짜별로, 오늘이 기본
+    function openYtList() {
+        YT.day = todayKey();
+        openCard(function draw() {
+            const k = YT.day, L = ytList(k);
+            cardBox.innerHTML = '<h3><img src="' + CHAR['c-puppy'] + '" alt="">YouTube</h3>' +
+                '<div class="dy-dnav"><button class="dy-rb round" data-y="prev">' + ic('left') + '</button><div class="d">' + k.replace(/-/g, '. ') + (k === todayKey() ? ' · 오늘' : '') + '</div>' +
+                '<button class="dy-rb round" data-y="next">' + ic('right') + '</button></div>' +
+                '<div class="dy-ytl">' + L.map(x => {
+                    const v = ytId(x.url);
+                    return '<div class="it" data-id="' + esc(x.id) + '">' + (v ? '<img src="https://i.ytimg.com/vi/' + v + '/mqdefault.jpg" alt="" data-y="play">' : '<span class="noimg" data-y="play"></span>') +
+                        '<div class="mt"><div class="tt" data-y="play">' + esc(x.title || 'YouTube') + '</div><div class="sub">' + esc([x.time, x.creator].filter(Boolean).join(' · ')) + '</div>' +
+                        ((x.tags || []).length ? '<div class="tg">' + x.tags.map(g => '#' + esc(g)).join(' ') + '</div>' : '') +
+                        (x.memo ? '<div class="mm">' + esc(x.memo) + '</div>' : '') + '</div>' +
+                        '<span class="bt">' + (safeUrl(x.url) ? '<a class="dy-del" href="' + esc(safeUrl(x.url)) + '" target="_blank" rel="noopener" title="YouTube에서 열기">' + ic('out') + '</a>' : '') +
+                        '<button class="dy-del" data-y="edit" title="고치기">' + ic('pen') + '</button><button class="dy-del" data-y="del" title="지우기">' + ic('x') + '</button></span></div>';
+                }).join('') + '</div>' +
+                '<div class="foot"><button class="dy-rb" data-y="add">' + ic('plus') + '<span class="lbl">추가</span></button><span style="flex:1"></span><button class="dy-rb on" data-y="close">닫기</button></div>';
+        });
+        cardBox.onclick = async e => {
+            const b = e.target.closest('[data-y]'); if (!b) return;
+            const a = b.dataset.y, id = rowId(b), it = id && ext.mj.library.find(x => x.id === id);
+            if (a === 'close') return closeCard();
+            if (a === 'prev' || a === 'next') { YT.day = addDays(YT.day, a === 'next' ? 1 : -1); return cardFn && cardFn(); }
+            if (a === 'add') { await ytForm(null); return cardFn && cardFn(); }
+            if (a === 'edit' && it) { await ytForm(it); return cardFn && cardFn(); }
+            if (a === 'del' && it) {
+                if (!(await ask('"' + (it.title || 'YouTube') + '" 을(를) 지울까요?\n김민정 Library에서도 지워져요', '지우기', true))) return;
+                save('YouTube 지우기', null, null, { mj: d => { d.library = d.library.filter(x => x.id !== id); } });
+                return cardFn && cardFn();
+            }
+            if (a === 'play' && it) {
+                if (it.date !== todayKey() || !ytId(it.url)) { if (safeUrl(it.url)) window.open(safeUrl(it.url), '_blank', 'noopener'); return; }
+                YT.i = ytList(todayKey()).findIndex(x => x.id === id); YT.on = id; closeCard(true); render('diary');
+            }
+        };
     }
     /* 오하아사(おは朝) 별자리 운세: GitHub이 매일 아침 diary/ohaasa.json 으로 받아 둠 (.github/workflows/ohaasa.yml) */
     function ohaW() {
@@ -689,8 +838,11 @@ export function init() {
             window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
         });
         layer.addEventListener('dblclick', e => { const el = e.target.closest('.dy-stk.bub'); if (el && V.deco) { V.sel = el.dataset.sid; act('diary', 'stk-text'); } });
+        if (spread.dataset.bound) return;            // 영상 재생 중 부분만 다시 그릴 때는 이미 붙어 있음
+        spread.dataset.bound = '1';
         spread.addEventListener('pointerdown', e => {
-            if (V.deco && V.sel && !e.target.closest('.dy-stk, .dy-stk-tools')) { V.sel = null; layer.querySelectorAll('.dy-stk').forEach(x => x.classList.remove('sel')); placeTools(); }
+            const ly = spread.querySelector('#dy-stk-layer');
+            if (V.deco && V.sel && !e.target.closest('.dy-stk, .dy-stk-tools')) { V.sel = null; ly.querySelectorAll('.dy-stk').forEach(x => x.classList.remove('sel')); placeTools(); }
         });
     }
     function placeTools() {
@@ -738,7 +890,7 @@ export function init() {
     // Todo 카테고리와 같은 규칙: 오늘은 밀린 일도 같이, 다른 날은 그날 계획/완료한 일
     const findTodo = (list, id) => list.find(x => String(x.id) === String(id));
     RENDER.todo = (body, tools) => {
-        tools.innerHTML = '<button class="dy-rb" data-tool="quad" title="사분면 보기">' + ic('grid') + '<span class="lbl">사분면</span></button>';
+        tools.innerHTML = '<button class="dy-ibtn" data-tool="quad" title="사분면 보기">' + ic('grid') + '</button>';
         tools.onclick = e => { if (e.target.closest('[data-tool="quad"]')) openQuadCard(); };
         const k = V.tDate, list = todosFor(k), tk = todayKey();
         const done = list.filter(t => t.is_completed).length;
@@ -768,7 +920,6 @@ export function init() {
                         '<button class="dy-del" data-a="t-up" title="위로">' + ic('up') + '</button><button class="dy-del" data-a="t-del" title="지우기">' + ic('x') + '</button></div>';
                 }).join('') + '</div>' : '') +
                 (k < tk && list.some(t => !t.is_completed) ? '<button class="dy-rb" data-a="t-carry" style="align-self:flex-start">못 한 일 오늘로 옮기기</button>' : '') +
-                '<div class="mascot"><img src="' + CHAR['c-pink'] + '" alt=""></div>' +
             '</div>';
     };
     // 사분면 (보기 전용): Todo 카테고리 매트릭스와 같은 기준 — 오늘까지의 못 한 일
@@ -860,12 +1011,10 @@ export function init() {
        리포트 (폴더) — 한 달 기록 분석: 할 일 · 생활 · 일기
        ========================================================================== */
     const MOOD_EMO = { love: '🥰', good: '😊', okay: '🙂', meh: '😐', tired: '😪', sad: '😢', anxious: '😰', angry: '😠' };
-    const R = { m: todayKey().slice(0, 7), tab: 'todo' };
-    function bars(rows, color) {     // rows: [[이름, 값, 최대(없으면 가장 큰 값)]]
-        if (!rows.length) return '';
-        const mx = Math.max(1, ...rows.map(x => x[2] || x[1]));
-        return '<div class="rp-bars">' + rows.map(([n, v, max]) => '<div class="rp-bar"><span class="n">' + esc(n) + '</span><span class="t"><i style="width:' + Math.round(v / (max || mx) * 100) + '%;' + (color ? 'background:' + color : '') + '"></i></span><span class="v">' + v + (max ? '/' + max : '') + '</span></div>').join('') + '</div>';
-    }
+    const R = { m: todayKey().slice(0, 7), tab: 'todo', open: {} };
+    const HEART = on => '<svg class="hh' + (on ? ' on' : '') + '" viewBox="0 0 16 16"><path d="M8 13.4S2.6 10.3 2.6 6.4A2.7 2.7 0 0 1 8 4.9a2.7 2.7 0 0 1 5.4 1.5c0 3.9-5.4 7-5.4 7z"/></svg>';
+    const rpH = t => '<div class="rp-h"><span class="dy-heart">♥</span>' + t + '</div>';
+    const chips = rows => rows.length ? '<div class="rp-cats">' + rows.map(([n, v]) => '<span>' + esc(n) + ' <b>' + v + '</b></span>').join('') + '</div>' : '';
     function heat(mk, countOf, color) {     // 한 달 달력 칸 진하기
         const [y, m] = mk.split('-').map(Number), first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
         let h = '<div class="rp-heat">' + WEEK_KO.map(w => '<b>' + w + '</b>').join('') + '<span></span>'.repeat(first);
@@ -889,40 +1038,60 @@ export function init() {
             html += '<div class="rp-sum"><div><b>' + done.length + '</b><small>끝낸 일</small></div><div><b>' + Object.keys(byDay).length + '일</b><small>실천한 날</small></div>' +
                 '<div><b>' + (planned.length ? Math.round(planned.filter(t => t.is_completed).length / planned.length * 100) : 0) + '%</b><small>계획 달성</small></div>' +
                 '<div><b>' + (best ? parseKey(best).getDate() + '일' : '-') + '</b><small>제일 많이 한 날</small></div></div>';
-            html += '<div class="rp-h">하루하루</div>' + heat(mk, k => byDay[k] || 0);
+            html += rpH('하루하루') + heat(mk, k => byDay[k] || 0);
             const cats = Object.keys(TODO_COLORS).map(c => [c, done.filter(t => (t.category || 'gray') === c).length]).filter(x => x[1]);
-            if (cats.length) html += '<div class="rp-h">색깔별</div><div class="rp-cats">' + cats.map(([c, n]) => '<span><i style="background:' + TODO_COLORS[c] + '"></i>' + n + '</span>').join('') + '</div>';
+            if (cats.length) html += rpH('색깔별') + '<div class="rp-cats">' + cats.map(([c, n]) => '<span><i style="background:' + TODO_COLORS[c] + '"></i>' + n + '</span>').join('') + '</div>';
             // 최근 8주 끝낸 일
             const wk = []; let end = todayKey();
             for (let i = 0; i < 8; i++) { const st = addDays(end, -6); wk.unshift([st.slice(5).replace('-', '.'), ext.todos.filter(t => t.is_completed && !t.parent_id && (t.completed_date || '') >= st && (t.completed_date || '') <= end).length]); end = addDays(st, -1); }
             const wmx = Math.max(1, ...wk.map(x => x[1]));
-            html += '<div class="rp-h">최근 8주</div><div class="rp-chart">' + wk.map(([n, v]) => '<div><i style="height:' + Math.round(v / wmx * 100) + '%"></i><b>' + v + '</b><small>' + n + '</small></div>').join('') + '</div>';
+            html += rpH('최근 8주') + '<div class="rp-chart">' + wk.map(([n, v]) => '<div><i style="height:' + Math.round(v / wmx * 100) + '%"></i><b>' + v + '</b><small>' + n + '</small></div>').join('') + '</div>';
         }
         if (R.tab === 'life') {
-            const mj = ext.mj;
-            const q = mj.quests.map(x => [x.title, Object.keys(mj.quest_log).filter(k => inM(k) && mj.quest_log[k][x.id]).length, x.kind === 'daily' ? elapsed : 0]);
-            if (q.length) html += '<div class="rp-h">루틴</div>' + bars(q);
+            const mj = ext.mj, tk = todayKey();
+            // 해빗 트래커: 이번 주(이 달을 보고 있으면 오늘이 든 주, 아니면 그 달 마지막 주) 하트, 누르면 한 달
+            const wkEnd = mk === tk.slice(0, 7) ? tk : mk + '-' + pad(new Date(y, m, 0).getDate());
+            const sun = addDays(wkEnd, -parseKey(wkEnd).getDay());
+            const did = (q, k) => !!(mj.quest_log[k] && mj.quest_log[k][q.id]);
+            const days = new Date(y, m, 0).getDate();
+            if (mj.quests.length) {
+                html += rpH('루틴') + '<div class="rp-habit"><div class="hd"><span></span>' + WEEK_KO.map(w => '<b>' + w + '</b>').join('') + '<span></span></div>' +
+                    mj.quests.map(q => {
+                        const open = !!R.open[q.id];
+                        const cnt = Object.keys(mj.quest_log).filter(k => inM(k) && did(q, k)).length;
+                        let row = '<div class="hb' + (open ? ' open' : '') + '"><button class="nm" data-a="rp-q" data-k="' + esc(q.id) + '">' + esc(q.title) + '</button>' +
+                            Array.from({ length: 7 }, (_, i) => { const k = addDays(sun, i); return '<span class="' + (k > tk ? 'fut' : '') + '">' + HEART(did(q, k)) + '</span>'; }).join('') +
+                            '<span class="c">' + cnt + '</span></div>';
+                        if (open) {
+                            row += '<div class="hm">' + WEEK_KO.map(w => '<b>' + w + '</b>').join('') + '<span></span>'.repeat(new Date(y, m - 1, 1).getDay()) + Array.from({ length: days }, (_, i) => { const k = mk + '-' + pad(i + 1); return '<span class="' + (k > tk ? 'fut' : '') + '"><small>' + (i + 1) + '</small>' + HEART(did(q, k)) + '</span>'; }).join('') + '</div>';
+                        }
+                        return row;
+                    }).join('') + '</div>' +
+                    (Object.keys(R.open).length ? '<div style="text-align:right"><button class="dy-rb" data-a="rp-fold">모두 접기</button></div>' : '');
+            }
             const mh = Object.keys(ext.mh.log).map(id => [MYHOME_ACTS[id] || id, Object.keys(ext.mh.log[id] || {}).filter(k => inM(k) && ext.mh.log[id][k].done).length]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
-            if (mh.length) html += '<div class="rp-h">집안일</div>' + bars(mh, '#a9cfe6');
+            if (mh.length) html += rpH('집안일') + chips(mh.map(([n, v]) => [n, v + '번']));
             const meals = Object.keys(MEAL_KO).map(sl => [MEAL_KO[sl], mj.condition.filter(c => c.type === 'meal' && c.slot === sl && inM(c.date)).length]).filter(x => x[1]);
-            if (meals.length) html += '<div class="rp-h">식사</div>' + bars(meals, '#f6c4a0');
+            if (meals.length) html += rpH('식사') + chips(meals.map(([n, v]) => [n, v + '번']));
             const bt = Object.keys(BEAUTY_KO).map(sl => [BEAUTY_KO[sl], mj.beauty.filter(b => b.slot === sl && inM(b.date)).length]).filter(x => x[1]);
-            if (bt.length) html += '<div class="rp-h">뷰티</div>' + bars(bt, '#cfe9d8');
+            if (bt.length) html += rpH('뷰티') + chips(bt.map(([n, v]) => [n, v + '번']));
             const moods = mj.condition.filter(c => c.type === 'mood' && inM(c.date));
             if (moods.length) {
                 const cnt = {}; moods.forEach(c => { cnt[c.mood] = (cnt[c.mood] || 0) + 1; });
-                html += '<div class="rp-h">기분</div><div class="rp-cats">' + Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map(k => '<span>' + (MOOD_EMO[k] || k) + ' ' + cnt[k] + '</span>').join('') + '</div>';
+                html += rpH('기분') + chips(Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map(k => [MOOD_EMO[k] || k, cnt[k]]));
             }
             const meds = mj.condition.filter(c => c.type === 'medicine' && inM(c.date)).length;
-            if (meds) html += '<div class="rp-h">약</div><div class="rp-cats"><span>💊 ' + meds + '번</span></div>';
+            if (meds) html += rpH('약') + chips([['💊', meds + '번']]);
+            const yts = mj.library.filter(x => x.type === 'youtube' && inM(x.date)).length;
+            if (yts) html += rpH('YouTube') + chips([['본 영상', yts + '개']]);
         }
         if (R.tab === 'diary') {
             const ents = ext.mj.diary.filter(x => inM(x.date)).sort((a, b) => a.date < b.date ? -1 : 1);
             const days = uniq(ents.map(x => x.date));
             html += '<div class="rp-sum"><div><b>' + ents.length + '</b><small>쓴 일기</small></div><div><b>' + days.length + '일</b><small>쓴 날</small></div>' +
                 '<div><b>' + (db.days ? Object.keys(db.days).filter(k => inM(k) && db.days[k].photo).length : 0) + '</b><small>사진 붙인 날</small></div></div>';
-            html += '<div class="rp-h">쓴 날</div>' + heat(mk, k => ents.filter(x => x.date === k).length, '#b7d3ea');
-            if (ents.length) html += '<div class="rp-h">제목</div><div class="rp-list">' + ents.map(x => '<div><span>' + x.date.slice(8) + '일</span>' + esc(x.title || firstLine(x.body)) + '</div>').join('') + '</div>';
+            html += rpH('쓴 날') + heat(mk, k => ents.filter(x => x.date === k).length);
+            if (ents.length) html += rpH('제목') + '<div class="rp-list">' + ents.map(x => '<div><span>' + x.date.slice(8) + '일</span>' + esc(x.title || firstLine(x.body)) + '</div>').join('') + '</div>';
         }
         body.innerHTML = '<div class="dy-report">' +
             '<div class="dy-dnav"><button class="dy-rb round" data-a="rp-prev">' + ic('left') + '</button><div class="d">' + y + '년 ' + m + '월</div><button class="dy-rb round" data-a="rp-next">' + ic('right') + '</button></div>' +
@@ -968,7 +1137,7 @@ export function init() {
     const rowId = t => { const r = t.closest('[data-id]'); return r && r.dataset.id; };
     const inputOf = (t, win) => { const box = t.closest('.dy-add'); return box ? box.querySelector('input') : null; };
 
-    function listAct(kind, a, t, getList, label) {
+    async function listAct(kind, a, t, getList, label) {
         const id = rowId(t);
         if (a === 'add') {
             const inp = inputOf(t); const v = inp && inp.value.trim(); if (!v) { inp && inp.focus(); return; }
@@ -983,10 +1152,12 @@ export function init() {
         }
         if (a === 'edit') {
             const it = getList(db).find(x => x.id === id); if (!it) return;
-            const v = prompt('고치기', it.text); if (v == null || !v.trim()) return;
-            save(label + ' 고치기', d => { const x = getList(d).find(y => y.id === id); if (x) x.text = v.trim(); });
+            const f = await askForm(label + ' 고치기', [{ k: 'v', value: it.text, need: true }]); if (!f) return;
+            save(label + ' 고치기', d => { const x = getList(d).find(y => y.id === id); if (x) x.text = f.v; });
         }
         if (a === 'del') {
+            const it = getList(db).find(x => x.id === id);
+            if (it && !(await ask('"' + it.text + '" 을(를) 지울까요?', '지우기', true))) return;
             save(label + ' 지우기', d => { const L = getList(d); const i = L.findIndex(x => x.id === id); if (i > -1) L.splice(i, 1); });
         }
     }
@@ -1006,13 +1177,12 @@ export function init() {
             case 'month': V.m = +t.dataset.m; return render('diary');
             case 'oha-all': V.ohaAll = !V.ohaAll; return render('diary');
             case 'oha-birth': {
-                const v = prompt('생일 (예: 2002-04-11) — 김민정 프로필과 같이 바뀌어요', birthKey()); if (v == null) return;
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(v.trim())) return alert('2002-04-11 처럼 적어 주세요.');
-                const [by, bm, bd] = v.trim().split('-').map(Number);
+                const f = await askForm('생일 (김민정 프로필과 같이 바뀌어요)', [{ k: 'v', type: 'date', value: birthKey(), need: true }]); if (!f) return;
+                const [by, bm, bd] = f.v.split('-').map(Number);
                 return save('생일', null, null, { mj: d => setMjProf(d, '생년월일', by + '년 ' + bm + '월 ' + bd + '일') });
             }
             case 'mood': {
-                const v = prompt('이달의 한 줄', db.mood[mk] || ''); if (v == null) return;
+                const f = await askForm('이달의 한 줄', [{ k: 'v', value: db.mood[mk] || '' }]); if (!f) return; const v = f.v;
                 return save('이달의 한 줄', d => { if (v.trim()) d.mood[mk] = v.trim(); else delete d.mood[mk]; });
             }
             case 'day': return openDayCard(t.dataset.k);
@@ -1035,17 +1205,17 @@ export function init() {
                 return save('프로필 사진', d => { d.profile.photo = up.path; }, dropFile(old, up.files));
             }
             case 'prof-unphoto': {
-                const old = db.profile.photo; if (!old || !confirm('프로필 사진을 뺄까요?')) return;
+                const old = db.profile.photo; if (!old || !(await ask('프로필 사진을 뺄까요?', '빼기', true))) return;
                 return save('프로필 사진 빼기', d => { delete d.profile.photo; }, dropFile(old));
             }
             case 'prof-name': return openProfileCard();
-            case 'prof-note': { const v = prompt('한 줄 소개', db.profile.note || ''); if (v == null) return; return save('한 줄 소개', d => { d.profile.note = v.trim(); }); }
+            case 'prof-note': { const f = await askForm('한 줄 소개', [{ k: 'v', value: db.profile.note || '' }]); if (!f) return; const v = f.v; return save('한 줄 소개', d => { d.profile.note = v.trim(); }); }
             /* D-day */
             case 'dday-prev': V.dd--; return render('diary');
             case 'dday-next': V.dd++; return render('diary');
             case 'dday-add': {
-                const title = prompt('무슨 날이에요?'); if (!title || !title.trim()) return;
-                const date = prompt('날짜 (예: 2026-12-25)', todayKey()); if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) { if (date) alert('2026-12-25 처럼 적어 주세요.'); return; }
+                const f = await askForm('D-day', [{ k: 'title', label: '무슨 날', need: true }, { k: 'date', label: '날짜', type: 'date', value: todayKey(), need: true }], '추가'); if (!f) return;
+                const title = f.title, date = f.date;
                 const it = { id: uid(), title: title.trim(), date: date.trim() };
                 const sorted = db.ddays.concat([it]).sort((a, b) => a.date < b.date ? -1 : 1);
                 V.dd = sorted.findIndex(x => x.id === it.id);
@@ -1053,34 +1223,21 @@ export function init() {
             }
             case 'dday-edit': {
                 const id = rowId(t), it = db.ddays.find(x => x.id === id); if (!it) return;
-                const title = prompt('이름', it.title); if (title == null) return;
-                const date = prompt('날짜 (예: 2026-12-25)', it.date); if (date == null || !/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) return;
+                const f = await askForm('D-day 고치기', [{ k: 'title', label: '무슨 날', value: it.title, need: true }, { k: 'date', label: '날짜', type: 'date', value: it.date, need: true }]); if (!f) return;
+                const title = f.title, date = f.date;
                 return save('D-day 고치기', d => { const x = d.ddays.find(y => y.id === id); if (x) { x.title = title.trim() || x.title; x.date = date.trim(); } });
             }
             case 'dday-del': {
-                const id = rowId(t); if (!id || !confirm('이 D-day를 지울까요?')) return;
+                const id = rowId(t); if (!id || !(await ask('이 D-day를 지울까요?', '지우기', true))) return;
                 return save('D-day 지우기', d => { d.ddays = d.ddays.filter(x => x.id !== id); });
             }
             /* 음악 */
-            case 'mu-prev': V.mu--; V.playing = false; return render('diary');
-            case 'mu-next': V.mu++; V.playing = false; return render('diary');
-            case 'mu-play': {
-                const tr = db.music[V.mu]; if (!tr) return act(win, 'mu-add', t);
-                V.playing = !V.playing;
-                if (V.playing && safeUrl(tr.url)) window.open(safeUrl(tr.url), '_blank', 'noopener');
-                return render('diary');
-            }
-            case 'mu-add': {
-                const title = prompt('노래 제목'); if (!title || !title.trim()) return;
-                const url = prompt('링크 (유튜브 등, 없으면 비워 두기)', '') || '';
-                const it = { id: uid(), title: title.trim(), url: url.trim() };
-                V.mu = db.music.length;
-                return save('노래 추가', d => d.music.push(Object.assign({}, it)));
-            }
-            case 'mu-del': {
-                const tr = db.music[V.mu]; if (!tr || !confirm('"' + tr.title + '" 을(를) 뺄까요?')) return;
-                return save('노래 빼기', d => { d.music = d.music.filter(x => x.id !== tr.id); });
-            }
+            /* YouTube (김민정 Library와 같은 기록) */
+            case 'yt-prev': YT.i--; YT.on = null; return render('diary');
+            case 'yt-next': YT.i++; YT.on = null; return render('diary');
+            case 'yt-play': { const x = ytList(todayKey())[YT.i]; if (!x) return; if (!ytId(x.url)) return window.open(safeUrl(x.url), '_blank', 'noopener'); YT.on = x.id; return render('diary'); }
+            case 'yt-add': return ytForm(null);
+            case 'yt-list': return openYtList();
             /* 스티커 */
             case 'stk-small': case 'stk-big': case 'stk-rl': case 'stk-rr': case 'stk-flip': {
                 const id = V.sel; if (!id) return;
@@ -1112,7 +1269,7 @@ export function init() {
             }
             case 'stk-text': {
                 const id = V.sel, st = db.stickers.find(x => x.id === id); if (!st) return;
-                if (!BUBBLE[st.src]) return alert('말풍선 스티커에만 글을 쓸 수 있어요.');
+                if (!BUBBLE[st.src]) return toast('말풍선 스티커에만 글을 쓸 수 있어요');
                 return openTextCard(st.text, v => save('말풍선 글', d => { const t = d.stickers.find(x => x.id === id); if (t) t.text = v; }));
             }
             case 'stk-del': {
@@ -1147,8 +1304,8 @@ export function init() {
             }
             case 't-edit': {
                 const id = rowId(t), x0 = findTodo(ext.todos, id); if (!x0) return;
-                const v = prompt('고치기', x0.content); if (v == null || !v.trim()) return;
-                return save('할 일 고치기', null, null, { todos: L => { const x = findTodo(L, id); if (x) x.content = v.trim(); } });
+                const f = await askForm('할 일 고치기', [{ k: 'v', value: x0.content, need: true }]); if (!f) return;
+                return save('할 일 고치기', null, null, { todos: L => { const x = findTodo(L, id); if (x) x.content = f.v; } });
             }
             case 't-up': {
                 const id = rowId(t), list = todosFor(V.tDate), i = list.findIndex(x => String(x.id) === String(id));
@@ -1157,12 +1314,12 @@ export function init() {
                 return save('할 일 순서', null, null, { todos: L => { const x = findTodo(L, a1), y = findTodo(L, a2); if (x && y) { x.sort_order = s2; y.sort_order = s1 === s2 ? s2 + 1 : s1; } } });
             }
             case 't-del': {
-                const id = rowId(t), x0 = findTodo(ext.todos, id); if (!x0 || !confirm('"' + x0.content + '" 을(를) 지울까요?')) return;
+                const id = rowId(t), x0 = findTodo(ext.todos, id); if (!x0 || !(await ask('"' + x0.content + '" 을(를) 지울까요?', '지우기', true))) return;
                 return save('할 일 지우기', null, null, { todos: L => { const i = L.findIndex(x => String(x.id) === String(id)); if (i > -1) L.splice(i, 1); } });
             }
             case 't-carry': {
                 const k = V.tDate, tk = todayKey(), move = todosFor(k).filter(x => !x.is_completed && x.target_date === k).map(x => x.id);
-                if (!move.length || !confirm('못 한 일 ' + move.length + '개를 오늘로 옮길까요?')) return;
+                if (!move.length || !(await ask('못 한 일 ' + move.length + '개를 오늘로 옮길까요?', '옮기기'))) return;
                 V.tDate = tk;
                 return save('할 일 오늘로 옮기기', null, null, { todos: L => { move.forEach(id => { const x = findTodo(L, id); if (x) x.target_date = tk; }); } });
             }
@@ -1172,6 +1329,8 @@ export function init() {
             case 'r-img': return openReceiptImgCard();
             case 'rp-prev': case 'rp-next': { const [ry, rm] = R.m.split('-').map(Number), dd = new Date(ry, rm - 1 + (a === 'rp-next' ? 1 : -1), 1); R.m = dd.getFullYear() + '-' + pad(dd.getMonth() + 1); return render('report'); }
             case 'rp-tab': R.tab = t.dataset.k; return render('report');
+            case 'rp-q': { const id = t.dataset.k; if (R.open[id]) delete R.open[id]; else R.open[id] = 1; return render('report'); }
+            case 'rp-fold': R.open = {}; return render('report');
             /* 메모 */
             case 'memo-save': { const ta = document.getElementById('dy-memo-ta'); if (ta) { clearTimeout(memoTimer); saveMemo(ta.value); } return; }
         }
@@ -1182,8 +1341,8 @@ export function init() {
        ========================================================================== */
     let cardGuard = null;           // 저장 안 한 내용이 있으면 닫기 전에 물어봄
     function openCard(fn) { cardGuard = null; cardFn = fn; fn(); modal.classList.add('on'); }
-    function closeCard(force) {
-        if (force !== true && cardGuard && cardGuard() && !confirm('저장하지 않고 닫을까요?')) return;
+    async function closeCard(force) {
+        if (force !== true && cardGuard && cardGuard() && !(await ask('저장하지 않고 닫을까요?', '닫기', true))) return;
         cardGuard = null; cardFn = null; modal.classList.remove('on'); cardBox.innerHTML = '';
     }
     document.getElementById('dy-x').onclick = () => closeCard();
@@ -1258,7 +1417,7 @@ export function init() {
         }
         function commit() {
             const day = clone(dr);
-            if (day.link && !safeUrl(day.link)) return alert('링크는 http:// 또는 https:// 로 시작해야 해요.');
+            if (day.link && !safeUrl(day.link)) return toast('링크는 http:// 또는 https:// 로 시작해야 해요');
             if (day.events && !day.events.length) delete day.events;
             ['photo', 'sticker', 'link', 'color', 'memo'].forEach(f => { if (!day[f]) delete day[f]; });
             const empty = !Object.keys(day).length;
@@ -1300,9 +1459,9 @@ export function init() {
             if (a === 'ev-add') return addEv();
             if (a === 'ev-del') { const id = rowId(c); dr.events = (dr.events || []).filter(x => x.id !== id); return draw(); }
             if (a === 'ent-add') { ents.push({ id: 'dy' + uid(), title: '', body: '' }); draw(); const t = cardBox.querySelectorAll('[data-ent="body"]'); if (t.length) t[t.length - 1].focus(); return; }
-            if (a === 'ent-del') { const i = +c.closest('.dy-ent').dataset.i; if ((ents[i].title || ents[i].body) && !confirm('이 일기를 지울까요? (저장하면 김민정 Diary에서도 지워져요)')) return; ents.splice(i, 1); return draw(); }
+            if (a === 'ent-del') { const i = +c.closest('.dy-ent').dataset.i; if ((ents[i].title || ents[i].body) && !(await ask('이 일기를 지울까요?\n저장하면 김민정 Diary에서도 지워져요', '지우기', true))) return; ents.splice(i, 1); return draw(); }
             if (a === 'clear') {
-                if (!confirm('이 날의 사진, 스티커, 일정, 일기, 링크, 칸 색을 모두 비울까요? (저장을 눌러야 지워져요)')) return;
+                if (!(await ask('이 날의 사진, 스티커, 일정, 일기, 링크, 칸 색을 모두 비울까요?\n저장을 눌러야 지워져요', '비우기', true))) return;
                 Object.keys(dr).forEach(f => delete dr[f]); ents = []; return draw();
             }
         };
@@ -1414,8 +1573,8 @@ export function init() {
                 if (rm) {
                     e.stopPropagation();
                     const p = rm.dataset.rm;
-                    if (placedInMj(p)) return alert('김민정 방에 붙어 있는 스티커예요. 김민정에서 먼저 떼 주세요.');
-                    if (!confirm('이 스티커를 서랍에서 뺄까요? (다이어리에 붙인 것도 같이 떨어져요)')) return;
+                    if (placedInMj(p)) return toast('김민정 방에 붙어 있는 스티커예요 · 김민정에서 먼저 떼 주세요');
+                    if (!(await ask('이 스티커를 서랍에서 뺄까요?\n다이어리에 붙인 것도 같이 떨어져요', '빼기', true))) return;
                     save('내 스티커 빼기', d => {
                         d.myStickers = d.myStickers.filter(s => s.path !== p);
                         d.stickers = d.stickers.filter(s => s.src !== p);
@@ -1432,7 +1591,7 @@ export function init() {
                 if (a === 'close') return closeCard();
                 if (a === 'edit-mine') { editMine = !editMine; return draw(); }
                 if (a === 'reset') { save('처음 색으로', d => { d.theme = { pattern: 'heart' }; }); applyTheme(); return draw(); }
-                if (a === 'clear-stk') { if (!confirm('다이어리에 붙인 스티커를 모두 뗄까요?')) return; V.sel = null; save('스티커 모두 떼기', d => { d.stickers = []; }); return draw(); }
+                if (a === 'clear-stk') { if (!(await ask('다이어리에 붙인 스티커를 모두 뗄까요?', '떼기', true))) return; V.sel = null; save('스티커 모두 떼기', d => { d.stickers = []; }); return draw(); }
                 if (a === 'add-stk') {
                     const up = await uploadImage('stickers', 480, true); if (!up) return;
                     save('내 스티커 넣기', null, up.files, { mj: d => { d.settings.sticker_lib = uniq((d.settings.sticker_lib || []).concat([up.path])); } });
@@ -1477,6 +1636,8 @@ export function init() {
         if (b.dataset.m === 'reload') load();
     }));
     on(window, 'keydown', e => {
+        const ak = askOpen();
+        if (ak) { if (e.key === 'Escape' && ak.dy) ak.dy.esc(); return; }
         if (e.key === 'Escape' && modal.classList.contains('on')) return closeCard();
         if ((e.key === 'Delete' || e.key === 'Backspace') && V.sel && V.deco && !stkOff() && !modal.classList.contains('on') && !e.target.matches('input, textarea')) {
             e.preventDefault(); act('diary', 'stk-del');
