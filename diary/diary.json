@@ -2,7 +2,20 @@
  "profile": {},
  "mood": {},
  "goals": {},
- "days": {},
+ "days": {
+  "2026-11-22": {
+   "memo": "다이어리 카테고리 좆뺑이치다",
+   "events": [
+    {
+     "id": "mwrhrzaz1nl4",
+     "text": "ㄴㄴㄴ"
+    }
+   ]
+  },
+  "2026-11-21": {
+   "memo": "김민정 카테고리 좆뱅이 치다"
+  }
+ },
  "todos": {},
  "theme": {
   "preset": "sky"
@@ -19,5 +32,5 @@
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-22T15:55:35+09:00"
+ "updated_at": "2026-11-22T16:04:51+09:00"
 }
