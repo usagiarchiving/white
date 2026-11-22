@@ -527,3 +527,17 @@
 .mj-stk-lib { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 10px; max-height: 220px; overflow-y: auto; }
 .mj-stk-lib button { aspect-ratio: 1; border: 1px solid var(--mj-line); background: var(--mj-soft); border-radius: 4px; padding: 4px; cursor: pointer; }
 .mj-stk-lib button img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+/* 화면 안 팝업 (알림·확인·입력) — 화면 가운데 */
+.mj-dlg-bg { position: fixed; inset: 0; z-index: 200000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(255, 245, 248, .45); }
+.mj-dlg {
+    width: min(300px, 100%); padding: 14px 14px 12px; background: #fffdfd; border: 1px solid var(--mj-line); border-radius: 4px;
+    box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--mj-ring), 0 12px 30px rgba(150, 100, 115, .22); animation: mjPop .14s ease-out;
+    font-family: 'Galmuri11', sans-serif; font-size: 12px; color: var(--mj-ink);
+}
+.mj-dlg-t { font-weight: 700; margin-bottom: 8px; }
+.mj-dlg-m { line-height: 1.7; word-break: keep-all; overflow-wrap: anywhere; }
+.mj-dlg-in { width: 100%; box-sizing: border-box; border: 1px solid var(--mj-line); border-radius: 2px; background: var(--mj-paper); padding: 7px 8px; font-family: inherit; font-size: 12px; color: var(--mj-ink); outline: none; }
+.mj-dlg-in:focus { border-color: var(--mj-pink); background: #fff; }
+.mj-dlg-h { margin-top: 5px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+.mj-dlg .mj-btns { margin-top: 12px; }

@@ -189,6 +189,41 @@ function shrink(file, max, type, q) {
 export function init() {
     const root = document.getElementById('mj-root');
     if (!root) return;
+
+    /* ---- 화면 안 팝업 (브라우저 기본 alert·confirm·prompt 대신) — 항상 화면 가운데 ---- */
+    function mjDialog({ title, msg, input, value, ok, cancel, hint }) {
+        return new Promise(resolve => {
+            const bg = document.createElement('div');
+            bg.className = 'mj-dlg-bg';
+            bg.innerHTML = `
+                <div class="mj-dlg" role="dialog">
+                    ${title ? `<div class="mj-dlg-t">${esc(title)}</div>` : ''}
+                    ${msg ? `<div class="mj-dlg-m">${nl(msg)}</div>` : ''}
+                    ${input ? `<input class="mj-dlg-in" value="${esc(value || '')}">${hint ? `<div class="mj-dlg-h">${esc(hint)}</div>` : ''}` : ''}
+                    <div class="mj-btns"><span class="sp"></span>
+                        ${cancel ? `<button class="mj-btn ghost" data-r="no">${esc(cancel)}</button>` : ''}
+                        <button class="mj-btn" data-r="yes">${esc(ok || 'OK')}</button>
+                    </div>
+                </div>`;
+            root.appendChild(bg);
+            const inp = bg.querySelector('.mj-dlg-in');
+            const done = r => { bg.remove(); document.removeEventListener('keydown', key, true); resolve(r); };
+            const key = e => {
+                if (e.key === 'Escape') { e.preventDefault(); done(input ? null : false); }
+                if (e.key === 'Enter' && (!inp || document.activeElement === inp)) { e.preventDefault(); done(input ? inp.value : true); }
+            };
+            document.addEventListener('keydown', key, true);
+            bg.addEventListener('click', e => {
+                const b = e.target.closest('[data-r]');
+                if (b) done(b.dataset.r === 'yes' ? (input ? inp.value : true) : (input ? null : false));
+                else if (e.target === bg && cancel) done(input ? null : false);
+            });
+            setTimeout(() => (inp || bg.querySelector('[data-r=yes]')).focus(), 30);
+        });
+    }
+    const mjAlert = msg => mjDialog({ msg, ok: 'OK' });
+    const mjConfirm = (msg, ok) => mjDialog({ msg, ok: ok || 'OK', cancel: 'Cancel' });
+    const mjPrompt = (title, value, hint) => mjDialog({ title, input: true, value, hint, ok: 'Save', cancel: 'Cancel' });
     const repo = window.ghdb.repo();
     const todoDb = window.ghdb.createClient(TODO_URL);
     const $ = id => document.getElementById(id);
@@ -226,7 +261,7 @@ export function init() {
     function save(message, fn, files) {
         fn(db);
         redraw();
-        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); load(); return Promise.resolve(); }
+        if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); load(); return Promise.resolve(); }
         setPending(pending + 1);
         const j = {}; j[DATA] = { mutate: cur => { cur = normalize(cur); fn(cur); cur.updated_at = stamp(); return cur; }, fallback: {} };
         return repo.commit('김민정: ' + message, files || {}, j).then(res => {
@@ -234,7 +269,7 @@ export function init() {
             if (!pending && res && res[DATA]) { db = normalize(clone(res[DATA])); rememberRoom(); redraw(true); }
         }, e => {
             setPending(pending - 1);
-            alert('저장하지 못했어요.\n' + (e.message || e));
+            mjAlert('저장하지 못했어요.\n' + (e.message || e));
             load();
         });
     }
@@ -418,7 +453,7 @@ export function init() {
         return [...new Set((S().sticker_lib || []).concat(S().stickers.pc.map(t => t.img), S().stickers.mobile.map(t => t.img)))].filter(Boolean);
     }
     function addSticker() {
-        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
         const lib = stickerLib();
         if (!lib.length) return uploadSticker();
         const old = game.querySelector('.mj-ask'); if (old) old.remove();
@@ -445,7 +480,7 @@ export function init() {
                 edit.files[path] = sha;
                 edit.stickers.push({ id: uid('st'), img: path, x: 50, y: 40, w: 28 });
                 drawStickers();
-            } catch (e) { alert('스티커를 올리지 못했어요.\n' + (e.message || e)); }
+            } catch (e) { mjAlert('스티커를 올리지 못했어요.\n' + (e.message || e)); }
         });
     }
     // 끌기: 캐릭터는 좌우만, 스티커는 어디든. 모서리 점은 크기
@@ -479,18 +514,18 @@ export function init() {
 
     /* ---- 캐릭터 그림 바꾸기 (배경이 투명한 PNG 추천) ---- */
     async function changeChar(file) {
-        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
         try {
             toast('uploading…');
             const { path, sha } = await uploadImage(file, 'character', 1600, 'image/png');
             const old = S().character, files = {}; files[path] = sha;
             if (old && old.startsWith(IMG_DIR)) files[old] = null;
             save('캐릭터 그림', d => { d.settings.character = path; }, files);
-        } catch (e) { alert('그림을 올리지 못했어요.\n' + (e.message || e)); }
+        } catch (e) { mjAlert('그림을 올리지 못했어요.\n' + (e.message || e)); }
     }
     /* ---- 배경 목록 (Backgrounds 창) ---- */
     async function setBgImage(i, which, file) {
-        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
         try {
             toast('uploading…');
             const { path, sha } = await uploadImage(file, 'room', 2000, 'image/jpeg');
@@ -504,12 +539,12 @@ export function init() {
             const usedElsewhere = list.some((b, j) => ['mobile', 'pc'].some(w => !(j === i && w === which) && b[w] === old));
             if (old && old.startsWith(IMG_DIR) && !usedElsewhere) files[old] = null;
             save('배경 ' + which, d => { const b = d.settings.backgrounds.find(x => x.id === id); if (b) b[which] = path; }, files);
-        } catch (e) { alert('배경을 올리지 못했어요.\n' + (e.message || e)); }
+        } catch (e) { mjAlert('배경을 올리지 못했어요.\n' + (e.message || e)); }
     }
-    function delBg(i) {
+    async function delBg(i) {
         const list = bgList();
-        if (list.length <= 1) { alert('배경은 하나는 남겨 둬야 해요.'); return; }
-        if (!confirm('이 배경을 지울까요?')) return;
+        if (list.length <= 1) { mjAlert('배경은 하나는 남겨 둬야 해요.'); return; }
+        if (!await mjConfirm('이 배경을 지울까요?', 'Delete')) return;
         const b = list[i], files = {};
         [b.mobile, b.pc].forEach(p => {
             if (p && p.startsWith(IMG_DIR) && !list.some((x, j) => j !== i && (x.mobile === p || x.pc === p))) files[p] = null;
@@ -774,16 +809,16 @@ export function init() {
             ${id === 'daily' ? `<label class="tabchk"><input type="checkbox" data-k="tab" ${r.tab !== false ? 'checked' : ''}>tab</label>` : '<span></span>'}
             <div class="mj-pf-tools"><button data-act="pup">▲</button><button data-act="pdown">▼</button><button data-act="le-del">✕</button></div>
         </div>`;
-    function saveListEdit(id, el) {
+    async function saveListEdit(id, el) {
         const rows = [...el.querySelectorAll('.mj-le-row')].map(r => ({
             key: r.dataset.key || uid('c'), label: r.querySelector('[data-k=label]').value.trim(),
             tab: r.querySelector('[data-k=tab]') ? r.querySelector('[data-k=tab]').checked : undefined
         })).filter(r => r.label);
-        if (!rows.length) { alert('하나는 남겨 둬야 해요.'); return; }
+        if (!rows.length) { mjAlert('하나는 남겨 둬야 해요.'); return; }
         const list = id === 'library' ? 'lib_types' : 'beauty_slots';
         const records = id === 'library' ? db.library : db.beauty, field = id === 'library' ? 'type' : 'slot';
         const gone = S()[list].filter(o => !rows.some(r => r.key === o.key) && records.some(x => x[field] === o.key));
-        if (gone.length && !confirm(gone.map(o => o.label).join(', ') + ' 에 쓴 기록은 지워지지 않고 All에서 계속 보여요. 저장할까요?')) return;
+        if (gone.length && !await mjConfirm(gone.map(o => o.label).join(', ') + ' 에 쓴 기록은 지워지지 않고 All에서 계속 보여요. 저장할까요?', 'Save')) return;
         wins[id].st.listedit = false;
         wins[id].st.tab = tabsOf(id)[0];
         if (id === 'daily') wins[id].st.sub = 'all';
@@ -929,26 +964,24 @@ export function init() {
                     box.innerHTML = Array.from({ length: 5 }, (_, i) => `<button data-act="heart" data-v="${i + 1}">${pixelHeart(i < nv)}</button>`).join('');
                     break;
                 }
-                case 'add-tag': {
-                    const t = (prompt('새 증상 태그') || '').trim();
-                    if (!t || db.symptom_tags.includes(t)) break;
-                    const box = el.querySelector('[data-multi="tags"]');
+                case 'add-tag': (async () => {
+                    const t = ((await mjPrompt('New tag', '')) || '').trim();
+                    if (!t || db.symptom_tags.includes(t)) return;
+                    const box = el.querySelector('[data-multi="tags"]'); if (!box) return;
                     const chip = document.createElement('button');
                     chip.className = 'mj-chip on'; chip.dataset.act = 'chip'; chip.dataset.v = t; chip.textContent = t;
                     box.insertBefore(chip, b);
                     keepForm(id);
                     save('Symptom 태그 ' + t, d => { if (!d.symptom_tags.includes(t)) d.symptom_tags.push(t); });
-                    break;
-                }
-                case 'steps': {
+                })(); break;
+                case 'steps': (async () => {
                     const slot = (st.form && st.form.slot) || (st.sub === 'all' ? 'morning' : st.sub);
-                    const t = prompt(label(beautySlots(), slot) + ' 루틴 단계 (쉼표로 구분)', db.beauty_steps[slot].join(', '));
-                    if (t == null) break;
+                    const t = await mjPrompt(label(beautySlots(), slot) + ' routine', db.beauty_steps[slot].join(', '), '쉼표(,)로 나눠 적어요');
+                    if (t == null) return;
                     const steps = t.split(',').map(s => s.trim()).filter(Boolean);
                     keepForm(id);
                     save('Beauty ' + label(beautySlots(), slot) + ' 루틴', d => { d.beauty_steps[slot] = steps; });
-                    break;
-                }
+                })(); break;
                 // 프로필 고치기
                 case 'pedit': st.pedit = true; fresh(); break;
                 case 'pcancel': st.pedit = false; fresh(); break;
@@ -1059,14 +1092,14 @@ export function init() {
         fileIn.click();
     }
     async function setIcon(id, file, title) {
-        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
         try {
             toast('uploading…');
             const { path, sha } = await uploadImage(file, 'icons', 256, 'image/png');
             const old = db.icons[id];
             const files = {}; files[path] = sha; if (old) files[old] = null;
             save(title + ' 아이콘', d => { d.icons[id] = path; }, files);
-        } catch (e) { alert('아이콘을 올리지 못했어요.\n' + (e.message || e)); }
+        } catch (e) { mjAlert('아이콘을 올리지 못했어요.\n' + (e.message || e)); }
     }
 
     /* ---------------- 폼 ---------------- */
@@ -1145,7 +1178,7 @@ export function init() {
             if (item.v == null) item.v = 0;
             msg = 'HP ' + when + ' ♥' + item.v;
         } else if (id === 'lines') {
-            if (!f.text) { alert('대사를 적어 주세요.'); return; }
+            if (!f.text) { mjAlert('대사를 적어 주세요.'); return; }
             item = Object.assign(base, { text: f.text });
             msg = '대사 ' + when;
         } else if (id === 'library') {
@@ -1156,13 +1189,13 @@ export function init() {
                     try { const r = await fetch(u + encodeURIComponent(f.url)); if (r.ok) { const j = await r.json(); if (j.title) { f.title = j.title; if (!f.creator && j.author_name) f.creator = j.author_name; break; } } } catch (e) {}
                 }
             }
-            if (!f.title) { alert('제목을 적어 주세요.'); return; }
+            if (!f.title) { mjAlert('제목을 적어 주세요.'); return; }
             const files = {}, old = st.form.id ? db.library.find(x => x.id === st.form.id) : null;
             let cover = st.form.cover || '';
             if (st.form.coverFile) {
-                if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+                if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
                 try { const up = await uploadImage(st.form.coverFile, 'covers', 900, 'image/jpeg'); files[up.path] = up.sha; cover = up.path; }
-                catch (e) { alert('표지를 올리지 못했어요.\n' + (e.message || e)); return; }
+                catch (e) { mjAlert('표지를 올리지 못했어요.\n' + (e.message || e)); return; }
             }
             if (old && old.cover && old.cover !== cover && old.cover.startsWith(IMG_DIR)) files[old.cover] = null;
             const tags = (f.tags || '').split(/[\s,]+/).map(t => t.replace(/^#/, '').trim()).filter(Boolean);
@@ -1178,8 +1211,8 @@ export function init() {
                 : type === 'medicine' ? { name: f.name, memo: f.memo }
                 : type === 'symptom' ? { tags: f.tags, level: Number(f.level) || undefined, memo: f.memo }
                 : { mood: f.mood, memo: f.memo };
-            if (type === 'medicine' && !f.name) { alert('약 이름을 적어 주세요.'); return; }
-            if (type === 'mood' && !f.mood) { alert('기분을 골라 주세요.'); return; }
+            if (type === 'medicine' && !f.name) { mjAlert('약 이름을 적어 주세요.'); return; }
+            if (type === 'mood' && !f.mood) { mjAlert('기분을 골라 주세요.'); return; }
             const oldC = st.form.id ? db.condition.find(x => x.id === st.form.id) : null;
             if (oldC && oldC.imgs) extra.imgs = oldC.imgs;
             if (oldC && oldC.from) extra.from = oldC.from;
@@ -1196,7 +1229,7 @@ export function init() {
             const old = st.form.id ? db.outfit.find(x => x.id === st.form.id) : null;
             let img = old ? old.img : '';
             if (st.form.file) {
-                if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+                if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
                 const btn = box.querySelector('[data-act=save]');
                 btn.disabled = true; btn.textContent = 'Uploading…';
                 try {
@@ -1204,9 +1237,9 @@ export function init() {
                     files[up.path] = up.sha;
                     if (img) files[img] = null;
                     img = up.path;
-                } catch (e) { alert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return; }
+                } catch (e) { mjAlert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return; }
             }
-            if (!img) { alert('사진을 골라 주세요.'); return; }
+            if (!img) { mjAlert('사진을 골라 주세요.'); return; }
             item = tidy(Object.assign(base, { img, memo: f.memo }));
             st.form = null;
             upsert('outfit', item, msg, files);
@@ -1215,17 +1248,17 @@ export function init() {
             let body = diaryText(box.querySelector('.mj-dedit'));
             const add = st.form.addFiles || [];
             const used = [...body.matchAll(/^!\[\]\(new:(\d+)\)$/gm)].map(m => Number(m[1]));
-            if (!f.title && !body) { alert('내용을 적어 주세요.'); return; }
+            if (!f.title && !body) { mjAlert('내용을 적어 주세요.'); return; }
             const files = {};
             if (used.length) {
-                if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+                if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
                 const btn = box.querySelector('[data-act=save]'); btn.disabled = true; btn.textContent = 'Uploading…';
                 try {
                     for (const k of used) {
                         const up = await uploadImage(add[k], 'diary', 1600, 'image/jpeg'); files[up.path] = up.sha;
                         body = body.replace('![](new:' + k + ')', '![](' + up.path + ')');
                     }
-                } catch (e) { alert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return; }
+                } catch (e) { mjAlert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return; }
             }
             const imgs = [...body.matchAll(/^!\[\]\((.+)\)$/gm)].map(m => m[1]);
             const old = st.form.id ? db.diary.find(x => x.id === st.form.id) : null;
@@ -1242,9 +1275,9 @@ export function init() {
         st.form = (id === 'hp' || id === 'lines') ? {} : null;
         upsert(list, item, msg);
     }
-    function delItem(id, st) {
+    async function delItem(id, st) {
         const list = listOf(id, st), it = st.form;
-        if (!it || !it.id || !confirm('지울까요?')) return;
+        if (!it || !it.id || !await mjConfirm('이 기록을 지울까요?', 'Delete')) return;
         const files = {};
         if (list === 'outfit' && it.img) files[it.img] = null;
         if (list === 'library' && it.cover && it.cover.startsWith(IMG_DIR)) files[it.cover] = null;
@@ -1619,13 +1652,13 @@ export function init() {
     async function toggleTodo(tid) {
         const x = (todos || []).find(t => t.id === tid);
         if (!x) return;
-        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
         x.is_completed = !x.is_completed;
         x.completed_date = x.is_completed ? todayKey() : null;
         if (Array.isArray(x.subtasks)) x.subtasks.forEach(s => { s.is_completed = x.is_completed; });
         renderWin('diary');
         const { error } = await todoDb.from('todos').update({ is_completed: x.is_completed, completed_date: x.completed_date, subtasks: x.subtasks }).eq('id', tid);
-        if (error) { alert('투두를 저장하지 못했어요.\n' + (error.message || error)); todos = null; loadTodos(); }
+        if (error) { mjAlert('투두를 저장하지 못했어요.\n' + (error.message || error)); todos = null; loadTodos(); }
     }
 
     /* ---------------- 시작 ---------------- */
