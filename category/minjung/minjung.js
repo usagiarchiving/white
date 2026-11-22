@@ -316,8 +316,13 @@ export function init() {
             bgIdx = night && bi >= 0 ? bi : 0;
         }
         bgIdx = Math.min(bgIdx, list.length - 1);
-        $('mj-bgs').innerHTML = list.map(b => { const p = bgSrc(b); return `<div class="mj-bg mj-bg-${esc(b.id)}">${p ? imgTag(p, 'mj-bg-img') : ''}</div>`; }).join('');
-        $('mj-bgs').style.transform = `translateX(${-bgIdx * 100}%)`;
+        const box = $('mj-bgs');
+        box.innerHTML = list.map(b => { const p = bgSrc(b); return `<div class="mj-bg mj-bg-${esc(b.id)}">${p ? imgTag(p, 'mj-bg-img').replace(' loading="lazy"', '') : ''}</div>`; }).join('');
+        // 처음 그릴 때·다시 그릴 때는 넘기는 움직임 없이 바로 그 배경 (밀어서 넘길 때만 움직임)
+        box.style.transition = 'none';
+        box.style.transform = `translateX(${-bgIdx * 100}%)`;
+        void box.offsetWidth;
+        requestAnimationFrame(() => requestAnimationFrame(() => { box.style.transition = ''; }));
     }
     function goBg(i) {
         const n = bgList().length;
