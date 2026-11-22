@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T19:41:58+09:00",
+ "updated_at": "2026-11-22T19:44:19+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -1168,6 +1168,20 @@
     "key": "shower",
     "label": "Shower",
     "tab": false
+   }
+  ],
+  "med_list": [
+   {
+    "key": "비타민C",
+    "label": "비타민C"
+   },
+   {
+    "key": "마그네슘",
+    "label": "마그네슘"
+   },
+   {
+    "key": "다쿠아프리",
+    "label": "다쿠아프리"
    }
   ]
  },
