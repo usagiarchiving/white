@@ -23,11 +23,17 @@
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-23T03:09:24+09:00",
+ "updated_at": "2026-11-23T03:28:51+09:00",
  "view": {
   "stk_off": {
    "pc": false,
    "mobile": false
+  }
+ },
+ "apps": {
+  "deco": {
+   "name": "타임테이블",
+   "icon": "diary/photos/2026-11-23-mws67h6z4fu6.jpg"
   }
  }
 }
