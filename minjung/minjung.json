@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T17:54:46+09:00",
+ "updated_at": "2026-11-22T17:54:52+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -1001,7 +1001,8 @@
  ],
  "symptom_tags": [
   "배아픔",
-  "두통"
+  "두통",
+  "배고픔"
  ],
  "beauty_steps": {
   "morning": [
