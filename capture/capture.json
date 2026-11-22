@@ -1,37 +1,4 @@
 {
- "items": [
-  {
-   "id": "b6506ed293ea",
-   "taken_at": "2026-11-12T19:11:08",
-   "date_src": "file",
-   "path": "capture/images/2026/11/20261112-191108_b6506ed2.jpg",
-   "hash": "b6506ed293ea0da4f542c9f83645f84dda7f068d4b92a33c6a13b9d76c2b5efd",
-   "w": 1080,
-   "h": 1440,
-   "size": 788315,
-   "name": "SE-b3bf390d-7194-4504-9367-db571007f217.jpg",
-   "type": "image/jpeg",
-   "group": null,
-   "tags": [],
-   "fav": true,
-   "added_at": "2026-11-21T14:37:48"
-  },
-  {
-   "id": "1d4f3c039033",
-   "taken_at": "2026-11-12T19:11:24",
-   "date_src": "file",
-   "path": "capture/images/2026/11/20261112-191124_1d4f3c03.jpg",
-   "hash": "1d4f3c0390330e6e65d121147a364f95696ac78581274efbdb095548ce32b1aa",
-   "w": 1080,
-   "h": 1440,
-   "size": 831068,
-   "name": "SE-94403b4f-796b-4904-9097-3dd223ce5ab1.jpg",
-   "type": "image/jpeg",
-   "group": null,
-   "tags": [],
-   "fav": false,
-   "added_at": "2026-11-21T14:37:49"
-  }
- ],
+ "items": [],
  "groups": []
 }
