@@ -38,6 +38,15 @@ const OBJECTS = {
     bath:     { zone: '욕실', name: '화장실',     act: '화장실 청소',  emoji: '🛁' }
 };
 
+// 기본값 (카드에서 고친 이름/행동/도장/종류는 myhome.json의 custom에 저장되어 이 위에 덮어씀)
+const DEFAULT_OBJECTS = JSON.parse(JSON.stringify(OBJECTS));
+function applyCustom(custom) {
+    Object.keys(DEFAULT_OBJECTS).forEach(id => { OBJECTS[id] = Object.assign({}, DEFAULT_OBJECTS[id], (custom || {})[id] || {}); });
+}
+// Solar pen-2-linear (480 Design, CC BY 4.0)
+const PEN = '<svg viewBox="0 0 24 24" width="15" height="15"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M4 22H20"/><path d="M13.8881 3.66293L14.6296 2.92142C15.8581 1.69286 17.85 1.69286 19.0786 2.92142C20.3071 4.14999 20.3071 6.14188 19.0786 7.37044L18.3371 8.11195M13.8881 3.66293C13.8881 3.66293 13.9807 5.23862 15.3711 6.62894C16.7614 8.01926 18.3371 8.11195 18.3371 8.11195M13.8881 3.66293L7.07106 10.4799C6.60933 10.9416 6.37846 11.1725 6.17992 11.4271C5.94571 11.7273 5.74491 12.0522 5.58107 12.396C5.44219 12.6874 5.33894 12.9972 5.13245 13.6167L4.25745 16.2417M4.25745 16.2417L4.04356 16.8833C3.94194 17.1882 4.02128 17.5243 4.2485 17.7515C4.47573 17.9787 4.81182 18.0581 5.11667 17.9564L5.75834 17.7426L8.38334 16.8675C9.00282 16.6611 9.31256 16.5578 9.60398 16.4189C9.94775 16.2551 10.2727 16.0543 10.5729 15.8201C10.8275 15.6215 11.0584 15.3907 11.5201 14.9289L18.3371 8.11195M5.75834 17.7426L4.25745 16.2417"/></g></svg>';
+const EMOJI_PICKS = ['🫧', '🧽', '🍳', '🧺', '🧹', '🛁', '🚪', '👟', '📚', '🗂️', '🧊', '🍚', '🛏️', '🧴', '✏️', '👕', '💧', '🗑️', '♻️', '🌿', '☕', '💊', '🏃', '💤', '✨', '🎀', '🐰', '🍓'];
+
 // 부산광역시 동구
 const PLACE = { name: '부산 동구', lat: 35.1295, lon: 129.0454 };
 
@@ -927,6 +936,8 @@ export function init() {
         d.version = 1;
         d.place = PLACE.name;
         d.zones = ZONES;
+        d.custom = d.custom && typeof d.custom === 'object' ? d.custom : {};     // 카드에서 고친 이름/행동/도장/종류
+        applyCustom(d.custom);
         d.objects = JSON.parse(JSON.stringify(OBJECTS));
         d.notes = Array.isArray(d.notes) ? d.notes : [];     // 현관 메모: [{ id, title, date, body, at }]
         d.shopping = Array.isArray(d.shopping) ? d.shopping : [];   // 장바구니: [{ id, name, tag, done, at, done_at }]
@@ -1031,6 +1042,7 @@ export function init() {
 
     function drawCard() {
         if (card.id === 'notes') { drawNotes(); return; }
+        if (card.editing) { drawEdit(); return; }
         if (card.id === 'shop') { drawShop(); return; }
         const o = OBJECTS[card.id], y = card.y, m = card.m, t = todayKey();
         const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
@@ -1046,7 +1058,8 @@ export function init() {
         const sel = card.sel, sr = rec(card.id, sel) || {}, sn = countOf(card.id, sel), sd = new Date(sel + 'T00:00:00');
         const canStamp = sel <= t;
         cardEl.innerHTML =
-            '<div class="mh-head"><span class="mh-title"><b>' + esc(o.name) + '</b><span class="mh-act">' + o.emoji + ' ' + esc(o.act) + '</span></span></div>' +
+            '<div class="mh-head"><span class="mh-title"><b>' + esc(o.name) + '</b><span class="mh-act">' + o.emoji + ' ' + esc(o.act) + '</span></span>' +
+            '<button class="mh-edit" aria-label="카드 고치기">' + PEN + '</button></div>' +
             '<div class="mh-sub"><span class="mh-nav" data-nav="-1">‹</span><span>' + y + '.' + pad(m + 1) + '</span><span class="mh-nav" data-nav="1">›</span></div>' +
             '<div class="mh-grid">' + cells + '</div>' +
             (o.kinds ? '<div class="mh-kinds">' + o.kinds.map(kd => '<span class="mh-kind' + ((sr.items || []).includes(kd) ? ' on' : '') + (canStamp ? '' : ' off') + '" data-kind="' + esc(kd) + '">' + esc(kd) + '</span>').join('') + '</div>' : '') +
@@ -1153,6 +1166,45 @@ export function init() {
         });
         drawCard();
     }
+    /* ---------------- 카드 고치기: 이름 / 행동 / 도장 / 종류 ---------------- */
+    function drawEdit() {
+        const o = OBJECTS[card.id];
+        cardEl.innerHTML =
+            '<div class="mh-head"><span class="mh-title"><b>' + esc(o.name) + '</b></span></div>' +
+            '<label class="mh-f"><span>이름</span><input class="mh-e-name" value="' + esc(o.name) + '"></label>' +
+            '<label class="mh-f"><span>행동</span><input class="mh-e-act" value="' + esc(o.act) + '"></label>' +
+            '<label class="mh-f"><span>도장</span><input class="mh-e-emoji" value="' + esc(o.emoji) + '"></label>' +
+            '<div class="mh-picks">' + EMOJI_PICKS.map(e => '<span data-pick="' + e + '">' + e + '</span>').join('') + '</div>' +
+            (o.kinds ? '<label class="mh-f"><span>종류</span><input class="mh-e-kinds" value="' + esc(o.kinds.join(', ')) + '"></label>' : '') +
+            '<div class="mh-foot"><button class="mh-close mh-e-reset">처음대로</button>' +
+            '<span><button class="mh-close mh-e-cancel">취소</button><button class="mh-stamp on mh-e-save">저장</button></span></div>';
+    }
+    function editClick(e) {
+        const pick = e.target.closest('[data-pick]');
+        if (pick) { cardEl.querySelector('.mh-e-emoji').value = pick.dataset.pick; return true; }
+        if (e.target.closest('.mh-e-cancel')) { card.editing = false; drawCard(); return true; }
+        const id = card.id;
+        if (e.target.closest('.mh-e-reset')) {
+            if (!confirm('이 카드를 처음 이름과 도장으로 되돌릴까요?')) return true;
+            save('myhome: 카드 되돌리기 ' + DEFAULT_OBJECTS[id].name, d => { d.custom = d.custom || {}; delete d.custom[id]; });
+            applyCustom(db.custom); card.editing = false; drawCard(); drawList(); return true;
+        }
+        if (e.target.closest('.mh-e-save')) {
+            const v = c => (cardEl.querySelector(c) || {}).value;
+            const patch = { name: (v('.mh-e-name') || '').trim(), act: (v('.mh-e-act') || '').trim(), emoji: (v('.mh-e-emoji') || '').trim() };
+            if (OBJECTS[id].kinds) patch.kinds = (v('.mh-e-kinds') || '').split(',').map(x => x.trim()).filter(Boolean);
+            Object.keys(patch).forEach(k => { if (!patch[k] || (Array.isArray(patch[k]) && !patch[k].length)) delete patch[k]; });
+            // 기본값과 같은 건 빼고 저장
+            Object.keys(patch).forEach(k => { if (JSON.stringify(patch[k]) === JSON.stringify(DEFAULT_OBJECTS[id][k])) delete patch[k]; });
+            save('myhome: 카드 고치기 ' + (patch.name || OBJECTS[id].name), d => {
+                d.custom = d.custom || {};
+                if (Object.keys(patch).length) d.custom[id] = patch; else delete d.custom[id];
+            });
+            applyCustom(db.custom); card.editing = false; drawCard(); drawList(); return true;
+        }
+        return false;
+    }
+
     // 빨래 종류 고르기 (하루에 여러 개)
     function toggleKind(k, kind) {
         const id = card.id, on = !((rec(id, k) || {}).items || []).includes(kind);
@@ -1196,6 +1248,8 @@ export function init() {
             if (card.sel === k && !OBJECTS[card.id].kinds) addCount(k, 1); else { card.sel = k; drawCard(); }
             return;
         }
+        if (e.target.closest('.mh-edit')) { card.editing = true; drawCard(); return; }
+        if (card.editing) { editClick(e); return; }
         const kind = e.target.closest('[data-kind]');
         if (kind && card.sel <= todayKey()) { toggleKind(card.sel, kind.dataset.kind); return; }
         if (e.target.closest('.mh-plus')) { addCount(card.sel, 1); return; }

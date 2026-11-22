@@ -274,3 +274,18 @@ html:has(.mh-stage), body:has(.mh-stage) { overflow-x: hidden; }
 .mh-kind.on { background: var(--pink); border-color: var(--pink); color: #fff; }
 .mh-kind.on::before { content: '✓ '; font-size: 10px; }
 .mh-kind.off { opacity: .4; pointer-events: none; }
+
+/* 카드 고치기 */
+.mh-edit {
+    position: absolute; top: 12px; right: 42px; width: 26px; height: 26px; padding: 0; border: none; background: none;
+    color: var(--sub); border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.mh-edit:hover { background: var(--pink-soft); color: var(--pink-ink); }
+.mh-card .mh-head { padding-right: 60px; }
+.mh-f { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid #f6e9ec; }
+.mh-f span { flex: none; width: 34px; font-size: 11px; color: var(--sub); }
+.mh-f input { flex: 1; min-width: 0; border: none; background: transparent; outline: none; font-family: inherit; font-size: 13px; color: var(--ink); padding: 2px 0; }
+.mh-picks { display: flex; flex-wrap: wrap; gap: 2px; padding: 8px 0 4px 46px; }
+.mh-picks span { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; border-radius: 8px; cursor: pointer; }
+.mh-picks span:hover { background: var(--pink-soft); }
+.mh-e-reset { margin-left: 0; }
