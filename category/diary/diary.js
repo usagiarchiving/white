@@ -832,6 +832,12 @@ export function init() {
         if (V.qdate && V.qdate.slice(0, 7) === mk) return V.qdate;
         return todayKey().slice(0, 7) === mk ? todayKey() : mk + '-01';
     }
+    // ATracker에서 온 기록(캘린더 이름이 AT…, 또는 메모에 '(Hash ID:…)')은 타임테이블에서만, 직접 쓴 일정은 달력 일정으로도
+    const isAT = e => /^AT/i.test(e.cal || '') || /\(Hash ID:\s*\d+\)/i.test(e.note || '');
+    const cleanNote = n => String(n || '').replace(/\n?\(Hash ID:\s*\d+\)\s*$/i, '').trim();
+    const calDaily = k => (ext.cal.events || []).filter(e => !isAT(e) && e.date <= k && (e.endDate || e.date) >= k)
+        .sort((a, b) => (a.allDay ? '' : a.start || '') < (b.allDay ? '' : b.start || '') ? -1 : 1);
+    const calLabel = (e, k) => (!e.allDay && e.date === k && e.start ? e.start + ' ' : '') + (e.title || '');
     const firstLine = b => String(b || '').split('\n').map(l => l.trim()).filter(l => l && !/^!\[\]\(/.test(l))[0] || '';
     const diaryOf = k => ext.mj.diary.filter(x => x.date === k).sort((a, b) => (a.time || '') < (b.time || '') ? -1 : 1);
     function calendarHTML(mk) {
@@ -851,7 +857,7 @@ export function init() {
             const pic = day.photo || day.sticker;
             if (day.photo) inner += '<img class="ph" src="' + esc(src(day.photo)) + '" alt="" loading="lazy">';
             else if (day.sticker) inner += '<img class="st" src="' + esc(src(day.sticker)) + '" alt="" loading="lazy">';
-            const ev = day.events || [];
+            const ev = calDaily(k).map(e => ({ text: calLabel(e, k), cal: 1 })).concat(day.events || []);
             // 일정은 날짜 밑에 꾸밈 칩으로, 일기(김민정 Diary와 같은 기록)는 글만
             const diaryTx = diaryOf(k).map(x => x.title || firstLine(x.body)).concat(day.memo ? [day.memo] : []).filter(Boolean);
             if (!pic && (ev.length || diaryTx.length)) {
@@ -1284,7 +1290,7 @@ export function init() {
                     '<div><span>캘린더</span><b>' + esc(e.cal || '') + '</b></div>' +
                     (e.loc ? '<div><span>장소</span><b>' + esc(e.loc) + '</b></div>' : '') +
                     (safeUrl(e.url) ? '<div><span>링크</span><b><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.url) + '</a></b></div>' : '') +
-                    ((e.note || e.memo) ? '<div class="nt">' + esc(e.note || e.memo) + '</div>' : '') +
+                    (cleanNote(e.note || e.memo) ? '<div class="nt">' + esc(cleanNote(e.note || e.memo)) + '</div>' : '') +
                 '</div>' +
                 '<div class="foot">' + (e.src === 'me' ? '<button class="dy-rb" data-c="del">' + ic('x') + '<span class="lbl">지우기</span></button><span style="flex:1"></span><button class="dy-rb" data-c="edit">' + ic('pen') + '<span class="lbl">고치기</span></button>' : '<span style="flex:1"></span>') +
                 '<button class="dy-rb on" data-c="close">닫기</button></div>';
@@ -1952,7 +1958,8 @@ export function init() {
         cardGuard = () => sig() !== first;
 
         // 처음엔 보기 화면(일정 → 사진 → 일기), [편집]을 누르면 고치는 화면. 아무것도 없는 날은 바로 편집
-        let mode = (orig.events || []).length || orig.photo || orig.sticker || origE.length || orig.link ? 'view' : 'edit';
+        const synced = calDaily(k);          // 아이폰 캘린더에서 온 일정 (여기서는 보기만)
+        let mode = synced.length || (orig.events || []).length || orig.photo || orig.sticker || origE.length || orig.link ? 'view' : 'edit';
         let stkOpen = false;
         const title = '<h3><img src="' + CHAR['c-blue'] + '" alt="">' + (d0.getMonth() + 1) + '월 ' + d0.getDate() + '일 ' + WEEK_KO[d0.getDay()] + '요일</h3>';
         const bodyHtml = b => String(b || '').split('\n').map(l => { const m = /^!\[\]\((.+)\)$/.exec(l.trim()); return m ? '<img src="' + esc(src(m[1])) + '" alt="">' : '<div>' + (l ? esc(l) : '&nbsp;') + '</div>'; }).join('');
@@ -1960,7 +1967,8 @@ export function init() {
             const ev = dr.events || [];
             if (mode === 'view') {
                 cardBox.innerHTML = title +
-                    (ev.length ? '<div class="dv-ev">' + ev.map(e => '<span class="hl">' + esc(e.text) + '</span>').join('') + '</div>' : '') +
+                    (ev.length || synced.length ? '<div class="dv-ev">' + synced.map(e => '<button class="hl cal" data-c="cal-ev" data-id="' + esc(e.id) + '">' + esc(calLabel(e, k)) + '</button>').join('') +
+                        ev.map(e => '<span class="hl">' + esc(e.text) + '</span>').join('') + '</div>' : '') +
                     (dr.photo ? '<img class="dv-photo" src="' + esc(src(dr.photo)) + '" alt="">' : dr.sticker ? '<img class="dv-stk" src="' + esc(src(dr.sticker)) + '" alt="">' : '') +
                     ents.filter(e => e.title.trim() || e.body.trim()).map(e => '<div class="dv-ent">' + (e.title.trim() ? '<div class="t">' + esc(e.title) + '</div>' : '') + '<div class="b">' + bodyHtml(e.body) + '</div></div>').join('') +
                     (safeUrl(dr.link) ? '<a class="dv-link" href="' + esc(safeUrl(dr.link)) + '" target="_blank" rel="noopener">' + ic('out') + '<span>' + esc(dr.link) + '</span></a>' : '') +
@@ -1972,6 +1980,7 @@ export function init() {
                 '<div class="row" style="margin-top:8px"><button class="dy-rb" data-c="photo">' + ic('photo') + '<span class="lbl">사진 ' + (dr.photo ? '바꾸기' : '넣기') + '</span></button>' +
                     (dr.photo ? '<button class="dy-rb" data-c="unphoto">사진 빼기</button>' : '') + '</div>' +
                 '<div class="lb">일정</div>' +
+                (synced.length ? '<div class="dv-ev" style="margin-bottom:6px">' + synced.map(e => '<span class="hl cal" title="아이폰 캘린더에서 고쳐요">' + esc(calLabel(e, k)) + '</span>').join('') + '</div>' : '') +
                 '<div class="dy-add"><input class="dy-in" id="dy-ev-in"><button class="dy-rb round" data-c="ev-add" title="추가">' + ic('plus') + '</button></div>' +
                 (ev.length ? '<div class="dy-list">' + ev.map(e => '<div class="dy-li" data-id="' + esc(e.id) + '"><span class="tx">' + esc(e.text) + '</span><button class="dy-del" data-c="ev-del">' + ic('x') + '</button></div>').join('') + '</div>' : '') +
                 '<div class="lb" style="display:flex;justify-content:space-between;align-items:center">일기 <button class="dy-rb round" data-c="ent-add" title="일기 더 쓰기">' + ic('plus') + '</button></div>' +
@@ -2036,6 +2045,7 @@ export function init() {
             const st = e.target.closest('[data-st]'), col = e.target.closest('[data-color]'), c = e.target.closest('[data-c]');
             if (st) { dr.sticker = st.dataset.st; return draw(); }
             if (c && c.dataset.c === 'edit') { mode = 'edit'; return draw(); }
+            if (c && c.dataset.c === 'cal-ev') { await closeCard(); return ttDetail(c.dataset.id); }
             if (c && c.dataset.c === 'stk-fold') { stkOpen = !stkOpen; return draw(); }
             if (col) { dr.color = col.dataset.color; return draw(); }
             if (!c) return;

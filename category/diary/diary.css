@@ -829,3 +829,6 @@ textarea.dy-in { font-size: 11px; }
 .dy-lightbox img { max-width: 100%; max-height: calc(100% - 50px); object-fit: contain; border-radius: 6px; }
 .dy-lightbox .bar { display: flex; gap: 14px; }
 .dy-lightbox .bar a, .dy-lightbox .bar button { color: #fff; font-size: 12px; background: none; border: 1px solid rgba(255,255,255,.6); border-radius: 999px; padding: 4px 12px; text-decoration: none; }
+/* 아이폰 캘린더에서 온 일정 (누르면 자세히) */
+.dv-ev .hl.cal { border: 0; cursor: pointer; font-family: var(--dy-body); }
+.dv-ev .hl.cal::before { content: '◷ '; font-weight: 400; color: var(--dy-sub); }
