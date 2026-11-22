@@ -43,11 +43,13 @@
 /* ---------------- 게임 화면 ---------------- */
 .mj-game { position: relative; width: 100%; height: 100%; overflow: hidden; background: #f6f0f1; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .mj-bgs { position: absolute; inset: 0; display: flex; transition: transform .4s cubic-bezier(.3, .7, .3, 1); will-change: transform; }
-.mj-bg { flex: 0 0 100%; height: 100%; background-size: cover; background-position: center; }
-.mj-bg-bedroom { background-position: 38% center; }
+.mj-bg { flex: 0 0 100%; height: 100%; overflow: hidden; }
+.mj-bg-img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none; }
+.mj-bg-bedroom .mj-bg-img { object-position: 38% center; }
 .mj-char {
-    position: absolute; left: 50%; bottom: calc(58px + env(safe-area-inset-bottom)); height: 74%; max-width: 96%; object-fit: contain; object-position: bottom;
-    transform: translateX(-50%); pointer-events: none;
+    /* 위치(left)·높이(height)는 저장된 배치로 JS가 정함. 바닥에 딱 붙어서 아래 빈 공간 없음 */
+    position: absolute; left: 50%; bottom: 0; height: 80%; width: auto; max-width: none; object-fit: contain; object-position: bottom;
+    transform: translateX(-50%); pointer-events: none; -webkit-user-drag: none;
 }
 
 /* 왼쪽 위 날짜, 오른쪽 위 하트 */
@@ -65,7 +67,7 @@
 
 /* 배경 끔: 방 그림 대신 연한 핑크 바탕 + 작은 하트 무늬 */
 .mj-game { -webkit-touch-callout: none; }
-.mj-game.bg-off .mj-bgs { display: none; }
+.mj-game.bg-off .mj-bgs, .mj-game.bg-off .mj-char { display: none; }
 .mj-game.bg-off {
     background-color: #fdf3f6;
     background-image:
@@ -74,7 +76,40 @@
     background-size: 20px 20px, 100% 100%;
 }
 
-/* 꾹 눌렀을 때 묻는 창 */
+/* 스티커 */
+.mj-stickers { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.mj-stk { position: absolute; transform: translate(-50%, -50%); }
+.mj-stk img { width: 100%; height: auto; display: block; pointer-events: none; -webkit-user-drag: none; }
+
+/* 배치 편집 중 */
+.mj-game.editing .mj-dialog, .mj-game.editing .mj-nav, .mj-game.editing .mj-date, .mj-game.editing .mj-hp { opacity: .3; pointer-events: none; }
+.mj-game.editing .mj-char { pointer-events: auto; cursor: ew-resize; outline: 1px dashed rgba(236, 156, 180, .9); outline-offset: -1px; touch-action: none; }
+.mj-game.editing .mj-stk { pointer-events: auto; outline: 1px dashed var(--mj-deep); cursor: move; touch-action: none; }
+.mj-stk .del { position: absolute; top: -9px; right: -9px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--mj-line); background: #fff; color: var(--mj-deep); font-size: 10px; padding: 0; line-height: 1; }
+.mj-stk .rz { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; border-radius: 50%; background: var(--mj-tag); border: 2px solid #fff; cursor: nwse-resize; }
+.mj-edit-bar {
+    position: absolute; left: 8px; right: 8px; top: 8px; z-index: 30; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;
+    background: rgba(255, 253, 253, .95); border: 1px solid var(--mj-line); border-radius: 4px;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--mj-ring), 0 6px 18px rgba(150, 100, 115, .16);
+}
+.mj-edit-bar .row { display: flex; align-items: center; gap: 8px; }
+.mj-edit-bar .sp { flex: 1; }
+.mj-edit-bar .size { display: flex; align-items: center; gap: 6px; flex: 1; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+.mj-edit-bar input[type=range] { flex: 1; accent-color: var(--mj-tag); }
+.mj-edit-bar .hint { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+@media (min-width: 744px) { .mj-edit-bar { left: 50%; right: auto; width: 420px; transform: translateX(-50%); } }
+
+/* 배경 목록 창 */
+.mj-bglist { display: flex; flex-direction: column; gap: 8px; }
+.mj-bgrow { display: flex; align-items: center; gap: 8px; }
+.mj-bgrow .n { width: 16px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+.mj-bgrow .th { position: relative; padding: 0; border: 1px solid var(--mj-line); background: var(--mj-soft); border-radius: 2px; overflow: hidden; }
+.mj-bgrow .th.m { width: 54px; aspect-ratio: 9 / 16; }
+.mj-bgrow .th.p { width: 120px; aspect-ratio: 16 / 10; }
+.mj-bgrow .th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mj-bgrow .th em { position: absolute; left: 3px; bottom: 2px; font-style: normal; font-family: 'Galmuri9', sans-serif; font-size: 9px; color: #fff; text-shadow: 0 0 3px rgba(120, 90, 100, .8); }
+
+/* 꾹 눌렀을 때 뜨는 창 */
 .mj-ask { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(255, 245, 248, .35); }
 .mj-ask-card {
     width: min(280px, 82%); padding: 14px 14px 12px; background: #fffdfd; border: 1px solid var(--mj-line); border-radius: 4px;
@@ -82,6 +117,11 @@
 }
 .mj-ask-t { font-weight: 700; margin-bottom: 4px; }
 .mj-ask-s { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); line-height: 1.6; }
+.mj-ask-list { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.mj-ask-list button { border: 1px solid var(--mj-line); background: #fff; padding: 8px 10px; border-radius: 2px; text-align: left; }
+.mj-ask-list button:active, .mj-ask-list button:hover { background: var(--mj-on); }
+.mj-ask-list button.main { background: var(--mj-tag); border-color: var(--mj-tag); color: #fff; font-weight: 700; text-align: center; text-shadow: 0 1px 0 rgba(214, 120, 150, .45); }
+.mj-ask-list button.ghost { border: 0; background: none; color: var(--mj-sub); text-align: center; }
 
 /* 미연시 대사창 */
 .mj-dialog {
@@ -302,7 +342,6 @@
 .mj-dots3 { display: none; }
 @media (min-width: 744px) {
     .mj-frame { z-index: 1; }
-    .mj-char { bottom: 0; height: 88%; }
     .mj-dialog { left: 50%; right: auto; transform: translateX(-50%); width: min(760px, 64%); bottom: 20px; min-height: 82px; }
     .mj-nav { display: none; }
     .mj-date { top: 14px; left: 14px; }

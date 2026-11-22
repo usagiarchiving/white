@@ -124,9 +124,30 @@
 
 To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대로 읽고 체크해요.
 
-## 설정
+## 설정 (첫 화면 꾸미기)
 
-`settings` — `{ "bg_off": true }` 이면 첫 화면 방 배경을 끈 상태 (배경을 꾹 누르면 켜고 끔).
+`settings` — 첫 화면 배경을 **꾹 누르면** 나오는 Room 메뉴에서 바꿔요.
+
+```json
+"settings": {
+  "bg_off": false,
+  "backgrounds": [ { "id": "living", "mobile": "minjung/assets/living-mobile.webp", "pc": "minjung/assets/living-pc.webp" } ],
+  "character": "minjung/assets/character.webp",
+  "layout":   { "mobile": { "x": 50, "h": 80 }, "pc": { "x": 50, "h": 90 } },
+  "stickers": { "mobile": [ { "id": "st...", "img": "minjung/images/stickers/....png", "x": 30, "y": 24, "w": 28 } ], "pc": [] }
+}
+```
+
+| 필드 | 뜻 |
+| --- | --- |
+| `bg_off` | `true`면 방 그림과 캐릭터를 끄고 점무늬 바탕 + 스티커만 보임 |
+| `backgrounds` | 옆으로 밀어 넘기는 배경 순서. 모바일용·PC용 그림 따로 (`id`가 `bedroom`이면 밤에 그걸로 시작) |
+| `character` | 캐릭터 그림 (배경 투명한 PNG 추천) |
+| `layout.mobile` / `layout.pc` | 캐릭터 가운데 위치 `x`(%) · 높이 `h`(화면 높이의 %). 바닥에 붙어 있어서 아래 빈 공간 없음 |
+| `stickers.mobile` / `stickers.pc` | 스티커 목록. 가운데 위치 `x`·`y`(%) · 너비 `w`(화면 너비의 %) |
+
+모바일(폭 744px 미만)과 PC·아이패드는 배치를 따로 저장해요.
+새로 올린 그림: `minjung/images/stickers/`, `minjung/images/character/`, `minjung/images/room/`
 
 ## 아이콘
 

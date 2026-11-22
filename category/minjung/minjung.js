@@ -18,6 +18,12 @@ const DEFAULT_PROFILE = [
     ['좋아하는 것', ''], ['좋아하는 음식', ''], ['싫어하는 것', '']
 ];
 const DEFAULT_SYMPTOMS = ['배아픔', '두통'];
+const DEFAULT_BGS = [
+    { id: 'living', mobile: 'minjung/assets/living-mobile.webp', pc: 'minjung/assets/living-pc.webp' },
+    { id: 'bedroom', mobile: 'minjung/assets/bedroom.webp', pc: 'minjung/assets/bedroom.webp' }
+];
+const DEFAULT_CHAR = 'minjung/assets/character.webp';
+const DEFAULT_LAYOUT = { mobile: { x: 50, h: 80 }, pc: { x: 50, h: 90 } };   // 캐릭터 가운데 위치(%) · 높이(%)
 const DEFAULT_STEPS = { morning: ['세안', '토너', '로션', '선크림'], night: ['클렌징', '토너', '세럼', '크림'], etc: ['팩', '각질 케어'] };
 
 const MEAL_SLOTS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner'], ['snack', 'Snack'], ['night', 'Late night']];
@@ -37,6 +43,7 @@ const ICON = {
     diary: SV('<path d="M5 4.5h11a2 2 0 0 1 2 2v13H7a2 2 0 0 1-2-2z"/><path d="M5 17.5a2 2 0 0 1 2-2h11M9 8.5h5"/><path d="M12 12.6s-2-1.2-2-2.4a1 1 0 0 1 2-.3 1 1 0 0 1 2 .3c0 1.2-2 2.4-2 2.4z"/>'),
     food: SV('<path d="M7 4v6a2 2 0 0 0 4 0V4M9 4v16M16 20V4c-1.8 0-3 2.2-3 5.5S14.2 13 16 13"/>'),
     state: SV('<circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01M9 14.5c1.6 1.4 4.4 1.4 6 0"/>'),
+    room: SV('<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m3.5 16 5-5 4 4 3-3 5 5"/><circle cx="15.5" cy="9" r="1.5"/>'),
     library: SV('<path d="M5 5.5h4v13H5zM10 5.5h4v13h-4z"/><path d="m15.2 6.4 3.6-1 3 12.6-3.6 1z"/>'),
     menu: SV('<rect x="4.5" y="4.5" width="6" height="6" rx="1.5"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.5"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.5"/><path d="M16.5 14v5M14 16.5h5"/>'),
     hp: SV('<path d="M12 20s-7-4.4-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4C19 15.6 12 20 12 20z"/>'),
@@ -60,6 +67,7 @@ const WIN = {
     daily:     { title: 'Daily',     tabs: ['Beauty', 'Outfit'], main: true, w: 460 },
     diary:     { title: 'Diary',     tabs: ['Diary', 'To Do'], main: true, w: 400 },
     hp:        { title: 'HP Log',    w: 340 },
+    room:      { title: 'Backgrounds', w: 420 },
     lines:     { title: 'Lines',     w: 360 }
 };
 /* 아래 메뉴 / 바탕화면 아이콘 5개 — pick이 있으면 누를 때 작은 고르기 팝업이 먼저 뜸 */
@@ -71,7 +79,7 @@ const NAV = [
     { id: 'menu', title: 'Menu', pick: 'soon' }
 ];
 // 아이패드·PC에서 창이 처음 뜨는 자리 (0~1 비율: 왼쪽→오른쪽, 위→아래)
-const SPOT = { profile: [0, 0], library: [0.3, 0.4], food: [1, 0], state: [0.62, 0.3], diary: [0, 1], daily: [1, 1], hp: [1, 0.08], lines: [0.5, 0.85] };
+const SPOT = { room: [0.5, 0.1], profile: [0, 0], library: [0.3, 0.4], food: [1, 0], state: [0.62, 0.3], diary: [0, 1], daily: [1, 1], hp: [1, 0.08], lines: [0.5, 0.85] };
 const SOON = [['schedule', 'Schedule'], ['inventory', 'Inventory'], ['bag', 'Bag'], ['shop', 'Shop'], ['workout', 'Workout'], ['friends', 'Friends']];
 
 /* To Do: 기존 투두 카테고리(data/todos.json)를 그대로 씀 */
@@ -116,7 +124,16 @@ function normalize(d) {
     d.version = 1;
     if (!Array.isArray(d.profile) || !d.profile.length) d.profile = DEFAULT_PROFILE.map(([l, v], i) => ({ id: 'pf' + i, label: l, value: v }));
     d.icons = d.icons && typeof d.icons === 'object' ? d.icons : {};
-    d.settings = d.settings && typeof d.settings === 'object' ? d.settings : {};   // { bg_off: true } 배경 끔
+    d.settings = d.settings && typeof d.settings === 'object' ? d.settings : {};
+    const st = d.settings;                                     // 첫 화면 꾸미기 (README '설정' 참고)
+    if (!Array.isArray(st.backgrounds) || !st.backgrounds.length) st.backgrounds = clone(DEFAULT_BGS);
+    if (!st.character) st.character = DEFAULT_CHAR;
+    st.layout = st.layout && typeof st.layout === 'object' ? st.layout : {};
+    st.stickers = st.stickers && typeof st.stickers === 'object' ? st.stickers : {};
+    ['mobile', 'pc'].forEach(k => {
+        if (!st.layout[k] || typeof st.layout[k].x !== 'number') st.layout[k] = Object.assign({}, DEFAULT_LAYOUT[k]);
+        if (!Array.isArray(st.stickers[k])) st.stickers[k] = [];
+    });
     LISTS.forEach(k => { d[k] = Array.isArray(d[k]) ? d[k] : []; });
     d.symptom_tags = Array.isArray(d.symptom_tags) && d.symptom_tags.length ? d.symptom_tags : DEFAULT_SYMPTOMS.slice();
     d.beauty_steps = d.beauty_steps && typeof d.beauty_steps === 'object' ? d.beauty_steps : {};
@@ -211,62 +228,237 @@ export function init() {
     }
 
     /* ---------------- 게임 화면 ---------------- */
-    // 방 배경: 거실(모바일/PC 각각) · 침실. 밤(20시)부터 아침(7시)까지는 침실로 시작
-    const BGS = [
-        { key: 'living', src: () => game.clientWidth < game.clientHeight ? 'minjung/assets/living-mobile.webp' : 'minjung/assets/living-pc.webp' },
-        { key: 'bedroom', src: () => 'minjung/assets/bedroom.webp' }
-    ];
-    const h0 = new Date().getHours();
-    let bgIdx = (h0 >= 20 || h0 < 7) ? 1 : 0;
+    // 배치는 모바일·PC(아이패드 포함) 따로 저장: settings.layout.mobile / .pc, settings.stickers.mobile / .pc
+    const lay = () => isPC() ? 'pc' : 'mobile';
+    const S = () => db.settings;
+    const bgOff = () => !!S().bg_off;
+    let bgIdx = -1;                 // -1: 아직 안 정함 (밤 20시~아침 7시는 침실로 시작)
+    let edit = null;                // 배치 편집 중: { k, char: {x,h}, stickers: [...], files: {} }
+
+    function bgList() { return S().backgrounds; }
+    function bgSrc(b) { return (lay() === 'pc' ? (b.pc || b.mobile) : (b.mobile || b.pc)) || ''; }
     function drawBgs() {
-        $('mj-bgs').innerHTML = BGS.map(b => `<div class="mj-bg mj-bg-${b.key}" style="background-image:url('${b.src()}')"></div>`).join('');
+        const list = bgList();
+        if (bgIdx < 0) {
+            const h = new Date().getHours(), night = h >= 20 || h < 7;
+            const bi = list.findIndex(b => b.id === 'bedroom');
+            bgIdx = night && bi >= 0 ? bi : 0;
+        }
+        bgIdx = Math.min(bgIdx, list.length - 1);
+        $('mj-bgs').innerHTML = list.map(b => { const p = bgSrc(b); return `<div class="mj-bg mj-bg-${esc(b.id)}">${p ? imgTag(p, 'mj-bg-img') : ''}</div>`; }).join('');
         $('mj-bgs').style.transform = `translateX(${-bgIdx * 100}%)`;
     }
     function goBg(i) {
-        bgIdx = (i + BGS.length) % BGS.length;
+        const n = bgList().length;
+        bgIdx = (i + n) % n;
         $('mj-bgs').style.transform = `translateX(${-bgIdx * 100}%)`;
     }
-    // 옆으로 밀어서 배경 바꾸기 + 꾹 누르면(0.6초) 배경 끄기/켜기
+
+    // 캐릭터: 아래 빈 공간 없이 항상 바닥에 붙음. x = 가운데 위치(%), h = 높이(화면 높이의 %)
+    function charLayout() { return (edit && edit.char) || S().layout[lay()]; }
+    function drawChar() {
+        const el = $('mj-char'), c = charLayout(), src = imgSrc(S().character);
+        if (el.dataset.src !== S().character) { el.dataset.src = S().character; el.src = src; el.onerror = () => { el.onerror = null; el.src = repo.rawUrl(S().character); }; }
+        el.style.left = c.x + '%';
+        el.style.height = c.h + '%';
+    }
+    // 스티커: x, y = 가운데 위치(%), w = 너비(화면 너비의 %)
+    function stickerList() { return edit ? edit.stickers : S().stickers[lay()]; }
+    function drawStickers() {
+        $('mj-stickers').innerHTML = stickerList().map(t => `
+            <div class="mj-stk" data-id="${esc(t.id)}" style="left:${t.x}%;top:${t.y}%;width:${t.w}%">
+                ${imgTag(t.img)}
+                ${edit ? '<button class="del" data-sdel="1" aria-label="지우기">✕</button><span class="rz" data-rz="1"></span>' : ''}
+            </div>`).join('');
+    }
+    function applyRoom() {
+        game.classList.toggle('bg-off', bgOff());
+        game.classList.toggle('editing', !!edit);
+        drawChar();
+        drawStickers();
+    }
+
+    // 옆으로 밀어서 배경 바꾸기 + 꾹 누르면(0.6초) 편집 메뉴
     let sw = null, press = 0;
     const stopPress = () => { clearTimeout(press); press = 0; };
     game.addEventListener('pointerdown', e => {
-        if (e.target.closest('button, .mj-nav, .mj-ask')) return;
+        if (edit) return editDown(e);
+        if (e.target.closest('button, .mj-nav, .mj-ask, .mj-edit-bar')) return;
         sw = { x: e.clientX, y: e.clientY };
         stopPress();
-        press = setTimeout(() => { press = 0; sw = null; askBg(); }, 600);
+        press = setTimeout(() => { press = 0; sw = null; roomMenu(); }, 600);
     });
     game.addEventListener('pointermove', e => {
         if (sw && press && Math.hypot(e.clientX - sw.x, e.clientY - sw.y) > 10) stopPress();
     });
     game.addEventListener('pointerup', e => {
         stopPress();
-        if (!sw) return;
+        if (!sw || edit) return;
         const dx = e.clientX - sw.x, dy = e.clientY - sw.y; sw = null;
         if (!bgOff() && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) goBg(bgIdx + (dx < 0 ? 1 : -1));
     });
     game.addEventListener('pointercancel', () => { sw = null; stopPress(); });
     game.addEventListener('contextmenu', e => e.preventDefault());       // 꾹 누를 때 폰 메뉴가 뜨지 않게
 
-    const bgOff = () => !!(db.settings && db.settings.bg_off);
-    function applyBg() { game.classList.toggle('bg-off', bgOff()); }
-    function askBg() {
-        const off = bgOff();
+    // 가운데 작은 창 (메뉴·확인용)
+    function sheet(title, sub, items) {
         const old = game.querySelector('.mj-ask'); if (old) old.remove();
         const box = document.createElement('div');
         box.className = 'mj-ask';
         box.innerHTML = `
             <div class="mj-ask-card">
-                <div class="mj-ask-t">${off ? 'Bring the room back?' : 'Turn off the room?'}</div>
-                <div class="mj-ask-s">${off ? 'The background will show again.' : 'Only Minjung will stay — the background image hides.'}</div>
-                <div class="mj-btns"><span class="sp"></span><button class="mj-btn ghost" data-a="no">Cancel</button><button class="mj-btn" data-a="yes">${off ? 'On' : 'Off'}</button></div>
+                <div class="mj-ask-t">${title}</div>
+                ${sub ? `<div class="mj-ask-s">${sub}</div>` : ''}
+                <div class="mj-ask-list">${items.map((it, i) => `<button class="${it.cls || ''}" data-i="${i}">${it.label}</button>`).join('')}</div>
             </div>`;
         game.appendChild(box);
         box.addEventListener('click', e => {
-            const b = e.target.closest('[data-a]');
+            const b = e.target.closest('[data-i]');
             if (!b && e.target.closest('.mj-ask-card')) return;
             box.remove();
-            if (b && b.dataset.a === 'yes') save('배경 ' + (off ? 'on' : 'off'), d => { d.settings.bg_off = !off; });
+            if (b && items[Number(b.dataset.i)].run) items[Number(b.dataset.i)].run();
         });
+    }
+    function roomMenu() {
+        const off = bgOff(), k = lay() === 'pc' ? 'PC' : 'Mobile';
+        sheet('Room', off ? 'The room is off — only stickers are showing.' : 'Long-press anytime to come back here.', [
+            off ? { label: 'Turn the room on', run: () => sheet('Bring the room back?', 'Background and Minjung will show again.', [
+                    { label: 'On', cls: 'main', run: () => save('방 on', d => { d.settings.bg_off = false; }) }, { label: 'Cancel', cls: 'ghost' }]) }
+                : { label: 'Turn the room off', run: () => sheet('Turn off the room?', 'Background and Minjung hide. Stickers stay.', [
+                    { label: 'Off', cls: 'main', run: () => save('방 off', d => { d.settings.bg_off = true; }) }, { label: 'Cancel', cls: 'ghost' }]) },
+            { label: `Edit layout · ${k}`, run: startEdit },
+            { label: 'Add sticker', run: () => { startEdit(); addSticker(); } },
+            { label: 'Change character', run: () => pickFile(changeChar) },
+            { label: 'Backgrounds', run: () => openWin('room') },
+            { label: 'Cancel', cls: 'ghost' }
+        ]);
+    }
+
+    /* ---- 배치 편집: 캐릭터(좌우 이동·크기) + 스티커(이동·크기·삭제) ---- */
+    function startEdit() {
+        if (edit) return;
+        const k = lay();
+        edit = { k, char: Object.assign({}, S().layout[k]), stickers: clone(S().stickers[k]), files: {} };
+        const bar = document.createElement('div');
+        bar.className = 'mj-edit-bar';
+        bar.innerHTML = `
+            <div class="row"><b>Edit · ${k === 'pc' ? 'PC' : 'Mobile'}</b><span class="sp"></span>
+                <button class="mj-btn ghost" data-e="cancel">Cancel</button><button class="mj-btn" data-e="done">Done</button></div>
+            <div class="row">
+                <button class="mj-add" data-e="sticker">+ Sticker</button>
+                ${bgOff() ? '' : `<label class="size">Size <input type="range" min="30" max="140" value="${edit.char.h}" data-e="size"></label>
+                <button class="mj-link" data-e="reset">reset</button>`}
+            </div>
+            <div class="hint">${bgOff() ? 'Drag stickers · corner to resize' : 'Drag Minjung left/right · drag stickers · corner to resize'}</div>`;
+        game.appendChild(bar);
+        bar.addEventListener('click', e => {
+            const b = e.target.closest('[data-e]'); if (!b) return;
+            const a = b.dataset.e;
+            if (a === 'cancel') endEdit(false);
+            if (a === 'done') endEdit(true);
+            if (a === 'sticker') addSticker();
+            if (a === 'reset') { edit.char = Object.assign({}, DEFAULT_LAYOUT[edit.k]); bar.querySelector('[data-e=size]').value = edit.char.h; drawChar(); }
+        });
+        bar.addEventListener('input', e => { if (e.target.dataset.e === 'size') { edit.char.h = Number(e.target.value); drawChar(); } });
+        applyRoom();
+    }
+    function endEdit(keep) {
+        const ed = edit; edit = null;
+        const bar = game.querySelector('.mj-edit-bar'); if (bar) bar.remove();
+        if (!keep || !ed) { applyRoom(); return; }
+        const k = ed.k, before = S().stickers[k], other = S().stickers[k === 'pc' ? 'mobile' : 'pc'];
+        const files = {};
+        ed.stickers.forEach(t => { if (ed.files[t.img]) files[t.img] = ed.files[t.img]; });          // 새로 올린 스티커
+        before.forEach(t => {                                                                         // 지운 스티커 그림 파일도 지움
+            if (!ed.stickers.some(x => x.img === t.img) && !other.some(x => x.img === t.img)) files[t.img] = null;
+        });
+        const round = o => { Object.keys(o).forEach(key => { if (typeof o[key] === 'number') o[key] = Math.round(o[key] * 10) / 10; }); return o; };
+        save('배치 수정 (' + k + ')', d => {
+            d.settings.layout[k] = round(Object.assign({}, ed.char));
+            d.settings.stickers[k] = ed.stickers.map(t => round(Object.assign({}, t)));
+        }, files);
+    }
+    function addSticker() {
+        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        pickFile(async f => {
+            try {
+                toast('uploading…');
+                const { path, sha } = await uploadImage(f, 'stickers', 800, 'image/png');
+                if (!edit) startEdit();
+                edit.files[path] = sha;
+                edit.stickers.push({ id: uid('st'), img: path, x: 50, y: 40, w: 28 });
+                drawStickers();
+            } catch (e) { alert('스티커를 올리지 못했어요.\n' + (e.message || e)); }
+        });
+    }
+    // 끌기: 캐릭터는 좌우만, 스티커는 어디든. 모서리 점은 크기
+    function editDown(e) {
+        if (e.target.closest('.mj-edit-bar, .mj-ask')) return;
+        const r = game.getBoundingClientRect();
+        const del = e.target.closest('[data-sdel]');
+        const stkEl = e.target.closest('.mj-stk');
+        if (del && stkEl) { edit.stickers = edit.stickers.filter(t => t.id !== stkEl.dataset.id); drawStickers(); return; }
+        let move;
+        if (stkEl) {
+            const t = edit.stickers.find(x => x.id === stkEl.dataset.id);
+            const sx = e.clientX, sy = e.clientY, o = Object.assign({}, t);
+            if (e.target.closest('[data-rz]')) move = ev => { t.w = Math.max(5, Math.min(100, o.w + (ev.clientX - sx) / r.width * 200)); stkEl.style.width = t.w + '%'; };
+            else move = ev => {
+                t.x = Math.max(0, Math.min(100, o.x + (ev.clientX - sx) / r.width * 100));
+                t.y = Math.max(0, Math.min(100, o.y + (ev.clientY - sy) / r.height * 100));
+                stkEl.style.left = t.x + '%'; stkEl.style.top = t.y + '%';
+            };
+        } else if (e.target.closest('.mj-char') && !bgOff()) {
+            const sx = e.clientX, ox = edit.char.x;
+            move = ev => { edit.char.x = Math.max(0, Math.min(100, ox + (ev.clientX - sx) / r.width * 100)); drawChar(); };
+        }
+        if (!move) return;
+        e.preventDefault();
+        const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', up);
+    }
+
+    /* ---- 캐릭터 그림 바꾸기 (배경이 투명한 PNG 추천) ---- */
+    async function changeChar(file) {
+        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        try {
+            toast('uploading…');
+            const { path, sha } = await uploadImage(file, 'character', 1600, 'image/png');
+            const old = S().character, files = {}; files[path] = sha;
+            if (old && old.startsWith(IMG_DIR)) files[old] = null;
+            save('캐릭터 그림', d => { d.settings.character = path; }, files);
+        } catch (e) { alert('그림을 올리지 못했어요.\n' + (e.message || e)); }
+    }
+    /* ---- 배경 목록 (Backgrounds 창) ---- */
+    async function setBgImage(i, which, file) {
+        if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
+        try {
+            toast('uploading…');
+            const { path, sha } = await uploadImage(file, 'room', 2000, 'image/jpeg');
+            const files = {}; files[path] = sha;
+            const list = bgList();
+            if (i < 0) {
+                save('배경 추가', d => { d.settings.backgrounds.push({ id: uid('bg'), mobile: path, pc: path }); }, files);
+                return;
+            }
+            const id = list[i].id, old = list[i][which];
+            const usedElsewhere = list.some((b, j) => ['mobile', 'pc'].some(w => !(j === i && w === which) && b[w] === old));
+            if (old && old.startsWith(IMG_DIR) && !usedElsewhere) files[old] = null;
+            save('배경 ' + which, d => { const b = d.settings.backgrounds.find(x => x.id === id); if (b) b[which] = path; }, files);
+        } catch (e) { alert('배경을 올리지 못했어요.\n' + (e.message || e)); }
+    }
+    function delBg(i) {
+        const list = bgList();
+        if (list.length <= 1) { alert('배경은 하나는 남겨 둬야 해요.'); return; }
+        if (!confirm('이 배경을 지울까요?')) return;
+        const b = list[i], files = {};
+        [b.mobile, b.pc].forEach(p => {
+            if (p && p.startsWith(IMG_DIR) && !list.some((x, j) => j !== i && (x.mobile === p || x.pc === p))) files[p] = null;
+        });
+        if (bgIdx >= i) bgIdx = Math.max(0, bgIdx - 1);
+        save('배경 삭제', d => { d.settings.backgrounds = d.settings.backgrounds.filter(x => x.id !== b.id); }, files);
     }
 
     function drawDate() {
@@ -276,7 +468,7 @@ export function init() {
     let shownLine = null, typer = 0;
     function drawScreen() {
         drawDate();
-        applyBg();
+        applyRoom();
         const hp = db.hp.slice().sort(byNewest)[0];
         $('mj-hp').innerHTML = hearts(hp ? hp.v : 5);
         const line = db.lines.slice().sort(byNewest)[0];
@@ -427,7 +619,10 @@ export function init() {
         st.form = {}; fresh();
     }
     // 저장 뒤 다시 그림 (적고 있는 칸이 있는 창은 건드리지 않음)
+    let bgSig = '';
     function redraw(fromServer) {
+        const sig = JSON.stringify(bgList());
+        if (sig !== bgSig) { bgSig = sig; drawBgs(); }
         drawScreen();
         drawMenus();
         Object.keys(wins).forEach(id => {
@@ -537,6 +732,10 @@ export function init() {
                 case 'todo-open': if (window.loadPageByHash) window.loadPageByHash('todo'); break;
                 case 'todo-reload': todos = null; loadTodos(); break;
                 case 'soon': toast(v + ' · Coming soon ♡'); break;
+                // 배경 목록
+                case 'bg-img': pickFile(f => setBgImage(Number(b.dataset.i), b.dataset.w, f)); break;
+                case 'bg-add': pickFile(f => setBgImage(-1, 'mobile', f)); break;
+                case 'bg-del': delBg(Number(b.dataset.i)); break;
             }
         });
         el.addEventListener('change', e => {
@@ -736,6 +935,21 @@ export function init() {
         },
         /* 프로필 + 라이브러리 */
         library(st) { return libraryView(st); },
+        room() {
+            const list = bgList();
+            return `
+                <p class="mj-empty" style="padding:4px 0 10px">옆으로 밀면 순서대로 바뀌어요. 그림을 누르면 바꾸기.</p>
+                <div class="mj-bglist">
+                    ${list.map((b, i) => `
+                        <div class="mj-bgrow">
+                            <span class="n">${i + 1}</span>
+                            <button class="th m" data-act="bg-img" data-i="${i}" data-w="mobile">${b.mobile ? imgTag(b.mobile) : ''}<em>Mobile</em></button>
+                            <button class="th p" data-act="bg-img" data-i="${i}" data-w="pc">${b.pc ? imgTag(b.pc) : ''}<em>PC</em></button>
+                            <button class="mj-link" data-act="bg-del" data-i="${i}">delete</button>
+                        </div>`).join('')}
+                </div>
+                <div class="mj-newbar"><button class="mj-add" data-act="bg-add">+ background</button></div>`;
+        },
         profile(st) {
             if (st.pedit) return `
                 <div class="mj-pf-edit">${db.profile.map(pfRow).join('')}</div>
@@ -966,17 +1180,17 @@ export function init() {
     }
 
     /* ---------------- 시작 ---------------- */
+    bgSig = JSON.stringify(bgList());
     drawBgs();
     drawMenus();
     drawScreen();
     load();
 
-    // 화면 크기가 바뀌면 거실 그림(모바일/PC)을 다시 고름
-    let lastPortrait = game.clientWidth < game.clientHeight;
+    // 화면 크기가 바뀌면 (모바일↔PC) 배경 그림과 배치를 다시 고름
+    let lastLay = lay();
     const onResize = () => {
         if (!root.isConnected) { window.removeEventListener('resize', onResize); return; }
-        const p = game.clientWidth < game.clientHeight;
-        if (p !== lastPortrait) { lastPortrait = p; drawBgs(); }
+        if (lay() !== lastLay) { lastLay = lay(); if (edit) endEdit(false); drawBgs(); applyRoom(); }
     };
     window.addEventListener('resize', onResize);
     // 날짜는 1분마다, 다른 기기에서 바꾼 기록은 돌아올 때 다시 불러옴
