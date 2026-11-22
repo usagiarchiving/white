@@ -25,7 +25,7 @@
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-23T04:08:19+09:00",
+ "updated_at": "2026-11-23T04:08:39+09:00",
  "view": {
   "stk_off": {
    "pc": false,
@@ -35,6 +35,9 @@
  "apps": {
   "deco": {
    "icon": "diary/photos/2026-11-23-mws67h6z4fu6.jpg"
+  },
+  "tt": {
+   "icon": "b-blue"
   }
  },
  "tt": [],
