@@ -6,24 +6,24 @@
 @font-face { font-family: 'Galmuri9'; src: url('../../vendor/galmuri/Galmuri9.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
 .mj-root {
-    --mj-ink: #7a666c;        /* 글씨 */
+    --mj-ink: #7b5f68;        /* 글씨 */
     --mj-sub: #b2a1a6;        /* 흐린 글씨 */
     --mj-line: #e7dadd;       /* 선 */
     --mj-soft: #f8f1f2;       /* 연한 바탕 */
-    --mj-pink: #e9bcc7;       /* 포인트 */
-    --mj-deep: #c88b9b;       /* 진한 포인트 */
+    --mj-pink: #efb3c4;       /* 포인트 */
+    --mj-deep: #d97f9b;       /* 진한 포인트 */
     --mj-paper: #fffdfd;
-    --mj-heart: #f4a9bb;
-    --mj-heart-line: #d97f97;
+    --mj-heart: #f8a0b8;
+    --mj-heart-line: #e47395;
     --mj-heart-empty: #d9c6cb;
     --mj-card: #fff;          /* 카드·칸 바탕 */
-    --mj-on: #fbecf0;         /* 고른 칩 */
-    --mj-on2: #fdf4f6;        /* 고른 줄 */
+    --mj-on: #fde6ee;         /* 고른 칩 */
+    --mj-on2: #fef1f5;        /* 고른 줄 */
     --mj-ring: #f2e6e9;       /* 레이스 테두리 바깥선 */
     --mj-stripe: rgba(240, 228, 231, .35);
-    --mj-bar: #f3dbe2;        /* 창 제목줄 (아이패드·PC) */
-    --mj-bar-ink: #7a666c;
-    --mj-frame: #a88f97;      /* 창 테두리 (아이패드·PC) */
+    --mj-bar: #f8d5e0;        /* 창 제목줄 (아이패드·PC) */
+    --mj-bar-ink: #7b5f68;
+    --mj-frame: #b4899a;      /* 창 테두리 (아이패드·PC) */
 
     position: relative;
     width: 100vw; margin-left: calc(50% - 50vw); margin-top: -30px;
@@ -248,12 +248,12 @@
 
 /* Condition 창: 블랙 + 핑크 */
 .mj-win-condition {
-    --mj-paper: #1d191b; --mj-card: #262023; --mj-ink: #f3e2e7; --mj-sub: #a8929a; --mj-line: #43363b;
-    --mj-soft: #2c2427; --mj-pink: #f0a9bc; --mj-deep: #ee8eaa; --mj-on: #4a2c36; --mj-on2: #35262b;
-    --mj-ring: #3a2e32; --mj-stripe: rgba(255, 255, 255, .025); --mj-bar: #ee8eaa; --mj-bar-ink: #1d191b; --mj-frame: #0f0c0d;
+    --mj-paper: #2e282c; --mj-card: #383135; --mj-ink: #f7e9ee; --mj-sub: #bba7ae; --mj-line: #54474d;
+    --mj-soft: #403739; --mj-pink: #f5a9c0; --mj-deep: #f28cac; --mj-on: #5a3644; --mj-on2: #45363d;
+    --mj-ring: #4a3e43; --mj-stripe: rgba(255, 255, 255, .03); --mj-bar: #f28cac; --mj-bar-ink: #2e282c; --mj-frame: #1e191c;
     color-scheme: dark;
 }
-.mj-win-condition .mj-row .ty-mood { background: #302a3a; border-color: #4a4058; }
+.mj-win-condition .mj-row .ty-mood { background: #3f3849; border-color: #5a4f68; }
 .mj-win-condition .mj-btn.danger { color: #ff9fb5 !important; }
 
 /* 알림 */
