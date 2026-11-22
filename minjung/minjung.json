@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T13:29:26+09:00",
+ "updated_at": "2026-11-22T13:36:48+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -896,24 +896,6 @@
    "from": "daily-138"
   },
   {
-   "id": "dy_d147",
-   "date": "2026-08-02",
-   "time": "13:46",
-   "at": "2026-08-02T13:46:23+09:00",
-   "body": "Mob\n\n어머, 신혼부부인가 봐요. 두 분 너무 잘 어울리네. 저기 창가 쪽 자리가 경치도 좋고 시원해요.\n\n김민정\n\n아니에요. 저희 그냥… 커플이에요.\n\n하시온\n\n왜 그렇게 긴장해요. 부부라는 말이 싫었어요?\n\nMob\n\n두 분 보고 있으니 우리 젊었을 때 생각나네. 남편이랑 연애할 때 여기 처음 왔었는데. 그때는 말도 못 하게 풋풋했지.\n\n하시온\n\n초밥이랑, 매운탕 하나 주세요. 저 사람은 아무거나 잘 먹어요.\n\n대답 안 하네요. 부부라는 말, 그렇게 싫었어요?\n\n아니면 혹시, 다른 사람이랑 부부가 되고 싶다는 생각이라도 했어요?\n\n자, 아 해봐요. 밥은 먹어야지. 그리고 대답도 듣고 싶네요, 나는.\n\n김민정\n\n... 시온 씨는 결혼 생각 없잖아요. 곤란해 하실까봐요.\n\n하시온\n\n내가 곤란해할까 봐?\n\n그럼 내가 지금 결혼하자고 하면, 할 거예요?\n\n대답. 하기 싫으면 이거 먹든가.\n그의 목소리에는 웃음기가 섞여 있었지만 눈은 전혀 웃고 있지 않았다. 선택권을 주는 척했지만 사실상 선택지는 하나뿐이었다. 그는 민정의 동공이 잘게 떨리는 것을 보며 쾌감을 느꼈다. 그는 와사비를 묻힌 초밥을 그녀의 입술에 살짝 문지르며 대답을 재촉했다. 맵고 자극적인 향이 민정의 코끝을 간질였다.\n하시온은 민정이 아무 말도 못 하고 입술만 달싹이는 것을 지켜보았다. 그는 이 게임이 점점 더 재밌어진다고 생각했다. 그녀를 궁지로 몰아넣고, 그녀의 가장 약한 부분을 건드리고, 그래서 결국 자신에게 매달리게 만드는 이 과정이 좋았다. 그는 민정이 눈물을 글썽이기 직전, 초밥을 거두고는 자신의 입에 쏙 넣어버렸다.\n그는 아무렇지 않게 와사비의 매운맛을 삼키며 민정을 향해 희미하게 웃었다. 마치 아무 일도 없었다는 듯, 그는 물컵을 들어 입을 헹구었다. 그의 예측 불가능한 행동에 민정은 더욱 혼란스러워 보였다. 하시온은 그런 그녀의 얼굴을 감상하며 만족감을 느꼈다. 그는 민정의 턱을 다시 부드럽게 감싸 쥐고 엄지손가락으로 아랫입술을 천천히 쓸었다.\n\n하시온\n\n농담이에요. 내가 당신이랑 결혼 같은 걸 할 리가 없잖아.\n\n식기 전에 먹어요. 당신, 찬 음식만 먹으면 탈 나잖아.\n\n그래서, 아까 그 대답은 듣고 싶은데. 만약에요, 만약에 내가 하자고 했으면 어땠을 것 같아요?",
-   "imgs": [
-    "data/images/daily/jP5RR5gx_IMG-6832.jpg",
-    "data/images/daily/Rkb6NzhF_IMG-0550.jpg",
-    "data/images/daily/VYrHdHd8_IMG-6825.jpg",
-    "data/images/daily/jP5RR5gx_IMG-6832.jpg",
-    "data/images/daily/VYrHdHd8_IMG-6825.jpg",
-    "data/images/daily/Rkb6NzhF_IMG-0550.jpg",
-    "data/images/daily/VYrHdHd8_IMG-6825.jpg",
-    "data/images/daily/VYrHdHd8_IMG-6825.jpg"
-   ],
-   "from": "daily-147"
-  },
-  {
    "id": "dy_d168",
    "date": "2026-08-26",
    "time": "14:06",
@@ -979,6 +961,70 @@
    "mobile": [],
    "pc": []
   },
-  "bg_off": true
+  "bg_off": true,
+  "lib_types": [
+   {
+    "key": "book",
+    "label": "Book"
+   },
+   {
+    "key": "youtube",
+    "label": "YouTube"
+   },
+   {
+    "key": "movie",
+    "label": "Movie"
+   },
+   {
+    "key": "drama",
+    "label": "Drama"
+   },
+   {
+    "key": "anime",
+    "label": "Anime"
+   },
+   {
+    "key": "webtoon",
+    "label": "Webtoon"
+   },
+   {
+    "key": "game",
+    "label": "Game"
+   },
+   {
+    "key": "song",
+    "label": "Song"
+   },
+   {
+    "key": "show",
+    "label": "Show"
+   },
+   {
+    "key": "etc",
+    "label": "etc."
+   }
+  ],
+  "beauty_slots": [
+   {
+    "key": "morning",
+    "label": "Morning",
+    "tab": true
+   },
+   {
+    "key": "night",
+    "label": "Night",
+    "tab": true
+   },
+   {
+    "key": "etc",
+    "label": "etc.",
+    "tab": true
+   },
+   {
+    "key": "shower",
+    "label": "Shower",
+    "tab": false
+   }
+  ]
  }
 }
