@@ -553,8 +553,7 @@ export function init() {
         tools.innerHTML =
             (isMobile() ? '' : '<button class="dy-rb" data-tool="stkview" title="스티커 보이기/숨기기 (' + (isMobile() ? '휴대폰' : 'PC') + ')">' + ic(stkOff() ? 'eyeoff' : 'eye') + '<span class="lbl">스티커 ' + (stkOff() ? 'OFF' : 'ON') + '</span></button>') +
             (stkOff() || isMobile() ? '' : '<button class="dy-rb' + (V.deco ? '' : ' on') + '" data-tool="deco" title="스티커를 고정하면 끌거나 눌러도 안 움직여요">' + ic(V.deco ? 'unlock' : 'lock') + '<span class="lbl">' + (V.deco ? '스티커 고정' : '고정 풀기') + '</span></button>') +
-            '<button class="dy-rb" data-tool="sticker" title="스티커 붙이기">' + ic('plus') + '<span class="lbl">스티커</span></button>' +
-            '<button class="dy-rb" data-tool="theme" title="색 바꾸기">' + ic('palette') + '<span class="lbl">꾸미기</span></button>';
+            '';      // 꾸미기·스티커 붙이기는 메뉴의 '꾸미기'에서
         tools.onclick = e => {
             const t = e.target.closest('[data-tool]'); if (!t) return;
             if (t.dataset.tool === 'deco') { V.deco = !V.deco; V.sel = null; try { localStorage.setItem('dy-stk-lock', V.deco ? '0' : '1'); } catch (e) {} render('diary'); }
@@ -2217,8 +2216,8 @@ export function init() {
             '<button class="dy-app" data-open="' + id + '" title="' + esc(appName(id)) + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt=""></button>').join('');
         menu.innerHTML = '<div class="head"><img src="' + CHAR['c-blue'] + '" alt="">diary ♡</div>' +
             ICONS.map(([id]) => '<button data-open="' + id + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt="">' + esc(appName(id)) + '</button>').join('') +
-            '<button data-m="sticker"><span class="ic">' + ic('heart') + '</span>스티커 붙이기</button>' +
-            '<button data-m="reload"><span class="ic">' + ic('reload') + '</span>새로 불러오기</button>' +
+            (isMobile() ? '' : '<button data-m="sticker"><span class="ic">' + ic('heart') + '</span>스티커 붙이기</button>' +      // 휴대폰은 스티커가 안 보이니 뺌
+            '<button data-m="reload"><span class="ic">' + ic('reload') + '</span>새로 불러오기</button>') +
             '<div class="tip">꾹 누르면 이름·그림 바꾸기</div>';
         syncBar();
         // 창 제목줄도 같이
