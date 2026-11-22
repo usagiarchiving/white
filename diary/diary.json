@@ -7,11 +7,17 @@
  "theme": {
   "preset": "berry"
  },
- "ddays": [],
+ "ddays": [
+  {
+   "id": "mwrh72vci19i",
+   "title": "해양 졸업전시",
+   "date": "2026-11-25"
+  }
+ ],
  "bucket": [],
  "music": [],
  "stickers": [],
  "myStickers": [],
  "memo": "",
- "updated_at": "2026-11-22T15:40:50+09:00"
+ "updated_at": "2026-11-22T15:48:35+09:00"
 }
