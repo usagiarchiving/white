@@ -478,3 +478,6 @@
 .mj-month { display: flex; align-items: center; gap: 8px; margin: 14px 0 4px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-deep); letter-spacing: 1px; }
 .mj-month::after { content: ''; flex: 1; height: 2px; background: var(--mj-tag); border-radius: 2px; }
 .mj-log > .mj-month:first-child { margin-top: 2px; }
+
+/* 탭 줄은 좌우로만 (위아래로 흔들리지 않게) */
+.mj-tabs { overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x; }
