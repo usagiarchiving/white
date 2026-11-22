@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T00:00:00+09:00",
+ "updated_at": "2026-11-22T09:39:09+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -45,11 +45,27 @@
  ],
  "icons": {},
  "hp": [],
- "lines": [],
+ "lines": [
+  {
+   "id": "lnmwr3zyb65tq7",
+   "date": "2026-11-22",
+   "time": "09:39",
+   "at": "2026-11-22T09:39:07+09:00",
+   "text": "졸려어ㅠㅠ"
+  }
+ ],
  "library": [],
  "condition": [],
  "beauty": [],
- "outfit": [],
+ "outfit": [
+  {
+   "id": "ofmwr3wc07hevt",
+   "date": "2026-11-22",
+   "time": "09:36",
+   "at": "2026-11-22T09:36:19+09:00",
+   "img": "minjung/images/outfit/1795307779080_6ufi2.jpg"
+  }
+ ],
  "diary": [],
  "symptom_tags": [
   "배아픔",
