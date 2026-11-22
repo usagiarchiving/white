@@ -10,7 +10,7 @@
    "name": "2"
   }
  ],
- "font": "pretendard",
+ "font": "default",
  "items": [
   {
    "id": "mofi9qso6n8",
@@ -192,5 +192,5 @@
    ]
   }
  ],
- "updated_at": "2026-11-22T18:13:33+09:00"
+ "updated_at": "2026-11-22T18:13:38+09:00"
 }
