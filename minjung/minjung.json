@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T09:39:09+09:00",
+ "updated_at": "2026-11-22T10:01:21+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -75,6 +75,7 @@
   "morning": [
    "세안",
    "토너",
+   "세럼",
    "로션",
    "선크림"
   ],
@@ -88,5 +89,34 @@
    "팩",
    "각질 케어"
   ]
+ },
+ "settings": {
+  "backgrounds": [
+   {
+    "id": "living",
+    "mobile": "minjung/assets/living-mobile.webp",
+    "pc": "minjung/assets/living-pc.webp"
+   },
+   {
+    "id": "bedroom",
+    "mobile": "minjung/assets/bedroom.webp",
+    "pc": "minjung/assets/bedroom.webp"
+   }
+  ],
+  "character": "minjung/assets/character.webp",
+  "layout": {
+   "mobile": {
+    "x": 50,
+    "h": 80
+   },
+   "pc": {
+    "x": 50,
+    "h": 90
+   }
+  },
+  "stickers": {
+   "mobile": [],
+   "pc": []
+  }
  }
 }
