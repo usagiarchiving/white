@@ -8,11 +8,11 @@
 const DATA = 'diary/diary.json';
 const ASSET = 'diary/assets/';
 const CHARS = [
-    { id: 'c-blue',  src: ASSET + 'c-blue.png' },
-    { id: 'c-pink',  src: ASSET + 'c-pink.png' },
-    { id: 'c-white', src: ASSET + 'c-white.png' },
-    { id: 'c-gray',  src: ASSET + 'c-gray.png' },
-    { id: 'c-puppy', src: ASSET + 'c-puppy.png' }
+    { id: 'c-blue',  src: ASSET + 'c-blue.png?v=2' },
+    { id: 'c-pink',  src: ASSET + 'c-pink.png?v=2' },
+    { id: 'c-white', src: ASSET + 'c-white.png?v=2' },
+    { id: 'c-gray',  src: ASSET + 'c-gray.png?v=2' },
+    { id: 'c-puppy', src: ASSET + 'c-puppy.png?v=2' }
 ];
 // 스티커 서랍 기본 스티커: 친구들 + 말풍선 든 친구들 + 하트 말풍선
 const BASE_STICKERS = CHARS.concat(['cb-blue', 'cb-pink', 'cb-white', 'cb-gray', 'b-pink', 'b-blue'].map(id => ({ id, src: ASSET + id + '.png' })));
