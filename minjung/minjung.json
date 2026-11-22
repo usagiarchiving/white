@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T10:06:55+09:00",
+ "updated_at": "2026-11-22T10:07:28+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -61,7 +61,15 @@
  ],
  "library": [],
  "condition": [],
- "beauty": [],
+ "beauty": [
+  {
+   "id": "btmwr50en6ijyj",
+   "date": "2026-11-22",
+   "time": "10:07",
+   "at": "2026-11-22T10:07:28+09:00",
+   "slot": "shower"
+  }
+ ],
  "outfit": [
   {
    "id": "ofmwr3wc07hevt",
