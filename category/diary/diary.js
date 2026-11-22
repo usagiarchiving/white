@@ -132,6 +132,9 @@ const ICO = {
     copy: '<rect x="5.5" y="5.5" width="7" height="7" rx="1.5"/><path d="M10.5 3.5h-6a1 1 0 0 0-1 1v6"/>', swap: '<path d="M3.5 6h8l-2-2M12.5 10h-8l2 2"/>',
     text: '<path d="M4 4.5h8M8 4.5v7.5"/>', lock: '<rect x="4" y="7" width="8" height="5.5" rx="1.3"/><path d="M5.8 7V5.5a2.2 2.2 0 0 1 4.4 0V7"/>',
     unlock: '<rect x="4" y="7" width="8" height="5.5" rx="1.3"/><path d="M5.8 7V5.5a2.2 2.2 0 0 1 4.3-.7"/>', heart: '<path d="M8 12.5S3 9.6 3 6.4A2.4 2.4 0 0 1 8 5a2.4 2.4 0 0 1 5 1.4c0 3.2-5 6.1-5 6.1z"/>',
+    prev: '<path d="M4 3.5v9"/><path d="M12.5 3.8v8.4L6 8z" fill="currentColor"/>', next: '<path d="M12 3.5v9"/><path d="M3.5 3.8v8.4L10 8z" fill="currentColor"/>',
+    pause: '<rect x="4.2" y="3.5" width="2.6" height="9" rx=".8" fill="currentColor" stroke="none"/><rect x="9.2" y="3.5" width="2.6" height="9" rx=".8" fill="currentColor" stroke="none"/>',
+    repeat: '<path d="M3 7V6a2 2 0 0 1 2-2h7.5l-2-2M13 9v1a2 2 0 0 1-2 2H3.5l2 2"/>',
     list: '<path d="M5.5 4.5h7M5.5 8h7M5.5 11.5h7"/><circle cx="3" cy="4.5" r=".6" fill="currentColor"/><circle cx="3" cy="8" r=".6" fill="currentColor"/><circle cx="3" cy="11.5" r=".6" fill="currentColor"/>',
     out: '<path d="M9 3.5h3.5V7M12.5 3.5L7.5 8.5"/><path d="M11 9.5v3H3.5V5h3"/>',
     grid: '<rect x="2.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="2.8" y="8.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="8.8" width="4.4" height="4.4" rx="1"/>',
@@ -151,7 +154,8 @@ const parseKey = k => { const [y, m, d] = k.split('-').map(Number); return new D
 const addDays = (k, n) => { const d = parseKey(k); d.setDate(d.getDate() + n); return ymd(d); };
 const monthKey = (y, m) => y + '-' + pad(m + 1);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const hhmm = iso => { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? '' : pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+// 시간 표시: '+09:00'처럼 시간대가 적힌 기록은 적힌 시간 그대로 (어느 기기에서 봐도 같게)
+const hhmm = iso => { if (!iso) return ''; const m = /T(\d\d:\d\d)(?::\d\d(?:\.\d+)?)?[+-]\d\d:\d\d$/.exec(iso); if (m) return m[1]; const d = new Date(iso); return isNaN(d) ? '' : pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 const isUrl = s => /^https?:\/\/\S+$/i.test(String(s).trim());
 const safeUrl = s => isUrl(s || '') ? String(s).trim() : '';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -564,9 +568,10 @@ export function init() {
                     '<button class="dy-rb round" data-a="stk-del" title="떼기" style="color:#d77c96">' + ic('x') + '</button>' +
                 '</div>' +
             '</div>';
-        const keepYt = YT.on && body.querySelector('.dy-yt-frame[data-k="' + YT.on + '"]');
+        const keepYt = YT.on && body.querySelector('.dy-yt-frame[data-k="' + YT.on + '"], #dy-ytp[data-k="' + YT.on + '"]');
         if (keepYt) patchKeep(body.querySelector('#dy-spread'), html, keepYt.closest('.dy-w'));
-        else body.innerHTML = html;
+        else { if (YT.player) { try { YT.player.destroy(); } catch (e) {} YT.player = null; YT.ready = false; } body.innerHTML = html; }
+        if (YT.on) ytMount();
         bindStickers(body);
         placeTools();
     };
@@ -581,6 +586,9 @@ export function init() {
         [...oLeft.children].forEach(c => { if (c !== keep) c.remove(); });
         let before = true;
         [...nLeft.children].forEach(c => { if (c === nKeep) { before = false; return; } if (before) oLeft.insertBefore(c, keep); else oLeft.appendChild(c); });
+        // 영상 칸(.yt-p)만 그대로 두고 제목·재생바·버튼은 새것으로
+        const oy = keep.querySelector('.dy-yt'), ny = nKeep.querySelector('.dy-yt');
+        if (oy && ny) { [...oy.children].forEach(c => { if (!c.classList.contains('yt-p')) c.remove(); }); [...ny.children].forEach(c => { if (!c.classList.contains('yt-p')) oy.appendChild(c); }); }
         let afterLeft = false;
         [...nsp.children].forEach(c => { if (c === nLeft) { afterLeft = true; return; } if (afterLeft) oldSp.appendChild(c); else oldSp.insertBefore(c, oLeft); });
     }
@@ -620,7 +628,7 @@ export function init() {
             '<div style="display:flex;gap:4px;justify-content:center;margin-top:6px"><button class="dy-rb round" data-a="dday-add" title="추가">' + ic('plus') + '</button><button class="dy-rb round" data-a="dday-del" title="지우기">' + ic('x') + '</button></div></div>');
     }
     /* YouTube: 김민정 Library(YouTube)와 같은 기록 — 위젯은 오늘 본 영상만 (하루마다 새로), 추가한 날짜·시간 그대로 */
-    const YT = { i: 0, on: null, day: todayKey() };
+    const YT = { i: 0, on: null, day: todayKey(), rep: false, player: null, ready: false };
     const ytList = k => ext.mj.library.filter(x => x.type === 'youtube' && x.date === k).sort((a, b) => ((a.time || '') + (a.at || '')) < ((b.time || '') + (b.at || '')) ? -1 : 1);
     function musicW() {
         const L = ytList(todayKey());
@@ -629,16 +637,84 @@ export function init() {
         const head = 'YOUTUBE<button class="dy-rb round hx" data-a="yt-list" title="목록" style="height:18px;width:18px;min-width:18px">' + ic('list') + '</button>';
         if (!t) return widget(head, '<div class="dy-yt empty"><button class="dy-rb round" data-a="yt-add" title="영상 추가">' + ic('plus') + '</button></div>', 'yt');
         const vid = ytId(t.url);
-        const player = YT.on === t.id && vid
-            ? '<div class="yt-p"><iframe class="dy-yt-frame" data-k="' + esc(t.id) + '" src="https://www.youtube-nocookie.com/embed/' + vid + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="YouTube"></iframe></div>'
+        const playing = YT.on === t.id && vid;
+        const player = playing
+            ? '<div class="yt-p"><div class="dy-yt-frame" id="dy-ytp" data-k="' + esc(t.id) + '" data-v="' + vid + '"></div></div>'
             : '<button class="yt-p thumb" data-a="yt-play" title="재생">' + (vid ? '<img src="https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg" alt="">' : '') + '<span class="pl">' + ic('play') + '</span></button>';
         return widget(head,
             '<div class="dy-yt">' + player +
             '<div class="tt" title="' + esc(t.title || '') + '">' + esc(t.title || 'YouTube') + '</div>' +
-            '<div class="sub">' + esc([t.time, t.creator].filter(Boolean).join(' · ')) + '</div>' +
-            '<div class="ctl"><button class="dy-rb round" data-a="yt-prev">' + ic('left') + '</button><span>' + (YT.i + 1) + ' / ' + L.length + '</span>' +
-            '<button class="dy-rb round" data-a="yt-next">' + ic('right') + '</button><span style="flex:1"></span><button class="dy-rb round" data-a="yt-add" title="영상 추가">' + ic('plus') + '</button></div></div>', 'yt');
+            '<div class="sub">' + esc([t.time, t.creator].filter(Boolean).join(' · ')) + '<span class="n">' + (YT.i + 1) + ' / ' + L.length + '</span></div>' +
+            '<div class="yt-bar"><span class="cur">0:00</span><input type="range" class="yt-seek" min="0" max="1000" value="0"' + (playing ? '' : ' disabled') + '><span class="dur">0:00</span></div>' +
+            '<div class="yt-btns"><button class="dy-ibtn" data-a="yt-prev" title="이전">' + ic('prev') + '</button>' +
+            '<button class="dy-ibtn big" data-a="yt-pp" title="재생/멈춤">' + ic(playing && YT.paused === false ? 'pause' : 'play') + '</button>' +
+            '<button class="dy-ibtn" data-a="yt-next" title="다음">' + ic('next') + '</button>' +
+            '<button class="dy-ibtn' + (YT.rep ? ' on' : '') + '" data-a="yt-rep" title="반복">' + ic('repeat') + '</button>' +
+            '<span style="flex:1"></span><button class="dy-ibtn" data-a="yt-add" title="영상 추가">' + ic('plus') + '</button></div></div>', 'yt');
     }
+    // YouTube IFrame API: 재생바·이전·재생/멈춤·다음·반복은 위젯 버튼으로
+    let ytApi = null;
+    function loadYtApi() {
+        if (window.YT && window.YT.Player) return Promise.resolve();
+        if (ytApi) return ytApi;
+        ytApi = new Promise(res => {
+            const prev = window.onYouTubeIframeAPIReady;
+            window.onYouTubeIframeAPIReady = () => { if (prev) try { prev(); } catch (e) {} res(); };
+            const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(sc);
+        });
+        return ytApi;
+    }
+    const mmss = v => { v = Math.max(0, Math.floor(v || 0)); return Math.floor(v / 60) + ':' + pad(v % 60); };
+    function ytWidget() { return document.querySelector('.dy-w.yt'); }
+    function ytSetIcon(playing) { const b = document.querySelector('.dy-w.yt [data-a="yt-pp"]'); if (b) b.innerHTML = ic(playing ? 'pause' : 'play'); }
+    async function ytMount() {
+        const el = document.getElementById('dy-ytp');
+        if (!el || el.tagName === 'IFRAME' || el.dataset.mounting) return;
+        el.dataset.mounting = '1';
+        await loadYtApi();
+        if (!document.body.contains(el)) return;
+        YT.ready = false;
+        YT.player = new window.YT.Player(el, {
+            videoId: el.dataset.v, host: 'https://www.youtube-nocookie.com',
+            playerVars: { autoplay: 1, playsinline: 1, rel: 0, controls: 0, modestbranding: 1, iv_load_policy: 3 },
+            events: {
+                onReady: e => { YT.ready = true; const f = e.target.getIframe(); f.classList.add('dy-yt-frame'); f.dataset.k = YT.on; e.target.playVideo(); },
+                onStateChange: e => {
+                    ytSetIcon(e.data === 1);
+                    YT.paused = e.data !== 1;
+                    if (e.data === 0) { if (YT.rep) { e.target.seekTo(0, true); e.target.playVideo(); } else ytStep(1, true); }
+                }
+            }
+        });
+    }
+    // 이전/다음: 재생 중이면 플레이어에 바로 넣고, 아니면 썸네일만 바꿈
+    function ytStep(dir, auto) {
+        const L = ytList(todayKey()); if (!L.length) return;
+        if (auto && YT.i + dir >= L.length) return;                      // 끝까지 다 봤으면 멈춤
+        YT.i = ((YT.i + dir) % L.length + L.length) % L.length;
+        const x = L[YT.i], vid = ytId(x.url);
+        if (YT.on && YT.player && YT.ready && vid) {
+            YT.on = x.id;
+            const f = YT.player.getIframe(); if (f) f.dataset.k = x.id;
+            YT.player.loadVideoById(vid);
+        } else if (YT.on) { YT.on = null; }
+        render('diary');
+    }
+    // 재생바: 0.5초마다 위치 표시
+    const ytTick = setInterval(() => {
+        const w = ytWidget(); if (!w || !YT.player || !YT.ready || !YT.on) return;
+        let cur = 0, dur = 0; try { cur = YT.player.getCurrentTime(); dur = YT.player.getDuration(); } catch (e) { return; }
+        const sk = w.querySelector('.yt-seek'); if (!sk) return;
+        sk.disabled = false;
+        if (!sk.matches(':active')) sk.value = dur ? Math.round(cur / dur * 1000) : 0;
+        w.querySelector('.cur').textContent = mmss(cur); w.querySelector('.dur').textContent = mmss(dur);
+    }, 500);
+    offs.push(() => { clearInterval(ytTick); try { if (YT.player) YT.player.destroy(); } catch (e) {} });
+    on(wrap, 'input', e => {
+        if (!e.target.matches('.yt-seek') || !YT.player || !YT.ready) return;
+        const dur = YT.player.getDuration(); if (dur) YT.player.seekTo(e.target.value / 1000 * dur, true);
+    });
+
     // 영상 추가/고치기 카드: 링크 · 제목(비우면 영상 제목) · 태그 · 메모 · 날짜/시간
     async function ytForm(it) {
         const now = stamp();
@@ -1069,21 +1145,35 @@ export function init() {
                     }).join('') + '</div>' +
                     (Object.keys(R.open).length ? '<div style="text-align:right"><button class="dy-rb" data-a="rp-fold">모두 접기</button></div>' : '');
             }
-            const mh = Object.keys(ext.mh.log).map(id => [MYHOME_ACTS[id] || id, Object.keys(ext.mh.log[id] || {}).filter(k => inM(k) && ext.mh.log[id][k].done).length]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
-            if (mh.length) html += rpH('집안일') + chips(mh.map(([n, v]) => [n, v + '번']));
-            const meals = Object.keys(MEAL_KO).map(sl => [MEAL_KO[sl], mj.condition.filter(c => c.type === 'meal' && c.slot === sl && inM(c.date)).length]).filter(x => x[1]);
-            if (meals.length) html += rpH('식사') + chips(meals.map(([n, v]) => [n, v + '번']));
-            const bt = Object.keys(BEAUTY_KO).map(sl => [BEAUTY_KO[sl], mj.beauty.filter(b => b.slot === sl && inM(b.date)).length]).filter(x => x[1]);
-            if (bt.length) html += rpH('뷰티') + chips(bt.map(([n, v]) => [n, v + '번']));
-            const moods = mj.condition.filter(c => c.type === 'mood' && inM(c.date));
-            if (moods.length) {
-                const cnt = {}; moods.forEach(c => { cnt[c.mood] = (cnt[c.mood] || 0) + 1; });
-                html += rpH('기분') + chips(Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).map(k => [MOOD_EMO[k] || k, cnt[k]]));
-            }
-            const meds = mj.condition.filter(c => c.type === 'medicine' && inM(c.date)).length;
-            if (meds) html += rpH('약') + chips([['💊', meds + '번']]);
-            const yts = mj.library.filter(x => x.type === 'youtube' && inM(x.date)).length;
-            if (yts) html += rpH('YouTube') + chips([['본 영상', yts + '개']]);
+            // 집안일·식사·뷰티·기분·약·YouTube: 이름과 횟수만, 누르면 언제 했는지
+            const plain = n => String(n).replace(/^[^\s가-힣A-Za-z0-9]+\s*/, '');
+            const when = (k, t) => { const d = parseKey(k); return (d.getMonth() + 1) + '.' + pad(d.getDate()) + ' ' + WEEK_KO[d.getDay()]; };
+            const byDate = (a, b) => (a.k + (a.t || '')) < (b.k + (b.t || '')) ? -1 : 1;
+            const mh = Object.keys(ext.mh.log).map(id => ({ n: plain(MYHOME_ACTS[id] || id), d: Object.keys(ext.mh.log[id] || {}).filter(k => inM(k) && ext.mh.log[id][k].done)
+                .map(k => { const x = ext.mh.log[id][k]; return { k, t: hhmm(x.at), x: [x.count > 1 ? x.count + '번' : '', x.memo || ''].filter(Boolean).join(' · ') }; }) }))
+                .filter(x => x.d.length).sort((a, b) => b.d.length - a.d.length);
+            const cond = (type, keyOf, nameOf, textOf) => {
+                const g = {};
+                mj.condition.filter(c => c.type === type && inM(c.date)).forEach(c => { const key = keyOf(c); (g[key] = g[key] || { n: nameOf(c), d: [] }).d.push({ k: c.date, t: c.time, x: textOf(c) }); });
+                return Object.values(g).sort((a, b) => b.d.length - a.d.length);
+            };
+            const meals = cond('meal', c => c.slot, c => MEAL_KO[c.slot] || c.slot, c => c.memo || '');
+            const bt = Object.keys(BEAUTY_KO).map(sl => ({ n: BEAUTY_KO[sl], d: mj.beauty.filter(b => b.slot === sl && inM(b.date)).map(b => ({ k: b.date, t: b.time, x: (b.steps || []).join(', ') })) })).filter(x => x.d.length);
+            const MOOD_KO = { love: '최고', good: '좋음', okay: '괜찮음', meh: '그저그럼', tired: '피곤', sad: '슬픔', anxious: '불안', angry: '화남' };
+            const moods = cond('mood', c => c.mood, c => (MOOD_EMO[c.mood] || '') + ' ' + (MOOD_KO[c.mood] || c.mood), c => c.memo || '');
+            const meds = cond('medicine', () => 'med', () => '약', c => [c.name, c.memo].filter(Boolean).join(' · '));
+            const yts = mj.library.filter(x => x.type === 'youtube' && inM(x.date)).map(x => ({ k: x.date, t: x.time, x: x.title || '' }));
+            const rows = (key, list) => !list.length ? '' : '<div class="rp-rows">' + list.map(g => {
+                const id = key + ':' + g.n, open = !!R.open[id];
+                return '<div class="rr' + (open ? ' open' : '') + '"><button class="row" data-a="rp-q" data-k="' + esc(id) + '"><span class="n">' + esc(g.n) + '</span><span class="v">' + g.d.length + '번</span></button>' +
+                    (open ? '<div class="dt">' + g.d.slice().sort(byDate).map(d => '<div><span class="k">' + when(d.k) + '</span><span class="t">' + esc(d.t || '') + '</span><span class="x">' + esc(d.x || '') + '</span></div>').join('') + '</div>' : '') + '</div>';
+            }).join('') + '</div>';
+            if (mh.length) html += rpH('집안일') + rows('mh', mh);
+            if (meals.length) html += rpH('식사') + rows('meal', meals);
+            if (bt.length) html += rpH('뷰티') + rows('bt', bt);
+            if (moods.length) html += rpH('기분') + rows('mood', moods);
+            if (meds.length) html += rpH('약') + rows('med', meds);
+            if (yts.length) html += rpH('YouTube') + rows('yt', [{ n: '본 영상', d: yts }]);
         }
         if (R.tab === 'diary') {
             const ents = ext.mj.diary.filter(x => inM(x.date)).sort((a, b) => a.date < b.date ? -1 : 1);
@@ -1233,9 +1323,14 @@ export function init() {
             }
             /* 음악 */
             /* YouTube (김민정 Library와 같은 기록) */
-            case 'yt-prev': YT.i--; YT.on = null; return render('diary');
-            case 'yt-next': YT.i++; YT.on = null; return render('diary');
-            case 'yt-play': { const x = ytList(todayKey())[YT.i]; if (!x) return; if (!ytId(x.url)) return window.open(safeUrl(x.url), '_blank', 'noopener'); YT.on = x.id; return render('diary'); }
+            case 'yt-prev': return ytStep(-1);
+            case 'yt-next': return ytStep(1);
+            case 'yt-play': case 'yt-pp': {
+                if (YT.on && YT.player && YT.ready) { const st = YT.player.getPlayerState(); if (st === 1) YT.player.pauseVideo(); else YT.player.playVideo(); return; }
+                const x = ytList(todayKey())[YT.i]; if (!x) return; if (!ytId(x.url)) return window.open(safeUrl(x.url), '_blank', 'noopener');
+                YT.on = x.id; YT.paused = false; return render('diary');
+            }
+            case 'yt-rep': YT.rep = !YT.rep; t.classList.toggle('on', YT.rep); return;
             case 'yt-add': return ytForm(null);
             case 'yt-list': return openYtList();
             /* 스티커 */
@@ -1376,8 +1471,13 @@ export function init() {
         let ents = clone(origE);
         if (dr.memo) { ents.push({ id: 'dy' + uid(), title: '', body: dr.memo }); delete dr.memo; }   // 예전 메모는 일기로 옮김
         let files = {};                   // 새로 올린 사진 (저장할 때 같이 커밋)
-        const sig = () => JSON.stringify([dr, ents]);
-        const first = JSON.stringify([orig, origE]);
+        const norm = (day, es) => {
+            const d = {}; ['photo', 'sticker', 'link', 'color'].forEach(f => { if (day[f]) d[f] = day[f]; });
+            d.events = (day.events || []).map(e => e.text);
+            return JSON.stringify([d, es.filter(e => (e.title || '').trim() || (e.body || '').trim()).map(e => [e.id, (e.title || '').trim(), (e.body || '').replace(/\s+$/, '')])]);
+        };
+        const sig = () => norm(dr, ents);
+        const first = norm(orig, origE.concat(orig.memo ? [] : []));
         cardGuard = () => sig() !== first;
 
         function draw() {
@@ -1495,7 +1595,12 @@ export function init() {
             const c = e.target.closest('[data-c]'); if (!c) return;
             const a = c.dataset.c, row = c.closest('.dy-pf-row');
             if (a === 'close') return closeCard();
-            if (a === 'edit') { editing = true; cardGuard = () => true; return draw(); }
+            if (a === 'edit') {
+                editing = true; draw();
+                const snap = () => JSON.stringify([...cardBox.querySelectorAll('.dy-pf-row')].map(el => [el.querySelector('[data-k=label]').value, el.querySelector('[data-k=value]').value]));
+                const first = snap(); cardGuard = () => cardBox.querySelector('.dy-pf-row') !== null && snap() !== first;
+                return;
+            }
             if (a === 'cancel') { editing = false; cardGuard = null; return draw(); }
             if (a === 'add') { cardBox.querySelector('.dy-pf-edit').insertAdjacentHTML('beforeend', pfRow({})); return; }
             if (a === 'del') return row.remove();
