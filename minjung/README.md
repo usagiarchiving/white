@@ -90,6 +90,7 @@
 ## Condition (몸 상태)
 
 `condition` — 하루에 여러 번, 시간대별로 기록. `type`으로 나뉘어요.
+마이홈 **요리** 칸에 적은 아침·점심·저녁·밤도 여기 Meal로 들어와요 (`id: cd_cook_<날짜>_<칸>`, `from: myhome-cook`). 요리 → 식사 한쪽으로만이라, 여기서 쓴 식사가 마이홈 요리로 가지는 않아요.
 화면에서는 Condition을 누르면 **Meal · Medicine** / **Symptom · Mood** 두 창 중 하나를 골라요 (저장은 둘 다 이 목록 하나).
 
 ```json

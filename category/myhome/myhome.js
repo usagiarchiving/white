@@ -955,11 +955,12 @@ export function init() {
         const el = document.getElementById('mh-saving');
         if (el) { el.textContent = pending ? '저장 중…' : ''; el.classList.toggle('on', !!pending); }
     }
-    function save(message, fn) {
+    // extra: 같은 커밋으로 함께 고칠 다른 파일 { 경로: { mutate, fallback } } (예: 요리 → 김민정 식사)
+    function save(message, fn, extra) {
         fn(db);
         if (!window.ghdb.hasToken()) { alert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); load().then(() => card && drawCard()); return; }
         setPending(pending + 1);
-        const j = {}; j[DATA] = { mutate: cur => { cur = normalize(cur); fn(cur); cur.updated_at = stamp(); return cur; }, fallback: { log: {} } };
+        const j = Object.assign({}, extra || {}); j[DATA] = { mutate: cur => { cur = normalize(cur); fn(cur); cur.updated_at = stamp(); return cur; }, fallback: { log: {} } };
         repo.commit(message, {}, j).then(res => {
             setPending(pending - 1);
             // 저장소가 기억해 둔 최신본과 같은 객체를 쓰면 다음 수정이 두 번 반영되므로 복사해서 씀
@@ -1082,8 +1083,30 @@ export function init() {
             }).join('') + '</div>';
     }
     function hhmm(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+    // 요리 칸에 적은 식사는 김민정 > Condition > Meal 에도 들어감 (한쪽으로만: 요리 → 식사)
+    const MINJUNG = 'minjung/minjung.json';
+    function mealToMinjung(k, slot, m) {
+        const mid = 'cd_cook_' + k + '_' + slot, j = {};
+        j[MINJUNG] = { fallback: {}, mutate: cur => {
+            cur = cur && typeof cur === 'object' ? cur : {};
+            cur.condition = Array.isArray(cur.condition) ? cur.condition : [];
+            const i = cur.condition.findIndex(x => x.id === mid);
+            if (!m || !m.memo) { if (i >= 0) cur.condition.splice(i, 1); }
+            else {
+                const now = new Date();
+                const it = { id: mid, date: k, time: m.time || (String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')),
+                    at: stamp(), type: 'meal', slot, memo: m.memo, from: 'myhome-cook' };
+                if (i >= 0) cur.condition[i] = Object.assign({}, cur.condition[i], it); else cur.condition.push(it);
+            }
+            cur.updated_at = stamp();
+            return cur;
+        } };
+        return j;
+    }
     function saveMeal(slot, patch) {
         const id = 'cook', k = card.sel;
+        const before = (((db.log[id] || {})[k] || {}).meals || {})[slot] || {};
+        const after = Object.assign({}, before, patch);
         save('myhome: 요리 ' + k + ' ' + (MEALS.find(m => m[0] === slot) || [, slot])[1], d => {
             d.log[id] = d.log[id] || {};
             const r = Object.assign({}, d.log[id][k] || {});
@@ -1093,7 +1116,7 @@ export function init() {
             if (Object.keys(meals).length) r.meals = meals; else delete r.meals;
             r.at = stamp();
             if (!r.count && !r.memo && !r.meals) delete d.log[id][k]; else d.log[id][k] = r;
-        });
+        }, mealToMinjung(k, slot, after));
     }
     function bindMeals() {
         cardEl.querySelectorAll('.mh-meal').forEach(row => {

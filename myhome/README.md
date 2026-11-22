@@ -73,6 +73,8 @@
 
 칸 이름: `breakfast` 아침, `lunch` 점심, `dinner` 저녁, `night` 밤. `time`은 처음 쓴 시각(고칠 수 있음).
 
+여기 적은 식사는 같은 커밋으로 `minjung/minjung.json`의 `condition`(Meal)에도 들어가요 (요리 → 식사 한쪽으로만). 지우면 거기서도 지워져요.
+
 ## 커튼
 
 `curtain` — `{ "closed": true, "at": "닫은 시각" }`. 닫은 뒤 해가 뜨면 저절로 열린 것으로 봄.

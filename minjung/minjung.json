@@ -751,6 +751,16 @@
    "slot": "lunch",
    "memo": "치즈라면",
    "from": "daily-168"
+  },
+  {
+   "id": "cd_cook_2026-11-22_breakfast",
+   "date": "2026-11-22",
+   "time": "04:31",
+   "at": "2026-11-22T13:45:01+09:00",
+   "type": "meal",
+   "slot": "breakfast",
+   "memo": "간장국수",
+   "from": "myhome-cook"
   }
  ],
  "beauty": [
