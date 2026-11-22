@@ -145,6 +145,7 @@ const ICO = {
     out: '<path d="M9 3.5h3.5V7M12.5 3.5L7.5 8.5"/><path d="M11 9.5v3H3.5V5h3"/>',
     search: '<circle cx="7" cy="7" r="4"/><path d="M10 10l3.2 3.2"/>', alignl: '<path d="M3 4h10M3 7h6.5M3 10h10M3 13h6.5"/>', alignc: '<path d="M3 4h10M4.8 7h6.4M3 10h10M4.8 13h6.4"/>',
     eraser: '<path d="M6.5 13.5h7M3.2 10.2l5.6-5.6a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-4.9 4.9H5.2z"/>',
+    down: '<path d="M4 6.5l4 4 4-4"/>',
     grid: '<rect x="2.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="2.8" y="8.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="8.8" width="4.4" height="4.4" rx="1"/>',
     eye: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="2"/>',
     eyeoff: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><path d="M3 13L13 3"/>',
@@ -618,7 +619,7 @@ export function init() {
             '<div class="dy-prof"><div class="ph" data-a="prof-photo" title="사진 바꾸기">' + ph + '</div>' +
             '<div class="nm' + (mjProf('이름') ? '' : ' none') + '" data-a="prof-name" title="이름">' + (mjProf('이름') ? esc(mjProf('이름')) : ic('pen')) + '</div>' +
             '<div class="nt" data-a="prof-note" title="한 줄 소개">' + esc(p.note || '') + '</div>' +
-            (p.photo ? '<button class="dy-rb" style="margin-top:6px" data-a="prof-unphoto">사진 빼기</button>' : '') + '</div>');
+            (p.photo ? '<button class="dy-rb" style="margin-top:6px" data-a="prof-unphoto">사진 빼기</button>' : '') + '</div>', 'w-prof');
     }
     function goalsW(mk) {
         const items = db.goals[mk] || [];
@@ -849,9 +850,7 @@ export function init() {
             const ev = day.events || [];
             // 일정은 날짜 밑에 꾸밈 칩으로, 일기(김민정 Diary와 같은 기록)는 글만
             const diaryTx = diaryOf(k).map(x => x.title || firstLine(x.body)).concat(day.memo ? [day.memo] : []).filter(Boolean);
-            if (pic) {
-                if (ev.length || diaryTx.length || day.link) inner += '<span class="dots">' + ev.concat(diaryTx).slice(0, 4).map(() => '<i></i>').join('') + (day.link ? '<i class="l"></i>' : '') + '</span>';
-            } else if (ev.length || diaryTx.length) {
+            if (!pic && (ev.length || diaryTx.length)) {
                 inner += '<span class="cb">' + ev.map(e => '<span class="ev1">' + esc(e.text) + '</span>').join('') +
                     diaryTx.map(t => '<span class="dtx">' + esc(t) + '</span>').join('') + '</span>';
             }
@@ -1668,6 +1667,7 @@ export function init() {
         if (!Object.keys(day).length) delete d.days[k];
     }
 
+    function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.max(96, el.scrollHeight + 2) + 'px'; }
     // 날짜 카드: 고친 것은 [저장]을 눌러야 한 번에 저장 (일기는 김민정 Diary와 같은 기록)
     function openDayCard(k) {
         const d0 = parseKey(k);
@@ -1687,32 +1687,47 @@ export function init() {
         const first = norm(orig, origE.concat(orig.memo ? [] : []));
         cardGuard = () => sig() !== first;
 
+        // 처음엔 보기 화면(일정 → 사진 → 일기), [편집]을 누르면 고치는 화면. 아무것도 없는 날은 바로 편집
+        let mode = (orig.events || []).length || orig.photo || orig.sticker || origE.length || orig.link ? 'view' : 'edit';
+        let stkOpen = false;
+        const title = '<h3><img src="' + CHAR['c-blue'] + '" alt="">' + (d0.getMonth() + 1) + '월 ' + d0.getDate() + '일 ' + WEEK_KO[d0.getDay()] + '요일</h3>';
+        const bodyHtml = b => String(b || '').split('\n').map(l => { const m = /^!\[\]\((.+)\)$/.exec(l.trim()); return m ? '<img src="' + esc(src(m[1])) + '" alt="">' : '<div>' + (l ? esc(l) : '&nbsp;') + '</div>'; }).join('');
         function draw() {
             const ev = dr.events || [];
-            cardBox.innerHTML =
-                '<h3><img src="' + CHAR['c-blue'] + '" alt="">' + (d0.getMonth() + 1) + '월 ' + d0.getDate() + '일 ' + WEEK_KO[d0.getDay()] + '요일</h3>' +
-                '<div class="pv">' + (dr.photo ? '<img src="' + esc(src(dr.photo)) + '" alt="">' : dr.sticker ? '<img src="' + esc(src(dr.sticker)) + '" alt="" style="width:55%">' : '') + '</div>' +
+            if (mode === 'view') {
+                cardBox.innerHTML = title +
+                    (ev.length ? '<div class="dv-ev">' + ev.map(e => '<span class="hl">' + esc(e.text) + '</span>').join('') + '</div>' : '') +
+                    (dr.photo ? '<img class="dv-photo" src="' + esc(src(dr.photo)) + '" alt="">' : dr.sticker ? '<img class="dv-stk" src="' + esc(src(dr.sticker)) + '" alt="">' : '') +
+                    ents.filter(e => e.title.trim() || e.body.trim()).map(e => '<div class="dv-ent">' + (e.title.trim() ? '<div class="t">' + esc(e.title) + '</div>' : '') + '<div class="b">' + bodyHtml(e.body) + '</div></div>').join('') +
+                    (safeUrl(dr.link) ? '<a class="dv-link" href="' + esc(safeUrl(dr.link)) + '" target="_blank" rel="noopener">' + ic('out') + '<span>' + esc(dr.link) + '</span></a>' : '') +
+                    '<div class="foot"><span style="flex:1"></span><button class="dy-rb" data-c="edit">' + ic('pen') + '<span class="lbl">편집</span></button><button class="dy-rb on" data-c="close">닫기</button></div>';
+                return;
+            }
+            cardBox.innerHTML = title +
+                (dr.photo ? '<div class="pv has"><img src="' + esc(src(dr.photo)) + '" alt=""></div>' : '') +
                 '<div class="row" style="margin-top:8px"><button class="dy-rb" data-c="photo">' + ic('photo') + '<span class="lbl">사진 ' + (dr.photo ? '바꾸기' : '넣기') + '</span></button>' +
                     (dr.photo ? '<button class="dy-rb" data-c="unphoto">사진 빼기</button>' : '') + '</div>' +
-                '<div class="lb">스티커</div><div class="dy-pick">' + stickerOptions(dr.sticker || '', 'st', true) + '</div>' +
                 '<div class="lb">일정</div>' +
                 '<div class="dy-add"><input class="dy-in" id="dy-ev-in"><button class="dy-rb round" data-c="ev-add" title="추가">' + ic('plus') + '</button></div>' +
                 (ev.length ? '<div class="dy-list">' + ev.map(e => '<div class="dy-li" data-id="' + esc(e.id) + '"><span class="tx">' + esc(e.text) + '</span><button class="dy-del" data-c="ev-del">' + ic('x') + '</button></div>').join('') + '</div>' : '') +
                 '<div class="lb" style="display:flex;justify-content:space-between;align-items:center">일기 <button class="dy-rb round" data-c="ent-add" title="일기 더 쓰기">' + ic('plus') + '</button></div>' +
                 '<div class="dy-ents">' + ents.map((e, i) => '<div class="dy-ent" data-i="' + i + '">' +
                     '<div class="row"><input class="dy-in" data-ent="title" value="' + esc(e.title) + '" placeholder="제목"><button class="dy-del" data-c="ent-del" title="이 일기 지우기">' + ic('x') + '</button></div>' +
-                    '<textarea class="dy-in" data-ent="body">' + esc(e.body) + '</textarea></div>').join('') + '</div>' +
+                    '<textarea class="dy-in lined" data-ent="body">' + esc(e.body) + '</textarea></div>').join('') + '</div>' +
                 '<div class="lb">링크</div><div class="row"><input class="dy-in" id="dy-day-link" value="' + esc(dr.link || '') + '">' +
                 (safeUrl(dr.link) ? '<a class="dy-rb" href="' + esc(safeUrl(dr.link)) + '" target="_blank" rel="noopener" style="text-decoration:none">열기</a>' : '') + '</div>' +
+                '<button class="lb fold" data-c="stk-fold">스티커' + (dr.sticker ? ' <img src="' + esc(src(dr.sticker)) + '" alt="">' : '') + '<span class="ar">' + ic(stkOpen ? 'up' : 'down') + '</span></button>' +
+                (stkOpen ? '<div class="dy-pick">' + stickerOptions(dr.sticker || '', 'st', true) + '</div>' : '') +
                 '<div class="lb">칸 색</div><div class="dy-seg">' + CELL_COLORS.map(([c, n]) => '<button class="dy-rb' + ((dr.color || '') === c ? ' on' : '') + '" data-color="' + c + '">' +
                     (c ? '<i style="display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid var(--dy-line);background:' + c + '"></i>' : '') + '<span class="lbl">' + n + '</span></button>').join('') + '</div>' +
                 '<div class="foot"><button class="dy-rb" data-c="clear">이 날 비우기</button><span style="flex:1"></span>' +
                     '<button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
 
             // 입력은 바로 초안에만 (다시 그리지 않음)
+            cardBox.querySelectorAll('textarea.lined').forEach(autoGrow);
             cardBox.querySelector('#dy-day-link').oninput = e => { dr.link = e.target.value.trim(); };
             cardBox.querySelectorAll('[data-ent]').forEach(el => {
-                el.oninput = () => { const i = +el.closest('.dy-ent').dataset.i; ents[i][el.dataset.ent] = el.value; };
+                el.oninput = () => { const i = +el.closest('.dy-ent').dataset.i; ents[i][el.dataset.ent] = el.value; if (el.tagName === 'TEXTAREA') autoGrow(el); };
             });
             const evIn = cardBox.querySelector('#dy-ev-in');
             evIn.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addEv(); } };
@@ -1756,6 +1771,8 @@ export function init() {
         cardBox.onclick = async e => {
             const st = e.target.closest('[data-st]'), col = e.target.closest('[data-color]'), c = e.target.closest('[data-c]');
             if (st) { dr.sticker = st.dataset.st; return draw(); }
+            if (c && c.dataset.c === 'edit') { mode = 'edit'; return draw(); }
+            if (c && c.dataset.c === 'stk-fold') { stkOpen = !stkOpen; return draw(); }
             if (col) { dr.color = col.dataset.color; return draw(); }
             if (!c) return;
             const a = c.dataset.c;

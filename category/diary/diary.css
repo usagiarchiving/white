@@ -727,3 +727,29 @@ textarea.dy-in { font-size: 11px; }
     .dy-memo2 .mtabs > button:not(.dy-ibtn) { padding: 6px 12px 5px; min-width: 44px; }
     .dy-card .dy-rte { min-height: 180px; }
 }
+
+/* ---------------- 날짜 카드: 보기 화면 (일정 → 사진 → 일기) ---------------- */
+.dv-ev { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 10px; }
+.dv-ev .hl { font-size: 12.5px; font-weight: 700; line-height: 1.5; padding: 0 3px;
+    background: linear-gradient(transparent 45%, var(--dy-today) 45%, var(--dy-today) 92%, transparent 92%); }
+.dv-photo { display: block; width: 100%; height: auto; border-radius: 12px; border: 1.5px solid var(--dy-line); margin-bottom: 10px; }
+.dv-stk { display: block; width: 38%; height: auto; margin: 0 auto 10px; }
+.dv-ent { margin-bottom: 10px; }
+.dv-ent .t { font-family: var(--dy-title); font-size: 13px; margin-bottom: 2px; }
+.dv-ent .b { font-size: 12.5px; line-height: 26px; padding: 0 4px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; user-select: text; -webkit-user-select: text;
+    background: repeating-linear-gradient(transparent 0 25px, var(--dy-thin) 25px 26px); }
+.dv-ent .b div { line-height: 26px; min-height: 26px; }
+.dv-ent .b img { display: block; width: 100%; height: auto; border-radius: 10px; margin: 4px 0; }
+.dv-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #5f93b8; text-decoration: none; max-width: 100%; }
+.dv-link span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 편집 화면: 사진은 가로에 맞추고 비율 그대로, 일기는 줄노트, 스티커는 접기 */
+.dy-card .pv.has { aspect-ratio: auto; display: block; background: none; border: 1.5px solid var(--dy-line); }
+.dy-card .pv.has img { display: block; width: 100%; height: auto; max-height: none; }
+.dy-card textarea.lined { line-height: 26px; padding: 0 10px; min-height: 96px; resize: none; overflow: hidden;
+    background: var(--dy-paper) repeating-linear-gradient(transparent 0 25px, var(--dy-thin) 25px 26px); background-attachment: local; }
+.dy-card .lb.fold { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
+.dy-card .lb.fold img { width: 20px; height: 20px; object-fit: contain; }
+.dy-card .lb.fold .ar { margin-left: auto; color: var(--dy-sub); }
+
+/* 휴대폰에서는 프로필 안 보이게 */
+@media (max-width: 760px) { .dy-left .w-prof { display: none !important; } }
