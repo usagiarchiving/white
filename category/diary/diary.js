@@ -40,6 +40,44 @@ const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 
 const WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const WEEK_KO = ['일', '월', '화', '수', '목', '금', '토'];
 
+/* ---------------- 오하아사 ---------------- */
+const BIRTH = '2002-04-11';
+const OHA_URL = 'https://www.asahi.co.jp/ohaasa/week/horoscope/';
+// おは朝 번호 순서: 01 양자리 ~ 12 물고기자리
+const SIGNS = [
+    { ko: '양자리', jp: '牡羊座', e: '♈' }, { ko: '황소자리', jp: '牡牛座', e: '♉' }, { ko: '쌍둥이자리', jp: '双子座', e: '♊' },
+    { ko: '게자리', jp: '蟹座', e: '♋' }, { ko: '사자자리', jp: '獅子座', e: '♌' }, { ko: '처녀자리', jp: '乙女座', e: '♍' },
+    { ko: '천칭자리', jp: '天秤座', e: '♎' }, { ko: '전갈자리', jp: '蠍座', e: '♏' }, { ko: '사수자리', jp: '射手座', e: '♐' },
+    { ko: '염소자리', jp: '山羊座', e: '♑' }, { ko: '물병자리', jp: '水瓶座', e: '♒' }, { ko: '물고기자리', jp: '魚座', e: '♓' }
+];
+function signOf(birth) {
+    const [, m, d] = String(birth).split('-').map(Number), md = m * 100 + d;
+    // 각 별자리 시작일 (월*100+일), 양자리(3/21)부터
+    const start = [321, 420, 521, 622, 723, 823, 923, 1024, 1123, 1222, 120, 219];
+    for (let i = 11; i >= 0; i--) {
+        const st = start[i], next = start[(i + 1) % 12];
+        if (st < next ? md >= st && md < next : md >= st || md < next) return i + 1;
+    }
+    return 1;
+}
+// 받아 둔 JSON → { date: 'YYYY-MM-DD', items: [{ rank, st, text: [...] }] } (모양이 조금 달라도 읽히게 넉넉히)
+function parseOha(raw) {
+    if (!raw) return null;
+    const top = Array.isArray(raw) ? raw[0] : raw;
+    if (!top) return null;
+    const list = top.detail || top.details || top.horoscope || (Array.isArray(raw) && raw[0] && raw[0].ranking_no ? raw : []);
+    const pick = (o, re) => { const k = Object.keys(o).find(k => re.test(k)); return k ? o[k] : undefined; };
+    const items = (list || []).map(d => {
+        const rank = Number(pick(d, /rank/i));
+        let st = pick(d, /horoscope_st|sign|seiza|_st$/i);
+        st = Number(st) || SIGNS.findIndex(s => String(st).indexOf(s.jp) > -1) + 1;
+        const text = String(pick(d, /text|comment|message/i) || '').split(/\t|\n/).map(t => t.trim()).filter(Boolean);
+        return { rank, st, text };
+    }).filter(x => x.rank && x.st >= 1 && x.st <= 12);
+    const od = String(top.onair_date || top.date || '').replace(/\D/g, '');
+    return { date: od.length >= 8 ? od.slice(0, 4) + '-' + od.slice(4, 6) + '-' + od.slice(6, 8) : '', items };
+}
+
 /* ---------------- 작은 도우미 ---------------- */
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = n => String(n).padStart(2, '0');
@@ -113,6 +151,14 @@ export function init() {
     async function load() {
         try { db = normalize(await repo.readJSON(DATA, {})); } catch (e) { console.error(e); }
         applyTheme(); renderAll(true);
+        loadOha();
+    }
+    const OHA = { data: null, loading: false };
+    async function loadOha() {
+        OHA.loading = true;
+        try { OHA.data = parseOha(await repo.readJSON('diary/ohaasa.json', null)); } catch (e) { console.error(e); }
+        OHA.loading = false;
+        render('diary');
     }
 
     let pending = 0;
@@ -328,29 +374,35 @@ export function init() {
        다이어리 창
        ========================================================================== */
     const now = new Date();
-    const V = { y: now.getFullYear(), m: now.getMonth(), dd: 0, mu: 0, playing: false, deco: false, sel: null, tDate: todayKey(), rDate: todayKey() };
+    let lockStk = false;
+    try { lockStk = localStorage.getItem('dy-stk-lock') === '1'; } catch (e) {}
+    const V = { y: now.getFullYear(), m: now.getMonth(), dd: 0, mu: 0, playing: false, deco: !lockStk, sel: null, tDate: todayKey(), rDate: todayKey(), ohaAll: false };
 
     RENDER.diary = (body, tools) => {
         tools.innerHTML =
-            '<button class="dy-rb' + (V.deco ? ' on' : '') + '" data-tool="deco" title="스티커 옮기기">♡ 스티커</button>' +
+            '<button class="dy-rb' + (V.deco ? '' : ' on') + '" data-tool="deco" title="스티커를 고정하면 끌거나 눌러도 안 움직여요">' + (V.deco ? '♡ 스티커 고정' : '🔒 고정 풀기') + '</button>' +
+            '<button class="dy-rb" data-tool="sticker" title="스티커 붙이기">+ 스티커</button>' +
             '<button class="dy-rb" data-tool="theme" title="색 바꾸기">꾸미기</button>';
         tools.onclick = e => {
             const t = e.target.closest('[data-tool]'); if (!t) return;
-            if (t.dataset.tool === 'deco') { V.deco = !V.deco; V.sel = null; render('diary'); }
+            if (t.dataset.tool === 'deco') { V.deco = !V.deco; V.sel = null; try { localStorage.setItem('dy-stk-lock', V.deco ? '0' : '1'); } catch (e) {} render('diary'); }
+            if (t.dataset.tool === 'sticker') openThemeCard();
             if (t.dataset.tool === 'theme') openThemeCard();
         };
         const mk = monthKey(V.y, V.m);
         body.innerHTML =
             '<div class="dy-spread' + (V.deco ? ' dy-deco' : '') + '" id="dy-spread">' +
-                '<div class="dy-left">' + profileW() + goalsW(mk) + ddayW() + musicW() + bucketW() + '</div>' +
+                '<div class="dy-left">' + profileW() + goalsW(mk) + ddayW() + musicW() + ohaW() + bucketW() + '</div>' +
                 '<div class="dy-right">' + calendarHTML(mk) + '</div>' +
                 '<div class="dy-stk-layer" id="dy-stk-layer">' + stickersHTML() + '</div>' +
                 '<div class="dy-stk-tools" id="dy-stk-tools">' +
                     '<button class="dy-rb round" data-a="stk-small" title="작게">−</button><button class="dy-rb round" data-a="stk-big" title="크게">+</button>' +
                     '<button class="dy-rb round" data-a="stk-rl" title="왼쪽으로 돌리기">↺</button><button class="dy-rb round" data-a="stk-rr" title="오른쪽으로 돌리기">↻</button>' +
-                    '<button class="dy-rb round" data-a="stk-flip" title="뒤집기">⇋</button><button class="dy-rb round" data-a="stk-del" title="떼기">×</button>' +
+                    '<button class="dy-rb round" data-a="stk-flip" title="좌우 뒤집기">⇋</button>' +
+                    '<button class="dy-rb round" data-a="stk-front" title="맨 앞으로">▲</button><button class="dy-rb round" data-a="stk-back" title="맨 뒤로">▼</button>' +
+                    '<button class="dy-rb" data-a="stk-dup" title="하나 더">복제</button><button class="dy-rb" data-a="stk-swap" title="다른 그림으로">바꾸기</button>' +
+                    '<button class="dy-rb round" data-a="stk-del" title="떼기" style="color:#d77c96">×</button>' +
                 '</div>' +
-                '<div class="dy-deco-tip">스티커를 끌어서 옮겨요 · 누르면 크기/회전</div>' +
             '</div>';
         bindStickers(body);
         placeTools();
@@ -403,6 +455,32 @@ export function init() {
             (list.length ? '<div style="font-size:10.5px;color:var(--dy-sub);margin-top:4px">' + (V.mu + 1) + ' / ' + list.length + '</div>' : '') +
             '</div></div>');
     }
+    /* 오하아사(おは朝) 별자리 운세: GitHub이 매일 아침 diary/ohaasa.json 으로 받아 둠 (.github/workflows/ohaasa.yml) */
+    function ohaW() {
+        const sign = signOf(db.profile.birth || BIRTH);
+        const o = OHA.data;
+        const head = 'おは朝 운세 <span style="font-family:var(--dy-body);font-size:11px">' + SIGNS[sign - 1].e + ' ' + SIGNS[sign - 1].ko + '</span>' +
+            '<button class="dy-rb round hx" data-a="oha-birth" title="생일 바꾸기" style="height:20px;width:20px;min-width:20px;font-size:11px">✎</button>';
+        if (!o || !o.items.length) {
+            return widget(head, '<div class="dy-oha"><div class="dy-empty">' + (OHA.loading ? '운세 가져오는 중…' : '아침에 운세가 도착해요') + '</div>' +
+                '<div style="text-align:center"><a class="dy-rb" href="' + OHA_URL + '" target="_blank" rel="noopener" style="text-decoration:none">공식 페이지</a></div></div>', 'span2');
+        }
+        const mine = o.items.find(x => x.st === sign);
+        const isToday = o.date === todayKey();
+        let inner = '<div class="dy-oha">';
+        if (mine) {
+            inner += '<div class="top"><div class="rk r' + mine.rank + '"><b>' + mine.rank + '</b>위</div>' +
+                '<div class="tx">' + mine.text.map((t, i) => '<p class="' + (i === mine.text.length - 1 && mine.text.length > 1 ? 'lucky' : '') + '">' + esc(t) + '</p>').join('') + '</div></div>';
+        } else inner += '<div class="dy-empty">내 별자리를 못 찾았어요</div>';
+        inner += '<div class="ft"><span>' + (o.date ? o.date.replace(/-/g, '. ') + '.' : '') + (isToday ? '' : ' (지난 운세)') + '</span>' +
+            '<span><button class="dy-rb" data-a="oha-all">' + (V.ohaAll ? '접기' : '전체 순위') + '</button> <a class="dy-rb" href="' + OHA_URL + '" target="_blank" rel="noopener" style="text-decoration:none">원문</a></span></div>';
+        if (V.ohaAll) {
+            inner += '<div class="all">' + o.items.slice().sort((a, b) => a.rank - b.rank).map(x =>
+                '<div class="' + (x.st === sign ? 'me' : '') + '"><b>' + x.rank + '</b> ' + (SIGNS[x.st - 1] ? SIGNS[x.st - 1].e + ' ' + SIGNS[x.st - 1].ko : '?') + '</div>').join('') + '</div>';
+        }
+        return widget(head, inner + '</div>', 'span2');
+    }
+
     function bucketW() {
         return widget('BUCKET LIST',
             '<div class="dy-add"><input class="dy-in" placeholder="하고 싶은 것…" data-enter="bucket-add"><button class="dy-rb" data-a="bucket-add">+</button></div>' + listItems(db.bucket, 'bucket'), 'span2');
@@ -653,6 +731,12 @@ export function init() {
             case 'next': V.m++; if (V.m > 11) { V.m = 0; V.y++; } return render('diary');
             case 'today': V.y = new Date().getFullYear(); V.m = new Date().getMonth(); return render('diary');
             case 'month': V.m = +t.dataset.m; return render('diary');
+            case 'oha-all': V.ohaAll = !V.ohaAll; return render('diary');
+            case 'oha-birth': {
+                const v = prompt('생일 (예: 2002-04-11)', db.profile.birth || BIRTH); if (v == null) return;
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(v.trim())) return alert('2002-04-11 처럼 적어 주세요.');
+                return save('생일', d => { d.profile.birth = v.trim(); });
+            }
             case 'mood': {
                 const v = prompt('이달의 한 줄', db.mood[mk] || ''); if (v == null) return;
                 return save('이달의 한 줄', d => { if (v.trim()) d.mood[mk] = v.trim(); else delete d.mood[mk]; });
@@ -733,6 +817,23 @@ export function init() {
                     if (a === 'stk-rl') s.r = (s.r || 0) - 10;
                     if (a === 'stk-rr') s.r = (s.r || 0) + 10;
                     if (a === 'stk-flip') s.f = !s.f;
+                });
+            }
+            case 'stk-front': case 'stk-back': {
+                const id = V.sel; if (!id) return;
+                const zs = db.stickers.map(x => x.z || 1), z = a === 'stk-front' ? Math.max(...zs) + 1 : Math.min(...zs) - 1;
+                return save('스티커 순서', d => { const s = d.stickers.find(x => x.id === id); if (s) s.z = z; });
+            }
+            case 'stk-dup': {
+                const o = db.stickers.find(x => x.id === V.sel); if (!o) return;
+                const c = Object.assign({}, o, { id: uid(), x: clamp(o.x + 3, 0, 100), y: clamp(o.y + 3, 0, 100), z: Math.max(...db.stickers.map(x => x.z || 1)) + 1 });
+                V.sel = c.id;
+                return save('스티커 복제', d => d.stickers.push(Object.assign({}, c)));
+            }
+            case 'stk-swap': {
+                const id = V.sel; if (!id) return;
+                return openPickCard('다른 그림으로 바꾸기', (db.stickers.find(x => x.id === id) || {}).src, v => {
+                    save('스티커 바꾸기', d => { const s = d.stickers.find(x => x.id === id); if (s) s.src = v; });
                 });
             }
             case 'stk-del': {
@@ -870,6 +971,18 @@ export function init() {
         });
     }
 
+    // 스티커 그림 고르기 (붙인 스티커 바꾸기)
+    function openPickCard(title, cur, onPick) {
+        openCard(function draw() {
+            cardBox.innerHTML = '<h3><img src="' + CHAR['c-puppy'] + '" alt="">' + esc(title) + '</h3><div class="dy-pick">' + stickerOptions(cur || '', 'pk', false) + '</div>' +
+                '<div class="foot"><span></span><button class="dy-rb on" data-c="close">닫기</button></div>';
+            cardBox.onclick = e => {
+                const b = e.target.closest('[data-pk]'); if (b) { closeCard(); return onPick(b.dataset.pk); }
+                if (e.target.closest('[data-c="close"]')) closeCard();
+            };
+        });
+    }
+
     // 꾸미기: 색 / 무늬 / 스티커 서랍
     function openThemeCard(tab) {
         let editMine = false;
@@ -889,7 +1002,7 @@ export function init() {
                     db.myStickers.map(s => '<button data-put="' + esc(s.path) + '"><img src="' + esc(src(s.path)) + '" alt=""><span class="rm" data-rm="' + esc(s.path) + '">×</span></button>').join('') +
                     '<button class="addb" data-c="add-stk" title="내 스티커 넣기">+</button>' +
                 '</div>' +
-                '<div class="row" style="margin-top:8px;flex-wrap:wrap">' + (db.myStickers.length ? '<button class="dy-rb' + (editMine ? ' on' : '') + '" data-c="edit-mine">내 스티커 정리</button>' : '') +
+                '<div class="row" style="margin-top:8px;flex-wrap:wrap">' + (db.myStickers.length ? '<button class="dy-rb' + (editMine ? ' on' : '') + '" data-c="edit-mine">' + (editMine ? '다 지웠어요' : '내 스티커 지우기') + '</button>' : '') +
                 (db.stickers.length ? '<button class="dy-rb" data-c="clear-stk">붙인 스티커 모두 떼기 (' + db.stickers.length + ')</button>' : '') + '</div>' +
                 '<div class="foot"><button class="dy-rb" data-c="reset">처음 색으로</button><button class="dy-rb on" data-c="close">닫기</button></div>';
 
@@ -966,7 +1079,12 @@ export function init() {
         if (b.dataset.m === 'sticker') openThemeCard();
         if (b.dataset.m === 'reload') load();
     }));
-    on(window, 'keydown', e => { if (e.key === 'Escape' && modal.classList.contains('on')) closeCard(); });
+    on(window, 'keydown', e => {
+        if (e.key === 'Escape' && modal.classList.contains('on')) return closeCard();
+        if ((e.key === 'Delete' || e.key === 'Backspace') && V.sel && V.deco && !modal.classList.contains('on') && !e.target.matches('input, textarea')) {
+            e.preventDefault(); act('diary', 'stk-del');
+        }
+    });
     on(window, 'resize', () => { placeTools(); });
 
     // 시계
