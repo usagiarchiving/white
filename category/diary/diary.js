@@ -470,9 +470,9 @@ export function init() {
         let inner = '<div class="dy-oha">';
         if (mine) {
             inner += '<div class="top"><div class="rk r' + mine.rank + '"><b>' + mine.rank + '</b>위</div>' +
-                '<div class="tx">' + mine.text.map((t, i) => '<p class="' + (i === mine.text.length - 1 && mine.text.length > 1 ? 'lucky' : '') + '">' + esc(t) + '</p>').join('') + '</div></div>';
+                '<div class="tx">' + mine.text.map((t, i) => { const lucky = i === mine.text.length - 1 && mine.text.length > 1; return '<p class="' + (lucky ? 'lucky' : '') + '">' + (lucky ? '🍀 럭키 아이템 · ' : '') + esc(t) + '</p>'; }).join('') + '</div></div>';
         } else inner += '<div class="dy-empty">내 별자리를 못 찾았어요</div>';
-        inner += '<div class="ft"><span>' + (o.date ? o.date.replace(/-/g, '. ') + '.' : '') + (isToday ? '' : ' (지난 운세)') + '</span>' +
+        inner += '<div class="ft"><span>' + (o.date ? o.date.replace(/-/g, '. ') + '.' : '') + (isToday ? ' 오늘' : ' 방송 (주말엔 쉬어요)') + '</span>' +
             '<span><button class="dy-rb" data-a="oha-all">' + (V.ohaAll ? '접기' : '전체 순위') + '</button> <a class="dy-rb" href="' + OHA_URL + '" target="_blank" rel="noopener" style="text-decoration:none">원문</a></span></div>';
         if (V.ohaAll) {
             inner += '<div class="all">' + o.items.slice().sort((a, b) => a.rank - b.rank).map(x =>
