@@ -10,7 +10,7 @@
    "name": "2"
   }
  ],
- "font": "default",
+ "font": "pretendard",
  "items": [
   {
    "id": "mofi9qso6n8",
@@ -191,5 +191,6 @@
     "현대물"
    ]
   }
- ]
+ ],
+ "updated_at": "2026-11-22T18:13:33+09:00"
 }
