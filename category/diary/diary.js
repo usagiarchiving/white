@@ -35,7 +35,7 @@ const APPS = {
     todo:  { title: '할 일',         icon: 'c-pink',  w: 380,  h: 640, x: 0.02, y: 0.03 },
     done:  { title: '오늘의 영수증', icon: 'c-white', w: 400,  h: 640, x: 0.58, y: 0.05 },
     report: { title: '리포트',      icon: 'folder',  w: 560,  h: 680, x: 0.30, y: 0.04 },
-    memo:  { title: '메모',          icon: 'c-gray',  w: 440,  h: 480, x: 0.36, y: 0.16 }
+    memo:  { title: '메모',          icon: 'c-gray',  w: 560,  h: 700, x: 0.33, y: 0.03 }
 };
 
 // 꾸미기 색 묶음
@@ -54,7 +54,7 @@ const WEEK_KO = ['일', '월', '화', '수', '목', '금', '토'];
 
 /* ---------------- 같이 쓰는 기록 파일 ---------------- */
 // 할 일 = Todo 카테고리와 같은 파일, 일기·프로필·내 스티커 = 김민정과 같은 파일, 집안일 = 마이홈 (영수증에 모아 보기만)
-const SHARED = { todos: 'data/todos.json', mj: 'minjung/minjung.json', mh: 'myhome/myhome.json' };
+const SHARED = { todos: 'data/todos.json', mj: 'minjung/minjung.json', mh: 'myhome/myhome.json', memos: 'diary/memos.json' };
 const TODO_COLORS = { gray: '#bdb7b9', red: '#f08a8a', orange: '#f5b17a', yellow: '#f0cf62', green: '#9dd39a', mint: '#8fd6c6', blue: '#8fb8e8', navy: '#6b7fb8', purple: '#b79be0', pink: '#f4a3b8' };
 const MYHOME_ACTS = {
     entrance: '🚪 현관 정리', shoes: '👟 신발 정리', sink: '🫧 설거지', stove: '🧽 조리대 청소', cook: '🍳 요리', upper1: '✨ 상부장 정리', upper2: '✨ 상부장 정리',
@@ -68,6 +68,12 @@ function prepShared(k, cur) {
     if (k === 'todos') return Array.isArray(cur) ? cur : [];
     cur = cur && typeof cur === 'object' && !Array.isArray(cur) ? cur : {};
     if (k === 'mh') { if (!cur.log || typeof cur.log !== 'object') cur.log = {}; return cur; }
+    if (k === 'memos') {
+        if (!Array.isArray(cur.tabs) || !cur.tabs.length) cur.tabs = [{ id: 't1', name: '1' }, { id: 't2', name: '2' }];
+        if (!Array.isArray(cur.items)) cur.items = [];
+        if (!cur.version) cur.version = 1;
+        return cur;
+    }
     ['profile', 'diary', 'condition', 'beauty', 'quests', 'library'].forEach(f => { if (!Array.isArray(cur[f])) cur[f] = []; });
     if (!cur.quest_log || typeof cur.quest_log !== 'object') cur.quest_log = {};
     if (!cur.settings || typeof cur.settings !== 'object') cur.settings = {};
@@ -137,6 +143,8 @@ const ICO = {
     repeat: '<path d="M3 7V6a2 2 0 0 1 2-2h7.5l-2-2M13 9v1a2 2 0 0 1-2 2H3.5l2 2"/>',
     list: '<path d="M5.5 4.5h7M5.5 8h7M5.5 11.5h7"/><circle cx="3" cy="4.5" r=".6" fill="currentColor"/><circle cx="3" cy="8" r=".6" fill="currentColor"/><circle cx="3" cy="11.5" r=".6" fill="currentColor"/>',
     out: '<path d="M9 3.5h3.5V7M12.5 3.5L7.5 8.5"/><path d="M11 9.5v3H3.5V5h3"/>',
+    search: '<circle cx="7" cy="7" r="4"/><path d="M10 10l3.2 3.2"/>', alignl: '<path d="M3 4h10M3 7h6.5M3 10h10M3 13h6.5"/>', alignc: '<path d="M3 4h10M4.8 7h6.4M3 10h10M4.8 13h6.4"/>',
+    eraser: '<path d="M6.5 13.5h7M3.2 10.2l5.6-5.6a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-4.9 4.9H5.2z"/>',
     grid: '<rect x="2.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="2.8" y="8.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="8.8" width="4.4" height="4.4" rx="1"/>',
     eye: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="2"/>',
     eyeoff: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><path d="M3 13L13 3"/>',
@@ -266,7 +274,7 @@ export function init() {
     const askOpen = () => wrap.querySelector('.dy-ask');
 
     /* ---------------- 불러오기 / 저장 ---------------- */
-    const ext = { todos: [], mj: prepShared('mj', {}), mh: prepShared('mh', {}) };
+    const ext = { todos: [], mj: prepShared('mj', {}), mh: prepShared('mh', {}), memos: prepShared('memos', {}) };
     async function load() {
         const keys = Object.keys(SHARED);
         const got = await Promise.all([repo.readJSON(DATA, {})].concat(keys.map(k => repo.readJSON(SHARED[k], k === 'todos' ? [] : {}))).map(p => p.catch(e => { console.error(e); return null; })));
@@ -511,7 +519,7 @@ export function init() {
         let keep = null;
         if (body.contains(ae) && ae.matches('input, textarea')) {
             if (ae.dataset.enter) keep = '[data-enter="' + ae.dataset.enter + '"]';
-            else if (ae.id === 'dy-qtext' || ae.id === 'dy-qdate') keep = '#' + ae.id;
+            else if (ae.id === 'dy-qtext' || ae.id === 'dy-qdate' || ae.id === 'dy-mq') keep = '#' + ae.id;
             else { dirty[id] = true; return; }
             keep = { sel: keep, v: ae.value };
         }
@@ -1190,27 +1198,215 @@ export function init() {
     };
 
     /* ==========================================================================
-       메모 창
+       메모 창 — 기본 메모(바로 쓰기) + 탭별 메모 목록(날짜·시간·태그·꾸민 글)
+       (감각의 잔여물 → 탭 1, 이름을 부르는 법 → 탭 2 로 옮겨 옴 · 저장: diary/memos.json)
        ========================================================================== */
     let memoTimer = null;
-    RENDER.memo = (body, tools) => {
-        tools.innerHTML = '';
-        body.innerHTML =
-            '<div class="dy-memo"><textarea id="dy-memo-ta">' + esc(db.memo) + '</textarea>' +
-            '<div class="ft"><span id="dy-memo-st">' + (db.memo ? db.memo.length + '자' : '') + '</span><button class="dy-rb" data-a="memo-save">저장</button></div></div>';
-        const ta = body.querySelector('textarea');
-        ta.addEventListener('input', () => {
-            document.getElementById('dy-memo-st').textContent = '쓰는 중…';
-            clearTimeout(memoTimer);
-            memoTimer = setTimeout(() => saveMemo(ta.value), 2500);
+    const M = { tab: '', q: '', tag: '', open: {}, base: true };
+    try { M.base = localStorage.getItem('dy-memo-base') !== '0'; } catch (e) {}
+    const mtabs = () => ext.memos.tabs;
+    const curTab = () => (mtabs().find(t => t.id === M.tab) || mtabs()[0] || {}).id;
+    // 꾸민 글 보여주기: ```…``` 안은 HTML 그대로(이름을 부르는 법 방식), 스크립트·on… 속성은 빼고
+    function memoHtml(h) {
+        h = String(h || '').replace(/```([\s\S]*?)```/g, (m, inner) => {
+            const t = document.createElement('div');
+            t.innerHTML = inner.replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>/gi, '\n').replace(/<\/p>/gi, '\n');
+            return '<div class="custom-html-box">' + (t.textContent || '').replace(/ /g, ' ').replace(/>\s+</g, '><').trim() + '</div>';
         });
-        ta.addEventListener('blur', () => { clearTimeout(memoTimer); if (ta.value !== db.memo) saveMemo(ta.value); });
+        const tpl = document.createElement('template'); tpl.innerHTML = h;
+        tpl.content.querySelectorAll('script, iframe, object, embed').forEach(n => n.remove());
+        tpl.content.querySelectorAll('*').forEach(n => {
+            [...n.attributes].forEach(a => {
+                if (/^on/i.test(a.name)) n.removeAttribute(a.name);
+                if (/^(href|src)$/i.test(a.name) && /^\s*javascript:/i.test(a.value)) n.removeAttribute(a.name);
+            });
+            if (n.tagName === 'A') { n.setAttribute('target', '_blank'); n.setAttribute('rel', 'noopener'); }
+            n.removeAttribute('contenteditable');
+        });
+        return tpl.innerHTML;
+    }
+    const memoPlain = h => { const t = document.createElement('div'); t.innerHTML = String(h || '').replace(/```[\s\S]*?```/g, ' '); return (t.textContent || '').replace(/\s+/g, ' ').trim(); };
+
+    RENDER.memo = (body, tools) => {
+        const font = ext.memos.font === 'pretendard' ? 'pretendard' : 'default';
+        tools.innerHTML = '<button class="dy-rb" data-tool="mfont" title="글꼴 바꾸기">' + (font === 'pretendard' ? 'Pretendard' : '기본') + '</button>' +
+            '<button class="dy-rb round" data-tool="mnew" title="새 메모">' + ic('plus') + '</button>';
+        tools.onclick = e => {
+            const t = e.target.closest('[data-tool]'); if (!t) return;
+            if (t.dataset.tool === 'mnew') openMemoEditor(null);
+            if (t.dataset.tool === 'mfont') save('메모 글꼴', null, null, { memos: d => { d.font = font === 'pretendard' ? 'default' : 'pretendard'; } });
+        };
+        const tab = curTab();
+        const all = ext.memos.items.filter(x => x.tab === tab);
+        const tags = uniq([].concat(...all.map(x => x.tags || [])));
+        if (M.tag && !tags.includes(M.tag)) M.tag = '';
+        const q = M.q.toLowerCase();
+        const list = all.filter(x => (!M.tag || (x.tags || []).includes(M.tag)) &&
+            (!q || [x.title, memoPlain(x.html), (x.tags || []).join(' '), x.date].join(' ').toLowerCase().includes(q)))
+            .sort((a, b) => (b.date + (b.time || '')) < (a.date + (a.time || '')) ? -1 : 1);
+        body.innerHTML =
+            '<div class="dy-memo2 f-' + font + '">' +
+                '<div class="mtabs">' + mtabs().map(t => '<button class="' + (t.id === tab ? 'on' : '') + '" data-a="mt-go" data-k="' + esc(t.id) + '">' + esc(t.name) + '</button>').join('') +
+                    '<span class="sp"></span><button class="dy-ibtn" data-a="mt-edit" title="탭 편집">' + ic('pen') + '</button></div>' +
+                '<div class="mbase' + (M.base ? ' open' : '') + '"><button class="hd" data-a="mb-tog"><span class="dy-heart">♥</span>기본 메모<span class="st" id="dy-memo-st"></span></button>' +
+                    (M.base ? '<textarea id="dy-memo-ta">' + esc(db.memo) + '</textarea>' : '') + '</div>' +
+                '<div class="mfind"><span class="ic-s">' + ic('search') + '</span><input class="dy-in" id="dy-mq" value="' + esc(M.q) + '"></div>' +
+                (tags.length ? '<div class="mtags">' + tags.map(g => '<button class="' + (g === M.tag ? 'on' : '') + '" data-a="mt-tag" data-k="' + esc(g) + '">#' + esc(g) + '</button>').join('') + '</div>' : '') +
+                '<div class="mlist">' + list.map(x => {
+                    const open = !!M.open[x.id];
+                    return '<div class="mi' + (open ? ' open' : '') + '" data-id="' + esc(x.id) + '">' +
+                        '<button class="mh" data-a="mi-tog"><span class="t">' + esc(x.title || memoPlain(x.html).slice(0, 40) || '무제') + '</span><span class="d">' + x.date.slice(2).replace(/-/g, '.') + '</span></button>' +
+                        (open ? '<div class="mb"><div class="mm-body">' + memoHtml(x.html) + '</div>' +
+                            '<div class="mf">' + ((x.tags || []).length ? '<span class="tg">' + x.tags.map(g => '#' + esc(g)).join(' ') + '</span>' : '<span></span>') +
+                            '<span class="tm">' + esc((x.time || '')) + '</span>' +
+                            '<button class="dy-del" data-a="mi-edit" title="고치기">' + ic('pen') + '</button><button class="dy-del" data-a="mi-del" title="지우기">' + ic('x') + '</button></div></div>' : '') +
+                        '</div>';
+                }).join('') + '</div>' +
+            '</div>';
+        const ta = body.querySelector('#dy-memo-ta');
+        if (ta) {
+            ta.addEventListener('input', () => {
+                document.getElementById('dy-memo-st').textContent = '쓰는 중…';
+                clearTimeout(memoTimer);
+                memoTimer = setTimeout(() => saveMemo(ta.value), 2500);
+            });
+            ta.addEventListener('blur', () => { clearTimeout(memoTimer); if (ta.value !== db.memo) saveMemo(ta.value); });
+        }
+        body.oninput = e => { if (e.target.id === 'dy-mq') { M.q = e.target.value; render('memo'); } };
     };
     function saveMemo(v) {
         if (v === db.memo) return;
-        save('메모', d => { d.memo = v; });
-        const st = document.getElementById('dy-memo-st'); if (st) st.textContent = '저장함 ' + hhmm(new Date().toISOString());
+        save('기본 메모', d => { d.memo = v; });
+        const st = document.getElementById('dy-memo-st'); if (st) st.textContent = '저장함 ' + stamp().slice(11, 16);
     }
+
+    // 메모 쓰기/고치기 카드: 탭 · 제목 · 꾸미기(굵게·기울임·밑줄·취소선·색·형광·크기·정렬·목록·사진) · 태그 · 날짜/시간
+    const RTE_COLORS = ['#303036', '#e0708f', '#5f93b8', '#b08a3c', '#9a7cc9', '#8e8e93'];
+    const RTE_MARKS = ['#FFF1A8', '#FBD9E2', '#DDECF5', 'transparent'];
+    function openMemoEditor(it) {
+        const now = stamp();
+        const d0 = it ? JSON.parse(JSON.stringify(it)) : { id: 'm' + uid(), tab: curTab(), title: '', html: '', tags: [], date: now.slice(0, 10), time: now.slice(11, 16) };
+        let files = {};
+        let first = null;
+        const ed = () => cardBox.querySelector('.dy-rte');
+        const tool = (cmd, label, title, val) => '<button class="tb" data-cmd="' + cmd + '"' + (val != null ? ' data-v="' + val + '"' : '') + ' title="' + title + '">' + label + '</button>';
+        openCard(function draw() {
+            cardBox.innerHTML = '<h3><img src="' + CHAR['c-gray'] + '" alt="">' + (it ? '메모 고치기' : '새 메모') + '</h3>' +
+                '<div class="dy-seg mt-pick">' + mtabs().map(t => '<button class="dy-rb' + (t.id === d0.tab ? ' on' : '') + '" data-tab="' + esc(t.id) + '">' + esc(t.name) + '</button>').join('') + '</div>' +
+                '<input class="dy-in me-title" value="' + esc(d0.title || '') + '" placeholder="제목">' +
+                '<div class="rte-bar">' +
+                    tool('bold', '<b>B</b>', '굵게') + tool('italic', '<i>I</i>', '기울임') + tool('underline', '<u>U</u>', '밑줄') + tool('strikeThrough', '<s>S</s>', '취소선') +
+                    '<span class="sep"></span>' + RTE_COLORS.map(c => '<button class="tb dot" data-cmd="foreColor" data-v="' + c + '" title="글자 색" style="--c:' + c + '"></button>').join('') +
+                    '<span class="sep"></span>' + RTE_MARKS.map(c => '<button class="tb mark" data-cmd="hiliteColor" data-v="' + c + '" title="형광펜" style="--c:' + c + '"></button>').join('') +
+                    '<span class="sep"></span>' + [['11', '작게'], ['13', '보통'], ['16', '크게'], ['20', '아주 크게']].map(([v, n]) => tool('size', '<span style="font-size:' + (9 + (+v - 11) / 2) + 'px">가</span>', n, v)).join('') +
+                    '<span class="sep"></span>' + tool('justifyLeft', ic('alignl'), '왼쪽') + tool('justifyCenter', ic('alignc'), '가운데') + tool('insertUnorderedList', ic('list'), '목록') +
+                    tool('photo', ic('photo'), '사진 넣기') + tool('removeFormat', ic('eraser'), '꾸밈 지우기') +
+                '</div>' +
+                '<div class="dy-rte f-' + (ext.memos.font === 'pretendard' ? 'pretendard' : 'default') + '" contenteditable="true" spellcheck="false">' + (d0.html || '') + '</div>' +
+                '<input class="dy-in me-tags" value="' + esc((d0.tags || []).map(g => '#' + g).join(' ')) + '" placeholder="#태그">' +
+                '<div class="row" style="margin-top:6px"><input class="dy-in me-date" type="date" value="' + esc(d0.date) + '"><input class="dy-in me-time" type="time" value="' + esc(d0.time || '') + '"></div>' +
+                '<div class="foot">' + (it ? '<button class="dy-rb" data-c="del">' + ic('x') + '<span class="lbl">지우기</span></button>' : '') + '<span style="flex:1"></span>' +
+                    '<button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
+            first = snap();
+        });
+        cardBox.parentElement.classList.add('wide');
+        function html() {          // 방금 넣은 사진은 저장소 경로로 바꿔서 저장
+            const c = ed().cloneNode(true);
+            c.querySelectorAll('img[data-path]').forEach(i => { i.setAttribute('src', i.dataset.path); i.removeAttribute('data-path'); });
+            return c.innerHTML.replace(/^(<br>|\s)+|(<br>|\s)+$/g, '');
+        }
+        function snap() { const e = ed(); return e ? JSON.stringify([d0.tab, cardBox.querySelector('.me-title').value, e.innerHTML, cardBox.querySelector('.me-tags').value, cardBox.querySelector('.me-date').value, cardBox.querySelector('.me-time').value]) : ''; }
+        cardGuard = () => !!ed() && (snap() !== first || Object.keys(files).length > 0);
+        let range = null;
+        const keepSel = () => { const s = window.getSelection(); if (s.rangeCount && ed().contains(s.anchorNode)) range = s.getRangeAt(0).cloneRange(); };
+        ed().addEventListener('keyup', keepSel); ed().addEventListener('mouseup', keepSel); ed().addEventListener('input', keepSel);
+        const restore = () => { ed().focus(); if (range) { const s = window.getSelection(); s.removeAllRanges(); s.addRange(range); } };
+        cardBox.onmousedown = e => { if (e.target.closest('.rte-bar')) e.preventDefault(); };     // 고른 글자가 풀리지 않게
+        cardBox.onclick = async e => {
+            const tb = e.target.closest('[data-cmd]'), tp = e.target.closest('[data-tab]'), c = e.target.closest('[data-c]');
+            if (tp) { d0.tab = tp.dataset.tab; cardBox.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b === tp)); return; }
+            if (tb) {
+                const cmd = tb.dataset.cmd, v = tb.dataset.v;
+                if (cmd === 'photo') {
+                    const up = await uploadImage('memo', 1400, false); if (!up) return;
+                    files = Object.assign(files, up.files);
+                    restore();
+                    document.execCommand('insertHTML', false, '<img src="' + localUrl[up.path] + '" data-path="' + up.path + '" alt=""><br>');
+                    return;
+                }
+                restore();
+                if (cmd === 'size') {
+                    document.execCommand('fontSize', false, '7');
+                    ed().querySelectorAll('font[size="7"]').forEach(f => { f.removeAttribute('size'); f.style.fontSize = v + 'px'; });
+                } else if (cmd === 'hiliteColor') {
+                    if (!document.execCommand('hiliteColor', false, v)) document.execCommand('backColor', false, v);
+                } else document.execCommand(cmd, false, v || null);
+                keepSel();
+                return;
+            }
+            if (!c) return;
+            const a = c.dataset.c;
+            if (a === 'close') { const ok = await closeCard(); cardBox.parentElement.classList.remove('wide'); return ok; }
+            if (a === 'del') {
+                if (!(await ask('이 메모를 지울까요?', '지우기', true))) return;
+                save('메모 지우기', null, null, { memos: dd => { dd.items = dd.items.filter(x => x.id !== d0.id); } });
+                cardBox.parentElement.classList.remove('wide'); return closeCard(true);
+            }
+            if (a === 'save') {
+                const row = { id: d0.id, tab: d0.tab, html: html(), date: cardBox.querySelector('.me-date').value || now.slice(0, 10), time: cardBox.querySelector('.me-time').value || '', at: stamp() };
+                const title = cardBox.querySelector('.me-title').value.trim(); if (title) row.title = title;
+                const tags = cardBox.querySelector('.me-tags').value.split(/[#,\s]+/).map(x => x.trim()).filter(Boolean); if (tags.length) row.tags = uniq(tags);
+                if (!row.title && !memoPlain(row.html) && !/<img/i.test(row.html)) return toast('내용을 적어 주세요');
+                if (it && it.from) row.from = it.from;
+                M.tab = row.tab; M.open[row.id] = 1;
+                save('메모 ' + (it ? '고치기' : '쓰기'), null, files, { memos: dd => {
+                    const i = dd.items.findIndex(x => x.id === row.id);
+                    if (i > -1) dd.items[i] = JSON.parse(JSON.stringify(row)); else dd.items.unshift(JSON.parse(JSON.stringify(row)));
+                } });
+                cardBox.parentElement.classList.remove('wide'); return closeCard(true);
+            }
+        };
+    }
+    // 탭 편집: 이름 바꾸기 · 순서 · 추가 · 지우기 (지운 탭의 메모는 첫 탭으로)
+    function openTabEditor() {
+        const row = t => '<div class="dy-pf-row tabrow" data-id="' + esc(t.id) + '"><input class="dy-in" data-k="name" value="' + esc(t.name) + '">' +
+            '<span class="tools"><button class="dy-del" data-c="up" title="위로">' + ic('up') + '</button><button class="dy-del" data-c="down" title="아래로" style="transform:rotate(180deg)">' + ic('up') + '</button>' +
+            '<button class="dy-del" data-c="del" title="지우기">' + ic('x') + '</button></span></div>';
+        let first = '';
+        const snap = () => JSON.stringify([...cardBox.querySelectorAll('.tabrow')].map(el => [el.dataset.id, el.querySelector('input').value]));
+        openCard(() => {
+            cardBox.innerHTML = '<h3><img src="' + CHAR['c-gray'] + '" alt="">메모 탭</h3><div class="dy-pf-edit">' + mtabs().map(row).join('') + '</div>' +
+                '<button class="dy-rb" data-c="add" style="margin-top:8px">' + ic('plus') + '<span class="lbl">탭 추가</span></button>' +
+                '<div class="foot"><span style="flex:1"></span><button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
+            first = snap();
+        });
+        cardGuard = () => snap() !== first;
+        cardBox.onclick = async e => {
+            const c = e.target.closest('[data-c]'); if (!c) return;
+            const a = c.dataset.c, r0 = c.closest('.tabrow');
+            if (a === 'close') return closeCard();
+            if (a === 'add') { cardBox.querySelector('.dy-pf-edit').insertAdjacentHTML('beforeend', row({ id: 't' + uid(), name: String(mtabs().length + 1) })); return; }
+            if (a === 'up' && r0.previousElementSibling) return r0.parentElement.insertBefore(r0, r0.previousElementSibling);
+            if (a === 'down' && r0.nextElementSibling) return r0.parentElement.insertBefore(r0.nextElementSibling, r0);
+            if (a === 'del') {
+                if (cardBox.querySelectorAll('.tabrow').length < 2) return toast('탭은 하나 이상 있어야 해요');
+                const n = ext.memos.items.filter(x => x.tab === r0.dataset.id).length;
+                if (n && !(await ask('이 탭의 메모 ' + n + '개는 첫 탭으로 옮겨요. 지울까요?', '지우기', true))) return;
+                return r0.remove();
+            }
+            if (a === 'save') {
+                const tabs = [...cardBox.querySelectorAll('.tabrow')].map(el => ({ id: el.dataset.id, name: el.querySelector('input').value.trim() || '탭' }));
+                const ids = tabs.map(t => t.id);
+                save('메모 탭', null, null, { memos: dd => {
+                    dd.tabs = tabs.map(t => Object.assign({}, t));
+                    dd.items.forEach(x => { if (!ids.includes(x.tab)) x.tab = ids[0]; });
+                } });
+                if (!ids.includes(M.tab)) M.tab = ids[0];
+                return closeCard(true);
+            }
+        };
+    }
+
 
     /* ==========================================================================
        누르기 처리
@@ -1427,7 +1623,18 @@ export function init() {
             case 'rp-q': { const id = t.dataset.k; if (R.open[id]) delete R.open[id]; else R.open[id] = 1; return render('report'); }
             case 'rp-fold': R.open = {}; return render('report');
             /* 메모 */
-            case 'memo-save': { const ta = document.getElementById('dy-memo-ta'); if (ta) { clearTimeout(memoTimer); saveMemo(ta.value); } return; }
+            /* 메모 */
+            case 'mt-go': M.tab = t.dataset.k; M.tag = ''; return render('memo');
+            case 'mt-edit': return openTabEditor();
+            case 'mt-tag': M.tag = M.tag === t.dataset.k ? '' : t.dataset.k; return render('memo');
+            case 'mb-tog': { const ta = document.getElementById('dy-memo-ta'); if (ta && ta.value !== db.memo) { clearTimeout(memoTimer); saveMemo(ta.value); } M.base = !M.base; try { localStorage.setItem('dy-memo-base', M.base ? '1' : '0'); } catch (e) {} return render('memo'); }
+            case 'mi-tog': { const id = rowId(t); if (M.open[id]) delete M.open[id]; else M.open[id] = 1; return render('memo'); }
+            case 'mi-edit': { const it = ext.memos.items.find(x => x.id === rowId(t)); return it && openMemoEditor(it); }
+            case 'mi-del': {
+                const id = rowId(t), it = ext.memos.items.find(x => x.id === id); if (!it) return;
+                if (!(await ask('"' + (it.title || memoPlain(it.html).slice(0, 20) || '무제') + '" 메모를 지울까요?', '지우기', true))) return;
+                return save('메모 지우기', null, null, { memos: d => { d.items = d.items.filter(x => x.id !== id); } });
+            }
         }
     }
 
@@ -1435,10 +1642,10 @@ export function init() {
        카드 (날짜 / 꾸미기 / 스티커 서랍)
        ========================================================================== */
     let cardGuard = null;           // 저장 안 한 내용이 있으면 닫기 전에 물어봄
-    function openCard(fn) { cardGuard = null; cardFn = fn; fn(); modal.classList.add('on'); }
+    function openCard(fn) { cardGuard = null; cardBox.parentElement.classList.remove('wide'); cardFn = fn; fn(); modal.classList.add('on'); }
     async function closeCard(force) {
         if (force !== true && cardGuard && cardGuard() && !(await ask('저장하지 않고 닫을까요?', '닫기', true))) return;
-        cardGuard = null; cardFn = null; modal.classList.remove('on'); cardBox.innerHTML = '';
+        cardGuard = null; cardFn = null; modal.classList.remove('on'); cardBox.innerHTML = ''; cardBox.parentElement.classList.remove('wide');
     }
     document.getElementById('dy-x').onclick = () => closeCard();
     modal.onclick = e => { if (e.target === modal) closeCard(); };

@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-22T16:51:28+09:00",
+ "updated_at": "2026-11-22T17:06:01+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -689,7 +689,92 @@
    "text": "눈이 따가워... 안약갖고다니기"
   }
  ],
- "library": [],
+ "library": [
+  {
+   "id": "lbkt3gellipi",
+   "type": "game",
+   "title": "빛밤 복귀 2주년",
+   "status": "now",
+   "date": "2026-06-18",
+   "time": "13:23",
+   "at": "2026-06-18T13:23:05+09:00",
+   "tags": [
+    "빛과밤의사랑"
+   ],
+   "memo": "ㄹㅇ 개재밌음.빛밤은 스토리 원탑이 맞다\n빛밤 벤치마킹해서 놀아야지",
+   "cover": "data/images/hasion/1781724109683_pvojb6a9bb.png",
+   "imgs": [
+    "data/images/hasion/1781724109683_pvojb6a9bb.png",
+    "data/images/hasion/1781724110081_nwpv7ydwgzd.png",
+    "data/images/hasion/1781724110481_6p6cnoweefw.png",
+    "data/images/hasion/1781724110894_z52j0y0pejb.png",
+    "data/images/hasion/1781724111681_62d7pikdb8j.png",
+    "data/images/hasion/1781724112572_93aeuz2wsxv.png",
+    "data/images/hasion/1781724113310_jduwca2mlv.png"
+   ]
+  },
+  {
+   "id": "lbfa36v03ldi",
+   "type": "game",
+   "title": "빛밤 2주년",
+   "status": "now",
+   "date": "2026-06-18",
+   "time": "15:39",
+   "at": "2026-06-18T15:39:17+09:00",
+   "tags": [
+    "빛과밤의사랑"
+   ],
+   "memo": "하민성은 속에 회피충 ㅈㄴ멘헤라있고 육시헌은 그냥 대놓고 이상주의 정신병자 ㅇㅇ차이수는 코둘이 남친. 개그맨\n\n \n \n\n하...",
+   "cover": "data/images/hasion/1781732348499_0xoxsnrl5cd.png",
+   "imgs": [
+    "data/images/hasion/1781732348499_0xoxsnrl5cd.png",
+    "data/images/hasion/1781732349639_gvcbx0widb.png"
+   ]
+  },
+  {
+   "id": "lbfdo8kq36fy",
+   "type": "game",
+   "title": "마호야쿠 2주년 이벤스",
+   "status": "now",
+   "date": "2026-07-05",
+   "time": "05:17",
+   "at": "2026-07-05T05:17:53+09:00",
+   "tags": [
+    "마호야쿠"
+   ],
+   "memo": "7/2~"
+  },
+  {
+   "id": "lbjbnw1zyicn",
+   "type": "webtoon",
+   "title": "취사병 전설이 되다",
+   "status": "now",
+   "date": "2026-07-07",
+   "time": "11:47",
+   "at": "2026-07-07T11:47:10+09:00",
+   "memo": "웹툰 다 읽음"
+  },
+  {
+   "id": "lb8hpkpnorip",
+   "type": "webtoon",
+   "title": "김부장",
+   "status": "now",
+   "date": "2026-07-09",
+   "time": "14:40",
+   "at": "2026-07-09T14:40:38+09:00",
+   "memo": "존잼"
+  },
+  {
+   "id": "lbax6rnad5g3",
+   "type": "webtoon",
+   "title": "외모지상주의",
+   "status": "now",
+   "date": "2026-07-11",
+   "time": "14:40",
+   "at": "2026-07-11T14:40:50+09:00",
+   "memo": "다봄 존잼"
+  }
+ ],
  "condition": [
   {
    "id": "cdmwrbfc1sicoa",
