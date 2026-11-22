@@ -1213,7 +1213,14 @@ export function init() {
        ========================================================================== */
     const TT_START = 4;                                   // 하루 시작: 새벽 4시
     const TT_COLORS = ['#F6B3C4', '#A9CFE6', '#F6C4A0', '#C9B6E8', '#B7DC8A', '#F0D98A', '#9FD6C8', '#E8B4D8'];
-    const calColor = name => { let h = 0; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return TT_COLORS[h % TT_COLORS.length]; };
+    // 캘린더 이름이 할 일 분류(일상·공부·운동·작업·취미…)와 같으면 그 색, 아니면 이름마다 정해진 파스텔
+    const CAL_COLOR = { 'AT-sleep': '#C9B6E8', 'ATracker': '#A9CFE6', '마음': '#F6C4A0', '학교': '#C9B6E8' };
+    const calColor = name => {
+        const cat = Object.keys(TODO_CAT).find(c => TODO_CAT[c] && TODO_CAT[c] === name);
+        if (cat) return TODO_COLORS[cat];
+        if (CAL_COLOR[name]) return CAL_COLOR[name];
+        let h = 0; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return TT_COLORS[h % TT_COLORS.length];
+    };
     const toMin = (dk, hm) => { const d = parseKey(dk); const [h, m] = String(hm || '0:0').split(':').map(Number); return Math.round(d.getTime() / 60000) + h * 60 + m; };
     function ttEvents() {           // 동기화된 캘린더 + 직접 넣은 것
         const synced = (ext.cal.events || []).map(e => Object.assign({ src: 'cal', color: calColor(e.cal) }, e));

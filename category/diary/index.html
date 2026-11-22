@@ -37,7 +37,7 @@
 
 <!-- 모듈은 한 번만 실행되므로, 들어올 때마다 init()을 불러 새로 그림 -->
 <script type="module">
-    import { init } from './category/diary/diary.js?v=16';
+    import { init } from './category/diary/diary.js?v=17';
     // 스타일이 다 온 다음에 그림 (먼저 그리면 큰 그림이 번쩍이고 창 크기가 틀어짐)
     const css = document.getElementById('dy-css');
     const ready = () => { try { return !!(css && css.sheet && css.sheet.cssRules.length); } catch (e) { return true; } };
