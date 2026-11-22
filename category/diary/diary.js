@@ -1005,6 +1005,93 @@ export function init() {
                 (k < tk && list.some(t => !t.is_completed) ? '<button class="dy-rb" data-a="t-carry" style="align-self:flex-start">못 한 일 오늘로 옮기기</button>' : '') +
             '</div>';
     };
+    // 할 일 자세히 고치기 — Todo 카테고리의 상세 편집과 같은 항목
+    // (색 · 내용 · 하위 할 일 · 영역 · 계획일 · 완료일 · 반복 · 순서 · 지우기)
+    const TODO_CAT = { gray: '기본', red: '긴급', orange: '주의', yellow: '아이디어', green: '실행', mint: '개인', blue: '업무', navy: '기록', purple: '창작', pink: '중요' };
+    const QUAD_OPT = [[0, '미지정'], [1, '실행'], [2, '계획'], [3, '위임'], [4, '제거']];
+    const REPEAT_OPT = [['none', '반복 안 함'], ['daily', '매일'], ['weekly', '매주'], ['monthly', '매월']];
+    function openTodoCard(x0) {
+        const d = { content: x0.content || '', category: x0.category || 'gray', subtasks: JSON.parse(JSON.stringify(x0.subtasks || [])),
+            q: Number(x0.matrix_quadrant || 0), target: x0.target_date || '', done: x0.completed_date || '', repeat: x0.repeat_type || 'none' };
+        const first = JSON.stringify(d);
+        const seg = (name, opts, cur) => '<div class="dy-seg">' + opts.map(([v, n]) => '<button class="dy-rb' + (String(cur) === String(v) ? ' on' : '') + '" data-' + name + '="' + v + '">' + n + '</button>').join('') + '</div>';
+        function draw() {
+            const col = TODO_COLORS[d.category] || TODO_COLORS.gray;
+            cardBox.innerHTML = '<h3><img src="' + CHAR['c-pink'] + '" alt="">할 일</h3>' +
+                '<div class="td-top"><input class="dy-in td-content" value="' + esc(d.content) + '">' +
+                    '<button class="dy-ibtn" data-ord="up" title="위로">' + ic('up') + '</button><button class="dy-ibtn" data-ord="down" title="아래로">' + ic('down') + '</button></div>' +
+                '<div class="td-cats">' + Object.keys(TODO_COLORS).map(c => '<button class="' + (c === d.category ? 'on' : '') + '" data-cat="' + c + '" title="' + TODO_CAT[c] + '"><i style="background:' + TODO_COLORS[c] + '"></i><span>' + TODO_CAT[c] + '</span></button>').join('') + '</div>' +
+                '<div class="lb">하위 할 일</div><div class="td-subs">' + d.subtasks.map((st, i) =>
+                    '<div class="td-sub" data-i="' + i + '"><button class="dy-chk" data-sub="tog" style="border-color:' + col + ';' + (st.is_completed ? 'background:' + col : '') + '">' + (st.is_completed ? ic('check') : '') + '</button>' +
+                    '<input class="dy-in' + (st.is_completed ? ' done' : '') + '" data-subtx value="' + esc(st.content || '') + '"><button class="dy-del" data-sub="del" title="지우기">' + ic('x') + '</button></div>').join('') +
+                    '<div class="dy-add" style="margin:0"><input class="dy-in" id="td-new-sub"><button class="dy-rb round" data-sub="add" title="하위 할 일 추가">' + ic('plus') + '</button></div></div>' +
+                '<div class="lb">영역</div>' + seg('quad', QUAD_OPT, d.q) +
+                '<div class="td-dates"><label><span class="lb">계획일</span><input class="dy-in" type="date" id="td-target" value="' + esc(d.target) + '"></label>' +
+                    '<label><span class="lb">완료일</span><input class="dy-in" type="date" id="td-done" value="' + esc(d.done) + '"></label></div>' +
+                '<div class="lb">반복</div>' + seg('rep', REPEAT_OPT, d.repeat) +
+                '<div class="foot"><button class="dy-rb" data-c="del">' + ic('x') + '<span class="lbl">지우기</span></button><span style="flex:1"></span>' +
+                    '<button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
+            cardBox.querySelector('.td-content').oninput = e => { d.content = e.target.value; };
+            cardBox.querySelectorAll('[data-subtx]').forEach(el => { el.oninput = () => { d.subtasks[+el.closest('.td-sub').dataset.i].content = el.value; }; });
+            cardBox.querySelector('#td-target').oninput = e => { d.target = e.target.value; };
+            cardBox.querySelector('#td-done').oninput = e => { d.done = e.target.value; };
+            const ns = cardBox.querySelector('#td-new-sub');
+            ns.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addSub(); } };
+        }
+        function addSub() {
+            const ns = cardBox.querySelector('#td-new-sub'), v = ns.value.trim(); if (!v) return ns.focus();
+            d.subtasks.push({ content: v, is_completed: false }); draw();
+            setTimeout(() => { const n = cardBox.querySelector('#td-new-sub'); n && n.focus(); }, 20);
+        }
+        openCard(draw);
+        cardGuard = () => JSON.stringify(d) !== first;
+        cardBox.onclick = async e => {
+            const b = e.target.closest('[data-cat],[data-quad],[data-rep],[data-sub],[data-ord],[data-c]'); if (!b) return;
+            if (b.dataset.cat) { d.category = b.dataset.cat; return draw(); }
+            if (b.dataset.quad != null) { d.q = Number(b.dataset.quad); return draw(); }
+            if (b.dataset.rep) { d.repeat = b.dataset.rep; return draw(); }
+            if (b.dataset.sub) {
+                const i = b.closest('.td-sub') ? +b.closest('.td-sub').dataset.i : -1;
+                if (b.dataset.sub === 'add') return addSub();
+                if (b.dataset.sub === 'tog') { d.subtasks[i].is_completed = !d.subtasks[i].is_completed; return draw(); }
+                if (b.dataset.sub === 'del') { d.subtasks.splice(i, 1); return draw(); }
+            }
+            if (b.dataset.ord) {           // 같은 계획일 · 같은 영역 안에서 순서 바꾸기 (Todo와 같은 기준)
+                const sib = ext.todos.filter(x => !x.parent_id && x.target_date === x0.target_date && Number(x.matrix_quadrant || 0) === Number(x0.matrix_quadrant || 0))
+                    .sort((a, c) => (a.is_completed - c.is_completed) || ((a.sort_order || 0) - (c.sort_order || 0)));
+                const i = sib.findIndex(x => String(x.id) === String(x0.id)), j = b.dataset.ord === 'up' ? i - 1 : i + 1;
+                if (i < 0 || j < 0 || j >= sib.length) return toast(b.dataset.ord === 'up' ? '맨 위예요' : '맨 아래예요');
+                const a1 = sib[i].id, a2 = sib[j].id, o1 = sib[i].sort_order || sib[i].id, o2 = sib[j].sort_order || sib[j].id;
+                save('할 일 순서', null, null, { todos: L => { const x = findTodo(L, a1), y = findTodo(L, a2); if (x && y) { x.sort_order = o2; y.sort_order = o1; } } });
+                return toast(b.dataset.ord === 'up' ? '위로 올렸어요' : '아래로 내렸어요');
+            }
+            const a = b.dataset.c;
+            if (a === 'close') return closeCard();
+            if (a === 'del') {
+                if (!(await ask('"' + x0.content + '" 을(를) 지울까요?', '지우기', true))) return;
+                save('할 일 지우기', null, null, { todos: L => { const i = L.findIndex(x => String(x.id) === String(x0.id)); if (i > -1) L.splice(i, 1); } });
+                return closeCard(true);
+            }
+            if (a === 'save') {
+                const content = d.content.trim(); if (!content) return toast('할 일을 적어 주세요');
+                const subs = d.subtasks.filter(st => (st.content || '').trim()).map(st => ({ content: st.content.trim(), is_completed: !!st.is_completed }));
+                // Todo 카테고리와 같은 규칙: 완료일이 있으면 완료, 하위 할 일이 모두 끝나면 오늘로 완료
+                const allSub = subs.length > 0 && subs.every(st => st.is_completed);
+                const isDone = d.done ? true : allSub;
+                const doneDate = d.done || (allSub ? todayKey() : null);
+                const wasDone = !!x0.is_completed, at = stamp();
+                save('할 일 고치기', null, null, { todos: L => {
+                    const x = findTodo(L, x0.id); if (!x) return;
+                    Object.assign(x, { content, category: d.category, matrix_quadrant: d.q, target_date: d.target || null, completed_date: isDone ? doneDate : null,
+                        is_completed: isDone, repeat_type: d.repeat, subtasks: subs });
+                    if (isDone && !wasDone) x.completed_at = at;
+                    if (!isDone) delete x.completed_at;
+                } });
+                return closeCard(true);
+            }
+        };
+    }
+
     // 사분면 (보기 전용): Todo 카테고리 매트릭스와 같은 기준 — 오늘까지의 못 한 일
     const QUADS = [[1, '실행', '긴급 · 중요'], [2, '계획', '중요'], [3, '위임', '긴급'], [4, '제거', '']];
     function openQuadCard() {
@@ -1592,11 +1679,7 @@ export function init() {
                     if (Array.isArray(x.subtasks)) x.subtasks.forEach(st => { st.is_completed = on; });
                 } });
             }
-            case 't-edit': {
-                const id = rowId(t), x0 = findTodo(ext.todos, id); if (!x0) return;
-                const f = await askForm('할 일 고치기', [{ k: 'v', value: x0.content, need: true }]); if (!f) return;
-                return save('할 일 고치기', null, null, { todos: L => { const x = findTodo(L, id); if (x) x.content = f.v; } });
-            }
+            case 't-edit': { const x0 = findTodo(ext.todos, rowId(t)); return x0 && openTodoCard(x0); }
             case 't-up': {
                 const id = rowId(t), list = todosFor(V.tDate), i = list.findIndex(x => String(x.id) === String(id));
                 if (i < 1) return;
