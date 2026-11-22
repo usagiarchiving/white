@@ -1067,26 +1067,37 @@ export function init() {
         el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-ls]')) { e.preventDefault(); libSearch(id, w.st, el); } });
     }
 
-    /* 다이어리 본문: 글 사이사이 사진. 저장은 본문 글자 + 사진 자리 표시 `![](경로)` 한 줄 */
-    const IMG_LINE = /^!\[\]\((.+)\)$/;
+    /* 블로그식 본문 (다이어리·Library): 글 사이사이 사진.
+       저장: 글은 글대로, 사진 한 줄은 `![](경로)` — 한 줄에 여러 개(최대 3)면 나란히 놓인 사진 */
+    const MK = /!\[\]\(([^)\s]+)\)/g;
+    const ROW_LINE = /^(\s*!\[\]\([^)\s]+\)\s*)+$/;
+    const IMG_LINE = ROW_LINE;
+    const marksOf = t => [...String(t || '').matchAll(MK)].map(m => m[1]);
     function diaryHtml(it) {
         const body = it.body || '', lines = body.split('\n');
-        const inline = lines.some(l => IMG_LINE.test(l.trim()));
+        const inline = lines.some(l => ROW_LINE.test(l));
         const img = p => p.startsWith('new:')
-            ? `<img class="mj-dimg" data-new="${esc(p.slice(4))}" src="${esc((it.newUrls || {})[p.slice(4)] || '')}" alt="">`
-            : `<img class="mj-dimg" data-path="${esc(p)}" src="${esc(imgSrc(p))}" ${/^https?:/.test(p) ? '' : `onerror="this.onerror=null;this.src='${esc(repo.rawUrl(p))}'"`} alt="">`;
-        let html = inline ? '' : (it.imgs || []).map(img).join('');           // 옛 글: 사진은 맨 위에
-        html += lines.map(l => { const m = IMG_LINE.exec(l.trim()); return m ? img(m[1]) : `<div>${l ? esc(l) : '<br>'}</div>`; }).join('');
+            ? `<img class="mj-dimg" data-new="${esc(p.slice(4))}" src="${esc((it.newUrls || {})[p.slice(4)] || '')}" alt="" draggable="false">`
+            : `<img class="mj-dimg" data-path="${esc(p)}" src="${esc(imgSrc(p))}" ${/^https?:/.test(p) ? '' : `onerror="this.onerror=null;this.src='${esc(repo.rawUrl(p))}'"`} alt="" draggable="false">`;
+        const row = ps => `<div class="mj-irow n${Math.min(ps.length, 3)}" contenteditable="false">${ps.map(img).join('')}</div>`;
+        let html = inline ? '' : (it.imgs || []).map(p => row([p])).join('');           // 옛 글: 사진은 맨 위에
+        html += lines.map(l => ROW_LINE.test(l) ? row(marksOf(l).slice(0, 3)) : `<div>${l ? esc(l) : '<br>'}</div>`).join('');
         return html;
     }
     function diaryText(editor) {
         let out = '';
+        const mark = c => '![](' + (c.dataset.path || ('new:' + c.dataset.new)) + ')';
         const walk = n => {
             n.childNodes.forEach(c => {
-                if (c.nodeType === 3) { out += c.nodeValue.replace(/\u00a0/g, ' '); return; }
+                if (c.nodeType === 3) { out += c.nodeValue.replace(/ /g, ' '); return; }
                 if (c.nodeType !== 1) return;
                 const tag = c.tagName;
-                if (tag === 'IMG') { out += '\n![](' + (c.dataset.path || ('new:' + c.dataset.new)) + ')\n'; return; }
+                if (c.classList.contains('mj-irow')) {
+                    const imgs = [...c.querySelectorAll('img.mj-dimg')];
+                    if (imgs.length) out += (out && !out.endsWith('\n') ? '\n' : '') + imgs.map(mark).join(' ') + '\n';
+                    return;
+                }
+                if (tag === 'IMG') { out += '\n' + mark(c) + '\n'; return; }
                 if (tag === 'BR') { out += '\n'; return; }
                 const block = /^(DIV|P|LI|H\d)$/.test(tag);
                 if (block && out && !out.endsWith('\n')) out += '\n';
@@ -1102,18 +1113,18 @@ export function init() {
     async function editorBody(box, st, folder) {
         let body = diaryText(box.querySelector('.mj-dedit'));
         const add = st.form.addFiles || [], files = {};
-        const used = [...body.matchAll(/^!\[\]\(new:(\d+)\)$/gm)].map(m => Number(m[1]));
+        const used = [...new Set([...body.matchAll(/!\[\]\(new:(\d+)\)/g)].map(m => Number(m[1])))];
         if (used.length) {
             if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return null; }
             const btn = box.querySelector('[data-act=save]'); btn.disabled = true; btn.textContent = 'Uploading…';
             try {
                 for (const k of used) {
                     const up = await uploadImage(add[k], folder, 1600, 'image/jpeg'); files[up.path] = up.sha;
-                    body = body.replace('![](new:' + k + ')', '![](' + up.path + ')');
+                    body = body.split('![](new:' + k + ')').join('![](' + up.path + ')');
                 }
             } catch (e) { mjAlert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return null; }
         }
-        return { body, files, imgs: [...body.matchAll(/^!\[\]\((.+)\)$/gm)].map(m => m[1]) };
+        return { body, files, imgs: marksOf(body) };
     }
     let diaryRange = null;
     document.addEventListener('selectionchange', () => {
@@ -1121,22 +1132,107 @@ export function init() {
         const r = sel.getRangeAt(0), ed = r.startContainer && (r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement);
         if (ed && ed.closest && ed.closest('.mj-dedit')) diaryRange = r.cloneRange();
     });
+    function newRow(img) { const r = document.createElement('div'); r.className = 'mj-irow n1'; r.contentEditable = 'false'; r.appendChild(img); return r; }
+    function fixRows(ed) {
+        ed.querySelectorAll('.mj-irow').forEach(r => {
+            const n = r.querySelectorAll('img').length;
+            if (!n) { r.remove(); return; }
+            r.className = 'mj-irow n' + Math.min(n, 3);
+        });
+    }
     function insertDiaryPhoto(el, st, file) {
         const ed = el.querySelector('.mj-dedit'); if (!ed) return;
         st.form.addFiles = st.form.addFiles || [];
         const k = st.form.addFiles.push(file) - 1;
         const img = document.createElement('img');
         st.form.newUrls = st.form.newUrls || {};
-        img.className = 'mj-dimg'; img.dataset.new = k; img.src = st.form.newUrls[k] = URL.createObjectURL(file);
+        img.className = 'mj-dimg'; img.dataset.new = k; img.draggable = false; img.src = st.form.newUrls[k] = URL.createObjectURL(file);
+        const row = newRow(img);
         const after = document.createElement('div'); after.innerHTML = '<br>';
         if (diaryRange && ed.contains(diaryRange.startContainer)) {
             let blk = diaryRange.startContainer; while (blk && blk.parentNode !== ed) blk = blk.parentNode;
-            if (blk) { ed.insertBefore(img, blk.nextSibling); ed.insertBefore(after, img.nextSibling); }
-            else { ed.appendChild(img); ed.appendChild(after); }
-        } else { ed.appendChild(img); ed.appendChild(after); }
+            if (blk) { ed.insertBefore(row, blk.nextSibling); ed.insertBefore(after, row.nextSibling); }
+            else { ed.appendChild(row); ed.appendChild(after); }
+        } else { ed.appendChild(row); ed.appendChild(after); }
         const r = document.createRange(); r.setStart(after, 0); r.collapse(true);
         const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); diaryRange = r.cloneRange();
     }
+
+    /* 본문 속 사진: 짧게 누르면 크게 보기(+ 삭제), 꾹 누르면 잡아서 옮기기
+       — 다른 사진 옆에 놓으면 한 줄에 나란히 (최대 3장), 글 사이에 놓으면 그 자리에 한 줄로 */
+    let pdrag = null;
+    root.addEventListener('pointerdown', e => {
+        const img = e.target.closest && e.target.closest('.mj-dedit img.mj-dimg'); if (!img) return;
+        const ed = img.closest('.mj-dedit');
+        e.preventDefault();
+        pdrag = { img, ed, x: e.clientX, y: e.clientY, on: false, timer: setTimeout(() => startPhotoDrag(e), 420) };
+    });
+    function startPhotoDrag() {
+        if (!pdrag) return;
+        pdrag.on = true;
+        const g = pdrag.img.cloneNode(); g.className = 'mj-dghost'; g.removeAttribute('data-path'); g.removeAttribute('data-new');
+        document.body.appendChild(g); pdrag.ghost = g;
+        const mark = document.createElement('div'); mark.className = 'mj-dmark'; document.body.appendChild(mark); pdrag.mark = mark;
+        pdrag.img.classList.add('lifting');
+        if (navigator.vibrate) try { navigator.vibrate(15); } catch (err) {}
+        movePhotoDrag(pdrag.x, pdrag.y);
+    }
+    function dropTarget(x, y) {
+        const d = pdrag, ed = d.ed;
+        d.ghost.style.display = 'none';
+        const under = document.elementFromPoint(x, y);
+        d.ghost.style.display = '';
+        if (!under || !ed.contains(under)) return null;
+        const tImg = under.closest('img.mj-dimg');
+        if (tImg && tImg !== d.img) {
+            const row = tImg.closest('.mj-irow');
+            const count = row.querySelectorAll('img').length - (d.img.closest('.mj-irow') === row ? 1 : 0);
+            if (count < 3) { const r = tImg.getBoundingClientRect(); return { kind: 'side', img: tImg, before: x < r.left + r.width / 2, rect: r }; }
+        }
+        let blk = under; while (blk && blk.parentNode !== ed) blk = blk.parentNode;
+        if (!blk) return null;
+        const r = blk.getBoundingClientRect();
+        return { kind: 'line', blk, before: y < r.top + r.height / 2, rect: r };
+    }
+    function movePhotoDrag(x, y) {
+        const d = pdrag; if (!d || !d.on) return;
+        d.ghost.style.left = x + 'px'; d.ghost.style.top = y + 'px';
+        const t = d.target = dropTarget(x, y), m = d.mark;
+        if (!t) { m.style.display = 'none'; return; }
+        m.style.display = 'block';
+        if (t.kind === 'side') Object.assign(m.style, { left: (t.before ? t.rect.left - 3 : t.rect.right - 1) + 'px', top: t.rect.top + 'px', width: '4px', height: t.rect.height + 'px' });
+        else Object.assign(m.style, { left: t.rect.left + 'px', top: (t.before ? t.rect.top - 2 : t.rect.bottom - 2) + 'px', width: t.rect.width + 'px', height: '4px' });
+    }
+    function endPhotoDrag(cancel) {
+        const d = pdrag; pdrag = null; if (!d) return;
+        clearTimeout(d.timer);
+        if (!d.on) {                                   // 짧게 눌렀음 → 크게 보기 (삭제 가능)
+            if (cancel) return;
+            const imgs = [...d.ed.querySelectorAll('img.mj-dimg')];
+            if (window.lightbox) window.lightbox.open(imgs.map(i => i.src), imgs.indexOf(d.img), {
+                onDelete: k => { const im = imgs[k]; if (im) { const ed = im.closest('.mj-dedit'); im.remove(); if (ed) fixRows(ed); } }
+            });
+            return;
+        }
+        d.ghost.remove(); d.mark.remove(); d.img.classList.remove('lifting');
+        const t = d.target; if (cancel || !t) return;
+        if (t.kind === 'side') t.img.parentNode.insertBefore(d.img, t.before ? t.img : t.img.nextSibling);
+        else if (t.blk !== d.img.closest('.mj-irow') || d.img.closest('.mj-irow').querySelectorAll('img').length > 1) {
+            const row = newRow(d.img);                 // newRow가 img를 원래 줄에서 빼 옴
+            d.ed.insertBefore(row, t.before ? t.blk : t.blk.nextSibling);
+        }
+        fixRows(d.ed);
+    }
+    window.addEventListener('pointermove', e => {
+        if (!pdrag) return;
+        if (!pdrag.on) { if (Math.hypot(e.clientX - pdrag.x, e.clientY - pdrag.y) > 8) { clearTimeout(pdrag.timer); pdrag = null; } return; }
+        e.preventDefault(); movePhotoDrag(e.clientX, e.clientY);
+    }, { passive: false });
+    window.addEventListener('pointerup', () => endPhotoDrag(false));
+    window.addEventListener('pointercancel', () => endPhotoDrag(true));
+    // 폰: 사진을 잡고 있는 동안은 화면이 스크롤되지 않게
+    window.addEventListener('touchmove', e => { if (pdrag && pdrag.on) e.preventDefault(); }, { passive: false });
+    root.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.mj-dedit img')) e.preventDefault(); });
 
     function pickFile(cb) {
         fileIn.value = '';
@@ -1254,7 +1350,7 @@ export function init() {
             if (old && old.cover && old.cover !== cover && old.cover.startsWith(IMG_DIR)) files[old.cover] = null;
             const eb = await editorBody(box, st, 'library'); if (!eb) return;
             Object.assign(files, eb.files);
-            ((old && old.memo) ? [...old.memo.matchAll(/^!\[\]\((.+)\)$/gm)].map(m => m[1]) : []).forEach(p => { if (!eb.imgs.includes(p) && p.startsWith(IMG_DIR)) files[p] = null; });
+            marksOf(old && old.memo).forEach(p => { if (!eb.imgs.includes(p) && p.startsWith(IMG_DIR)) files[p] = null; });
             f.memo = eb.body;
             const tags = (f.tags || '').split(/[\s,]+/).map(t => t.replace(/^#/, '').trim()).filter(Boolean);
             item = tidy(Object.assign(base, { type: st.form.type || libType(st), title: f.title, creator: f.creator, year: f.year, cover, url: f.url,
@@ -1304,22 +1400,9 @@ export function init() {
             upsert('outfit', item, msg, files);
             return;
         } else if (id === 'diary') {
-            let body = diaryText(box.querySelector('.mj-dedit'));
-            const add = st.form.addFiles || [];
-            const used = [...body.matchAll(/^!\[\]\(new:(\d+)\)$/gm)].map(m => Number(m[1]));
-            if (!f.title && !body) { mjAlert('내용을 적어 주세요.'); return; }
-            const files = {};
-            if (used.length) {
-                if (!window.ghdb.hasToken()) { mjAlert('저장하려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.'); return; }
-                const btn = box.querySelector('[data-act=save]'); btn.disabled = true; btn.textContent = 'Uploading…';
-                try {
-                    for (const k of used) {
-                        const up = await uploadImage(add[k], 'diary', 1600, 'image/jpeg'); files[up.path] = up.sha;
-                        body = body.replace('![](new:' + k + ')', '![](' + up.path + ')');
-                    }
-                } catch (e) { mjAlert('사진을 올리지 못했어요.\n' + (e.message || e)); btn.disabled = false; btn.textContent = 'Save'; return; }
-            }
-            const imgs = [...body.matchAll(/^!\[\]\((.+)\)$/gm)].map(m => m[1]);
+            if (!f.title && !diaryText(box.querySelector('.mj-dedit'))) { mjAlert('내용을 적어 주세요.'); return; }
+            const eb = await editorBody(box, st, 'diary'); if (!eb) return;
+            const body = eb.body, files = eb.files, imgs = eb.imgs;
             const old = st.form.id ? db.diary.find(x => x.id === st.form.id) : null;
             ((old && old.imgs) || []).forEach(p => { if (!imgs.includes(p) && p.startsWith(IMG_DIR)) files[p] = null; });
             f.body = body;
@@ -1481,7 +1564,7 @@ export function init() {
                             <span class="dbody">
                                 <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}${r.imgs && r.imgs.length > 1 ? ` · ${r.imgs.length} photos` : ''}</span>
                                 ${r.title ? `<span class="tt">${esc(r.title)}</span>` : ''}
-                                ${r.body ? `<span class="tx">${esc(r.body.split('\n').filter(l => !IMG_LINE.test(l.trim())).join(' ').slice(0, 120))}</span>` : ''}
+                                ${r.body ? `<span class="tx">${esc(r.body.split('\n').filter(l => !ROW_LINE.test(l)).join(' ').slice(0, 120))}</span>` : ''}
                                 ${(r.tags || []).length ? `<span class="tags">${r.tags.map(x => '#' + esc(x)).join(' ')}</span>` : ''}
                             </span>
                         </button>`).join('') : empty('아직 일기가 없어요.')}
@@ -1548,8 +1631,8 @@ export function init() {
     function guessSlot() { const h = new Date().getHours(); return h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 21 ? 'dinner' : 'night'; }
 
     const libType = st => (libTypes().find(x => x[1] === st.tab) || ['all'])[0];
-    const firstImg = t => { const m = /^!\[\]\((.+)\)$/m.exec(t || ''); return m ? m[1] : ''; };
-    const plainMemo = t => (t || '').split('\n').filter(l => !/^!\[\]\(/.test(l.trim())).join(' ').trim();
+    const firstImg = t => marksOf(t)[0] || '';
+    const plainMemo = t => (t || '').split('\n').filter(l => !ROW_LINE.test(l)).join(' ').trim();
     const libCover = r => r.cover ? r.cover : (r.type === 'youtube' && ytId(r.url) ? `https://i.ytimg.com/vi/${ytId(r.url)}/mqdefault.jpg` : firstImg(r.memo));
     const titleKey = r => r.type + '|' + String(r.title || '').trim().toLowerCase();
     function libraryView(st) {
@@ -1583,7 +1666,7 @@ export function init() {
                     <span class="meta">${t === 'all' ? `<em class="mj-tag">${label(libTypes(), r.type)}</em>` : ''}<em class="mj-tag st-${r.status || 'want'}">${label(LIB_STATUS, r.status || 'want')}</em>${[r.creator, r.year].filter(Boolean).map(esc).join(' · ')}</span>
                     ${r.rating ? `<span class="mj-mini">${hearts(r.rating)}</span>` : ''}
                     ${plainMemo(r.memo) ? `<span class="tx">${esc(plainMemo(r.memo).slice(0, 120))}</span>` : ''}
-                    ${(r.memo || '').match(/^!\[\]\(/gm) ? `<span class="tm">${(r.memo.match(/^!\[\]\(/gm)).length} photos</span>` : ''}
+                    ${marksOf(r.memo).length ? `<span class="tm">${marksOf(r.memo).length} photos</span>` : ''}
                     ${(r.tags || []).length ? `<span class="tags">${r.tags.map(x => '#' + esc(x)).join(' ')}</span>` : ''}
                     <span class="tm">${dayTitle(r.date)} · ${esc(r.time)}</span>
                 </span>

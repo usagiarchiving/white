@@ -385,8 +385,11 @@
                     created_at: x.date + 'T' + (x.time || '00:00') + ':00',
                     title: x.title || '',
                     // 본문 속 사진 자리 `![](경로)` 는 그 자리에 사진으로, 없으면 첫 사진을 위에
-                    content: (/^!\[\]\(/m.test(x.body || '') ? '' : ((x.imgs && x.imgs[0]) || '')) + '|||' +
-                        homeEsc(x.body).replace(/^!\[\]\((.+)\)$/gm, '<img src="$1" style="max-width:100%;display:block;margin:8px auto;">').replace(/\n/g, '<br>') + '|||' +
+                    content: (/!\[\]\(/.test(x.body || '') ? '' : ((x.imgs && x.imgs[0]) || '')) + '|||' +
+                        homeEsc(x.body).replace(/^(\s*!\[\]\([^)\s]+\)\s*)+$/gm, function (line) {   // 사진 한 줄 (여러 장이면 나란히)
+                            var ps = line.match(/!\[\]\(([^)\s]+)\)/g).map(function (m) { return m.slice(4, -1); });
+                            return '<div style="display:flex;gap:4px;margin:8px 0;">' + ps.map(function (p) { return '<img src="' + p + '" style="' + (ps.length > 1 ? 'flex:1;min-width:0;aspect-ratio:1;object-fit:cover;' : 'max-width:100%;margin:0 auto;') + 'display:block;">'; }).join('') + '</div>';
+                        }).replace(/\n/g, '<br>') + '|||' +
                         (x.tags || []).map(function (t) { return '#' + t; }).join(' ')
                 };
             });
