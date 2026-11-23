@@ -1288,8 +1288,12 @@ export function init() {
         return { all, timed, lanes: Math.max(1, lanes.length) };
     }
     RENDER.tt = (body, tools) => {
-        tools.innerHTML = '<button class="dy-rb round" data-tool="tt-add" title="일정 넣기">' + ic('plus') + '</button>';
-        tools.onclick = e => { if (e.target.closest('[data-tool="tt-add"]')) { const n = Math.ceil(Date.now() / 600000) * 10; ttForm(null, n, n + 60); } };
+        tools.innerHTML = '<button class="dy-rb round' + (TTS.busy ? ' spin' : '') + '" data-tool="tt-sync" title="아이폰 캘린더 지금 받아오기">' + ic('reload') + '</button>' +
+            '<button class="dy-rb round" data-tool="tt-add" title="일정 넣기">' + ic('plus') + '</button>';
+        tools.onclick = e => {
+            if (e.target.closest('[data-tool="tt-add"]')) { const n = Math.ceil(Date.now() / 600000) * 10; ttForm(null, n, n + 60); }
+            if (e.target.closest('[data-tool="tt-sync"]')) ttSync();
+        };
         const k = V.ttDate || (V.ttDate = todayKey()), tk = todayKey(), d = parseKey(k);
         const mon = addDays(k, -((d.getDay() + 6) % 7));       // 월요일부터
         let week = '';
@@ -1320,6 +1324,38 @@ export function init() {
             '</div>';
         bindTTGrid(body.querySelector('#tt-grid'), k);
     };
+    // 지금 동기화: GitHub에 캘린더 받기를 바로 시키고, 끝나면 새로 불러옴 (토큰에 Actions 읽기·쓰기 권한 필요)
+    const TTS = { busy: false };
+    async function ttSync() {
+        if (TTS.busy) return;
+        if (!canWrite()) return;
+        const setBusy = b => { TTS.busy = b; const btn = document.querySelector('[data-tool="tt-sync"]'); if (btn) btn.classList.toggle('spin', b); };
+        const W = '/actions/workflows/calendar.yml';
+        const since = Date.now() - 5000;
+        setBusy(true);
+        try {
+            await repo.api(W + '/dispatches', { method: 'POST', body: { ref: 'main' } });
+        } catch (e) {
+            setBusy(false);
+            return toast(e.status === 403 || e.status === 404 ? '토큰에 Actions 읽기·쓰기 권한을 켜 주세요' : '동기화를 시작하지 못했어요');
+        }
+        toast('아이폰 캘린더 받아오는 중…');
+        // 실행이 끝날 때까지 기다림 (보통 30초~1분)
+        for (let i = 0; i < 24; i++) {
+            await new Promise(r => setTimeout(r, 10000));
+            if (!document.body.contains(wrap)) return;
+            let run = null;
+            try { const j = await repo.api(W + '/runs?event=workflow_dispatch&per_page=3'); run = (j.workflow_runs || []).find(x => new Date(x.created_at).getTime() >= since); } catch (e) {}
+            if (!run || run.status !== 'completed') continue;
+            setBusy(false);
+            if (run.conclusion !== 'success') return toast('캘린더를 받지 못했어요');
+            try { ext.cal = prepShared('cal', await repo.readJSON(SHARED.cal, {})); cacheData(); } catch (e) {}
+            render('tt'); render('diary');
+            return toast('캘린더를 새로 받았어요');
+        }
+        setBusy(false);
+        toast('아직 받는 중이에요. 잠시 뒤 다시 열어 주세요');
+    }
     // 빈 칸 누르기 = 그 10분 칸부터 일정 넣기 · 꾹 누르고(PC는 그냥 누르고) 끌기 = 그 범위로 일정 넣기
     function bindTTGrid(grid, k) {
         const base = toMin(k, TT_START + ':00');

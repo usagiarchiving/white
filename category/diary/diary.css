@@ -869,3 +869,5 @@ textarea.dy-in { font-size: 11px; }
 .dy-wrap .dy-rte .emb { display: inline-block; padding: 4px 10px; margin: 2px 0; border: 1.5px dashed var(--dy-thin); border-radius: 10px; background: var(--dy-soft); font-size: 11px; color: var(--dy-sub); user-select: all; }
 .dv-ent .b a, .dy-wrap .mm-body a { color: #5f93b8; text-decoration: underline; word-break: break-all; }
 .dy-ask-card .dy-seg.ch { display: flex; gap: 6px; }
+/* 캘린더 동기화 중: 아이콘이 돌아감 */
+.dy-rb.spin svg.ic { animation: dySpin 1s linear infinite; }

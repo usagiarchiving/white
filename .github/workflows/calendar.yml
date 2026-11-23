@@ -1,11 +1,11 @@
-# 아이폰 캘린더(+ ATracker가 기록해 두는 캘린더)를 한 시간마다 받아서 diary/calendar.json 으로 — 다이어리 타임테이블에 보임
+# 아이폰 캘린더(+ ATracker가 기록해 두는 캘린더)를 15분마다 (다이어리 타임테이블의 동기화 버튼으로 바로도) 받아서 diary/calendar.json 으로 — 다이어리 타임테이블에 보임
 # 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
 #   이름: CALENDAR_ICS   값: 한 줄에 하나씩  이름|webcal://p..-caldav.icloud.com/published/2/…
 name: calendar
 
 on:
   schedule:
-    - cron: '17 * * * *'
+    - cron: '7,22,37,52 * * * *'      # 15분마다
   workflow_dispatch:
 
 permissions:

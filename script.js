@@ -125,14 +125,16 @@ function toggleTheme() {
 /* 🚨 맨 마지막에 있던 불필요한 닫는 괄호 } 제거됨 (스크립트 오류 원인) */
 
 // ==========================================================================
-// [추가] 모바일 환경 입력창 터치 시 강제 줌인 방지 & 수동 줌 허용
+// 휴대폰: 확대 안 되게 (입력칸 자동 확대 · 두 손가락 확대 · 두 번 톡 확대 모두 막음)
 // ==========================================================================
-$(document).on('touchstart', 'input, textarea, [contenteditable="true"]', function() {
-    // 입력창에 손가락이 닿는 순간(타이핑 직전)에만 줌을 1.0으로 꽉 잠급니다.
-    $('meta[name="viewport"]').attr('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-});
-
-$(document).on('blur', 'input, textarea, [contenteditable="true"]', function() {
-    // 키보드가 내려가고 포커스가 빠지면, 다시 손가락으로 화면을 확대할 수 있도록 풀어줍니다.
-    $('meta[name="viewport"]').attr('content', 'width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes');
-});
+(function () {
+    var VP = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    var m = document.querySelector('meta[name="viewport"]');
+    if (m) m.setAttribute('content', VP);
+    // 아이폰 사파리는 user-scalable=no 를 무시하고 두 손가락 확대를 허용해서 직접 막음
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) {
+        document.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false });
+    });
+    document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1 && !e.target.closest('#mh-stage')) e.preventDefault(); }, { passive: false });
+    // 두 번 톡 확대는 style.css 의 touch-action: manipulation 으로 막음 (버튼 빠르게 두 번 누르기는 그대로)
+})();

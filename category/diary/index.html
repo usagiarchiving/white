@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Zen+Maru+Gothic:wght@400;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>#dy-wrap { visibility: hidden; }</style>
-<link rel="stylesheet" href="category/diary/diary.css?v=24" id="dy-css">
+<link rel="stylesheet" href="category/diary/diary.css?v=25" id="dy-css">
 
 <div class="dy-wrap" id="dy-wrap">
     <div class="dy-desk" id="dy-desk">
@@ -37,7 +37,7 @@
 
 <!-- 모듈은 한 번만 실행되므로, 들어올 때마다 init()을 불러 새로 그림 -->
 <script type="module">
-    import { init } from './category/diary/diary.js?v=24';
+    import { init } from './category/diary/diary.js?v=25';
     // 스타일이 다 온 다음에 그림 (먼저 그리면 큰 그림이 번쩍이고 창 크기가 틀어짐)
     const css = document.getElementById('dy-css');
     const ready = () => { try { return !!(css && css.sheet && css.sheet.cssRules.length); } catch (e) { return true; } };

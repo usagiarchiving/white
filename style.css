@@ -249,3 +249,6 @@ body.game-page .mh-stage { margin-top: 0; height: calc(100vh - var(--hdr-h, 40px
 .lb-del { display: none; border: 1px solid rgba(255, 255, 255, .5); background: rgba(255, 255, 255, .08); color: #ffd0dc; padding: 6px 16px; border-radius: 3px; cursor: pointer; font-size: 12px; }
 .lb-root.can-del .lb-del { display: inline-block; }
 @media (hover: none) { .lb-root.multi .lb-nav { background: none; } }
+
+/* 휴대폰: 두 번 톡 확대 막기 */
+html, body { touch-action: manipulation; }
