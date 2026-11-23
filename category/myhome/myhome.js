@@ -702,12 +702,8 @@ export function init() {
         const name = [city, loc && loc !== j.city ? loc : ''].filter(Boolean).join(' ');
         return name || '현재 위치';
     }
-    function locate() {
-        try {                                                         // 최근에 받은 위치가 있으면 바로 사용
-            const c = JSON.parse(localStorage.getItem('mh-place') || 'null');
-            if (c && Date.now() - c.t < 6 * 3600000) PLACE = c.p;
-        } catch (e) {}
-        if (!navigator.geolocation) return;
+    // 위치는 처음 한 번만 물음. 허용하면 기억해서 계속 사용, 거절하면 다시 묻지 않음(집 사용)
+    function getPosition(onDone) {
         navigator.geolocation.getCurrentPosition(async pos => {
             const lat = +pos.coords.latitude.toFixed(3), lon = +pos.coords.longitude.toFixed(3);
             let name = '현재 위치';
@@ -719,7 +715,23 @@ export function init() {
             PLACE = { name, lat, lon };
             try { localStorage.setItem('mh-place', JSON.stringify({ p: PLACE, t: Date.now() })); } catch (e) {}
             if (moved) loadWeather();
-        }, () => { /* 거절하면 집(부산 동구) 그대로 */ }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 30 * 60000 });
+            if (onDone) onDone(true);
+        }, () => { if (onDone) onDone(false); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 30 * 60000 });
+    }
+    async function locate() {
+        let asked = false;
+        try {
+            const c = JSON.parse(localStorage.getItem('mh-place') || 'null');
+            if (c && c.p) PLACE = c.p;                                   // 기억해 둔 위치
+            asked = localStorage.getItem('mh-geo-asked') === '1';
+        } catch (e) {}
+        if (!navigator.geolocation) return;
+        let state = 'prompt';
+        try { if (navigator.permissions) state = (await navigator.permissions.query({ name: 'geolocation' })).state; } catch (e) {}
+        if (state === 'granted') { getPosition(); return; }               // 이미 허용됨: 묻지 않고 조용히 갱신
+        if (state === 'denied' || asked) return;                          // 거절했거나 이미 한 번 물었음
+        try { localStorage.setItem('mh-geo-asked', '1'); } catch (e) {}
+        getPosition();
     }
 
     applySky();
@@ -1267,6 +1279,11 @@ export function init() {
     cardEl.addEventListener('click', e => {
         if (card && card.id === 'notes') { notesClick(e); return; }
         if (card && card.id === 'shop') { shopClick(e); return; }
+        if (!card && e.target.closest('.mh-here')) {
+            const btn = e.target.closest('.mh-here'); btn.textContent = '…';
+            getPosition(ok => { if (ok) setTimeout(() => { if (!card && bg.style.display === 'flex') openWeek(); }, 1200); else btn.textContent = '위치 권한이 꺼져 있어요'; });
+            return;
+        }
         if (!card) { if (e.target.closest('.mh-close')) closeCard(); return; }
         const nav = e.target.closest('[data-nav]');
         if (nav) { const d = new Date(card.y, card.m + Number(nav.dataset.nav), 1); card.y = d.getFullYear(); card.m = d.getMonth(); drawCard(); return; }
@@ -1495,7 +1512,7 @@ export function init() {
             '<div class="mh-head"><span class="mh-title"><b>' + PLACE.name + '</b> · WEEK</span><span class="mh-today">해 ' + rise + ' – ' + set + '</span></div>' +
             '<div class="mh-wk-now"><b>' + Math.round(weather.current.temperature_2m) + '°</b>' + KIND_IC[nowK] + ' ' + KIND_TXT[nowK] + '</div>' +
             rows +
-            '<div class="mh-foot"><span class="mh-stat">Open-Meteo</span></div>';
+            '<div class="mh-foot"><span class="mh-stat">Open-Meteo</span><button class="mh-close mh-here">현재 위치로</button></div>';
         bg.style.display = 'flex';
     }
 
