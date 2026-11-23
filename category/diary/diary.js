@@ -254,7 +254,8 @@ export function init() {
     function askForm(title, fields, ok) {
         return new Promise(res => {
             const el = askBox('<div class="t">' + esc(title) + '</div>' + fields.map(f => '<label class="f"><span>' + esc(f.label || '') + '</span>' +
-                (f.type === 'textarea' ? '<textarea class="dy-in" data-k="' + f.k + '" placeholder="' + esc(f.ph || '') + '">' + esc(f.value || '') + '</textarea>'
+                (f.type === 'choice' ? '<input type="hidden" data-k="' + f.k + '" value="' + esc(f.value || f.opts[0][0]) + '"><div class="dy-seg ch">' + f.opts.map(([v, n]) => '<button type="button" class="dy-rb' + ((f.value || f.opts[0][0]) === v ? ' on' : '') + '" data-ch="' + v + '">' + esc(n) + '</button>').join('') + '</div>'
+                : f.type === 'textarea' ? '<textarea class="dy-in" data-k="' + f.k + '" placeholder="' + esc(f.ph || '') + '">' + esc(f.value || '') + '</textarea>'
                     : '<input class="dy-in" data-k="' + f.k + '" type="' + (f.type || 'text') + '" value="' + esc(f.value || '') + '" placeholder="' + esc(f.ph || '') + '">') + '</label>').join('') +
                 '<div class="foot"><button class="dy-rb" data-v="0">취소</button><button class="dy-rb on" data-v="1">' + esc(ok || '저장') + '</button></div>');
             const get = () => { const o = {}; el.querySelectorAll('[data-k]').forEach(i => { o[i.dataset.k] = i.value.trim(); }); return o; };
@@ -262,7 +263,11 @@ export function init() {
                 if (v) { const o = get(), miss = fields.find(f => f.need && !o[f.k]); if (miss) { const i = el.querySelector('[data-k="' + miss.k + '"]'); i.classList.add('need'); i.focus(); return; } el.remove(); return res(o); }
                 el.remove(); res(null);
             };
-            el.onclick = e => { const b = e.target.closest('[data-v]'); if (b) done(b.dataset.v === '1'); else if (e.target === el) done(false); };
+            el.onclick = e => {
+                const ch = e.target.closest('[data-ch]');
+                if (ch) { const f = ch.closest('.f'); f.querySelector('input[type=hidden]').value = ch.dataset.ch; f.querySelectorAll('[data-ch]').forEach(x => x.classList.toggle('on', x === ch)); return; }
+                const b = e.target.closest('[data-v]'); if (b) done(b.dataset.v === '1'); else if (e.target === el) done(false);
+            };
             el.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing && e.target.tagName === 'INPUT') { e.preventDefault(); done(true); } };
             el.dy = { esc: () => done(false) };
             setTimeout(() => { const i = el.querySelector('[data-k]'); if (i) { i.focus(); if (i.select && i.type === 'text') i.select(); } }, 30);
@@ -1691,7 +1696,7 @@ export function init() {
                     '<span class="sep"></span>' + RTE_MARKS.map(c => '<button class="tb mark" data-cmd="hiliteColor" data-v="' + c + '" title="형광펜" style="--c:' + c + '"></button>').join('') +
                     '<span class="sep"></span>' + [['11', '작게'], ['13', '보통'], ['16', '크게'], ['20', '아주 크게']].map(([v, n]) => tool('size', '<span style="font-size:' + (9 + (+v - 11) / 2) + 'px">가</span>', n, v)).join('') +
                     '<span class="sep"></span>' + tool('justifyLeft', ic('alignl'), '왼쪽') + tool('justifyCenter', ic('alignc'), '가운데') + tool('insertUnorderedList', ic('list'), '목록') +
-                    tool('photo', ic('photo'), '사진 넣기') + tool('link', ic('link'), '링크 넣기') + tool('embed', ic('play'), '영상·링크 카드 넣기') + tool('removeFormat', ic('eraser'), '꾸밈 지우기') +
+                    tool('photo', ic('photo'), '사진 넣기') + tool('link', ic('link'), '링크·임베드 넣기') + tool('removeFormat', ic('eraser'), '꾸밈 지우기') +
                 '</div>' +
                 '<div class="dy-rte f-' + (ext.memos.font === 'pretendard' ? 'pretendard' : 'default') + '" contenteditable="true" spellcheck="false">' + (d0.html || '') + '</div>' +
                 '<input class="dy-in me-tags" value="' + esc((d0.tags || []).map(g => '#' + g).join(' ')) + '" placeholder="#태그">' +
@@ -1718,16 +1723,14 @@ export function init() {
             if (tp) { d0.tab = tp.dataset.tab; cardBox.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b === tp)); return; }
             if (tb) {
                 const cmd = tb.dataset.cmd, v = tb.dataset.v;
-                if (cmd === 'link' || cmd === 'embed') {
-                    const sel = window.getSelection(), picked = range ? range.toString() : '';
-                    const f = await askForm(cmd === 'link' ? '링크 넣기' : '영상·링크 카드 넣기', cmd === 'link'
-                        ? [{ k: 'url', label: '주소', ph: 'https://', need: true }, { k: 'text', label: '보일 글자', value: picked }]
-                        : [{ k: 'url', label: '주소 (유튜브는 영상으로, 그 밖은 링크 카드로)', ph: 'https://', need: true }], '넣기');
+                if (cmd === 'link') {
+                    const picked = range ? range.toString() : '';
+                    const f = await askForm('링크 넣기', [{ k: 'url', label: '주소', ph: 'https://', need: true }, { k: 'text', label: '보일 글자 (링크일 때)', value: picked }, { k: 'how', label: '넣는 방법', type: 'choice', value: 'link', opts: [['link', '링크'], ['embed', '임베드']] }], '넣기');
                     if (!f) return;
                     const u = safeUrl(f.url); if (!u) return toast('주소는 http:// 또는 https:// 로 시작해야 해요');
                     restore();
-                    if (cmd === 'link') document.execCommand('insertHTML', false, '<a href="' + esc(u) + '">' + esc(f.text || u) + '</a>');
-                    else document.execCommand('insertHTML', false, embedHtml(u, true) + '<br>');
+                    if (f.how === 'embed') document.execCommand('insertHTML', false, embedHtml(u, true) + '<br>');
+                    else document.execCommand('insertHTML', false, '<a href="' + esc(u) + '">' + esc(f.text || u) + '</a>');
                     keepSel(); return;
                 }
                 if (cmd === 'photo') {
@@ -2100,10 +2103,14 @@ export function init() {
         let mode = synced.length || (orig.events || []).length || orig.photo || orig.sticker || origE.length || orig.link ? 'view' : 'edit';
         let stkOpen = false;
         const title = '<h3><img src="' + CHAR['c-blue'] + '" alt="">' + (d0.getMonth() + 1) + '월 ' + d0.getDate() + '일 ' + WEEK_KO[d0.getDay()] + '요일</h3>';
-        const linkify = t => esc(t).replace(/https?:\/\/[^\s<]+/g, u => '<a href="' + u + '" target="_blank" rel="noopener">' + u + '</a>');
+        const linkify = t => {           // [보일 글자](주소) → 링크, 그냥 주소 → 링크
+            const parts = []; let rest = String(t);
+            rest = rest.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (m, txt, u) => { parts.push('<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(txt) + '</a>'); return '\u0000' + (parts.length - 1) + '\u0000'; });
+            return esc(rest).replace(/https?:\/\/[^\s<\u0000]+/g, u => '<a href="' + u + '" target="_blank" rel="noopener">' + u + '</a>').replace(/\u0000(\d+)\u0000/g, (m, i) => parts[+i]);
+        };
         const bodyHtml = b => String(b || '').split('\n').map(l => {
             const m = /^!\[\]\((.+)\)$/.exec(l.trim()); if (m) return '<img src="' + esc(src(m[1])) + '" alt="">';
-            if (safeUrl(l.trim()) && !/\s/.test(l.trim())) return embedHtml(l.trim());       // 주소만 있는 줄 = 영상/링크 카드
+            const em = /^!\[임베드\]\((https?:\/\/[^)\s]+)\)$/.exec(l.trim()); if (em) return embedHtml(em[1]);       // 임베드로 넣은 줄
             return '<div>' + (l ? linkify(l) : '&nbsp;') + '</div>';
         }).join('');
         function draw() {
@@ -2128,7 +2135,7 @@ export function init() {
                 (ev.length ? '<div class="dy-list">' + ev.map(e => '<div class="dy-li" data-id="' + esc(e.id) + '"><span class="tx">' + esc(e.text) + '</span><button class="dy-del" data-c="ev-del">' + ic('x') + '</button></div>').join('') + '</div>' : '') +
                 '<div class="lb" style="display:flex;justify-content:space-between;align-items:center">일기 <button class="dy-rb round" data-c="ent-add" title="일기 더 쓰기">' + ic('plus') + '</button></div>' +
                 '<div class="dy-ents">' + ents.map((e, i) => '<div class="dy-ent" data-i="' + i + '">' +
-                    '<div class="row"><input class="dy-in" data-ent="title" value="' + esc(e.title) + '" placeholder="제목"><button class="dy-del" data-c="ent-del" title="이 일기 지우기">' + ic('x') + '</button></div>' +
+                    '<div class="row"><input class="dy-in" data-ent="title" value="' + esc(e.title) + '" placeholder="제목"><button class="dy-del" data-c="ent-link" title="링크·임베드 넣기">' + ic('link') + '</button><button class="dy-del" data-c="ent-del" title="이 일기 지우기">' + ic('x') + '</button></div>' +
                     '<textarea class="dy-in lined" data-ent="body">' + esc(e.body) + '</textarea></div>').join('') + '</div>' +
                 '<div class="lb">링크</div><div class="row"><input class="dy-in" id="dy-day-link" value="' + esc(dr.link || '') + '">' +
                 (safeUrl(dr.link) ? '<a class="dy-rb" href="' + esc(safeUrl(dr.link)) + '" target="_blank" rel="noopener" style="text-decoration:none">열기</a>' : '') + '</div>' +
@@ -2201,6 +2208,16 @@ export function init() {
             if (a === 'unphoto') { delete dr.photo; delete dr.thumb; return draw(); }
             if (a === 'ev-add') return addEv();
             if (a === 'ev-del') { const id = rowId(c); dr.events = (dr.events || []).filter(x => x.id !== id); return draw(); }
+            if (a === 'ent-link') {
+                const i = +c.closest('.dy-ent').dataset.i, ta = c.closest('.dy-ent').querySelector('[data-ent="body"]');
+                const p0 = ta.selectionStart || ta.value.length, p1 = ta.selectionEnd || p0, picked = ta.value.slice(p0, p1);
+                const f = await askForm('링크 넣기', [{ k: 'url', label: '주소', ph: 'https://', need: true }, { k: 'text', label: '보일 글자 (링크일 때)', value: picked }, { k: 'how', label: '넣는 방법', type: 'choice', value: 'link', opts: [['link', '링크'], ['embed', '임베드']] }], '넣기');
+                if (!f) return;
+                const u = safeUrl(f.url); if (!u) return toast('주소는 http:// 또는 https:// 로 시작해야 해요');
+                const ins = f.how === 'embed' ? (p0 && ta.value[p0 - 1] !== '\n' ? '\n' : '') + '![임베드](' + u + ')\n' : (f.text ? '[' + f.text + '](' + u + ')' : u);
+                ents[i].body = ta.value.slice(0, p0) + ins + ta.value.slice(p1);
+                return draw();
+            }
             if (a === 'ent-add') { ents.push({ id: 'dy' + uid(), title: '', body: '' }); draw(); const t = cardBox.querySelectorAll('[data-ent="body"]'); if (t.length) t[t.length - 1].focus(); return; }
             if (a === 'ent-del') { const i = +c.closest('.dy-ent').dataset.i; if ((ents[i].title || ents[i].body) && !(await ask('이 일기를 지울까요?\n저장하면 김민정 Diary에서도 지워져요', '지우기', true))) return; ents.splice(i, 1); return draw(); }
             if (a === 'clear') {
