@@ -842,3 +842,29 @@ textarea.dy-in { font-size: 11px; }
 .tt-ev { box-shadow: none; border-radius: 2px; }
 .tt-ev span { color: #2b2729; }
 .tt-ev:hover { filter: saturate(1.4); }
+
+/* ---------------- 타임테이블: 종일 형광펜(캘린더 색), 끌어서 고르는 칸, 일정 넣기 카드 ---------------- */
+.tt-all .hl { background: linear-gradient(transparent 40%, var(--pen) 40%, var(--pen) 94%, transparent 94%); }
+.tt-track { touch-action: pan-y; -webkit-user-select: none; user-select: none; }
+.tt-sel { position: absolute; top: 2px; bottom: 2px; background: rgba(207, 238, 230, .75); box-shadow: inset 0 0 0 1.5px #5FB5A3; border-radius: 3px; pointer-events: none; z-index: 3; }
+.ttf { display: flex; flex-direction: column; gap: 10px; }
+.ttf .f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ttf .f > span { font-family: var(--dy-title); font-size: 11px; color: var(--dy-sub); }
+.ttf .dt { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 6px; }
+.ttf .dt input[hidden] { display: none; }
+.ttf .dt:has(input[hidden]) { grid-template-columns: 1fr; }
+.ttf .dy-in, .dy-ask-card .dy-in { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+.ttf input[type=date], .ttf input[type=time], .dy-ask-card input[type=date], .dy-ask-card input[type=time] { -webkit-appearance: none; appearance: none; padding: 0 8px; text-align: left; }
+.ttf textarea.dy-in { min-height: 70px; resize: vertical; }
+.ttf .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; align-self: flex-start; cursor: pointer; }
+.ttf .chk input { width: 16px; height: 16px; accent-color: #5FB5A3; margin: 0; }
+.ttf .dy-in.need { border-color: #e98aa5; }
+
+/* ---------------- 메모·일기 안 영상·링크 카드 ---------------- */
+.dy-wrap .emb-yt { position: relative; width: 100%; max-width: 480px; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--dy-line); background: #000; margin: 4px 0; }
+.dy-wrap .emb-yt iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.dy-wrap .emb-link { display: flex; flex-direction: column; gap: 1px; max-width: 480px; padding: 8px 12px; margin: 4px 0; border: 1.5px solid var(--dy-thin); border-radius: 12px; background: var(--dy-soft); text-decoration: none !important; color: var(--dy-text) !important; white-space: normal; }
+.dy-wrap .emb-link b { font-size: 12px; }
+.dy-wrap .emb-link span { font-size: 10.5px; color: var(--dy-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dy-wrap .dy-rte .emb { display: inline-block; padding: 4px 10px; margin: 2px 0; border: 1.5px dashed var(--dy-thin); border-radius: 10px; background: var(--dy-soft); font-size: 11px; color: var(--dy-sub); user-select: all; }
+.dv-ent .b a, .dy-wrap .mm-body a { color: #5f93b8; text-decoration: underline; word-break: break-all; }

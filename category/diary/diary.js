@@ -149,6 +149,7 @@ const ICO = {
     search: '<circle cx="7" cy="7" r="4"/><path d="M10 10l3.2 3.2"/>', alignl: '<path d="M3 4h10M3 7h6.5M3 10h10M3 13h6.5"/>', alignc: '<path d="M3 4h10M4.8 7h6.4M3 10h10M4.8 13h6.4"/>',
     eraser: '<path d="M6.5 13.5h7M3.2 10.2l5.6-5.6a1.4 1.4 0 0 1 2 0l1.6 1.6a1.4 1.4 0 0 1 0 2l-4.9 4.9H5.2z"/>',
     down: '<path d="M4 6.5l4 4 4-4"/>',
+    link: '<path d="M6.8 9.2a2.6 2.6 0 0 0 3.7 0l2-2a2.6 2.6 0 0 0-3.7-3.7l-.8.8"/><path d="M9.2 6.8a2.6 2.6 0 0 0-3.7 0l-2 2a2.6 2.6 0 0 0 3.7 3.7l.8-.8"/>',
     grid: '<rect x="2.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="2.8" width="4.4" height="4.4" rx="1"/><rect x="2.8" y="8.8" width="4.4" height="4.4" rx="1"/><rect x="8.8" y="8.8" width="4.4" height="4.4" rx="1"/>',
     eye: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><circle cx="8" cy="8" r="2"/>',
     eyeoff: '<path d="M1.8 8S4.2 3.8 8 3.8 14.2 8 14.2 8 11.8 12.2 8 12.2 1.8 8 1.8 8z"/><path d="M3 13L13 3"/>',
@@ -285,7 +286,18 @@ export function init() {
         if (got[0]) db = normalize(got[0]);
         keys.forEach((k, i) => { if (got[i + 1]) ext[k] = prepShared(k, got[i + 1]); });
         applyTheme(); renderAll(true);
+        cacheData();
         loadOha();
+    }
+    // 이 기기에 마지막으로 본 기록을 기억 → 다음에 열 때 바로 그림 (그 뒤 GitHub에서 새로 받아 바꿈)
+    const CACHE_KEY = 'dy-data-cache';
+    function cacheData() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ db, ext })); } catch (e) {} }
+    function fromCache() {
+        try {
+            const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (!c) return false;
+            db = normalize(c.db); Object.keys(SHARED).forEach(k => { if (c.ext && c.ext[k]) ext[k] = prepShared(k, c.ext[k]); });
+            return true;
+        } catch (e) { return false; }
     }
     // 다른 기기에서 쓴 기록: 화면으로 돌아오면 다시 불러옴 (입력 중·저장 중이면 건너뜀)
     on(document, 'visibilitychange', () => {
@@ -331,6 +343,7 @@ export function init() {
                 if (res[DATA]) db = normalize(JSON.parse(JSON.stringify(res[DATA])));
                 Object.keys(SHARED).forEach(k => { if (res[SHARED[k]]) ext[k] = prepShared(k, JSON.parse(JSON.stringify(res[SHARED[k]]))); });
                 applyTheme(); renderAll(true);
+                cacheData();
             }
         }, e => {
             setPending(pending - 1);
@@ -364,7 +377,7 @@ export function init() {
         return { bytes: new Uint8Array(await blob.arrayBuffer()), ext: keepAlpha ? 'png' : 'jpg', type };
     }
     // → { path, files } : files를 save()에 넘기면 같은 커밋으로 올라감
-    async function uploadImage(folder, max, keepAlpha) {
+    async function uploadImage(folder, max, keepAlpha, withThumb) {
         if (!canWrite()) return null;
         const file = await pickFile();
         if (!file) return null;
@@ -374,7 +387,14 @@ export function init() {
             const path = 'diary/' + folder + '/' + ymd(new Date()) + '-' + uid() + '.' + r.ext;
             localUrl[path] = URL.createObjectURL(new Blob([r.bytes], { type: r.type }));
             const sha = await repo.putBlob(r.bytes);
-            return { path, files: { [path]: sha } };
+            const out = { path, files: { [path]: sha } };
+            if (withThumb && !keepAlpha && r.ext === 'jpg') {          // 달력 칸용 작은 사진 (빨리 뜨게)
+                const t = await shrink(file, 360, false);
+                const tp = path.replace(/\.jpg$/, '.t.jpg');
+                localUrl[tp] = URL.createObjectURL(new Blob([t.bytes], { type: t.type }));
+                out.thumb = tp; out.files[tp] = await repo.putBlob(t.bytes);
+            }
+            return out;
         } catch (e) {
             toast('사진을 올리지 못했어요 · ' + (e.message || e));
             return null;
@@ -855,7 +875,7 @@ export function init() {
             if (d.getDay() === 6) cls.push('sat');
             let inner = '<span class="n">' + d.getDate() + '</span>';
             const pic = day.photo || day.sticker;
-            if (day.photo) inner += '<img class="ph" src="' + esc(src(day.photo)) + '" alt="" loading="lazy">';
+            if (day.photo) inner += '<img class="ph" src="' + esc(src(day.thumb || day.photo)) + '" alt="" loading="lazy" decoding="async">';
             else if (day.sticker) inner += '<img class="st" src="' + esc(src(day.sticker)) + '" alt="" loading="lazy">';
             const ev = calDaily(k).map(e => ({ text: calLabel(e, k), cal: 1 })).concat(day.events || []);
             // 일정은 날짜 밑에 꾸밈 칩으로, 일기(김민정 Diary와 같은 기록)는 글만
@@ -1218,22 +1238,35 @@ export function init() {
        ========================================================================== */
     const TT_START = 4;
     const hexA = (h, a) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); if (!m) return h; const n = parseInt(m[1], 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; };                                   // 하루 시작: 새벽 4시
-    const TT_COLORS = ['#F6B3C4', '#A9CFE6', '#F6C4A0', '#C9B6E8', '#B7DC8A', '#F0D98A', '#9FD6C8', '#E8B4D8'];
-    // 캘린더 색: 아이폰 캘린더 색 → (없으면) 할 일 분류 색 → 이름마다 정해진 파스텔. 칠할 때는 반투명 형광펜처럼
-    const CAL_COLOR = { 'AT-sleep': '#C9B6E8', 'ATracker': '#A9CFE6', '마음': '#F6C4A0', '학교': '#C9B6E8' };
+    // 타임테이블 색: 피버피치 형광펜 (캘린더별), 직접 넣은 건 블루그린. 칠할 때 채도 살짝 올리고 60%만 (형광펜처럼)
+    const TT_PEN = { '일상': '#FFE899', '공부': '#F6BEC4', '마음': '#E2F1B4', '운동': '#C4EAFA', '작업': '#C5D5E5', '취미': '#F9D6E0', 'ATracker': '#C9CACC', 'AT-sleep': '#8E9096', '직접 기록': '#CFEEE6' };
+    const TT_MORE = ['#F9E0BD', '#CFEEE6', '#E6DDF7', '#BFE1E8', '#F3BDF2', '#FDBE9B', '#E9CBC0', '#FDD4AC', '#ADEBF7', '#EECAE8', '#F6BBB3', '#EEEFB3', '#A6DDDD', '#C7C7E1'];
+    const SLEEP = '#8E9096';
     const calColor = name => {
-        // 1순위: 아이폰 캘린더에 정해 둔 색 그대로 (동기화할 때 같이 받아 옴)
-        const own = (ext.cal.colors || {})[name];
-        if (own) return own;
-        const cat = Object.keys(TODO_CAT).find(c => TODO_CAT[c] && TODO_CAT[c] === name);
-        if (cat) return TODO_COLORS[cat];
-        if (CAL_COLOR[name]) return CAL_COLOR[name];
-        let h = 0; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return TT_COLORS[h % TT_COLORS.length];
+        if (TT_PEN[name]) return TT_PEN[name];
+        let h = 0; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return TT_MORE[h % TT_MORE.length];
     };
+    const rgbOf = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+    function penFill(h) {
+        let [r, g, b] = rgbOf(h);
+        if (h !== SLEEP) { const avg = (r + g + b) / 3; [r, g, b] = [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(avg + (v - avg) * 1.18)))); }
+        return 'rgba(' + r + ',' + g + ',' + b + ',.6)';
+    }
+    function penInk(h) {            // 글자: 같은 색 계열의 진한 색
+        if (h === SLEEP) return '#3A3B3F';
+        let [r, g, b] = rgbOf(h).map(v => v / 255);
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+        let H = 0;
+        if (d) { H = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; H *= 60; if (H < 0) H += 360; }
+        const S = d < 0.04 ? 0.06 : 0.42, L = 0.30, c = (1 - Math.abs(2 * L - 1)) * S, x = c * (1 - Math.abs((H / 60) % 2 - 1)), m = L - c / 2;
+        const [a, bb, cc] = H < 60 ? [c, x, 0] : H < 120 ? [x, c, 0] : H < 180 ? [0, c, x] : H < 240 ? [0, x, c] : H < 300 ? [x, 0, c] : [c, 0, x];
+        return '#' + [a, bb, cc].map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
+    }
     const toMin = (dk, hm) => { const d = parseKey(dk); const [h, m] = String(hm || '0:0').split(':').map(Number); return Math.round(d.getTime() / 60000) + h * 60 + m; };
+    const fromMin = m => { const d = new Date(m * 60000); return { date: ymd(d), time: pad(d.getHours()) + ':' + pad(d.getMinutes()) }; };
     function ttEvents() {           // 동기화된 캘린더 + 직접 넣은 것
         const synced = (ext.cal.events || []).map(e => Object.assign({ src: 'cal', color: calColor(e.cal) }, e));
-        const mine = (db.tt || []).map(e => Object.assign({ src: 'me', cal: '직접 기록', color: e.color || TT_COLORS[0] }, e));
+        const mine = (db.tt || []).map(e => Object.assign({ src: 'me', cal: '직접 기록', color: TT_PEN['직접 기록'] }, e));
         return synced.concat(mine);
     }
     function ttDay(k) {             // 그 날(4시~다음날 4시)에 걸친 일정 → 시간 일정과 종일 일정
@@ -1245,19 +1278,18 @@ export function init() {
             if (en > d0 && s < d1) timed.push(Object.assign({ s: Math.max(s, d0) - d0, e: Math.min(en, d1) - d0 }, e));
         });
         timed.sort((a, b) => a.s - b.s || b.e - a.e);
-        // 겹치는 일정은 줄을 나눠서
-        const lanes = [];
+        const lanes = [];               // 겹치는 일정은 줄을 나눠서
         timed.forEach(ev => { let i = lanes.findIndex(end => end <= ev.s); if (i < 0) { i = lanes.length; lanes.push(0); } lanes[i] = ev.e; ev.lane = i; });
         return { all, timed, lanes: Math.max(1, lanes.length) };
     }
     RENDER.tt = (body, tools) => {
         tools.innerHTML = '<button class="dy-rb round" data-tool="tt-add" title="일정 넣기">' + ic('plus') + '</button>';
-        tools.onclick = e => { if (e.target.closest('[data-tool="tt-add"]')) ttForm(null, V.ttDate || todayKey()); };
+        tools.onclick = e => { if (e.target.closest('[data-tool="tt-add"]')) { const n = Math.ceil(Date.now() / 600000) * 10; ttForm(null, n, n + 60); } };
         const k = V.ttDate || (V.ttDate = todayKey()), tk = todayKey(), d = parseKey(k);
         const mon = addDays(k, -((d.getDay() + 6) % 7));       // 월요일부터
         let week = '';
         for (let i = 0; i < 7; i++) {
-            const kk = addDays(mon, i), has = ttDay(kk).timed.length || ttDay(kk).all.length;
+            const kk = addDays(mon, i), dd = ttDay(kk), has = dd.timed.length || dd.all.length;
             week += '<button data-a="tt-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[(i + 1) % 7] + '<small>' + parseKey(kk).getDate() + '</small><i>' + (has ? '♥' : '') + '</i></button>';
         }
         const day = ttDay(k);
@@ -1267,26 +1299,85 @@ export function init() {
             const segs = day.timed.filter(ev => ev.e > rs && ev.s < re).map(ev => {
                 const a = Math.max(ev.s, rs) - rs, b = Math.min(ev.e, re) - rs, first = ev.s >= rs;
                 const lh = 100 / day.lanes;
-                return '<button class="tt-ev" data-a="tt-ev" data-id="' + esc(ev.id) + '" style="left:' + (a / 60 * 100) + '%;width:' + ((b - a) / 60 * 100) + '%;top:' + (ev.lane * lh) + '%;height:' + lh + '%;background:' + hexA(ev.color, .55) + '" title="' + esc(ev.title) + '">' +
+                return '<button class="tt-ev" data-a="tt-ev" data-id="' + esc(ev.id) + '" style="left:' + (a / 60 * 100) + '%;width:' + ((b - a) / 60 * 100) + '%;top:' + (ev.lane * lh) + '%;height:' + lh + '%;background:' + penFill(ev.color) + ';color:' + penInk(ev.color) + '" title="' + esc(ev.title) + '">' +
                     (first || r === 0 ? '<span>' + esc(ev.title) + '</span>' : '') + '</button>';
             }).join('');
             const now = k === tk || addDays(k, 1) === tk ? (() => { const nm = Math.round(Date.now() / 60000) - toMin(k, TT_START + ':00'); return nm >= rs && nm < re ? '<i class="tt-now" style="left:' + ((nm - rs) / 60 * 100) + '%"></i>' : ''; })() : '';
-            rows += '<div class="tt-row"><span class="h">' + (h % 12 || 12) + '</span><div class="tt-track" data-a="tt-slot" data-h="' + h + '">' + segs + now + '</div></div>';
+            rows += '<div class="tt-row"><span class="h">' + (h % 12 || 12) + '</span><div class="tt-track" data-r="' + r + '">' + segs + now + '</div></div>';
         }
         body.innerHTML = '<div class="dy-tt">' +
             '<div class="dy-dnav"><button class="dy-rb round" data-a="tt-prev">' + ic('left') + '</button><div class="d">' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + WEEK_KO[d.getDay()] + '요일</div>' +
             '<button class="dy-rb round" data-a="tt-next">' + ic('right') + '</button><button class="dy-rb" data-a="tt-today">오늘</button></div>' +
             '<div class="dy-week">' + week + '</div>' +
-            (day.all.length ? '<div class="tt-all">' + day.all.map(e => '<button class="hl" data-a="tt-ev" data-id="' + esc(e.id) + '">' + esc(e.title) + '</button>').join('') + '</div>' : '') +
-            '<div class="tt-grid">' + rows + '</div>' +
+            (day.all.length ? '<div class="tt-all">' + day.all.map(e => '<button class="hl" data-a="tt-ev" data-id="' + esc(e.id) + '" style="--pen:' + penFill(e.color) + ';color:' + penInk(e.color) + '">' + esc(e.title) + '</button>').join('') + '</div>' : '') +
+            '<div class="tt-grid" id="tt-grid">' + rows + '</div>' +
             (ext.cal.updated_at ? '<div class="tt-sync">캘린더 ' + esc((ext.cal.calendars || []).join(' · ')) + ' · ' + esc(ext.cal.updated_at.slice(5, 16).replace('T', ' ')) + ' 동기화</div>' : '') +
             '</div>';
+        bindTTGrid(body.querySelector('#tt-grid'), k);
     };
+    // 빈 칸 누르기 = 그 10분 칸부터 일정 넣기 · 꾹 누르고(PC는 그냥 누르고) 끌기 = 그 범위로 일정 넣기
+    function bindTTGrid(grid, k) {
+        const base = toMin(k, TT_START + ':00');
+        const slotAt = (x, y) => {           // 화면 좌표 → 하루 시작부터 몇 번째 10분 칸
+            const tr = document.elementFromPoint(x, y); const t = tr && tr.closest && tr.closest('.tt-track');
+            if (!t || !grid.contains(t)) return null;
+            const r = t.getBoundingClientRect();
+            return +t.dataset.r * 6 + clamp(Math.floor((x - r.left) / r.width * 6), 0, 5);
+        };
+        const paint = (a, b) => {
+            grid.querySelectorAll('.tt-sel').forEach(n => n.remove());
+            if (a == null) return;
+            const lo = Math.min(a, b), hi = Math.max(a, b) + 1;
+            for (let r = Math.floor(lo / 6); r <= Math.floor((hi - 1) / 6); r++) {
+                const t = grid.querySelector('.tt-track[data-r="' + r + '"]'); if (!t) continue;
+                const s = Math.max(lo, r * 6) - r * 6, e = Math.min(hi, r * 6 + 6) - r * 6;
+                const el = document.createElement('i'); el.className = 'tt-sel'; el.style.left = (s / 6 * 100) + '%'; el.style.width = ((e - s) / 6 * 100) + '%'; t.appendChild(el);
+            }
+        };
+        let st = null, timer = null;
+        const finish = (a, b, drag) => {
+            paint(null);
+            const lo = Math.min(a, b), hi = Math.max(a, b) + 1;
+            ttForm(null, base + lo * 10, base + (drag ? hi * 10 : lo * 10 + 60));
+        };
+        // 마우스: 누르고 끌기
+        grid.addEventListener('mousedown', e => {
+            if (e.button !== 0 || e.target.closest('.tt-ev')) return;
+            const s = slotAt(e.clientX, e.clientY); if (s == null) return;
+            e.preventDefault();
+            st = { a: s, b: s, moved: false };
+            const mv = ev => { const n = slotAt(ev.clientX, ev.clientY); if (n != null && n !== st.b) { st.b = n; st.moved = true; paint(st.a, st.b); } };
+            const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); const o = st; st = null; finish(o.a, o.b, o.moved); };
+            window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
+            paint(s, s);
+        });
+        // 손가락: 톡 = 그 칸, 꾹(0.4초) 누른 다음 끌기 = 범위 (끄는 동안은 화면이 안 움직임)
+        grid.addEventListener('touchstart', e => {
+            if (e.touches.length !== 1 || e.target.closest('.tt-ev')) return;
+            const t0 = e.touches[0], s = slotAt(t0.clientX, t0.clientY); if (s == null) return;
+            st = { a: s, b: s, x: t0.clientX, y: t0.clientY, long: false, moved: false, cancel: false };
+            clearTimeout(timer);
+            timer = setTimeout(() => { if (st && !st.cancel) { st.long = true; paint(st.a, st.a); if (navigator.vibrate) navigator.vibrate(12); } }, 400);
+        }, { passive: true });
+        grid.addEventListener('touchmove', e => {
+            if (!st) return;
+            const t0 = e.touches[0];
+            if (!st.long) { if (Math.abs(t0.clientX - st.x) + Math.abs(t0.clientY - st.y) > 8) { st.cancel = true; clearTimeout(timer); } return; }
+            e.preventDefault();
+            const n = slotAt(t0.clientX, t0.clientY); if (n != null && n !== st.b) { st.b = n; st.moved = true; paint(st.a, st.b); }
+        }, { passive: false });
+        grid.addEventListener('touchend', e => {
+            clearTimeout(timer);
+            const o = st; st = null; if (!o || o.cancel) { paint(null); return; }
+            e.preventDefault();
+            finish(o.a, o.b, o.long && o.moved);
+        });
+    }
     // 일정 자세히 (누르면): 캘린더에서 온 건 보기만, 직접 넣은 건 고치기·지우기
     function ttDetail(id) {
         const e = ttEvents().find(x => x.id === id); if (!e) return;
         openCard(() => {
-            cardBox.innerHTML = '<h3><i class="tt-dot" style="background:' + e.color + '"></i>' + esc(e.title || '(제목 없음)') + '</h3>' +
+            cardBox.innerHTML = '<h3><i class="tt-dot" style="background:' + penFill(e.color) + '"></i>' + esc(e.title || '(제목 없음)') + '</h3>' +
                 '<div class="tt-dt">' +
                     '<div><span>시간</span><b>' + (e.allDay ? e.date.replace(/-/g, '. ') + (e.endDate && e.endDate !== e.date ? ' – ' + e.endDate.replace(/-/g, '. ') : '') + ' · 종일'
                         : e.date.replace(/-/g, '. ') + ' ' + e.start + ' – ' + (e.endDate && e.endDate !== e.date ? e.endDate.slice(5).replace('-', '. ') + ' ' : '') + e.end +
@@ -1302,7 +1393,7 @@ export function init() {
         cardBox.onclick = async ev => {
             const c = ev.target.closest('[data-c]'); if (!c) return;
             if (c.dataset.c === 'close') return closeCard();
-            if (c.dataset.c === 'edit') { closeCard(true); return ttForm(e, e.date); }
+            if (c.dataset.c === 'edit') { closeCard(true); return ttForm(e); }
             if (c.dataset.c === 'del') {
                 if (!(await ask('"' + e.title + '" 을(를) 지울까요?', '지우기', true))) return;
                 save('타임테이블 지우기', d => { d.tt = (d.tt || []).filter(x => x.id !== e.id); });
@@ -1310,25 +1401,47 @@ export function init() {
             }
         };
     }
-    async function ttForm(it, k, hour) {
-        const st = hour != null ? pad(hour) + ':00' : (it ? it.start : stamp().slice(11, 14) + '00');
-        const f = await askForm(it ? '일정 고치기' : '일정 넣기', [
-            { k: 'title', label: '무엇', value: it ? it.title : '', need: true },
-            { k: 'date', label: '날짜', type: 'date', value: it ? it.date : k, need: true },
-            { k: 'start', label: '시작', type: 'time', value: st, need: true },
-            { k: 'end', label: '끝', type: 'time', value: it ? it.end : pad((+st.slice(0, 2) + 1) % 24) + st.slice(2), need: true },
-            { k: 'memo', label: '메모', type: 'textarea', value: it ? it.memo || '' : '' }
-        ], it ? '저장' : '넣기');
-        if (!f) return;
-        const endDate = f.end <= f.start ? addDays(f.date, 1) : f.date;      // 끝이 시작보다 이르면 다음날까지
-        const row = { id: it ? it.id : 't' + uid(), title: f.title, date: f.date, start: f.start, endDate, end: f.end, color: it ? it.color : TT_COLORS[0] };
-        if (f.memo) row.memo = f.memo;
-        save('타임테이블 ' + (it ? '고치기' : '넣기'), d => {
-            d.tt = d.tt || [];
-            const i = d.tt.findIndex(x => x.id === row.id);
-            if (i > -1) d.tt[i] = Object.assign({}, row); else d.tt.push(Object.assign({}, row));
+    // 일정 넣기·고치기 카드: 무엇 · 종일 · 시작(날짜·시간) · 끝(날짜·시간) · 메모
+    function ttForm(it, sMin, eMin) {
+        const s0 = it ? { date: it.date, time: it.start || '09:00' } : fromMin(sMin);
+        const e0 = it ? { date: it.endDate || it.date, time: it.end || it.start || '10:00' } : fromMin(eMin);
+        const d = { title: it ? it.title : '', allDay: !!(it && it.allDay), sd: s0.date, st: s0.time, ed: e0.date, et: e0.time, memo: it ? it.memo || '' : '' };
+        const first = JSON.stringify(d);
+        openCard(function draw() {
+            cardBox.innerHTML = '<h3><i class="tt-dot" style="background:' + penFill(TT_PEN['직접 기록']) + '"></i>' + (it ? '일정 고치기' : '일정 넣기') + '</h3>' +
+                '<div class="ttf">' +
+                    '<label class="f"><span>무엇</span><input class="dy-in" id="ttf-title" value="' + esc(d.title) + '"></label>' +
+                    '<label class="chk"><input type="checkbox" id="ttf-all"' + (d.allDay ? ' checked' : '') + '><span>종일</span></label>' +
+                    '<div class="f"><span>시작</span><div class="dt"><input class="dy-in" type="date" id="ttf-sd" value="' + d.sd + '"><input class="dy-in" type="time" step="600" id="ttf-st" value="' + d.st + '"' + (d.allDay ? ' hidden' : '') + '></div></div>' +
+                    '<div class="f"><span>끝</span><div class="dt"><input class="dy-in" type="date" id="ttf-ed" value="' + d.ed + '"><input class="dy-in" type="time" step="600" id="ttf-et" value="' + d.et + '"' + (d.allDay ? ' hidden' : '') + '></div></div>' +
+                    '<label class="f"><span>메모</span><textarea class="dy-in" id="ttf-memo">' + esc(d.memo) + '</textarea></label>' +
+                '</div>' +
+                '<div class="foot"><span style="flex:1"></span><button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">' + (it ? '저장' : '넣기') + '</button></div>';
+            const bind = (id, k, ev) => { const el = cardBox.querySelector('#' + id); el.addEventListener(ev || 'input', () => { d[k] = el.type === 'checkbox' ? el.checked : el.value; if (id === 'ttf-all') draw(); if (id === 'ttf-sd' && d.ed < d.sd) { d.ed = d.sd; cardBox.querySelector('#ttf-ed').value = d.ed; } }); };
+            bind('ttf-title', 'title'); bind('ttf-all', 'allDay', 'change'); bind('ttf-sd', 'sd'); bind('ttf-st', 'st'); bind('ttf-ed', 'ed'); bind('ttf-et', 'et'); bind('ttf-memo', 'memo');
+            if (!it) setTimeout(() => { const t = cardBox.querySelector('#ttf-title'); t && t.focus(); }, 30);
         });
-        V.ttDate = f.start < pad(TT_START) + ':00' ? addDays(f.date, -1) : f.date;
+        cardGuard = () => JSON.stringify(d) !== first;
+        cardBox.onclick = e => {
+            const c = e.target.closest('[data-c]'); if (!c) return;
+            if (c.dataset.c === 'close') return closeCard();
+            if (c.dataset.c !== 'save') return;
+            if (!d.title.trim()) { const t = cardBox.querySelector('#ttf-title'); t.classList.add('need'); return t.focus(); }
+            if (!d.sd) return toast('시작 날짜를 넣어 주세요');
+            let ed = d.ed || d.sd;
+            if (!d.allDay && toMin(ed, d.et) <= toMin(d.sd, d.st)) { if (ed === d.sd) ed = addDays(d.sd, 1); else return toast('끝이 시작보다 빨라요'); }
+            if (d.allDay && ed < d.sd) ed = d.sd;
+            const row = { id: it ? it.id : 't' + uid(), title: d.title.trim(), date: d.sd, endDate: ed };
+            if (d.allDay) row.allDay = true; else { row.start = d.st; row.end = d.et; }
+            if (d.memo.trim()) row.memo = d.memo.trim();
+            save('타임테이블 ' + (it ? '고치기' : '넣기'), dd => {
+                dd.tt = dd.tt || [];
+                const i = dd.tt.findIndex(x => x.id === row.id);
+                if (i > -1) dd.tt[i] = Object.assign({}, row); else dd.tt.push(Object.assign({}, row));
+            });
+            V.ttDate = !d.allDay && d.st < pad(TT_START) + ':00' ? addDays(d.sd, -1) : d.sd;
+            return closeCard(true);
+        };
     }
 
     /* ---------------- 글·사진 안의 사진: 누르면 원본 크게 ---------------- */
@@ -1470,6 +1583,7 @@ export function init() {
         });
         const tpl = document.createElement('template'); tpl.innerHTML = h;
         tpl.content.querySelectorAll('script, iframe, object, embed').forEach(n => n.remove());
+        tpl.content.querySelectorAll('.emb[data-url]').forEach(n => { const u = safeUrl(n.getAttribute('data-url')); const t = document.createElement('template'); t.innerHTML = u ? embedHtml(u) : ''; n.replaceWith(t.content); });
         tpl.content.querySelectorAll('*').forEach(n => {
             [...n.attributes].forEach(a => {
                 if (/^on/i.test(a.name)) n.removeAttribute(a.name);
@@ -1479,6 +1593,14 @@ export function init() {
             n.removeAttribute('contenteditable');
         });
         return tpl.innerHTML;
+    }
+    // 임베드: 유튜브는 영상(재생 가능), 그 밖의 주소는 링크 카드. 쓰는 중(edit)에는 자리만 보여 줌
+    function embedHtml(u, edit) {
+        const v = ytId(u);
+        if (edit) return '<div class="emb" contenteditable="false" data-url="' + esc(u) + '">' + (v ? '▶ YouTube 영상' : '🔗 ' + esc(u)) + '</div>';
+        if (v) return '<div class="emb-yt"><iframe src="https://www.youtube-nocookie.com/embed/' + v + '?rel=0" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" title="YouTube"></iframe></div>';
+        let host = ''; try { host = new URL(u).hostname.replace(/^www\./, ''); } catch (e) {}
+        return '<a class="emb-link" href="' + esc(u) + '" target="_blank" rel="noopener"><b>' + esc(host) + '</b><span>' + esc(u) + '</span></a>';
     }
     const memoPlain = h => { const t = document.createElement('div'); t.innerHTML = String(h || '').replace(/```[\s\S]*?```/g, ' '); return (t.textContent || '').replace(/\s+/g, ' ').trim(); };
 
@@ -1569,7 +1691,7 @@ export function init() {
                     '<span class="sep"></span>' + RTE_MARKS.map(c => '<button class="tb mark" data-cmd="hiliteColor" data-v="' + c + '" title="형광펜" style="--c:' + c + '"></button>').join('') +
                     '<span class="sep"></span>' + [['11', '작게'], ['13', '보통'], ['16', '크게'], ['20', '아주 크게']].map(([v, n]) => tool('size', '<span style="font-size:' + (9 + (+v - 11) / 2) + 'px">가</span>', n, v)).join('') +
                     '<span class="sep"></span>' + tool('justifyLeft', ic('alignl'), '왼쪽') + tool('justifyCenter', ic('alignc'), '가운데') + tool('insertUnorderedList', ic('list'), '목록') +
-                    tool('photo', ic('photo'), '사진 넣기') + tool('removeFormat', ic('eraser'), '꾸밈 지우기') +
+                    tool('photo', ic('photo'), '사진 넣기') + tool('link', ic('link'), '링크 넣기') + tool('embed', ic('play'), '영상·링크 카드 넣기') + tool('removeFormat', ic('eraser'), '꾸밈 지우기') +
                 '</div>' +
                 '<div class="dy-rte f-' + (ext.memos.font === 'pretendard' ? 'pretendard' : 'default') + '" contenteditable="true" spellcheck="false">' + (d0.html || '') + '</div>' +
                 '<input class="dy-in me-tags" value="' + esc((d0.tags || []).map(g => '#' + g).join(' ')) + '" placeholder="#태그">' +
@@ -1596,6 +1718,18 @@ export function init() {
             if (tp) { d0.tab = tp.dataset.tab; cardBox.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b === tp)); return; }
             if (tb) {
                 const cmd = tb.dataset.cmd, v = tb.dataset.v;
+                if (cmd === 'link' || cmd === 'embed') {
+                    const sel = window.getSelection(), picked = range ? range.toString() : '';
+                    const f = await askForm(cmd === 'link' ? '링크 넣기' : '영상·링크 카드 넣기', cmd === 'link'
+                        ? [{ k: 'url', label: '주소', ph: 'https://', need: true }, { k: 'text', label: '보일 글자', value: picked }]
+                        : [{ k: 'url', label: '주소 (유튜브는 영상으로, 그 밖은 링크 카드로)', ph: 'https://', need: true }], '넣기');
+                    if (!f) return;
+                    const u = safeUrl(f.url); if (!u) return toast('주소는 http:// 또는 https:// 로 시작해야 해요');
+                    restore();
+                    if (cmd === 'link') document.execCommand('insertHTML', false, '<a href="' + esc(u) + '">' + esc(f.text || u) + '</a>');
+                    else document.execCommand('insertHTML', false, embedHtml(u, true) + '<br>');
+                    keepSel(); return;
+                }
                 if (cmd === 'photo') {
                     const up = await uploadImage('memo', 1400, false); if (!up) return;
                     files = Object.assign(files, up.files);
@@ -1889,7 +2023,6 @@ export function init() {
             case 'tt-today': V.ttDate = todayKey(); return render('tt');
             case 'tt-go': V.ttDate = t.dataset.k; return render('tt');
             case 'tt-ev': return ttDetail(t.dataset.id);
-            case 'tt-slot': return ttForm(null, Number(t.dataset.h) < TT_START ? addDays(V.ttDate, 1) : V.ttDate, Number(t.dataset.h));
             case 'rc-save': case 'rc-copy': return receiptImage(a === 'rc-copy');
             case 'rp-prev': case 'rp-next': { const [ry, rm] = R.m.split('-').map(Number), dd = new Date(ry, rm - 1 + (a === 'rp-next' ? 1 : -1), 1); R.m = dd.getFullYear() + '-' + pad(dd.getMonth() + 1); return render('report'); }
             case 'rp-tab': R.tab = t.dataset.k; return render('report');
@@ -1930,9 +2063,10 @@ export function init() {
     }
 
     async function setDayPhoto(k) {
-        const up = await uploadImage('photos', 1000, false); if (!up) return;
-        const old = (db.days[k] || {}).photo;
-        save(k + ' 사진', d => { d.days[k] = Object.assign({}, d.days[k], { photo: up.path }); }, dropFile(old, up.files));
+        const up = await uploadImage('photos', 1000, false, true); if (!up) return;
+        const old = db.days[k] || {};
+        let fl = dropFile(old.photo, up.files); if (old.thumb && fl[old.photo] === null) fl[old.thumb] = null;
+        save(k + ' 사진', d => { d.days[k] = Object.assign({}, d.days[k], { photo: up.path, thumb: up.thumb }); if (!up.thumb) delete d.days[k].thumb; }, fl);
     }
     function cleanDay(d, k) {
         const day = d.days[k]; if (!day) return;
@@ -1966,7 +2100,12 @@ export function init() {
         let mode = synced.length || (orig.events || []).length || orig.photo || orig.sticker || origE.length || orig.link ? 'view' : 'edit';
         let stkOpen = false;
         const title = '<h3><img src="' + CHAR['c-blue'] + '" alt="">' + (d0.getMonth() + 1) + '월 ' + d0.getDate() + '일 ' + WEEK_KO[d0.getDay()] + '요일</h3>';
-        const bodyHtml = b => String(b || '').split('\n').map(l => { const m = /^!\[\]\((.+)\)$/.exec(l.trim()); return m ? '<img src="' + esc(src(m[1])) + '" alt="">' : '<div>' + (l ? esc(l) : '&nbsp;') + '</div>'; }).join('');
+        const linkify = t => esc(t).replace(/https?:\/\/[^\s<]+/g, u => '<a href="' + u + '" target="_blank" rel="noopener">' + u + '</a>');
+        const bodyHtml = b => String(b || '').split('\n').map(l => {
+            const m = /^!\[\]\((.+)\)$/.exec(l.trim()); if (m) return '<img src="' + esc(src(m[1])) + '" alt="">';
+            if (safeUrl(l.trim()) && !/\s/.test(l.trim())) return embedHtml(l.trim());       // 주소만 있는 줄 = 영상/링크 카드
+            return '<div>' + (l ? linkify(l) : '&nbsp;') + '</div>';
+        }).join('');
         function draw() {
             const ev = dr.events || [];
             if (mode === 'view') {
@@ -2018,12 +2157,14 @@ export function init() {
             const day = clone(dr);
             if (day.link && !safeUrl(day.link)) return toast('링크는 http:// 또는 https:// 로 시작해야 해요');
             if (day.events && !day.events.length) delete day.events;
-            ['photo', 'sticker', 'link', 'color', 'memo'].forEach(f => { if (!day[f]) delete day[f]; });
+            ['photo', 'thumb', 'sticker', 'link', 'color', 'memo'].forEach(f => { if (!day[f]) delete day[f]; });
+            if (!day.photo) delete day.thumb;
             const empty = !Object.keys(day).length;
             // 사진: 새로 올린 것만 커밋, 바뀌거나 뺀 예전 사진은 정리
             let fl = {};
             if (dr.photo && files[dr.photo]) fl[dr.photo] = files[dr.photo];
-            if (orig.photo && orig.photo !== dr.photo) fl = dropFile(orig.photo, fl);
+            if (dr.thumb && files[dr.thumb]) fl[dr.thumb] = files[dr.thumb];
+            if (orig.photo && orig.photo !== dr.photo) { fl = dropFile(orig.photo, fl); if (orig.thumb && fl[orig.photo] === null) fl[orig.thumb] = null; }
             // 일기: 바뀐 것만 (다른 기기에서 그 사이 쓴 일기는 그대로 둠)
             const at = stamp(), hm = at.slice(11, 16);
             const keep = ents.filter(e => e.title.trim() || e.body.trim());
@@ -2056,8 +2197,8 @@ export function init() {
             const a = c.dataset.c;
             if (a === 'close') return closeCard();
             if (a === 'save') return commit();
-            if (a === 'photo') { const up = await uploadImage('photos', 1000, false); if (!up) return; files = Object.assign(files, up.files); dr.photo = up.path; return cardFn && draw(); }
-            if (a === 'unphoto') { delete dr.photo; return draw(); }
+            if (a === 'photo') { const up = await uploadImage('photos', 1000, false, true); if (!up) return; files = Object.assign(files, up.files); dr.photo = up.path; if (up.thumb) dr.thumb = up.thumb; else delete dr.thumb; return cardFn && draw(); }
+            if (a === 'unphoto') { delete dr.photo; delete dr.thumb; return draw(); }
             if (a === 'ev-add') return addEv();
             if (a === 'ev-del') { const id = rowId(c); dr.events = (dr.events || []).filter(x => x.id !== id); return draw(); }
             if (a === 'ent-add') { ents.push({ id: 'dy' + uid(), title: '', body: '' }); draw(); const t = cardBox.querySelectorAll('[data-ent="body"]'); if (t.length) t[t.length - 1].focus(); return; }
@@ -2229,7 +2370,7 @@ export function init() {
         const order = appOrder();
         document.getElementById('dy-icons').innerHTML = order.map(id =>
             '<button class="dy-icon" data-open="' + id + '" title="' + esc(appName(id)) + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt=""><span>' + esc(appName(id)) + '</span></button>').join('');
-        document.getElementById('dy-apps').innerHTML = order.map(id =>
+        document.getElementById('dy-apps').innerHTML = order.filter(id => id !== 'deco').map(id =>
             '<button class="dy-app" data-open="' + id + '" title="' + esc(appName(id)) + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt=""></button>').join('');
         menu.innerHTML = '<div class="head"><img src="' + CHAR['c-blue'] + '" alt="">diary ♡</div>' +
             order.filter(id => id !== 'deco').map(id => '<button data-open="' + id + '"><img' + ph(id) + ' src="' + esc(appIconSrc(id)) + '" alt="">' + esc(appName(id)) + '</button>').join('') +
@@ -2331,9 +2472,18 @@ export function init() {
     offs.push(() => clearInterval(clock));
 
     // 처음엔 다이어리만 열어 둠. 지난번 꾸미기 색을 먼저 칠해 두고(깜빡임 없게) 기록을 불러옴
-    try { const tc = JSON.parse(localStorage.getItem('dy-theme-cache') || 'null'); if (tc) { db.theme = { vars: tc.v, pattern: tc.p }; } } catch (e) {}
+    if (!fromCache()) { try { const tc = JSON.parse(localStorage.getItem('dy-theme-cache') || 'null'); if (tc) { db.theme = { vars: tc.v, pattern: tc.p }; } } catch (e) {} }
     applyTheme();
     drawShell();
     openWin('diary');
     load();
+
+    // 휴대폰: 입력칸을 눌러도 화면이 확대되지 않게 (다이어리에 있는 동안만, 손가락으로 벌려 확대는 그대로)
+    const vp = document.querySelector('meta[name="viewport"]');
+    const VP_LOCK = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
+    const vpOld = vp ? vp.getAttribute('content') : '';
+    const lockVp = () => { if (vp && vp.getAttribute('content') !== VP_LOCK) vp.setAttribute('content', VP_LOCK); };
+    lockVp();
+    on(document, 'focusout', () => setTimeout(lockVp, 0));      // 사이트 공통 스크립트가 풀어도 다시 잠금
+    offs.push(() => { if (vp && vpOld) vp.setAttribute('content', vpOld); });
 }
