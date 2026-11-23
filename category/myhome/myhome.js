@@ -48,7 +48,9 @@ const PEN = '<svg viewBox="0 0 24 24" width="15" height="15"><g fill="none" stro
 const EMOJI_PICKS = ['🫧', '🧽', '🍳', '🧺', '🧹', '🛁', '🚪', '👟', '📚', '🗂️', '🧊', '🍚', '🛏️', '🧴', '✏️', '👕', '💧', '🗑️', '♻️', '🌿', '☕', '💊', '🏃', '💤', '✨', '🎀', '🐰', '🍓'];
 
 // 부산광역시 동구
-const PLACE = { name: '부산 동구', lat: 35.1295, lon: 129.0454 };
+const HOME = { name: '부산 동구', lat: 35.1295, lon: 129.0454 };
+// 날씨는 접속한 기기의 현재 위치 기준 (위치 권한을 거절하거나 못 받으면 집)
+let PLACE = Object.assign({}, HOME);
 
 // 메뉴에 들어올 때마다 새로 그림 (index.html의 작은 스크립트가 부름)
 export function init() {
@@ -676,7 +678,7 @@ export function init() {
         try {
             const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + PLACE.lat + '&longitude=' + PLACE.lon +
                 '&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max' +
-                '&timezone=Asia%2FSeoul&forecast_days=7';
+                '&timezone=auto&forecast_days=7';
             const res = await fetch(url);
             if (!res.ok) throw new Error(res.status);
             weather = await res.json();
@@ -693,7 +695,35 @@ export function init() {
         el.classList.add('on');
     }
 
+    /* ---------------- 현재 위치 ---------------- */
+    function shortPlace(j) {
+        const strip = t => String(t || '').replace(/(특별자치시|특별자치도|특별시|광역시)$/, '').trim();
+        const city = strip(j.city || j.principalSubdivision), loc = String(j.locality || '').trim();
+        const name = [city, loc && loc !== j.city ? loc : ''].filter(Boolean).join(' ');
+        return name || '현재 위치';
+    }
+    function locate() {
+        try {                                                         // 최근에 받은 위치가 있으면 바로 사용
+            const c = JSON.parse(localStorage.getItem('mh-place') || 'null');
+            if (c && Date.now() - c.t < 6 * 3600000) PLACE = c.p;
+        } catch (e) {}
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(async pos => {
+            const lat = +pos.coords.latitude.toFixed(3), lon = +pos.coords.longitude.toFixed(3);
+            let name = '현재 위치';
+            try {
+                const r = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=ko');
+                if (r.ok) name = shortPlace(await r.json());
+            } catch (e) {}
+            const moved = Math.abs(lat - PLACE.lat) > 0.01 || Math.abs(lon - PLACE.lon) > 0.01 || name !== PLACE.name;
+            PLACE = { name, lat, lon };
+            try { localStorage.setItem('mh-place', JSON.stringify({ p: PLACE, t: Date.now() })); } catch (e) {}
+            if (moved) loadWeather();
+        }, () => { /* 거절하면 집(부산 동구) 그대로 */ }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 30 * 60000 });
+    }
+
     applySky();
+    locate();
     loadWeather();
     const skyTimer = setInterval(() => { if (!canvas.isConnected) { clearInterval(skyTimer); return; } applySky(); }, 5 * 60000);
     const wxTimer = setInterval(() => { if (!canvas.isConnected) { clearInterval(wxTimer); return; } loadWeather(); }, 30 * 60000);
@@ -934,7 +964,7 @@ export function init() {
             if (r.done && !r.count) r.count = 1;
         }));
         d.version = 1;
-        d.place = PLACE.name;
+        d.place = HOME.name;
         d.zones = ZONES;
         d.custom = d.custom && typeof d.custom === 'object' ? d.custom : {};     // 카드에서 고친 이름/행동/도장/종류
         applyCustom(d.custom);
