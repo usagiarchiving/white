@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-23T14:20:35+09:00",
+ "updated_at": "2026-11-23T21:11:55+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -964,6 +964,16 @@
    "type": "meal",
    "slot": "lunch",
    "memo": "김치찌개",
+   "from": "myhome-cook"
+  },
+  {
+   "id": "cd_cook_2026-11-23_dinner",
+   "date": "2026-11-23",
+   "time": "21:11",
+   "at": "2026-11-23T21:11:55+09:00",
+   "type": "meal",
+   "slot": "dinner",
+   "memo": "김치찌개(스팸으깬거 추가)",
    "from": "myhome-cook"
   }
  ],
