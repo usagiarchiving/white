@@ -993,13 +993,14 @@
   "content": "세안도구 소분",
   "category": "gray",
   "matrix_quadrant": 0,
-  "is_completed": false,
+  "is_completed": true,
   "target_date": "2026-11-25",
   "parent_id": null,
   "subtasks": [],
   "repeat_type": null,
   "repeat_days": null,
   "sort_order": 1795556508641,
-  "completed_date": null
+  "completed_date": "2026-11-25",
+  "completed_at": "2026-11-25T06:41:49+09:00"
  }
 ]
