@@ -966,6 +966,11 @@ export function init() {
        { version: 1, updated_at, place, zones, objects: { id: {zone,name,act,emoji} },
          log: { id: { 'YYYY-MM-DD': { done: true, memo: '...', at: '기록한 시각' } } } } */
     function stamp() { const d = new Date(), o = -d.getTimezoneOffset(); return new Date(d.getTime() + o * 60000).toISOString().slice(0, 19) + (o >= 0 ? '+' : '-') + pad(Math.floor(Math.abs(o) / 60)) + ':' + pad(Math.abs(o) % 60); }
+    // 기록 시각: 오늘이면 지금, 지난 날짜를 누르면 그 날의 가장 마지막 시각(23:59:59)
+    function atFor(k) {
+        if (!k || k >= todayKey()) return stamp();
+        return k + 'T23:59:59' + stamp().slice(19);
+    }
     function normalize(d) {
         d = d && typeof d === 'object' ? d : {};
         d.log = d.log || {};
@@ -1169,7 +1174,7 @@ export function init() {
             const m = Object.assign({}, meals[slot] || {}, patch);
             if (!m.memo) delete meals[slot]; else meals[slot] = m;
             if (Object.keys(meals).length) r.meals = meals; else delete r.meals;
-            r.at = stamp();
+            r.at = atFor(k);
             if (!r.count && !r.memo && !r.meals) delete d.log[id][k]; else d.log[id][k] = r;
         }, mealToMinjung(k, slot, after));
     }
@@ -1203,7 +1208,7 @@ export function init() {
         save('myhome: ' + OBJECTS[id].name + ' ' + k + ' 메모', d => {
             d.log[id] = d.log[id] || {};
             const r = Object.assign({}, d.log[id][k] || {}); if (v) r.memo = v; else delete r.memo;
-            r.at = stamp();
+            r.at = atFor(k);
             if (!r.count && !r.done && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
         });
         drawCard();
@@ -1256,7 +1261,7 @@ export function init() {
             const items = (r.items || []).filter(x => x !== kind);
             if (on) items.push(kind);
             if (items.length) { r.items = items; r.done = true; r.count = items.length; } else { delete r.items; delete r.done; delete r.count; }
-            r.at = stamp();
+            r.at = atFor(k);
             if (!r.count && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
         });
         drawCard();
@@ -1270,7 +1275,7 @@ export function init() {
             const r = Object.assign({}, d.log[id][k] || {});
             const cur = r.count || (r.done ? 1 : 0), n = Math.max(0, cur + delta);
             if (n) { r.count = n; r.done = true; } else { delete r.count; delete r.done; }
-            r.at = stamp();
+            r.at = atFor(k);
             if (!r.count && !r.memo) delete d.log[id][k]; else d.log[id][k] = r;
         });
         drawCard();

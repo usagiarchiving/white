@@ -17,11 +17,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'chat = 메시지 답장 · letter = 오늘 편지 · reply = 편지 답글 · message = 시간대 메시지'
+        description: 'chat = 메시지 답장 · letter = 오늘 편지 · reply = 편지 답글 · message = 시간대 메시지 · receipt = 영수증 한 줄'
         required: true
         default: chat
         type: choice
-        options: [chat, letter, reply, message, weather, tick, call, remind]
+        options: [chat, letter, reply, message, weather, tick, call, remind, receipt]
       date:
         description: '날짜 (YYYY-MM-DD, 비우면 오늘)'
         required: false
@@ -93,6 +93,7 @@ jobs:
             git reset -q --hard FETCH_HEAD
             python .github/scripts/letter.py apply "$RUNNER_TEMP/patch.json"
             git add minjung/letters.json
+            [ -f diary/receipt.json ] && git add diary/receipt.json
             git diff --cached --quiet && { echo '변경 없음'; exit 0; }
             git commit -q -m '김민정: 시온 메시지'
             if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo saved=1 >> "$GITHUB_OUTPUT"; exit 0; fi

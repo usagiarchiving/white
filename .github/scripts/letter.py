@@ -6,6 +6,7 @@
   python letter.py reply   --date YYYY-MM-DD                --out p.json   # 편지에 쓴 내 답장에 답글
   python letter.py apply p.json      # 만든 결과를 최신 minjung/letters.json 에 덧붙임 (같은 건 두 번 안 붙음)
   python letter.py preview [--date]  # AI 없이 모은 하루 기록만 보기
+  python letter.py receipt [--date] [--force] --out p.json   # 다이어리 영수증 밑 한 줄 코멘트 (밤 11시)
 
 API 키: 환경변수 GEMINI_API_KEY (저장소 Settings → Secrets and variables → Actions)
 캐릭터·모델: minjung/sion.json
@@ -738,6 +739,14 @@ def make_tick(store, cfg):
     w = make_weather(store, cfg)
     if w:
         patch.update(w)
+    # 밤 11시~새벽 5시: 그날 다이어리 영수증 한 줄 코멘트가 아직 없으면 남김
+    if h >= 23 or h < 5:
+        try:
+            r = make_receipt(store, cfg, letter_day(t), False)
+            if r:
+                patch.update(r)
+        except Exception as e:
+            print(f'[영수증 코멘트 실패] {e}')
     if h >= 8 and not (store.get('briefs') or {}).get(day):
         m = make_morning(store, cfg, t, day)
         if m:
@@ -972,6 +981,39 @@ def make_reply(store, cfg, day):
 
 
 # ---------------------------------------------------------------- 결과 덧붙이기 (최신 파일 기준, 두 번 실행해도 같음)
+RECEIPT = 'diary/receipt.json'
+
+
+def make_receipt(store, cfg, day, force):
+    """다이어리 '오늘의 영수증' 맨 아래에 들어갈 시온의 한 줄 코멘트"""
+    old = (load(RECEIPT, {}) or {}).get('notes') or {}
+    if day in old and not force:
+        print(f'{day} 영수증 코멘트는 이미 있어요.')
+        return None
+    rec = gather(day)
+    prompt = (f"지금은 {date_label(day)} 밤. 민정의 다이어리에 '오늘의 영수증'(오늘 한 일 목록)이 있어. "
+              f"그 영수증 맨 아래에 들어갈 한 줄 코멘트를 남겨.\n\n"
+              f"# 기억\n{memory(store)}\n\n"
+              f"# 오늘 민정의 기록\n{rec or '(기록 없음)'}\n\n"
+              f"# 쓰는 법\n- 딱 한 줄, 40자 안쪽. 오늘 한 일 중 하나를 콕 집어 다정하게.\n"
+              f"- 따옴표·이모지·해시태그·괄호 없이 코멘트 본문만.")
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
+    line = next((l.strip().strip('"“”').strip() for l in clean(text).split('\n') if l.strip().strip('"“”').strip()), '')
+    if not line:
+        return None
+    return {'receipt': {'date': day, 'text': clip(line, 80), 'at': stamp(), 'model': model}}
+
+
+def apply_receipt(patch):
+    r = patch.get('receipt')
+    if not r:
+        return
+    data = load(RECEIPT, {}) or {}
+    data.setdefault('notes', {})[r['date']] = {k: r[k] for k in ('text', 'at', 'model')}
+    data['updated_at'] = stamp()
+    write(RECEIPT, data)
+
+
 def apply(store, patch):
     calls = store.setdefault('calls', [])
     if patch.get('call_new') and not any(c.get('id') == patch['call_new']['id'] for c in calls):
@@ -1130,7 +1172,7 @@ def notify(patch, cfg):
 # ----------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'tick', 'remind', 'call', 'apply', 'notify', 'preview'])
+    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'tick', 'remind', 'call', 'receipt', 'apply', 'notify', 'preview'])
     ap.add_argument('patch', nargs='?')
     ap.add_argument('--date')
     ap.add_argument('--slot', choices=list(SLOTS) + [''], default='')
@@ -1147,7 +1189,9 @@ def main():
         if not patch:
             print('덧붙일 결과가 없어요.')
             return
-        write(STORE, apply(load_store(), patch))
+        apply_receipt(patch)
+        if set(patch) - {'receipt'}:
+            write(STORE, apply(load_store(), patch))
         print('저장했어요.')
         return
 
@@ -1174,6 +1218,8 @@ def main():
         patch = make_tick(store, cfg)
     elif a.mode == 'remind':
         patch = make_remind(store, cfg)
+    elif a.mode == 'receipt':
+        patch = make_receipt(store, cfg, a.date or letter_day(), a.force)
     else:
         patch = make_reply(store, cfg, a.date or letter_day())
     if patch and a.out:
