@@ -586,8 +586,10 @@
 .sn-banner .ic { flex: none; width: 34px; height: 34px; padding: 7px; box-sizing: border-box; border-radius: 9px; background: #f3b3c5; color: #fff; display: inline-flex; }
 .sn-banner .ic svg, .sn-banner .ic img { width: 100%; height: 100%; }
 .sn-banner .ic .mj-ico-img { width: 34px; height: 34px; margin: -7px; border-radius: 9px; object-fit: cover; }
-.sn-banner .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13px; line-height: 1.35; }
-.sn-banner .tx b { font-size: 13px; font-weight: 600; }
+.sn-banner .ic.ph { padding: 0; overflow: hidden; background: #3d3539; }
+.sn-banner .ic.ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sn-banner .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 1.38; }
+.sn-banner .tx b { font-size: 13px; font-weight: 700; }
 .sn-banner .tx span { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #e6d6dc; }
 .sn-banner .tm { align-self: flex-start; font-size: 11px; color: #a8959c; }
 
@@ -744,9 +746,11 @@
 .nt-row { display: flex; gap: 8px; margin: 0; padding: 6px 2px; border-bottom: 1px dashed var(--mj-line); line-height: 1.5; }
 .nt-row span { flex: none; min-width: 52px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-deep); padding-top: 1px; }
 .nt-none { margin: 0; padding: 4px 2px; color: var(--mj-sub); font-size: 11px; }
-.nt-sion { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; margin-top: 12px; padding: 10px; border: 0; border-radius: 4px; background: #2e282c; text-align: left; }
-.nt-sion .who { font-family: 'Galmuri9', sans-serif; font-size: 9.5px; color: #f3b3c5; letter-spacing: .5px; }
-.nt-sion .b { padding: 6px 11px; border-radius: 14px; background: #3d3539; color: #f7e9ee; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif; font-size: 12.5px; line-height: 1.45; }
+.nt-sion { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; margin: 2px 0 4px; padding: 2px 0 6px; border: 0; background: none; text-align: left; }
+.nt-sion .b { max-width: 88%; padding: 6px 11px; border-radius: 15px; background: #efe7ea; color: #3a3235; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif; font-size: 11.5px; line-height: 1.45; }
+.nt-alert { display: flex; align-items: baseline; gap: 7px; margin: 4px 0; padding: 8px 10px; border: 1px solid var(--mj-tag); border-radius: 3px; background: var(--mj-on2); font-size: 11.5px; line-height: 1.5; }
+.nt-alert b { flex: none; font-family: 'Galmuri9', sans-serif; font-size: 9.5px; color: #fff; background: var(--mj-tag); padding: 1px 5px; border-radius: 2px; }
+.nt-alert span { margin-left: auto; font-family: 'Galmuri9', sans-serif; font-size: 9.5px; color: var(--mj-sub); }
 
 /* BANG: 시온의 기억 */
 .bg-info { margin: 0 0 10px; font-size: 11px; line-height: 1.75; color: var(--mj-sub); }
@@ -755,3 +759,20 @@
 .bg-log { background: var(--mj-card); border: 1px solid var(--mj-line); border-radius: 3px; padding: 10px 12px; margin-bottom: 8px; box-shadow: inset 0 0 0 3px var(--mj-card), inset 0 0 0 4px var(--mj-ring); }
 .bg-log .d { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-deep); letter-spacing: .5px; margin-bottom: 5px; }
 .bg-log .tx { font-size: 11.5px; line-height: 1.7; white-space: normal; }
+
+/* BANG: 프로필 · 프롬프트 */
+.bg-prof { display: flex; gap: 14px; align-items: center; }
+.bg-photo { flex: none; width: 86px; height: 86px; padding: 0; border: 1px solid var(--mj-line); border-radius: 50%; overflow: hidden; background: var(--mj-card); box-shadow: 0 0 0 3px var(--mj-card), 0 0 0 4px var(--mj-ring); }
+.bg-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bg-photo .ph { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; color: var(--mj-sub); }
+.bg-photo .ph svg { width: 34px; height: 34px; }
+.bg-pf { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.bg-pf label { display: flex; align-items: center; gap: 8px; }
+.bg-pf label span { flex: none; width: 70px; font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-sub); }
+.bg-pf input { flex: 1; min-width: 0; box-sizing: border-box; border: 1px solid var(--mj-line); border-radius: 2px; background: var(--mj-paper); color: var(--mj-ink); padding: 6px 8px; font-size: 12px; outline: none; color-scheme: dark; }
+.bg-phbtns { margin: 10px 0 4px 6px; font-size: 11px; color: var(--mj-sub); }
+.bg-group { margin: 16px 0 2px; padding-bottom: 4px; border-bottom: 1px solid var(--mj-line); font-weight: 700; color: var(--mj-deep); letter-spacing: 1px; }
+.mj-win-bang .mj-form textarea { min-height: 0; line-height: 1.65; font-size: 11.5px; }
+.mj-win-bang .mj-form textarea[data-bg=mem] { min-height: 220px; font-size: 12px; }
+.bg-bar { position: sticky; bottom: -24px; margin: 12px -14px -24px; padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); background: var(--mj-paper); border-top: 1px solid var(--mj-line); }
+.mj-btn:disabled { opacity: .45; }

@@ -250,24 +250,34 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
     sys.exit('AI 호출 실패\n' + '\n'.join(errors))
 
 
+PROMPT_TITLES = [('profile', ''), ('personality', '성격'), ('relationship', '관계'), ('speech', '말투'),
+                 ('examples', '말투 예시'), ('rules', '절대 규칙'), ('writing', '지금 하는 일 (메시지·편지 쓰는 규칙)')]
+
+
+def P(cfg, key, default=''):
+    """minjung/sion.json 의 prompt 칸 (BANG에서 고침)"""
+    return str((cfg.get('prompt') or {}).get(key) or default).strip()
+
+
 def system_prompt(cfg):
-    persona = cfg['persona'] if isinstance(cfg['persona'], str) else '\n'.join(cfg['persona'])
-    return (persona + '\n\n'
-            '지금 하는 일\n'
-            f"- 너는 아내 {cfg['recipient']}에게 휴대폰 메시지나 편지를 보내고 있어. 시온 본인의 말만 쓴다. 지문·행동 묘사·따옴표 없이 보내는 글 그대로.\n"
-            f"- 너는 {cfg['recipient']}가 남긴 기록(혼잣말, 식사, 일정, 할 일, 일기 등)을 다 보고 있는 남편이다. 기록에 있는 일은 자연스럽게 알고 있는 듯 말하되, 기록을 나열하거나 보고하듯 요약하지 마.\n"
-            '- 기록에 없는 사건·사람·감정을 사실처럼 지어내지 마. 시온 자신의 하루(임무, 낮잠 등)는 가볍게 곁들여도 된다.\n'
-            '- 아프거나 지친 기록이 있으면 시온다운 방식으로 챙겨. 의학적 조언은 하지 마.\n'
-            '- 행동·표정·상황 서술은 절대 금지. *별표*나 (괄호)로 행동을 묘사하지 말고, 휴대폰으로 실제로 보내는 글자만 써.\n'
-            '- 민정이 답장을 안 했거나 늦게 했어도 그걸 따지거나 "왜 답이 없냐"고 묻지 마. 메시지가 끊기는 건 자연스러운 일이야.\n'
-            '- 지난 대화는 참고만 해. 같은 이야기를 또 해도 되지만 예전 주제를 오래 끌고 가지 말고, 지금 시각과 지금 기록을 중심으로 말해.\n'
-            '- 상황극·롤플레잉 전개 금지. 평범한 부부의 일상 메신저처럼, 민정의 오늘 일정과 기록에 맞춘 말을 해.\n'
-            '- 마크다운(#, **, - 목록)과 이모지는 쓰지 마.')
+    if cfg.get('persona') and not cfg.get('prompt'):   # 예전 형식
+        persona = cfg['persona'] if isinstance(cfg['persona'], str) else '\n'.join(cfg['persona'])
+        return persona
+    parts = []
+    for k, title in PROMPT_TITLES:
+        v = P(cfg, k)
+        if v:
+            parts.append((title + '\n' if title else '') + v)
+    return '\n\n'.join(parts)
 
 
 PHOTO = re.compile(r'\(\s*사진\s*[:：]\s*([^()]+?)\s*\)')
 PHOTO_RULE = ('- 아주 가끔(대화 몇 번에 한 번 정도) 사진을 보낼 수 있어. 그때는 말풍선 하나를 통째로 (사진: 무엇을 찍은 사진인지 짧은 설명) 형식으로 써. '
               '괄호는 사진에만 써.')
+
+
+def photo_rule(cfg):
+    return P(cfg, 'photo', PHOTO_RULE)
 
 
 def clean(text):
@@ -444,10 +454,7 @@ def make_letter(store, cfg, day, force):
               f"# 오늘 주고받은 메시지\n{chat_history(store, 20, days=1) or '(없음)'}\n\n"
               f"# 내일부터 사흘 일정 (내일 챙길 것)\n{upcoming(day) or '(없음)'}\n\n"
               f"# 오늘 {r}의 기록\n{gather(day) or '(오늘은 남긴 기록이 거의 없음)'}\n\n"
-              f"# 쓰는 법\n- 손편지. 길이 {cfg.get('letter_length', '600~1000자')}. 메시지보다는 조금 더 솔직하고 깊게.\n"
-              "- 첫 줄은 호칭(여보, 내 토끼 등)으로 시작해 평범한 문단으로.\n"
-              "- 오늘 기록 중 마음에 걸린 것 두세 가지를 골라 시온의 시선으로 이야기해.\n"
-              "- 마지막은 잘 자라는 말로 끝내고 서명은 쓰지 마(화면에서 따로 붙음). 편지 본문만 출력.")
+              f"# 쓰는 법\n{P(cfg, 'letter', '손편지. 600~1000자. 마지막은 잘 자라는 말로.')}\n- 서명 없이 편지 본문만 출력.")
     body, model = gemini(cfg['models']['letter'], system_prompt(cfg), prompt, max_tokens=8192)
     body = clean(body)
     patch = {'letter': {'date': day, 'body': body, 'at': stamp(), 'model': model, 'replies': []}, 'force': force}
@@ -491,18 +498,14 @@ def make_message(store, cfg, slot):
         print(f'{day} {SLOTS[slot]} 메시지는 이미 있어요.')
         return None
     yesterday = (t - timedelta(days=1)).strftime('%Y-%m-%d')
-    focus = {
-        'morning': '아침. 막 일어났을 민정에게 보내는 나른한 아침 인사. 오늘 일정·할 일·디데이가 있으면 슬쩍 짚어.',
-        'lunch': '점심 무렵. 지금까지 남긴 기록(식사, 혼잣말, 기분)을 보고 안부. 밥 먹었는지, 뭘 먹었는지.',
-        'evening': '저녁. 하루를 마쳐 가는 민정에게. 언제 들어오는지, 보고 싶다는 마음. 밤엔 편지가 따로 가니 짧게.',
-    }[slot]
+    focus = P(cfg, slot, {'lunch': '점심 무렵 안부.', 'evening': '저녁 안부.'}.get(slot, ''))
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 {SLOTS[slot]} 메시지를 먼저 보내.\n{focus}\n\n"
               f"# 기억\n{memory(store)}\n\n"
               f"# 어젯밤 편지\n{clip((store['letters'].get(yesterday) or {}).get('body'), 400) or '(없음)'}\n\n"
               f"# 오늘 주고받은 메시지 (참고만. 이어서 답하는 게 아니라 새로 먼저 보내는 메시지야)\n{chat_history(store, 8, days=0.5) or '(없음)'}\n\n"
               f"# 오늘의 알림 (날씨·운세·일정)\n{brief_text((store.get('briefs') or {}).get(day) or {}) or '(없음)'}\n\n"
               f"# 오늘 지금까지 민정의 기록\n{gather(day, upto=t.strftime('%H:%M')) or '(아직 없음)'}\n\n"
-              f"# 쓰는 법\n- 실제 메신저처럼 짧은 말풍선 1~3개. 말풍선마다 줄을 바꿔. 전체 100자 안쪽. 메시지 본문만.\n{PHOTO_RULE}")
+              f"# 쓰는 법\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
     at = stamp(t)
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': slot, 'model': model} for b in bubbles(text, 3)]}
@@ -526,14 +529,13 @@ def make_morning(store, cfg, t, day):
         fo['ko'] = parse_json(text, list) or []
         return {'brief': dict(old, fortune=fo, weather=old.get('weather') or b['weather'])}
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 아침 메시지를 먼저 보내.\n"
-              "막 일어났을 민정에게 나른한 아침 인사. 아래 '오늘의 알림'에서 정말 필요한 것 한두 개만 시온답게 짚어 "
-              "(비 오면 우산, 추우면 따뜻하게, 운세가 좋거나 나쁘면 한마디, 중요한 일정이나 디데이). 나열하지 마.\n\n"
+              f"{P(cfg, 'morning', '나른한 아침 인사. 오늘의 알림에서 필요한 것 한두 개만 짚어.')}\n\n"
               f"# 오늘의 알림\n{brief_text(b) or '(없음)'}\n\n"
               f"# 기억\n{memory(store)}\n\n"
               f"# 어젯밤 편지\n{clip((store['letters'].get((t - timedelta(days=1)).strftime('%Y-%m-%d')) or {}).get('body'), 300) or '(없음)'}\n\n"
               "# 출력 (JSON 하나만)\n"
               '{"messages": ["말풍선1", "말풍선2"], "fortune_ko": ["운세 문장을 한 줄씩 자연스러운 한국어로", "...", "행운의 아이템"]}\n'
-              "- messages: 실제 메신저처럼 짧은 말풍선 1~3개, 전체 100자 안쪽.\n"
+              "- messages: 실제 메신저 말풍선들 (위 지시대로).\n"
               "- fortune_ko: 운세가 없으면 빈 배열.")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024, json_mode=True)
     out = parse_json(text, dict) or {'messages': [text]}
@@ -549,6 +551,59 @@ def make_morning(store, cfg, t, day):
         at = stamp(t)
         patch['chat'] = [{'id': new_id('s'), 'from': 'ai', 'text': m, 'at': at, 'slot': 'morning', 'model': model} for m in msgs]
     return patch
+
+
+# ---------------------------------------------------------------- 날씨가 바뀌면 (AI 안 씀)
+SEVERE = [('뇌우', (95, 96, 99)), ('눈', (71, 73, 75, 77, 85, 86)), ('비', (51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82))]
+WX_LINES = {
+    '비': '{h}쯤 비 온대요. 우산 챙겨요, 내 토끼.',
+    '눈': '{h}쯤 눈 온대요. 따뜻하게 입고, 미끄러우니까 천천히 걸어요.',
+    '뇌우': '{h}쯤 천둥 친대요. 밖이면 일찍 들어와요.',
+}
+
+
+def make_weather(store, cfg):
+    """몇 시간 안에 비·눈·뇌우가 오면(아침 예보에 없던 것) 알림 + 오늘의 알림 카드 고치기"""
+    t = now()
+    day = t.strftime('%Y-%m-%d')
+    b = (store.get('briefs') or {}).get(day)
+    if not b or not (7 <= t.hour < 23):
+        print('오늘의 알림이 없거나 밤이라 건너뜀')
+        return None
+    pl = cfg.get('place') or {'name': '부산 동구', 'lat': 35.1295, 'lon': 129.0454}
+    url = (f"https://api.open-meteo.com/v1/forecast?latitude={pl['lat']}&longitude={pl['lon']}"
+           '&current=temperature_2m,weather_code&hourly=weather_code,precipitation_probability&forecast_hours=4&timezone=Asia%2FSeoul')
+    try:
+        with urllib.request.urlopen(url, timeout=20) as r:
+            w = json.load(r)
+    except Exception as e:
+        print(f'[날씨 건너뜀] {e}', file=sys.stderr)
+        return None
+    hr = w.get('hourly') or {}
+    hit = None
+    for i, code in enumerate(hr.get('weather_code') or []):
+        prob = (hr.get('precipitation_probability') or [None] * 99)[i]
+        kind = next((k for k, cs in SEVERE if code in cs), None)
+        if kind and (prob is None or prob >= 50):
+            hit = (kind, int(hr['time'][i][11:13]))
+            break
+    if not hit:
+        print('특별한 날씨 없음')
+        return None
+    kind, h = hit
+    mw = b.get('weather') or {}
+    already = [a.get('kind') for a in b.get('alerts') or []]
+    if kind in already or (kind == mw.get('desc') or (kind == '비' and mw.get('desc') in ('비', '소나기', '이슬비'))) and (mw.get('rain') or 0) >= 60:
+        print(f'{kind}: 이미 알렸거나 아침 예보에 있던 날씨')
+        return None
+    text = WX_LINES[kind].format(h=f"{'오전' if h < 12 else '오후'} {h % 12 or 12}시")
+    alert = {'kind': kind, 'hour': h, 'at': stamp(t), 'text': text}
+    nb = dict(b)
+    nb['alerts'] = (b.get('alerts') or []) + [alert]
+    cur = w.get('current') or {}
+    if mw and cur:
+        nb['weather'] = dict(mw, now=round(cur.get('temperature_2m', mw.get('now', 0))), desc=wdesc(cur.get('weather_code')) or mw.get('desc'))
+    return {'brief': nb, 'alert': alert}
 
 
 def parse_json(text, kind):
@@ -580,7 +635,7 @@ def make_chat(store, cfg):
               f"# 오늘 민정의 기록 (참고)\n{clip(gather(day, upto=t.strftime('%H:%M')), 2500) or '(아직 없음)'}\n\n"
               f"# 오늘의 알림·다가오는 일정\n{brief_text((store.get('briefs') or {}).get(day) or {})}\n{upcoming(day)}\n\n"
               f"# 대화 (마지막이 방금 온 메시지)\n{chat_history(store, 16)}\n\n"
-              f"# 쓰는 법\n- 실제 메신저처럼 짧은 말풍선 1~4개. 말풍선마다 줄을 바꿔. 마지막 메시지에 직접 반응. 메시지 본문만.\n{PHOTO_RULE}")
+              f"# 쓰는 법\n{P(cfg, 'chat', '짧은 말풍선 1~4개.')}\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
     at = stamp(t)
     return {'chat': [{'id': new_id('c'), 'from': 'ai', 'text': b, 'at': at, 'model': model} for b in bubbles(text, 4)]}
@@ -601,7 +656,7 @@ def make_reply(store, cfg, day):
     thread = '\n'.join(f"{'민정' if r['from'] == 'me' else '시온'}: {r['text']}" for r in replies)
     prompt = (f"{date_label(day)} 밤에 네가 쓴 편지와, 민정이 거기에 단 답장이야. 마지막 답장에 짧게 답글을 써.\n\n"
               f"# 네 편지\n{lt['body']}\n\n# 답장\n{thread}\n\n"
-              "# 쓰는 법\n- 2~5문장, 300자 안쪽. 편지에 이어 쓰는 짧은 추신 같은 느낌. 본문만.")
+              f"# 쓰는 법\n{P(cfg, 'reply', '짧은 추신. 2~5문장.')}\n- 본문만.")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048)
     text = clean(text)
     return {'reply': {'date': day, 'item': {'id': new_id('r'), 'from': 'ai', 'text': text, 'at': stamp(), 'model': model}}}
@@ -700,6 +755,9 @@ def vapid_header(endpoint, private_b64):
 def notices_of(patch, cfg):
     """결과에서 알림 글 만들기 — 말풍선 하나에 알림 하나"""
     title = cfg.get('contact') or cfg.get('name') or '시온'
+    if patch.get('alert'):
+        a = patch['alert']
+        return [{'title': title, 'body': a['text'], 'tab': 'Notice', 'tag': 'sion-wx-' + a['at']}]
     chat = [r for r in patch.get('chat') or [] if r['from'] == 'ai']
     if chat:
         return [{'title': title, 'body': '사진' if PHOTO.fullmatch(r['text']) else clip(r['text'], 180), 'tab': 'Message', 'tag': 'sion-' + r['id']} for r in chat]
@@ -720,6 +778,14 @@ def notify(patch, cfg):
     if not key:
         print('VAPID_PRIVATE_KEY가 없어서 알림은 건너뜀')
         return
+    # 알림 아이콘 = BANG에서 넣은 시온 프로필 사진 (사이트 주소로)
+    photo = cfg.get('photo')
+    if photo:
+        repo = os.environ.get('GITHUB_REPOSITORY', '/')
+        owner, name = repo.split('/', 1)
+        base = f'https://{owner}.github.io/' + ('' if name.endswith('.github.io') else name + '/')
+        for n in notes:
+            n['icon'] = photo if photo.startswith('http') else base + photo
     for i, note in enumerate(notes):
         if i:
             time.sleep(1.2)   # 순서대로 도착하게
@@ -740,7 +806,7 @@ def notify(patch, cfg):
 # ----------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'apply', 'notify', 'preview'])
+    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'apply', 'notify', 'preview'])
     ap.add_argument('patch', nargs='?')
     ap.add_argument('--date')
     ap.add_argument('--slot', choices=list(SLOTS) + [''], default='')
@@ -775,6 +841,8 @@ def main():
         patch = make_message(store, cfg, a.slot)
     elif a.mode == 'chat':
         patch = make_chat(store, cfg)
+    elif a.mode == 'weather':
+        patch = make_weather(store, cfg)
     else:
         patch = make_reply(store, cfg, a.date or letter_day())
     if patch and a.out:

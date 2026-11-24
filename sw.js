@@ -8,7 +8,7 @@ self.addEventListener('push', e => {
     let d = {};
     try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data ? e.data.text() : '' }; }
     e.waitUntil(self.registration.showNotification(d.title || '내 여보♡', {
-        body: d.body || '', tag: d.tag || 'sion', renotify: true, icon: ICON, badge: ICON, data: { tab: d.tab || 'Message' }
+        body: d.body || '', tag: d.tag || 'sion', renotify: true, icon: d.icon || ICON, badge: ICON, data: { tab: d.tab || 'Message' }
     }));
 });
 

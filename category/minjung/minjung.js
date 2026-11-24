@@ -98,7 +98,7 @@ const WIN = {
     room:      { title: 'Backgrounds', w: 420 },
     lines:     { title: 'Lines',     w: 360 },
     sion:      { title: '내 여보♡',  tabs: ['Message', 'Letter'], w: 390 },
-    bang:      { title: 'BANG',      tabs: ['Memory', 'Log'], w: 380 }
+    bang:      { title: 'BANG',      tabs: ['Profile', 'Prompt', 'Memory', 'Log'], w: 430 }
 };
 /* 아래 메뉴 / 바탕화면 아이콘 5개 — pick이 있으면 누를 때 작은 고르기 팝업이 먼저 뜸 */
 const NAV = [
@@ -972,7 +972,15 @@ export function init() {
             e.preventDefault();
         });
         if (id === 'sion') sionBind(w);
-        if (id === 'bang') el.addEventListener('input', e => { if (e.target.matches('[data-bg=mem]')) { w.st.mdraft = e.target.value; const n = el.querySelector('.bg-count'); if (n) n.textContent = e.target.value.length + '자'; } });
+        if (id === 'bang') el.addEventListener('input', e => {
+            const t = e.target;
+            if (t.matches('[data-bg=mem]')) { w.st.mdraft = t.value; const n = el.querySelector('.bg-count'); if (n) n.textContent = t.value.length + '자'; }
+            if (t.matches('[data-bf]')) {
+                const first = !(w.st.pd && Object.keys(w.st.pd).length);
+                (w.st.pd = w.st.pd || {})[t.dataset.bf] = t.value;
+                if (first) { el.querySelectorAll('.bg-bar').forEach(bar => { bar.querySelector('.bg-count').textContent = '고친 내용이 있어요'; const sv = bar.querySelector('[data-act=bg-psave]'); if (sv) sv.disabled = false; }); }
+            }
+        });
         el.addEventListener('click', e => {
             if (el.dataset.noclick) return;
             const b = e.target.closest('[data-act]');
@@ -987,6 +995,10 @@ export function init() {
                 case 'sn-lsend': sionSendLetterReply(st); break;
                 case 'sn-retry': sionRun(v, st.ldate); break;
                 case 'bg-save': bangSave(st); break;
+                case 'bg-psave': bangPromptSave(st); break;
+                case 'bg-pcancel': st.pd = null; fresh(); break;
+                case 'bg-photo': bangPhoto(st); break;
+                case 'bg-photo-del': bangPhoto(st, true); break;
                 case 'bg-reset': st.mdraft = null; fresh(); break;
                 case 'sn-favs': st.favs = !st.favs; st.stick = true; fresh(); break;
                 case 'sn-search': st.searching = !st.searching; st.q = ''; st.lfavs = false; st.stick = true; fresh(); if (st.searching) { const q = el.querySelector('[data-sn=q]'); if (q) q.focus(); } break;
@@ -1872,6 +1884,8 @@ export function init() {
     const SION_CACHE = 'mj_sion_cache';   // 마지막으로 받은 메시지·설정 (창을 열 때 '불러오는 중' 없이 바로)
     try { const c = JSON.parse(localStorage.getItem(SION_CACHE) || 'null'); if (c && c.data) { sion.data = c.data; sion.cfg = c.cfg || null; } } catch (e) {}
     const contact = () => (sion.cfg && sion.cfg.contact) || '내 여보♡';
+    // BANG에서 넣은 시온 프로필 사진 (없으면 기본 아이콘)
+    const sionPhoto = () => sion.cfg && sion.cfg.photo ? imgTag(sion.cfg.photo, 'sn-photo-img') : '';
     const sionName = () => (sion.cfg && sion.cfg.short) || '시온';
     const PHOTO_RE = /^\(\s*사진\s*[:：]\s*([\s\S]+?)\s*\)$/;
     const IMG_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m3.5 16 5-5 4 4 3-3 5 5"/><circle cx="15.5" cy="9" r="1.5"/></svg>';
@@ -1910,11 +1924,24 @@ export function init() {
         sionCheckNew(quiet);
         drawSionBtn();
         if (wins.sion && !(wins.sion.el.contains(document.activeElement) && document.activeElement.matches('[data-sn=q], [data-sn=lreply]'))) renderWin('sion');
-        if (wins.bang && !wins.bang.el.contains(document.activeElement) && wins.bang.st.mdraft == null) renderWin('bang');
+        if (wins.bang && !wins.bang.el.contains(document.activeElement) && wins.bang.st.mdraft == null && !(wins.bang.st.pd && Object.keys(wins.bang.st.pd).length)) renderWin('bang');
         sionOpenFromNotice();
     }
     // 새로 온 메시지·편지 → 화면 위 알림 띠 (지금 보고 있는 탭이면 생략)
+    // 날씨 위치: 마이홈에서 허용한 이 기기 위치(동네 정도로 반올림)를 시온 설정에 저장 → 아침 알림·날씨 알림이 그 위치로
+    function syncPlace() {
+        if (!sion.cfg || !window.ghdb.hasToken() || syncPlace.done) return;
+        let p = null; try { p = (JSON.parse(localStorage.getItem('mh-place') || 'null') || {}).p; } catch (e) {}
+        if (!p || !p.lat || !p.lon) return;
+        const r = v => Math.round(v * 10) / 10;
+        const next = { name: p.name || '', lat: r(p.lat), lon: r(p.lon) }, cur = sion.cfg.place || {};
+        if (cur.lat === next.lat && cur.lon === next.lon && cur.name === next.name) return;
+        syncPlace.done = true;
+        repo.commit('김민정: 날씨 위치', {}, { [SION_CFG]: { fallback: {}, mutate: c => { c.place = next; return c; } } })
+            .then(() => { sion.cfg.place = next; }, e => console.warn('place', e));
+    }
     function sionCheckNew(quiet) {
+        syncPlace();
         const a = lastAi(), today = sion.data.letters[sionLetterDay()];
         const first = sion.lastAi === null;
         const viewing = tab => wins.sion && wins.sion.st.tab === tab && document.visibilityState === 'visible';
@@ -1934,7 +1961,8 @@ export function init() {
         root.querySelectorAll('.sn-banner').forEach(x => x.remove());
         const el = document.createElement('button');
         el.className = 'sn-banner';
-        el.innerHTML = `<span class="ic">${o.icon || iconHtml('sion')}</span><span class="tx"><b>${esc(o.title || contact())}</b><span>${esc(text)}</span></span><span class="tm">지금</span>`;
+        const ph = sionPhoto();
+        el.innerHTML = `<span class="ic${ph ? ' ph' : ''}">${ph || o.icon || iconHtml('sion')}</span><span class="tx"><b>${esc(o.title || contact())}</b><span>${esc(text)}</span></span><span class="tm">지금</span>`;
         el.addEventListener('click', () => { el.remove(); if (o.run) o.run(); else openSion(tab); });
         root.appendChild(el);
         setTimeout(() => el.classList.add('out'), o.long ? 7600 : 5200);
@@ -1944,9 +1972,9 @@ export function init() {
     function sionOpenFromNotice() {
         let tab = null;
         try { tab = sessionStorage.getItem('sion_open'); sessionStorage.removeItem('sion_open'); } catch (e) {}
-        if (tab) openSion(tab);
+        if (tab) tab === 'Notice' ? notiOpen(todayKey()) : openSion(tab);
     }
-    window.__openSion = tab => { if (root.isConnected) openSion(tab || 'Message'); };
+    window.__openSion = tab => { if (!root.isConnected) return; if (tab === 'Notice') notiOpen(todayKey()); else openSion(tab || 'Message'); };
     function openSion(tab) {
         const fresh = !wins.sion;
         openWin('sion');
@@ -2155,10 +2183,14 @@ export function init() {
     const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
     const briefs = () => (sion.data && sion.data.briefs) || {};
     const seenSet = () => { try { return new Set(JSON.parse(lsGet(NOTI_SEEN, '[]'))); } catch (e) { return new Set(); } };
-    const unreadBriefs = () => { const s = seenSet(); return Object.keys(briefs()).filter(k => !s.has(k)); };
-    function markBriefSeen(k) { const s = seenSet(); s.add(k); lsSet(NOTI_SEEN, JSON.stringify([...s].sort().slice(-60))); drawNoti(); }
+    // 날씨 알림이 새로 붙으면 다시 '안 봄'이 되게: 날짜 + 알림 수로 기억
+    const briefKey = k => { const b = briefs()[k]; return k + ':' + ((b && b.alerts) || []).length; };
+    const unreadBriefs = () => { const s = seenSet(); return Object.keys(briefs()).filter(k => !s.has(briefKey(k))); };
+    function markBriefSeen(k) { const s = seenSet(); if (s.has(briefKey(k))) return; s.add(briefKey(k)); lsSet(NOTI_SEEN, JSON.stringify([...s].sort().slice(-80))); drawNoti(); }
     const WX = { '맑음': '☀︎', '구름 조금': '⛅︎', '흐림': '☁︎', '안개': '≋', '이슬비': '☂︎', '비': '☂︎', '눈': '❄︎', '소나기': '☔︎', '뇌우': 'ϟ' };
     function briefLine(b) {
+        const al = (b.alerts || []).slice(-1)[0];
+        if (al) return al.text;
         const w = b.weather, f = b.fortune, n = (b.schedule || []).length + (b.todos || []).length;
         return [w ? `${w.desc} ${w.now}°` : '', f ? `${f.sign} ${f.rank}위` : '', n ? `할 일·일정 ${n}` : ''].filter(Boolean).join(' · ') || '오늘의 알림';
     }
@@ -2205,7 +2237,7 @@ export function init() {
         const all = briefs(), keys = Object.keys(all).sort().reverse(), k = p.dataset.k, seen = seenSet();
         if (!k) {
             p.innerHTML = `<div class="nt-head"><span>NOTICE</span><button data-na="close" aria-label="닫기">${X_SVG}</button></div>
-                <div class="nt-list">${keys.length ? keys.map(d => `<button class="nt-card${seen.has(d) ? '' : ' new'}" data-nk="${d}">
+                <div class="nt-list">${keys.length ? keys.map(d => `<button class="nt-card${seen.has(briefKey(d)) ? '' : ' new'}" data-nk="${d}">
                     <span class="d">${dayTitle(d)}${d === todayKey() ? ' · TODAY' : ''}</span><span class="t">오늘의 알림</span><span class="s">${esc(briefLine(all[d]))}</span></button>`).join('')
                     : empty('아침마다 오늘의 알림이 와요')}</div>`;
             return;
@@ -2216,6 +2248,8 @@ export function init() {
         const sec = (t, h) => h ? `<div class="nt-sec">${t}</div>${h}` : '';
         p.innerHTML = `<div class="nt-head"><button data-na="back" aria-label="목록">‹</button><span>${dayTitle(k)}</span><button data-na="close" aria-label="닫기">${X_SVG}</button></div>
             <div class="nt-body">
+                ${b.sion && b.sion.length ? `<button class="nt-sion" data-na="sion">${b.sion.map(t => `<span class="b">${esc(t)}</span>`).join('')}</button>` : ''}
+                ${(b.alerts || []).map(a => `<div class="nt-alert"><b>${esc(a.kind)}</b>${esc(a.text)}<span>${esc((a.at || '').slice(11, 16))}</span></div>`).join('')}
                 ${sec('Weather', w ? `<div class="nt-wx"><b class="ic">${WX[w.desc] || '·'}</b><div><b>${esc(w.desc)} ${w.now}°</b><span>${w.min}° / ${w.max}° · 비 ${w.rain}% · ${esc(w.place)}</span>
                     ${w.tomorrow ? `<span class="tm">내일 ${esc(w.tomorrow.desc)} ${w.tomorrow.min}° / ${w.tomorrow.max}° · 비 ${w.tomorrow.rain}%</span>` : ''}</div></div>` : '')}
                 ${sec('Fortune', f ? `<div class="nt-fo"><div class="rk"><b>${f.rank}</b>위</div><div class="tx"><span class="sg">${esc(f.sign)} · おは朝</span>
@@ -2224,14 +2258,43 @@ export function init() {
                 ${sec('Today', (b.schedule || []).map(e => `<p class="nt-row"><span>${esc(e.time)}</span>${esc(e.title)}</p>`).join('') +
                     (b.todos || []).map(t => `<p class="nt-row"><span>To do</span>${esc(t)}</p>`).join('') +
                     (b.ddays || []).map(d => `<p class="nt-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') || '<p class="nt-none">오늘 일정이 없어요</p>')}
-                ${b.sion && b.sion.length ? `<button class="nt-sion" data-na="sion"><span class="who">${esc(contact())}</span>${b.sion.map(t => `<span class="b">${esc(t)}</span>`).join('')}</button>` : ''}
             </div>`;
     }
 
     /* ---------------- BANG: 시온의 기억 ---------------- */
+    const PROMPT_GROUPS = [
+        ['캐릭터', [['personality', '성격'], ['relationship', '관계'], ['speech', '말투'], ['examples', '말투 예시'], ['rules', '절대 규칙']]],
+        ['쓰는 법', [['writing', '메시지·편지 공통 규칙'], ['photo', '사진 보내기']]],
+        ['상황별', [['morning', '아침 메시지 (오늘의 알림)'], ['lunch', '점심 메시지'], ['evening', '저녁 메시지'], ['chat', '내 메시지에 답장'], ['letter', '밤 편지'], ['reply', '편지 답글']]]
+    ];
+    const pval = (st, k) => st.pd && st.pd[k] != null ? st.pd[k] : ((sion.cfg && sion.cfg.prompt) || {})[k] || '';
+    const fval = (st, k) => st.pd && st.pd['@' + k] != null ? st.pd['@' + k] : (sion.cfg || {})[k] || '';
     function bangView(st) {
-        if (!sion.data) return empty('불러오는 중…');
-        const m = sion.data.memory || {}, every = (sion.cfg && sion.cfg.memory_every) || 3;
+        if (!sion.data || !sion.cfg) return empty('불러오는 중…');
+        const dirty = st.pd && Object.keys(st.pd).length;
+        const saveBar = `<div class="mj-btns bg-bar"><span class="bg-count">${dirty ? '고친 내용이 있어요' : ''}</span><span class="sp"></span>
+            ${dirty ? '<button class="mj-btn ghost" data-act="bg-pcancel">Cancel</button>' : ''}<button class="mj-btn" data-act="bg-psave" ${dirty ? '' : 'disabled'}>Save</button></div>`;
+        if (st.tab === 'Profile') {
+            const ph = sion.cfg.photo;
+            return `<div class="bg-prof">
+                    <button class="bg-photo" data-act="bg-photo" title="사진 바꾸기">${ph ? imgTag(ph, 'bg-photo-img') : `<span class="ph">${ICON.profile}</span>`}</button>
+                    <div class="bg-pf">
+                        <label><span>이름</span><input data-bf="@name" value="${esc(fval(st, 'name'))}"></label>
+                        <label><span>저장된 이름</span><input data-bf="@contact" value="${esc(fval(st, 'contact'))}"></label>
+                        <label><span>처음 만난 날</span><input data-bf="@since" type="date" value="${esc(fval(st, 'since'))}"></label>
+                    </div>
+                </div>
+                <div class="bg-phbtns"><button class="mj-link" data-act="bg-photo">${ph ? '사진 바꾸기' : '사진 넣기'}</button>${ph ? ' · <button class="mj-link" data-act="bg-photo-del">사진 지우기</button>' : ''}</div>
+                <div class="mj-sec">Profile prompt</div>
+                <div class="mj-form"><textarea data-bf="profile" rows="9" placeholder="기본 정보 · 외형">${esc(pval(st, 'profile'))}</textarea></div>
+                ${saveBar}`;
+        }
+        if (st.tab === 'Prompt') {
+            return `<p class="bg-info">${esc(sionName())}이 메시지·편지를 쓸 때 읽는 설정이에요. 고치고 Save 하면 다음 메시지부터 바뀌어요.</p>` +
+                PROMPT_GROUPS.map(([g, items]) => `<div class="bg-group">${g}</div>` + items.map(([k, l]) => `<div class="mj-sec">${l}</div>
+                    <div class="mj-form"><textarea data-bf="${k}" rows="${k === 'examples' || k === 'writing' ? 8 : 4}">${esc(pval(st, k))}</textarea></div>`).join('')).join('') + saveBar;
+        }
+        const m = sion.data.memory || {}, every = sion.cfg.memory_every || 3;
         if (st.tab === 'Log') {
             const log = (sion.data.memory_log || []).slice().reverse();
             return log.length ? log.map(x => `<div class="bg-log"><div class="d">${x.from ? esc(x.from.slice(5).replace('-', '.')) + ' ~ ' : ''}${esc((x.upto || '').slice(5).replace('-', '.'))}${x.edited ? ' · 고침' : ''}</div><div class="tx">${nl(x.summary)}</div></div>`).join('')
@@ -2244,6 +2307,38 @@ export function init() {
             <div class="mj-form"><textarea data-bg="mem" rows="12" placeholder="아직 정리된 기억이 없어요. 직접 적어 둬도 돼요.">${esc(val)}</textarea></div>
             <div class="mj-btns"><span class="bg-count">${val.length}자</span><span class="sp"></span>
                 ${st.mdraft != null ? '<button class="mj-btn ghost" data-act="bg-reset">Cancel</button>' : ''}<button class="mj-btn" data-act="bg-save">Save</button></div>`;
+    }
+    // 시온 설정(minjung/sion.json) 저장: 고친 칸만 (files = 사진 올리기·지우기)
+    function bangPromptSave(st, files, extra) {
+        if (sionNeedToken()) return Promise.resolve();
+        const pd = Object.assign({}, st.pd || {});
+        const apply = c => {
+            c.prompt = c.prompt || {};
+            Object.keys(pd).forEach(k => { if (k[0] === '@') c[k.slice(1)] = pd[k].trim(); else c.prompt[k] = pd[k].trim(); });
+            if (extra) extra(c);
+            return c;
+        };
+        apply(sion.cfg); st.pd = null; WIN.sion.title = contact();
+        renderWin('bang'); drawSionBtn();
+        return repo.commit('김민정: 시온 설정', files || {}, { [SION_CFG]: { fallback: {}, mutate: apply } })
+            .then(() => toast('저장했어요'), e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
+    }
+    async function bangPhoto(st, del) {
+        if (sionNeedToken()) return;
+        const old = sion.cfg.photo;
+        if (del) {
+            if (!old || !await mjConfirm('프로필 사진을 지울까요?', '삭제')) return;
+            const files = {}; if (old.startsWith(IMG_DIR)) files[old] = null;
+            return bangPromptSave(st, files, c => { delete c.photo; });
+        }
+        pickFile(async f => {
+            try {
+                toast('uploading…');
+                const { path, sha } = await uploadImage(f, 'sion', 512, 'image/jpeg');
+                const files = { [path]: sha }; if (old && old.startsWith(IMG_DIR)) files[old] = null;
+                bangPromptSave(st, files, c => { c.photo = path; });
+            } catch (e) { mjAlert('사진을 올리지 못했어요.\n' + (e.message || e)); }
+        });
     }
     function bangSave(st) {
         if (st.mdraft == null || sionNeedToken()) return;

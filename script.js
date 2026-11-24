@@ -176,7 +176,7 @@ function toggleTheme() {
     }
     navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.sion) openSion(e.data.sion); });
     // 앱이 닫혀 있다가 알림으로 열렸을 때: 주소의 ?sion=Message
-    var m = /[?&]sion=(Message|Letter)/.exec(location.search);
+    var m = /[?&]sion=(Message|Letter|Notice)/.exec(location.search);
     if (m) {
         try { sessionStorage.setItem('sion_open', m[1]); } catch (e) {}
         history.replaceState(null, '', location.pathname + '#minjung');
