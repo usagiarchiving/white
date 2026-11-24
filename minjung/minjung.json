@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-25T03:31:21+09:00",
+ "updated_at": "2026-11-25T08:23:54+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -1224,7 +1224,7 @@
    "mobile": [],
    "pc": []
   },
-  "bg_off": false,
+  "bg_off": true,
   "lib_types": [
    {
     "key": "book",
