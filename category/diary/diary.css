@@ -914,3 +914,8 @@ textarea.dy-in { font-size: 11px; }
 .svg-heart, .t-add .t-cat .hrt { width: 13px; height: 13px; }
 .t-grp .gh .pill .hrt { width: 9px; height: 9px; }
 .dy-todo { gap: 10px; }
+
+/* 할 일 글자: 새까맣지 않은 부드러운 검정 · 계획일/완료일 칸 겹침 방지 */
+.t-row .t { color: #45464d; }
+.td-dates > * { min-width: 0; }
+.td-dates input.dy-in { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; -webkit-appearance: none; appearance: none; display: block; }
