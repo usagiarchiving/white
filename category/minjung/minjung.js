@@ -885,11 +885,13 @@ export function init() {
         const top = body ? body.scrollTop : 0;
         const tabsEl = w.el.querySelector('.mj-tabs'), tabsLeft = tabsEl ? tabsEl.scrollLeft : 0;
         const tabs = tabsOf(id), canList = id === 'library' || id === 'daily' || id === 'food' || id === 'state';
+        if (id === 'sion') w.el.classList.toggle('kk-themed', !!KT.theme);
         w.el.innerHTML = id === 'sion' ? (st.view === 'call' || st.view === 'ring' ? `<div class="mj-win-body kk-callbody">${VIEW[id](st)}</div>` : `
             <div class="mj-win-head sn-head kk-head" data-drag>
-                <button class="kk-back" data-act="sn-back" aria-label="뒤로">${KK.back}${!st.view || st.view === 'chat' ? `<span class="n">${(sion.data && sion.data.chat || []).length}</span>` : ''}</button>
-                <b class="kk-name">${esc(st.view === 'contact' || st.view === 'calllog' ? '' : contact())}</b>
-                <span class="kk-r">${!st.view || st.view === 'chat' ? `<button data-act="sn-search" aria-label="검색">${KK.search}</button><button data-act="sn-contact" aria-label="전화">${KK.phone}</button><button data-act="sn-menu" aria-label="메뉴">${KK.menu}</button>` : ''}</span>
+                <button class="kk-pill kk-back" data-act="sn-back" aria-label="뒤로">${KK.back}${!st.view || st.view === 'chat' ? `<span class="n">${(sion.data && sion.data.chat || []).length}</span>` : ''}</button>
+                <b class="kk-name">${esc(st.view === 'kset' ? '채팅방 설정' : st.view === 'cedit' ? '프로필 편집' : st.view === 'contact' || st.view === 'calllog' ? '' : contact())}</b>
+                ${!st.view || st.view === 'chat' ? `<span class="kk-pill kk-r"><button data-act="sn-search" aria-label="검색">${KK.search}</button><button data-act="sn-contact" aria-label="전화">${KK.phone}</button><button data-act="sn-menu" aria-label="메뉴">${KK.menu}</button></span>`
+                    : st.view === 'contact' ? '<span class="kk-pill kk-r kk-txt"><button data-act="call-edit">편집</button></span>' : '<span class="kk-r"></span>'}
             </div>
             <div class="mj-win-body">${VIEW[id](st)}</div>`) : `
             <div class="mj-win-head" data-drag>
@@ -993,7 +995,7 @@ export function init() {
             switch (act) {
                 case 'close': closeWin(id); break;
                 // 시온 메시지·편지
-                case 'sn-send': sionSendChat(st); break;
+                case 'sn-send': if ((st.draft || '').trim()) sionSendChat(st); else { st.searching = true; st.q = ''; fresh(); const q = el.querySelector('[data-sn=q]'); if (q) q.focus(); } break;
                 case 'sn-letter': sionRun('letter', st.ldate); break;
                 case 'sn-lsend': sionSendLetterReply(st); break;
                 case 'sn-retry': sionRun(v, st.ldate); break;
@@ -1006,12 +1008,37 @@ export function init() {
                 case 'dl-open': st.dday = v; fresh(); break;
                 case 'dl-back': st.dday = null; fresh(); break;
                 case 'dl-del': dailyDelete(v); break;
-                case 'sn-back': if (st.view === 'calllog') { st.view = 'contact'; fresh(); } else if (st.view && st.view !== 'chat') { st.view = 'chat'; fresh(); } else closeWin(id); break;
+                case 'sn-back': if (st.view === 'cedit') { st.view = st.from === 'kset' ? 'kset' : 'contact'; fresh(); } else if (st.view === 'calllog') { st.view = 'contact'; fresh(); } else if (st.view && st.view !== 'chat') { st.view = 'chat'; fresh(); } else closeWin(id); break;
                 case 'sn-contact': st.view = 'contact'; fresh(); break;
                 case 'sn-menu': showPick(b, [
                         { icon: SN_SVG.heart(!st.favs), label: st.favs ? '하트 모아 보기 닫기' : '하트 모아 보기', run: () => { st.favs = !st.favs; st.searching = false; st.q = ''; st.stick = true; fresh(); } },
-                        { icon: SN_SVG.bell(sion.push === true), label: sion.push === true ? '알림 끄기' : '알림 켜기', run: sionPushToggle }
+                        { icon: SN_SVG.bell(sion.push === true), label: sion.push === true ? '알림 끄기' : '알림 켜기', run: sionPushToggle },
+                        { icon: KK.menu, label: '채팅방 설정 · 테마', run: () => { st.view = 'kset'; fresh(); } }
                     ]); break;
+                case 'kk-opt': KT.opt[v] = !KT.opt[v]; ktSaveOpt(); fresh(); break;
+                case 'kk-font':
+                    if (v === 'mine') { pickAny('.ttf,.otf,.woff,.woff2,font/*', async f => { await ktSet('font', { blob: f, name: f.name }); KT.opt.font = 'mine'; ktSaveOpt(); await ktApply(); toast('글꼴을 바꿨어요'); }); break; }
+                    KT.opt.font = v; ktSaveOpt(); ktApply(); break;
+                case 'kk-theme': pickAny('.ktheme,.apk,.zip,application/zip,application/vnd.android.package-archive', async f => {
+                        toast('테마 읽는 중…');
+                        try { const th = await ktImport(f); toast(th.name + ' 적용 ♡'); } catch (err) { console.error(err); mjAlert('테마를 넣지 못했어요.\n' + (err.message || err)); }
+                    }); break;
+                case 'kk-theme-del': ktSet('theme', null).then(ktApply); break;
+                case 'kk-name': (async () => {
+                        const t = ((await mjPrompt('대화 상대 이름', contact())) || '').trim(); if (!t || t === contact() || sionNeedToken()) return;
+                        sion.cfg.contact = t; WIN.sion.title = t; fresh(); drawSionBtn();
+                        repo.commit('김민정: 시온 이름', {}, { [SION_CFG]: { fallback: {}, mutate: c => { c.contact = t; return c; } } }).catch(e => mjAlert('저장하지 못했어요.\n' + (e.message || e)));
+                    })(); break;
+                case 'call-edit': st.from = st.view; st.view = 'cedit'; fresh(); break;
+                case 'ce-photo': pickFile(f => callCfgSave('call_photo', f)); break;
+                case 'ce-photo-del': callCfgSave('call_photo', null); break;
+                case 'ce-ring': pickFile(f => callCfgSave('ring_bg', f)); break;
+                case 'ce-ring-del': callCfgSave('ring_bg', null); break;
+                case 'ce-emoji': (() => {
+                        const i = el.querySelector('[data-ce=emoji]'); const t = (i && i.value.trim()) || '🐱'; if (sionNeedToken()) return;
+                        sion.cfg.call_emoji = t; fresh();
+                        repo.commit('김민정: 시온 전화 이모티콘', {}, { [SION_CFG]: { fallback: {}, mutate: c => { c.call_emoji = t; return c; } } }).then(() => toast('저장했어요'), e => mjAlert('저장하지 못했어요.\n' + (e.message || e)));
+                    })(); break;
                 case 'call-start': startCall(); break;
                 case 'call-log': st.view = 'calllog'; st.logId = v; fresh(); break;
                 case 'call-accept': acceptCall(v); break;
@@ -1522,7 +1549,7 @@ export function init() {
 
     const VIEW = {
         /* 하시온: 메시지(iMessage) · 편지 */
-        sion(st) { return st.view === 'contact' ? callContactView(st) : st.view === 'calllog' ? callLogView(st) : st.view === 'call' ? callView(st) : st.view === 'ring' ? ringView(st) : sionChatView(st); },
+        sion(st) { return st.view === 'kset' ? ktSettingsView() : st.view === 'cedit' ? callEditView() : st.view === 'contact' ? callContactView(st) : st.view === 'calllog' ? callLogView(st) : st.view === 'call' ? callView(st) : st.view === 'ring' ? ringView(st) : sionChatView(st); },
         /* BANG: 시온의 기억 (보고 고치기) · 그동안 정리한 기억 */
         bang(st) { return bangView(st); },
         /* 체력 */
@@ -1920,6 +1947,9 @@ export function init() {
         back: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
         search: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="m15.2 15.2 4.8 4.8"/></svg>',
         phone: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>',
+        up: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+        hash: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>',
+        smile: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 9.5v1M15 9.5v1M8.5 14.5c1.9 2 5.1 2 7 0"/></svg>',
         chat: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 4C7 4 3 7.1 3 11c0 2.3 1.4 4.3 3.6 5.6L6 20l4-2.2c.6.1 1.3.2 2 .2 5 0 9-3.1 9-7s-4-7-9-7z"/></svg>',
         menu: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
         mic: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
@@ -2145,7 +2175,11 @@ export function init() {
             }
             const ph = PHOTO_RE.exec(r.text);
             const inner = ph ? `<span class="ph">${IMG_SVG}</span><span class="cap">${snMark(ph[1], q)}</span>` : snMark(r.text, q);
-            html += `<div class="sn-row ${r.from === 'me' ? 'me' : 'you'}${tail && !ph ? ' tail' : ''}${r.fav ? ' fav' : ''}${ph ? ' photo' : ''}">
+            const first = head || !prev || prev.from !== r.from || prev.kind === 'call';
+            const you = r.from !== 'me', prof = you && (KT.opt.showPic || KT.opt.showName);
+            html += `<div class="sn-row ${you ? 'you' : 'me'}${tail && !ph ? ' tail' : ''}${first ? ' first' : ''}${r.fav ? ' fav' : ''}${ph ? ' photo' : ''}${prof ? ' kk-p' + (KT.opt.showPic ? ' pic' : '') : ''}">
+                ${prof && first && KT.opt.showPic ? `<span class="kk-av">${kkAvatar()}</span>` : ''}
+                ${prof && first && KT.opt.showName ? `<span class="kk-nm">${esc(contact())}</span>` : ''}
                 <div class="sn-b${ph ? ' sn-photo' : ''}" data-id="${esc(r.id)}">${inner}${r.fav ? `<i class="sn-heart">${SN_SVG.heart(true)}</i>` : ''}</div></div>`;
         });
         if (!filtered && sion.wait.chat) html += '<div class="sn-row you tail"><div class="sn-b sn-typing"><i></i><i></i><i></i></div></div>';
@@ -2168,12 +2202,13 @@ export function init() {
         const top = st.searching ? `<div class="kk-search"><input data-sn="q" type="text" enterkeyhint="search" placeholder="대화 내용 검색" value="${esc(st.q || '')}" autocomplete="off"><button data-act="sn-search">취소</button></div>`
             : st.favs ? `<div class="kk-search kk-fav"><span>♥ 하트 모아 보기</span><button data-act="sn-favs">닫기</button></div>` : '';
         return top + `<div class="sn-chat sn-results">${sionBubbles(st)}</div>
-            <div class="sn-bar">
-                <span class="sn-plus">+</span>
+            <div class="sn-bar kk-bar">
+                <span class="kk-plus">+</span>
                 <div class="sn-field">
-                    <textarea data-sn="msg" rows="1" maxlength="${SION_MAX}" placeholder="iMessage">${esc(st.draft || '')}</textarea>
-                    <button class="sn-send${(st.draft || '').trim() ? ' on' : ''}" data-act="sn-send" aria-label="보내기"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+                    <textarea data-sn="msg" rows="1" maxlength="${SION_MAX}" placeholder="메시지 입력">${esc(st.draft || '')}</textarea>
+                    <span class="kk-smile">${KK.smile}</span>
                 </div>
+                <button class="sn-send kk-send${(st.draft || '').trim() ? ' on' : ''}" data-act="sn-send" aria-label="보내기"><span class="i-up">${KK.up}</span><span class="i-hash">${KK.hash}</span></button>
             </div>`;
     }
     function sionDays() {
@@ -2473,12 +2508,252 @@ export function init() {
         sionCommit('시온 기억 고치기', set).then(() => toast('기억을 고쳤어요'), e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
     }
 
+    /* ---------------- 채팅방 테마 (카톡 .ktheme · 안드로이드 .apk 통째로) ----------------
+       테마 파일은 저작권이 있는 그림이라 공개 저장소에 올리지 않고 이 기기(IndexedDB)에만 저장
+       글꼴 파일도 마찬가지. 상대 이름 · 프사 보이기 같은 화면 설정도 이 기기에 */
+    const KT = { theme: null, urls: [], font: null, opt: { showName: true, showPic: true, font: 'pretendard' } };
+    try { Object.assign(KT.opt, JSON.parse(localStorage.getItem('mj_kk_opt') || '{}')); } catch (e) {}
+    const ktSaveOpt = () => { try { localStorage.setItem('mj_kk_opt', JSON.stringify(KT.opt)); } catch (e) {} };
+    function ktDB() {
+        return new Promise((ok, fail) => {
+            const r = indexedDB.open('mj-kakao-theme', 1);
+            r.onupgradeneeded = () => r.result.createObjectStore('kv');
+            r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error);
+        });
+    }
+    async function ktGet(k) { const db = await ktDB(); return new Promise(ok => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => ok(q.result); q.onerror = () => ok(null); }); }
+    async function ktSet(k, v) { const db = await ktDB(); return new Promise((ok, fail) => { const t = db.transaction('kv', 'readwrite'); v == null ? t.objectStore('kv').delete(k) : t.objectStore('kv').put(v, k); t.oncomplete = ok; t.onerror = () => fail(t.error); }); }
+    let jszip = null;
+    function loadZip() {
+        if (window.JSZip) return Promise.resolve(window.JSZip);
+        return jszip || (jszip = new Promise((ok, fail) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            s.onload = () => ok(window.JSZip); s.onerror = () => { jszip = null; fail(new Error('압축 풀기 도구를 못 불러왔어요')); };
+            document.head.appendChild(s);
+        }));
+    }
+    const imgSize = blob => new Promise(ok => { const u = URL.createObjectURL(blob), i = new Image(); i.onload = () => { ok({ w: i.naturalWidth, h: i.naturalHeight }); URL.revokeObjectURL(u); }; i.onerror = () => ok(null); i.src = u; });
+
+    // .ktheme (아이폰): KakaoTalkTheme.css + Images/*@3x.png
+    function ktParseCss(text) {
+        const out = {};
+        text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/([\w-]+)\s*\{([^}]*)\}/g, (m, name, body) => {
+            const o = out[name] = {};
+            body.split(';').forEach(l => { const i = l.indexOf(':'); if (i > 0) o[l.slice(0, i).trim()] = l.slice(i + 1).trim(); });
+        });
+        return out;
+    }
+    async function ktFromKtheme(zip) {
+        const cssFile = Object.keys(zip.files).find(n => /KakaoTalkTheme\.css$/i.test(n));
+        const css = ktParseCss(await zip.file(cssFile).async('string'));
+        const pick = async (name) => {   // 'x.png' → 가장 큰 배율 파일
+            if (!name) return null;
+            name = name.replace(/['"]/g, '').trim();
+            const base = name.replace(/\.png$/i, '');
+            for (const [suf, sc] of [['@3x', 3], ['@2x', 2], ['', 1]]) {
+                const f = Object.keys(zip.files).find(n => n.toLowerCase().endsWith('/' + (base + suf + '.png').toLowerCase()) || n.toLowerCase() === (base + suf + '.png').toLowerCase());
+                if (f) return { blob: new Blob([await zip.file(f).async('uint8array')], { type: 'image/png' }), scale: sc };
+            }
+            return null;
+        };
+        const g = (blk, k) => (css[blk] || {})[k];
+        const col = (blk, k) => { const v = g(blk, k); return v && /^#[0-9a-f]{3,8}$/i.test(v) ? v : null; };
+        const bubble = async (blk, key, insKey) => {   // 'x.png' 20px 50px  (늘어나는 점: 왼쪽, 위)
+            const v = g(blk, key); if (!v) return null;
+            const m = /'([^']+)'\s+(\d+)px\s+(\d+)px/.exec(v); if (!m) return null;
+            const im = await pick(m[1]); if (!im) return null;
+            const sz = await imgSize(im.blob); if (!sz) return null;
+            const ins = (g(blk, insKey) || '10px 10px 10px 10px').match(/\d+/g).map(Number);   // top left bottom right
+            return { blob: im.blob, scale: im.scale, w: sz.w, h: sz.h, L: +m[2], T: +m[3], pad: { t: ins[0], l: ins[1], b: ins[2], r: ins[3] } };
+        };
+        const bg = await pick(g('BackgroundStyle-ChatRoom', '-ios-background-image'));
+        const prof = await pick((g('DefaultProfileStyle', '-ios-profile-images') || '').split(',')[0]);
+        return {
+            kind: 'ktheme', name: (g('ManifestStyle', '-kakaotalk-theme-name') || '').replace(/['"]/g, '') || '카톡 테마',
+            colors: {
+                bg: col('BackgroundStyle-ChatRoom', 'background-color'), head: col('HeaderStyle-Main', '-ios-text-color'),
+                sendText: col('MessageCellStyle-Send', '-ios-text-color'), recvText: col('MessageCellStyle-Receive', '-ios-text-color'),
+                input: col('InputBarStyle-Chat', 'background-color'), sendBtn: col('InputBarStyle-Chat', '-ios-send-normal-background-color'),
+                sendBtnFg: col('InputBarStyle-Chat', '-ios-send-normal-foreground-color'), btn: col('InputBarStyle-Chat', '-ios-button-normal-background-color'),
+                btnFg: col('InputBarStyle-Chat', '-ios-button-normal-foreground-color'), sub: col('MainViewStyle-Primary', '-ios-description-text-color')
+            },
+            img: { bg: bg && bg.blob, profile: prof && prof.blob },
+            bubbles: {
+                send1: await bubble('MessageCellStyle-Send', '-ios-background-image', '-ios-title-edgeinsets'),
+                send2: await bubble('MessageCellStyle-Send', '-ios-group-background-image', '-ios-group-title-edgeinsets'),
+                recv1: await bubble('MessageCellStyle-Receive', '-ios-background-image', '-ios-title-edgeinsets'),
+                recv2: await bubble('MessageCellStyle-Receive', '-ios-group-background-image', '-ios-group-title-edgeinsets')
+            }
+        };
+    }
+    // .apk (안드로이드): res/drawable-*/ 의 그림 + 9-patch(npTc) 늘어나는 정보. 색은 그림에서 뽑음
+    function ninePatch(u8) {   // 컴파일된 .9.png 의 npTc 조각 읽기
+        const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+        for (let p = 8; p + 8 < u8.length;) {
+            const len = dv.getUint32(p), type = String.fromCharCode(u8[p + 4], u8[p + 5], u8[p + 6], u8[p + 7]);
+            if (type === 'npTc') {
+                const d = p + 8, nx = u8[d + 1], ny = u8[d + 2];
+                const pad = { l: dv.getInt32(d + 12), r: dv.getInt32(d + 16), t: dv.getInt32(d + 20), b: dv.getInt32(d + 24) };
+                const xs = [], ys = []; let q = d + 32;
+                for (let i = 0; i < nx; i++, q += 4) xs.push(dv.getInt32(q));
+                for (let i = 0; i < ny; i++, q += 4) ys.push(dv.getInt32(q));
+                return { x0: xs[0] || 0, x1: xs[1] || 1, y0: ys[0] || 0, y1: ys[1] || 1, pad };
+            }
+            p += 12 + len;
+        }
+        return null;
+    }
+    async function avgColor(blob, fx, fy) {   // 그림의 한 점(비율) 색
+        const u = URL.createObjectURL(blob), i = new Image();
+        await new Promise(ok => { i.onload = ok; i.onerror = ok; i.src = u; });
+        const c = document.createElement('canvas'); c.width = c.height = 1;
+        try { c.getContext('2d').drawImage(i, Math.floor(i.naturalWidth * fx), Math.floor(i.naturalHeight * fy), 1, 1, 0, 0, 1, 1); } catch (e) {}
+        URL.revokeObjectURL(u);
+        const d = c.getContext('2d').getImageData(0, 0, 1, 1).data;
+        return '#' + [d[0], d[1], d[2]].map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+    const lum = hex => { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+    async function ktFromApk(zip) {
+        const files = Object.keys(zip.files).filter(n => /^res\/drawable[^/]*\/.+\.png$/i.test(n));
+        const rank = n => /xxxhdpi/.test(n) ? 4 : /xxhdpi/.test(n) ? 3 : /xhdpi/.test(n) ? 2 : /hdpi/.test(n) ? 1.5 : 1;
+        const find = re => files.filter(n => re.test(n.split('/').pop())).sort((a, b) => rank(b) - rank(a))[0];
+        const read = async n => n ? new Blob([await zip.file(n).async('uint8array')], { type: 'image/png' }) : null;
+        const bubble = async re => {
+            const n = find(re); if (!n) return null;
+            const u8 = await zip.file(n).async('uint8array'), np = ninePatch(u8), sc = rank(n), blob = new Blob([u8], { type: 'image/png' });
+            const sz = await imgSize(blob); if (!sz) return null;
+            const s = np || { x0: sz.w / 2, x1: sz.w / 2 + 1, y0: sz.h / 2, y1: sz.h / 2 + 1, pad: { l: 12 * sc, r: 12 * sc, t: 8 * sc, b: 8 * sc } };
+            return { blob, scale: sc, w: sz.w, h: sz.h, L: s.x0 / sc, T: s.y0 / sc, R: (sz.w - s.x1) / sc, B: (sz.h - s.y1) / sc,
+                pad: { t: s.pad.t / sc, l: s.pad.l / sc, b: s.pad.b / sc, r: s.pad.r / sc } };
+        };
+        const b = {
+            send1: await bubble(/chatroom.*bubble.*(me|send).*0?1.*\.png$/i), send2: await bubble(/chatroom.*bubble.*(me|send).*0?2.*\.png$/i),
+            recv1: await bubble(/chatroom.*bubble.*(you|receive).*0?1.*\.png$/i), recv2: await bubble(/chatroom.*bubble.*(you|receive).*0?2.*\.png$/i)
+        };
+        const bg = await read(find(/chatroom.*background.*\.png$/i) || find(/background.*image.*\.png$/i));
+        const prof = await read(find(/profile.*0?1.*\.png$/i));
+        const colors = {};
+        if (bg) colors.bg = await avgColor(bg, .5, .5);
+        if (b.send1) { const c = await avgColor(b.send1.blob, (b.send1.L + 2) / (b.send1.w / b.send1.scale), (b.send1.T + 2) / (b.send1.h / b.send1.scale)); colors.sendText = lum(c) > .6 ? '#3a3235' : '#ffffff'; colors.sendBtn = c; }
+        if (b.recv1) { const c = await avgColor(b.recv1.blob, (b.recv1.L + 2) / (b.recv1.w / b.recv1.scale), (b.recv1.T + 2) / (b.recv1.h / b.recv1.scale)); colors.recvText = lum(c) > .6 ? '#3a3235' : '#ffffff'; }
+        if (colors.bg) colors.head = lum(colors.bg) > .6 ? '#3a3235' : '#ffffff';
+        return { kind: 'apk', name: '안드로이드 테마', colors, img: { bg, profile: prof }, bubbles: b };
+    }
+    async function ktImport(file) {
+        const Z = await loadZip();
+        const zip = await Z.loadAsync(file);
+        const names = Object.keys(zip.files);
+        let th;
+        if (names.some(n => /KakaoTalkTheme\.css$/i.test(n))) th = await ktFromKtheme(zip);
+        else if (names.some(n => /^res\/drawable/i.test(n))) th = await ktFromApk(zip);
+        else throw new Error('카톡 테마 파일(.ktheme · .apk)이 아니에요');
+        await ktSet('theme', th);
+        await ktApply();
+        return th;
+    }
+    // 테마 → CSS (말풍선은 이미지를 늘려 쓰는 border-image, 첫 말풍선은 01 · 이어지는 말풍선은 02)
+    async function ktApply() {
+        KT.urls.forEach(u => URL.revokeObjectURL(u)); KT.urls = [];
+        const url = b => { const u = URL.createObjectURL(b); KT.urls.push(u); return u; };
+        let th = null, font = null;
+        try { th = await ktGet('theme'); font = await ktGet('font'); } catch (e) {}
+        KT.theme = th;
+        let css = '';
+        if (font && KT.opt.font === 'mine') css += `@font-face { font-family: 'KKMine'; src: url(${url(font.blob)}); font-display: swap; }\n`;
+        const fam = { pretendard: "'Pretendard Variable', Pretendard", system: '-apple-system, BlinkMacSystemFont, system-ui', galmuri: "'Galmuri11'", mine: "'KKMine'" }[KT.opt.font] || "'Pretendard Variable', Pretendard";
+        css += `.mj-win-sion { --kk-font: ${fam}, -apple-system, sans-serif; }\n`;
+        if (th) {
+            const c = th.colors || {}, S = '.mj-win-sion.kk-themed';
+            css += `${S} { --mj-paper: ${c.bg || '#fbf7fa'}; --kk-bg: ${c.bg || '#fbf7fa'}; --kk-head: ${c.head || '#3a3235'}; --kk-input: ${c.input || '#ffffff'};
+                --kk-send: ${c.sendBtn || '#f3b3c5'}; --kk-send-fg: ${c.sendBtnFg || '#ffffff'}; --kk-btn: ${c.btn || '#f5f5f5'}; --kk-btn-fg: ${c.btnFg || c.head || '#3a3235'};
+                --kk-sub: ${c.sub || c.head || '#8f8188'}; --mj-ink: ${c.head || '#3a3235'}; --mj-sub: ${c.sub || c.head || '#8f8188'}; --mj-line: rgba(0,0,0,.08); --mj-card: #ffffff; color-scheme: light; }\n`;
+            css += `${S} { background: var(--kk-bg)${th.img && th.img.bg ? ` url(${url(th.img.bg)}) top center / cover no-repeat` : ''}; }
+                ${S} .kk-head, ${S} .mj-win-body, ${S} .sn-bar { background: transparent; }
+                ${S} .sn-row .sn-b::before, ${S} .sn-row .sn-b::after { display: none; }\n`;
+            const bub = (sel, b, color) => {
+                if (!b) return '';
+                const R = b.R != null ? b.R : b.w / b.scale - b.L - 1, B = b.B != null ? b.B : b.h / b.scale - b.T - 1;
+                const sl = [b.T * b.scale, R * b.scale, B * b.scale, b.L * b.scale].map(Math.round).join(' ');
+                return `${S} ${sel} { --bub: transparent; background: none; border-style: solid; border-width: 0; border-image: url(${url(b.blob)}) ${sl} fill / ${b.T}px ${R}px ${B}px ${b.L}px stretch;
+                    padding: ${b.pad.t}px ${b.pad.r}px ${b.pad.b}px ${b.pad.l}px; min-width: ${Math.ceil(b.L + R + 1)}px; min-height: ${Math.ceil(b.T + B + 1)}px; max-width: 82%; box-sizing: border-box; color: ${color}; text-shadow: none; border-radius: 0; }
+                    ${S} ${sel}::before, ${S} ${sel}::after { display: none; }\n`;
+            };
+            const bb = th.bubbles || {};
+            css += bub('.sn-row.me .sn-b:not(.sn-photo):not(.sn-callb)', bb.send2 || bb.send1, c.sendText || '#3a3235');
+            css += bub('.sn-row.me.first .sn-b:not(.sn-photo):not(.sn-callb)', bb.send1, c.sendText || '#3a3235');
+            css += bub('.sn-row.you .sn-b:not(.sn-photo):not(.sn-callb):not(.sn-typing)', bb.recv2 || bb.recv1, c.recvText || '#3a3235');
+            css += bub('.sn-row.you.first .sn-b:not(.sn-photo):not(.sn-callb):not(.sn-typing)', bb.recv1, c.recvText || '#3a3235');
+            if (th.img && th.img.profile) KT.profileUrl = url(th.img.profile); else KT.profileUrl = null;
+        } else KT.profileUrl = null;
+        let el = document.getElementById('kk-theme-css');
+        if (!el) { el = document.createElement('style'); el.id = 'kk-theme-css'; document.head.appendChild(el); }
+        el.textContent = css;
+        if (wins.sion) renderWin('sion');
+    }
+    ktApply();
+    // 상대 프사: 전화 프로필 사진 > 테마 기본 프사 > 이모티콘
+    const kkAvatar = () => sion.cfg && sion.cfg.call_photo ? imgTag(sion.cfg.call_photo, '') : KT.profileUrl ? `<img src="${KT.profileUrl}" alt="">` : `<span class="kk-emoji">${esc((sion.cfg && sion.cfg.call_emoji) || '🐱')}</span>`;
+    function pickAny(accept, cb) {
+        const i = document.createElement('input'); i.type = 'file'; i.accept = accept;
+        i.onchange = () => { const f = i.files && i.files[0]; if (f) cb(f); };
+        i.click();
+    }
+    function ktSettingsView() {
+        const th = KT.theme, o = KT.opt;
+        const sw = (k, on, label) => `<label class="kk-opt"><span>${label}</span><button class="kk-sw${on ? ' on' : ''}" data-act="kk-opt" data-v="${k}"><i></i></button></label>`;
+        const fonts = [['pretendard', 'Pretendard'], ['system', '시스템'], ['galmuri', '갈무리'], ['mine', '내 글꼴']];
+        return `<div class="kk-set">
+            <div class="kk-sec">테마</div>
+            <div class="kk-card"><b>${th ? esc(th.name) : '기본 (블랙·핑크)'}</b><small>${th ? (th.kind === 'apk' ? '안드로이드 테마 · ' : '카톡 테마 · ') + '이 기기에만 저장' : '카톡 테마 파일을 넣으면 통째로 바뀌어요'}</small>
+                <div class="kk-btns"><button class="mj-btn" data-act="kk-theme">테마 파일 넣기</button>${th ? '<button class="mj-btn ghost" data-act="kk-theme-del">기본으로</button>' : ''}</div></div>
+            <div class="kk-sec">글꼴</div>
+            <div class="kk-card kk-fonts">${fonts.map(([k, l]) => `<button class="${o.font === k ? 'on' : ''}" data-act="kk-font" data-v="${k}">${l}</button>`).join('')}
+                <small>${o.font === 'mine' ? '' : '‘내 글꼴’을 누르면 글꼴 파일(.ttf · .otf · .woff)을 넣을 수 있어요'}</small></div>
+            <div class="kk-sec">대화 상대</div>
+            <div class="kk-card">
+                <label class="kk-opt"><span>이름</span><button class="mj-link" data-act="kk-name">${esc(contact())}</button></label>
+                ${sw('showName', o.showName, '이름 보이기')}
+                ${sw('showPic', o.showPic, '프사 보이기')}
+                <label class="kk-opt"><span>프사 · 전화 화면</span><button class="mj-link" data-act="call-edit">편집</button></label>
+            </div>
+        </div>`;
+    }
+    // 전화 프로필 편집: 이모티콘 / 사진, 걸려 올 때 배경
+    function callEditView() {
+        const c = sion.cfg || {};
+        return `<div class="kk-set">
+            <div class="kk-contact"><div class="kk-bigav">${kkAvatar()}</div></div>
+            <div class="kk-sec">프사</div>
+            <div class="kk-card">
+                <label class="kk-opt"><span>이모티콘</span><input class="kk-emo" data-ce="emoji" value="${esc(c.call_emoji || '🐱')}" maxlength="4"></label>
+                <div class="kk-btns"><button class="mj-btn" data-act="ce-photo">${c.call_photo ? '사진 바꾸기' : '사진 넣기'}</button>${c.call_photo ? '<button class="mj-btn ghost" data-act="ce-photo-del">사진 빼기</button>' : ''}<button class="mj-btn ghost" data-act="ce-emoji">이모티콘 저장</button></div>
+            </div>
+            <div class="kk-sec">전화 올 때 배경</div>
+            <div class="kk-card">
+                <div class="kk-ringprev">${c.ring_bg ? imgTag(c.ring_bg, '') : '<span>기본 배경</span>'}</div>
+                <div class="kk-btns"><button class="mj-btn" data-act="ce-ring">${c.ring_bg ? '배경 바꾸기' : '배경 넣기'}</button>${c.ring_bg ? '<button class="mj-btn ghost" data-act="ce-ring-del">배경 빼기</button>' : ''}</div>
+            </div>
+        </div>`;
+    }
+    // sion.json 의 전화 프로필 칸 저장 (사진은 minjung/images/sion/)
+    async function callCfgSave(key, file) {
+        if (sionNeedToken()) return;
+        const old = sion.cfg[key], files = {};
+        let val = null;
+        if (file) { toast('uploading…'); const up = await uploadImage(file, 'sion', key === 'ring_bg' ? 1280 : 512, 'image/jpeg'); files[up.path] = up.sha; val = up.path; }
+        if (old && old.startsWith(IMG_DIR) && old !== val) files[old] = null;
+        const set = c => { if (val) c[key] = val; else delete c[key]; return c; };
+        set(sion.cfg); sionRefresh();
+        repo.commit('김민정: 시온 전화 프로필', files, { [SION_CFG]: { fallback: {}, mutate: set } }).then(() => toast('저장했어요'), e => mjAlert('저장하지 못했어요.\n' + (e.message || e)));
+    }
+
     /* ---------------- 전화 (내 여보♡ 🐱) ----------------
        진짜 음성 통화는 못 해서: 나는 말하기(글자로 바뀜)나 키패드로, 시온은 글자로 + 스피커를 켜면 폰 목소리로 읽어 줌
        통화 한마디마다 GitHub Actions(letter.yml, mode=call)가 시온 대사를 만들어 letters.json calls 에 붙임 (보통 20초~1분) */
     const calls = () => (sion.data && sion.data.calls) || [];
     const callOf = id => calls().find(c => c.id === id);
-    const callAvatar = (cls) => sion.cfg && sion.cfg.photo ? imgTag(sion.cfg.photo, cls || '') : '<span class="kk-emoji">🐱</span>';
+    const callAvatar = () => kkAvatar();
     const mmss = sec => pad(Math.floor(sec / 60)) + ':' + pad(sec % 60);
     sion.callSpeaker = false; sion.callKeypad = false; sion.spoken = new Set(); sion.missing = new Set();
     function callCommit(msg, fn) { return sionCommit(msg, d => { d.calls = d.calls || []; d.chat = d.chat || []; fn(d); }); }
@@ -2615,7 +2890,7 @@ export function init() {
     function ringView(st) {
         const c = callOf(st.callId);
         if (!c) return empty('전화가 끊겼어요');
-        const bg = sion.cfg && sion.cfg.photo ? `<div class="kk-ringbg">${imgTag(sion.cfg.photo, '')}</div>` : '<div class="kk-ringbg none"></div>';
+        const bg = sion.cfg && sion.cfg.ring_bg ? `<div class="kk-ringbg">${imgTag(sion.cfg.ring_bg, '')}</div>` : '<div class="kk-ringbg none"></div>';
         return `${bg}<div class="kk-ring">
                 <div class="kk-ringtop"><b>${esc(contact())}</b><span>모바일 · 수신 중…</span></div>
                 <div class="kk-ringbtns">
@@ -2635,7 +2910,7 @@ export function init() {
                     <span class="kk-tmr">${mmss(Math.floor((Date.now() - (sion.callStart || Date.now())) / 1000))}</span></div>
                 <div class="kk-lines">${lines.map(l => `<p class="${l.from === 'me' ? 'me' : 'you'}">${esc(l.text)}</p>`).join('')}
                     ${sion.rec ? '<p class="me kk-hear">듣고 있어요…</p>' : waiting ? '<p class="you kk-dots"><i></i><i></i><i></i></p>' : ''}</div>
-                ${sion.callKeypad ? `<div class="kk-type"><input data-call="in" type="text" enterkeyhint="send" placeholder="할 말 입력" autocomplete="off"><button data-act="call-send">보내기</button></div>` : ''}
+                ${sion.callKeypad ? `<div class="kk-type"><input data-call="in" type="text" enterkeyhint="send" autocomplete="off" aria-label="할 말"><button data-act="call-send" aria-label="보내기">${KK.up}</button></div>` : ''}
                 <div class="kk-ctl">
                     <button class="${sion.rec ? 'on' : ''}${SR ? '' : ' off'}" data-act="call-mic">${KK.mic}<span>${sion.rec ? '듣는 중' : '말하기'}</span></button>
                     <button class="${sion.callKeypad ? 'on' : ''}" data-act="call-keypad">${KK.keypad}<span>키패드</span></button>

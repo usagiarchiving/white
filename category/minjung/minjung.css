@@ -993,3 +993,77 @@ html.sn-lock, html.sn-lock body { height: 100%; overflow: hidden; overscroll-beh
 .mj-win-diary .sn-lheart { color: var(--mj-sub); }
 .mj-win-diary .sn-lheart.on { color: #f08aa8; }
 .mj-win-diary .sn-tools input { color-scheme: light; }
+
+/* ==========================================================================
+   시온 창 — 새 카톡 모양: 떠 있는 알약 헤더 · 입력줄 (테마를 넣으면 테마 색·그림으로)
+   ========================================================================== */
+.mj-win-sion { --kk-pill: rgba(61, 53, 57, .92); --kk-pill-fg: #f7e9ee; --kk-font: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; }
+.mj-win-sion.kk-themed { --kk-pill: rgba(255, 255, 255, .92); --kk-pill-fg: var(--kk-head); }
+.mj-win-sion .kk-head { border-bottom: 0; gap: 8px; padding: calc(8px + env(safe-area-inset-top)) 10px 8px; font-family: var(--kk-font); }
+.kk-pill { display: inline-flex; align-items: center; height: 40px; border-radius: 20px; background: var(--kk-pill) !important; color: var(--kk-pill-fg) !important; box-shadow: 0 2px 10px rgba(0, 0, 0, .08); }
+.kk-back.kk-pill { padding: 0 14px 0 8px; gap: 2px; }
+.kk-back .n { font-size: 15px; }
+.kk-r.kk-pill { padding: 0 6px; gap: 2px; }
+.kk-r.kk-pill button { width: 38px; height: 38px; }
+.kk-r.kk-txt button { width: auto; padding: 0 12px; font-size: 14px; font-weight: 500; }
+.mj-win-sion .kk-name { font-weight: 700; color: var(--mj-ink); }
+.mj-win-sion.kk-themed .kk-name { color: var(--kk-head); }
+@media (min-width: 744px) { .mj-win-sion .kk-head { border-bottom: 0; } }
+
+.mj-win-sion .sn-chat, .mj-win-sion .sn-b, .mj-win-sion .sn-when, .mj-win-sion .kk-search, .mj-win-sion .sn-bar textarea { font-family: var(--kk-font) !important; }
+.mj-win-sion.kk-themed .sn-when { color: var(--kk-sub); }
+
+/* 입력줄 */
+.kk-bar { align-items: center !important; gap: 0 !important; margin: 0 10px calc(10px + env(safe-area-inset-bottom)); padding: 6px !important; border: 0 !important;
+    border-radius: 26px; background: var(--kk-pill) !important; box-shadow: 0 2px 14px rgba(0, 0, 0, .1); }
+.mj-win-sion.kk-themed .kk-bar { background: rgba(255, 255, 255, .94) !important; }
+.kk-plus { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--kk-btn, rgba(255, 255, 255, .12)); color: var(--kk-btn-fg, #f7e9ee); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 300; line-height: 1; padding-bottom: 2px; box-sizing: border-box; }
+.mj-win-sion:not(.kk-themed) .kk-plus { background: #f3b3c51f; color: #f3b3c5; }
+.kk-bar .sn-field { flex: 1; min-width: 0; border: 0; background: none; padding: 0 6px 0 10px; align-items: center; }
+.kk-bar .sn-field textarea { color: var(--mj-ink); }
+.mj-win-sion.kk-themed .kk-bar .sn-field textarea { color: #3a3235; }
+.kk-smile { flex: none; width: 30px; height: 30px; border-radius: 50%; background: rgba(127, 127, 127, .15); color: var(--mj-sub); display: flex; align-items: center; justify-content: center; }
+.kk-send { flex: none; width: 36px !important; height: 36px !important; margin-left: 6px; border-radius: 50%; background: var(--kk-send, #f3b3c5) !important; color: var(--kk-send-fg, #2e282c) !important; }
+.mj-win-sion:not(.kk-themed) .kk-send { background: #f3b3c5 !important; color: #2e282c !important; }
+.kk-send .i-up { display: none; } .kk-send.on .i-up { display: inline-flex; } .kk-send.on .i-hash { display: none; }
+.kk-send .i-hash { display: inline-flex; }
+.kk-send:not(.on) { opacity: .85; }
+
+/* 상대 프사 · 이름 (카톡처럼 첫 말풍선 옆) */
+.sn-row.kk-p { position: relative; flex-wrap: wrap; }
+.sn-row.kk-p.pic { padding-left: 46px; }
+.sn-row.kk-p.pic .sn-b { margin-left: 0 !important; }
+.sn-row.kk-p .kk-av { position: absolute; left: 4px; top: 0; width: 38px; height: 38px; border-radius: 15px; overflow: hidden; background: #3d3539; display: flex; align-items: center; justify-content: center; }
+.mj-win-sion.kk-themed .sn-row.kk-p .kk-av { background: #fff; }
+.sn-row.kk-p .kk-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sn-row.kk-p .kk-av .kk-emoji { font-size: 22px; }
+.sn-row.kk-p .kk-nm { flex-basis: 100%; margin: 0 0 4px 2px; font-size: 12px; color: var(--mj-sub); }
+.sn-row.kk-p:not(.pic) .kk-nm { margin-left: 12px; }
+.sn-row.kk-p.first { margin-top: 6px; }
+
+/* 채팅방 설정 · 프로필 편집 */
+.kk-set { font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; padding-bottom: 20px; }
+.kk-card { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--mj-line); border-radius: 14px; background: var(--mj-card); }
+.kk-card b { font-size: 15px; font-weight: 600; }
+.kk-card small { font-size: 12px; color: var(--mj-sub); }
+.kk-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.kk-opt { display: flex; align-items: center; justify-content: space-between; min-height: 36px; font-size: 14px; }
+.kk-sw { position: relative; width: 44px; height: 26px; border: 0; border-radius: 13px; background: rgba(127, 127, 127, .35); padding: 0; }
+.kk-sw i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.kk-sw.on { background: #f3b3c5; } .kk-sw.on i { transform: translateX(18px); }
+.kk-fonts { flex-direction: row; flex-wrap: wrap; }
+.kk-fonts button { padding: 8px 14px; border: 1px solid var(--mj-line); border-radius: 18px; background: none; color: var(--mj-ink); font-size: 13px; }
+.kk-fonts button.on { border-color: #f3b3c5; background: #f3b3c522; color: #f3b3c5; }
+.kk-fonts small { flex-basis: 100%; }
+.kk-emo { width: 64px; height: 36px; text-align: center; font-size: 22px; border: 1px solid var(--mj-line); border-radius: 10px; background: var(--mj-paper); color: var(--mj-ink); outline: none; }
+.kk-ringprev { width: 100%; aspect-ratio: 9 / 13; max-height: 260px; border-radius: 12px; overflow: hidden; background: radial-gradient(ellipse at 50% 30%, #6a3a4c, #2e282c 70%); display: flex; align-items: center; justify-content: center; color: #c7b4bb; font-size: 12px; }
+.kk-ringprev img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 통화 입력: 알약 없이 단순하게 */
+.kk-type { border-bottom: 1px solid rgba(255, 255, 255, .25); align-items: center; }
+.kk-type input { background: none !important; border-radius: 0 !important; padding: 0 2px !important; height: 40px; }
+.kk-type button { background: none !important; color: #fff !important; padding: 0 4px !important; display: inline-flex; align-items: center; }
+.mj-win-sion.kk-themed .sn-b.sn-callb { background: rgba(255, 255, 255, .95) !important; color: var(--kk-head) !important; border: 1px solid rgba(0, 0, 0, .06); border-radius: 16px; }
+.mj-win-sion.kk-themed .sn-row.me .sn-b.sn-callb { background: var(--kk-send) !important; color: var(--kk-send-fg) !important; }
+.mj-win-sion.kk-themed .sn-b.sn-typing { background: rgba(255, 255, 255, .95); border-radius: 16px; }
+.mj-win-sion.kk-themed .kk-search input { background: rgba(255, 255, 255, .94); color: #3a3235; }
