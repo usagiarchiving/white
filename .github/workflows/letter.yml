@@ -1,0 +1,84 @@
+# 편지 (하루 한 통, 사이트 편지함에서 '오늘 편지 받기') · 아침/점심/저녁 메시지 · 답장에 답글
+# → letters/letters.json 에 저장, 편지함(#letter)에서 보임
+# 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
+#   이름: GEMINI_API_KEY   값: AI Studio에서 받은 키 (AQ. 로 시작)
+# 캐릭터·모델 바꾸기: letters/config.json
+name: letter
+
+on:
+  schedule:
+    - cron: '2 23 * * *'     # 한국 시간 아침 8:02
+    - cron: '32 3 * * *'     # 점심 12:32
+    - cron: '2 10 * * *'     # 저녁 7:02
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'letter = 오늘 편지 · reply = 답장에 답글 · message = 시간대별 메시지'
+        required: true
+        default: letter
+        type: choice
+        options: [letter, reply, message]
+      date:
+        description: '날짜 (YYYY-MM-DD, 비우면 오늘)'
+        required: false
+        default: ''
+      slot:
+        description: 'message일 때: morning / lunch / evening (비우면 지금 시각)'
+        required: false
+        default: ''
+      force:
+        description: '이미 있는 편지를 다시 쓰기'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: letter
+  cancel-in-progress: false
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 만들기
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SCHEDULE: ${{ github.event.schedule }}
+          MODE: ${{ inputs.mode }}
+          DATE: ${{ inputs.date }}
+          SLOT: ${{ inputs.slot }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          args=()
+          if [ -n "$SCHEDULE" ]; then
+            # 예약 실행은 늦게 시작될 수 있어서 시각 대신 어느 예약인지로 시간대를 정함
+            case "$SCHEDULE" in
+              '2 23 * * *')  slot=morning ;;
+              '32 3 * * *')  slot=lunch ;;
+              *)             slot=evening ;;
+            esac
+            args=(message --slot "$slot")
+          else
+            args=("$MODE")
+            [ -n "$DATE" ] && args+=(--date "$DATE")
+            [ -n "$SLOT" ] && args+=(--slot "$SLOT")
+            [ "$FORCE" = "true" ] && args+=(--force)
+          fi
+          python .github/scripts/letter.py "${args[@]}"
+      - name: 바뀌었으면 저장
+        run: |
+          if git diff --quiet -- letters/letters.json; then
+            echo '변경 없음'; exit 0
+          fi
+          git config user.name 'letter-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add letters/letters.json
+          git commit -m 'letter: 편지함'
+          for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done
