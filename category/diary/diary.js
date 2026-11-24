@@ -292,7 +292,7 @@ export function init() {
         keys.forEach((k, i) => { if (got[i + 1]) ext[k] = prepShared(k, got[i + 1]); });
         applyTheme(); renderAll(true);
         cacheData();
-        loadOha();
+        loadOha(); loadRcNote();
     }
     // 이 기기에 마지막으로 본 기록을 기억 → 다음에 열 때 바로 그림 (그 뒤 GitHub에서 새로 받아 바꿈)
     const CACHE_KEY = 'dy-data-cache';
@@ -309,6 +309,12 @@ export function init() {
         const typing = document.activeElement && wrap.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
         if (document.visibilityState === 'visible' && !pending && !typing && !cardFn) load();
     });
+    // 영수증 밑 한 줄: 김민정 하시온이 밤 11시에 남김 (.github/workflows/letter.yml → diary/receipt.json)
+    let RCN = {};
+    async function loadRcNote() {
+        try { RCN = ((await repo.readJSON('diary/receipt.json', {})) || {}).notes || {}; } catch (e) { console.error(e); }
+        render('done');
+    }
     const OHA = { data: null, loading: false };
     async function loadOha() {
         OHA.loading = true;
@@ -1178,7 +1184,6 @@ export function init() {
         const k = V.rDate, d = parseKey(k);
         const lines = receiptLines(k);
         const left = todosFor(k).filter(t => !t.is_completed).length;
-        const entry = ext.mj.diary.filter(x => x.date === k).sort((a, b) => (a.time || '') < (b.time || '') ? -1 : 1)[0];
         const rc = (db.receipt && db.receipt.img) || 'c-white';
         const isPhoto = !CHAR[rc];
         body.innerHTML =
@@ -1192,8 +1197,8 @@ export function init() {
                     lines.map(l => '<div class="ln"><span class="q">1</span><span class="x">' + (l.s ? '<s>' + esc(l.x) + '</s>' : esc(l.x)) + '</span><span class="p">' + esc(l.p) + '</span></div>').join('') +
                     '<hr><div class="tot"><span>TOTAL</span><span>' + lines.length + '</span></div>' +
                     (left ? '<div class="ln"><span class="x">남은 할 일</span><span class="p">' + left + '</span></div>' : '') +
-                    '<hr><div class="msg">' + esc(entry ? (entry.title || (entry.body || '').split('\n')[0]) : (lines.length ? '오늘도 수고했어요 ♡' : '')) + '</div>' +
-                    '<div class="bc"></div><div class="msg" style="margin:0">THANK YOU ♥</div>' +
+                    '<hr>' + ((RCN[k] || {}).text ? '<div class="msg">' + esc(RCN[k].text) + '</div>' : '') +
+                    '<div class="bc"></div>' +
                 '</div>' +
                 '<div class="rc-tools"><button data-a="rc-save" title="사진으로 저장">' + ic('down') + '저장</button><button data-a="rc-copy" title="사진으로 복사">' + ic('copy') + '복사</button></div>' +
             '</div>';
