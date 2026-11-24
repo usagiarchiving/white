@@ -875,3 +875,121 @@
 @media (max-width: 743px) {
     .mj-win-sion::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 100vh; background: var(--mj-paper); pointer-events: none; }
 }
+
+/* ==========================================================================
+   시온 창: 카톡처럼 위 헤더  ‹ 514   내 여보♡   검색 · 전화 · 메뉴
+   (색은 카톡 테마를 받으면 이 블록의 색만 바꾸면 됨)
+   ========================================================================== */
+.mj-win-sion .kk-head {
+    display: flex; align-items: center; gap: 4px; height: auto; min-height: 50px; padding: calc(6px + env(safe-area-inset-top)) 6px 6px 4px;
+    border-bottom: 1px solid var(--mj-line); text-align: left; background: var(--mj-paper); color: var(--mj-ink);
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased;
+}
+.mj-win-sion .kk-head button { border: 0; background: none; color: inherit; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.kk-back { flex: none; min-width: 44px; height: 36px; gap: 1px; }
+.kk-back .n { font-size: 15px; font-weight: 500; margin-left: -2px; }
+.kk-name { flex: 1; min-width: 0; text-align: center; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kk-r { flex: none; display: flex; min-width: 44px; justify-content: flex-end; }
+.kk-r button { width: 36px; height: 36px; }
+@media (min-width: 744px) { .mj-win-sion .kk-head { padding-top: 6px; border-bottom: 1.5px solid var(--mj-frame); cursor: move; } }
+.kk-search { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--mj-line); font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; }
+.kk-search input { flex: 1; min-width: 0; height: 32px; box-sizing: border-box; border: 0; border-radius: 16px; background: var(--mj-card); color: var(--mj-ink); padding: 0 12px; font-size: 16px; outline: none; }
+.kk-search button { border: 0; background: none; color: var(--mj-sub); font-size: 13px; padding: 0 2px; }
+.kk-search.kk-fav span { flex: 1; font-size: 13px; color: var(--mj-tag); }
+
+/* 대화 속 통화 기록 말풍선 */
+.sn-b.sn-callb { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 0; text-align: left; cursor: pointer; font: inherit; }
+.sn-callb svg { flex: none; width: 22px; height: 22px; }
+.sn-callb span { display: flex; flex-direction: column; gap: 1px; }
+.sn-callb b { font-weight: 600; font-size: 13px; }
+.sn-callb small { font-size: 11.5px; opacity: .75; }
+.sn-callb.missed svg { color: #ff8fa8; }
+
+/* 메시지 입력 중: 보내 준 폰처럼 화면 전체 고정 */
+html.sn-lock, html.sn-lock body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+@media (max-width: 743px) { html.sn-lock .mj-win-sion { position: fixed; top: 0; bottom: auto; height: 100dvh; } }
+
+/* ==========================================================================
+   전화: 연락처 · 통화 기록 · 거는 중 · 걸려 옴 (사이트 블랙·핑크, Pretendard)
+   ========================================================================== */
+.mj-win-sion .kk-contact, .mj-win-sion .kk-call, .mj-win-sion .kk-ring, .kk-row, .kk-sec, .kk-logh {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased;
+}
+.kk-contact { display: flex; flex-direction: column; align-items: center; padding: 18px 0 6px; }
+.kk-bigav { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; background: #3d3539; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px var(--mj-card), 0 0 0 4px var(--mj-ring); }
+.kk-bigav img, .kk-cav img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.kk-emoji { font-size: 42px; line-height: 1; font-family: system-ui, sans-serif; }
+.kk-cname { margin-top: 12px; font-size: 19px; font-weight: 600; }
+.kk-csub { margin-top: 3px; font-size: 12.5px; color: var(--mj-sub); }
+.kk-cbtns { display: flex; gap: 10px; width: 100%; margin-top: 16px; }
+.kk-cbtns button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; border: 1px solid var(--mj-line); border-radius: 12px; background: var(--mj-card); color: var(--mj-tag); font-size: 12px; }
+.kk-sec { padding: 14px 2px 6px; font-size: 12px; color: var(--mj-sub); }
+.kk-sec.top { margin-top: 6px; border-top: 1px solid var(--mj-line); }
+.kk-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 2px; border: 0; border-bottom: 1px solid var(--mj-line); background: none; text-align: left; color: var(--mj-ink); }
+.kk-row .ico { flex: none; width: 22px; text-align: center; color: #7fd49a; font-size: 15px; }
+.kk-row.miss .ico, .kk-row.miss b { color: #ff7d95; }
+.kk-row .mid { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.kk-row b { font-size: 14px; font-weight: 500; }
+.kk-row small { font-size: 12px; color: var(--mj-sub); }
+.kk-row .tm { font-size: 12px; color: var(--mj-sub); }
+.kk-logh { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 2px 10px; font-size: 13px; }
+.kk-logh span { font-size: 12px; color: var(--mj-sub); }
+.kk-log { padding: 0 !important; }
+.kk-logbtn { margin-top: 14px; text-align: center; }
+
+/* 통화 화면 */
+.mj-win-sion .kk-callbody { padding: 0 !important; overflow: hidden; position: relative; }
+.kk-call { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding: calc(28px + env(safe-area-inset-top)) 20px calc(26px + env(safe-area-inset-bottom));
+    background: radial-gradient(ellipse at 50% 28%, #4a2a36 0%, #2e282c 62%); color: #f7e9ee; }
+.kk-ctop { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.kk-cav { width: 84px; height: 84px; border-radius: 50%; overflow: hidden; background: #3d3539; display: flex; align-items: center; justify-content: center; }
+.kk-ctop b { margin-top: 6px; font-size: 22px; font-weight: 600; }
+.kk-tmr { font-size: 14px; color: #c7b4bb; font-variant-numeric: tabular-nums; }
+.kk-lines { flex: 1; width: 100%; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 18px 2px; }
+.kk-lines p { margin: 0; max-width: 88%; font-size: 15px; line-height: 1.5; }
+.kk-lines p.you { align-self: flex-start; color: #fff; }
+.kk-lines p.me { align-self: flex-end; color: #f3b3c5; text-align: right; font-size: 14px; }
+.kk-lines p:not(:last-child) { opacity: .55; }
+.kk-dots { display: inline-flex; gap: 5px; }
+.kk-dots i { width: 7px; height: 7px; border-radius: 50%; background: #c7b4bb; animation: snDot 1.2s infinite; }
+.kk-dots i:nth-child(2) { animation-delay: .2s; } .kk-dots i:nth-child(3) { animation-delay: .4s; }
+.kk-type { display: flex; gap: 8px; width: 100%; margin-bottom: 14px; }
+.kk-type input { flex: 1; min-width: 0; height: 40px; box-sizing: border-box; border: 0; border-radius: 20px; background: rgba(255, 255, 255, .1); color: #fff; padding: 0 14px; font-size: 16px; outline: none; }
+.kk-type button { border: 0; border-radius: 20px; padding: 0 14px; background: #f3b3c5; color: #2e282c; font-size: 13px; font-weight: 600; }
+.kk-ctl { display: grid; grid-template-columns: repeat(3, 72px); gap: 22px; }
+.kk-ctl button { width: 72px; height: 72px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .1); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; }
+.kk-ctl button.on { background: #fff; color: #2e282c; }
+.kk-ctl button.off { opacity: .4; }
+.kk-end { width: 72px; height: 72px; margin-top: 24px; border: 0; border-radius: 50%; background: #e0283f; display: flex; align-items: center; justify-content: center; }
+
+/* 걸려 온 전화 */
+.kk-ringbg { position: absolute; inset: 0; background: #2e282c; }
+.kk-ringbg img { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(.82); }
+.kk-ringbg.none { background: radial-gradient(ellipse at 50% 30%, #6a3a4c, #2e282c 70%); }
+.kk-ring { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: calc(64px + env(safe-area-inset-top)) 24px calc(64px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(0, 0, 0, .35), rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, .45)); color: #fff; }
+.kk-ringtop { display: flex; flex-direction: column; align-items: center; gap: 6px; text-shadow: 0 1px 6px rgba(0, 0, 0, .4); }
+.kk-ringtop b { font-size: 34px; font-weight: 600; }
+.kk-ringtop span { font-size: 15px; opacity: .85; }
+.kk-ringbtns { display: flex; justify-content: space-between; width: min(300px, 100%); }
+.kk-rb { display: flex; flex-direction: column; align-items: center; gap: 10px; border: 0; background: none; color: #fff; font-size: 14px; }
+.kk-rb svg { width: 76px; height: 76px; padding: 20px; box-sizing: border-box; border-radius: 50%; }
+.kk-rb.no svg { background: #eb4d3d; }
+.kk-rb.yes svg { background: #5fc565; animation: kkRing 1.2s ease-in-out infinite; }
+@keyframes kkRing { 0%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(-12deg); } 20%, 40% { transform: rotate(12deg); } 50% { transform: rotate(0); } }
+
+/* ==========================================================================
+   Diary 창의 Daily · Letter (흰 테마)
+   ========================================================================== */
+.mj-win-diary .sn-b, .mj-win-diary .dl-list, .mj-win-diary .dl-msgs { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+.mj-win-diary .dl-item .pv { color: var(--mj-ink); }
+.mj-win-diary .dl-msgs .sn-b { --bub: #eef8f3; color: #1d6f60; }
+.mj-win-diary .dl-alert { background: var(--mj-on2); color: var(--mj-ink); }
+.mj-win-diary .dl-alert .k, .mj-win-diary .dl-fo .rk { color: #fff; }
+.mj-win-diary .dl-wx .ic { background: var(--mj-on); color: var(--mj-deep); }
+.mj-win-diary .dl-fo p.lucky, .mj-win-diary .dl-row span { color: var(--mj-deep); }
+.mj-win-diary .sn-heart { background: #fff; border-color: var(--mj-line); }
+.mj-win-diary .sn-rep.me { border-color: var(--mj-pink); }
+.mj-win-diary .sn-lheart { color: var(--mj-sub); }
+.mj-win-diary .sn-lheart.on { color: #f08aa8; }
+.mj-win-diary .sn-tools input { color-scheme: light; }

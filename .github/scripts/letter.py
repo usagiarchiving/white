@@ -348,7 +348,13 @@ def chat_history(store, n=24, days=3):
     cut = (now() - timedelta(days=days)).isoformat()
     rows = [r for r in store['chat'] if r['at'] >= cut][-n:]
     who = lambda r: '시온' if r['from'] == 'ai' else '민정'
-    return '\n'.join(f"[{r['at'][5:16].replace('T', ' ')}] {who(r)}: {r['text']}" for r in rows)
+
+    def line(r):
+        if r.get('kind') == 'call':   # 통화 기록
+            what = '부재중 전화' if r.get('status') == 'missed' else f"통화 {r.get('text', '')}"
+            return f"[{r['at'][5:16].replace('T', ' ')}] ({who(r)}이(가) 건 {what})"
+        return f"[{r['at'][5:16].replace('T', ' ')}] {who(r)}: {r['text']}"
+    return '\n'.join(line(r) for r in rows)
 
 
 def recent_letters(store, before, n=1):
@@ -770,16 +776,58 @@ def make_chat(store, cfg):
     if today_ai >= int(cfg.get('max_chat_replies_per_day') or 30):
         print('오늘 답장 한도를 넘었어요.')
         return None
+    ringing = any(c.get('status') in ('ringing', 'live') for c in store.get('calls') or [])
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정이 메시지를 보냈어. 이어서 답장해.\n\n"
               f"{trip_note(cfg, day)}"
               f"# 기억\n{memory(store)}\n\n"
               f"# 오늘 민정의 기록 (참고)\n{clip(gather(day, upto=t.strftime('%H:%M')), 2500) or '(아직 없음)'}\n\n"
               f"# 오늘의 알림·다가오는 일정\n{brief_text((store.get('briefs') or {}).get(day) or {})}\n{upcoming(day)}\n\n"
               f"# 대화 (마지막이 방금 온 메시지)\n{chat_history(store, 16)}\n\n"
-              f"# 쓰는 법\n{P(cfg, 'chat', '짧은 말풍선 1~4개.')}\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
+              f"# 쓰는 법\n{P(cfg, 'chat', '짧은 말풍선 1~4개.')}\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}\n"
+              + ('' if ringing else f"{P(cfg, 'callmsg', CALL_RULE)}\n"))
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
     at = stamp(t)
-    return {'chat': [{'id': new_id('c'), 'from': 'ai', 'text': b, 'at': at, 'model': model} for b in bubbles(text, 4)]}
+    ring = bool(re.search(r'\[\s*전화\s*\]', text)) and not ringing
+    text = re.sub(r'\[\s*전화\s*\]', '', text).strip() or '…잠깐만요.'
+    patch = {'chat': [{'id': new_id('c'), 'from': 'ai', 'text': b, 'at': at, 'model': model} for b in bubbles(text, 4)]}
+    if ring:
+        patch['call_new'] = {'id': new_id('k'), 'dir': 'in', 'status': 'ringing', 'at': stamp(), 'lines': []}
+    return patch
+
+
+# ---------------------------------------------------------------- 전화 (말은 글자로: 시온 대사를 만들고, 화면이 띄우거나 읽어 줌)
+CALL_RULE = ("- 민정이 전화하고 싶어 하거나, 목소리 듣고 싶다고 하거나, 지금은 통화가 더 어울릴 때만 시온이 전화를 걸 수 있어. "
+             "그럴 땐 메시지 마지막 줄에 [전화] 라고만 써. 평소엔 쓰지 마.")
+
+
+def make_call(store, cfg, call_id):
+    c = next((x for x in store.get('calls') or [] if x.get('id') == call_id), None)
+    if not c or c.get('status') != 'live':
+        print('통화 중이 아니에요.')
+        return None
+    lines = c.get('lines') or []
+    if lines and lines[-1]['from'] == 'ai':
+        print('민정 차례예요.')
+        return None
+    t = now()
+    day = t.strftime('%Y-%m-%d')
+    who = lambda r: '시온' if r['from'] == 'ai' else '민정'
+    talk = '\n'.join(f"{who(r)}: {r['text']}" for r in lines[-20:])
+    if not lines:
+        start = '시온이 전화를 걸었고 민정이 방금 받았어. 먼저 말해.' if c.get('dir') == 'in' else '민정이 전화를 걸었고 시온이 방금 받았어. 받으면서 먼저 말해.'
+    else:
+        start = '민정의 마지막 말에 이어서 대답해.'
+    prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정과 전화 통화 중이야. {start}\n\n"
+              f"{trip_note(cfg, day)}"
+              f"# 기억\n{memory(store)}\n\n"
+              f"# 오늘의 알림·다가오는 일정\n{brief_text((store.get('briefs') or {}).get(day) or {})}\n{upcoming(day)}\n\n"
+              f"# 오늘 민정의 기록 (참고)\n{clip(gather(day, upto=t.strftime('%H:%M')), 1500) or '(아직 없음)'}\n\n"
+              f"# 최근 메시지\n{chat_history(store, 8, days=1) or '(없음)'}\n\n"
+              f"# 지금까지 통화\n{talk or '(방금 연결됨)'}\n\n"
+              f"# 말하는 법\n{P(cfg, 'call', '전화로 말하는 대사만. 한두 문장. 숨소리나 행동 묘사, 괄호 금지.')}\n- 시온이 지금 할 말만 출력.")
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
+    text = re.sub(r'\s{2,}', ' ', re.sub(r'[(（][^)）]*[)）]', '', clean(text)).replace('\n', ' ')).strip() or '…여보?'   # 통화엔 괄호 묘사 없이
+    return {'call_line': {'id': call_id, 'item': {'id': new_id('l'), 'from': 'ai', 'text': text, 'at': stamp(t), 'model': model}}}
 
 
 # ---------------------------------------------------------------- 편지 답장에 답글
@@ -805,6 +853,15 @@ def make_reply(store, cfg, day):
 
 # ---------------------------------------------------------------- 결과 덧붙이기 (최신 파일 기준, 두 번 실행해도 같음)
 def apply(store, patch):
+    calls = store.setdefault('calls', [])
+    if patch.get('call_new') and not any(c.get('id') == patch['call_new']['id'] for c in calls):
+        calls.append(patch['call_new'])
+    cl = patch.get('call_line')
+    if cl:
+        c = next((x for x in calls if x.get('id') == cl['id']), None)
+        if c is not None and cl['item']['id'] not in {x.get('id') for x in c.setdefault('lines', [])}:
+            c['lines'].append(cl['item'])
+    store['calls'] = calls[-200:]
     lt = patch.get('letter')
     if lt:
         old = store['letters'].get(lt['date'])
@@ -896,6 +953,8 @@ def notices_of(patch, cfg):
     """결과에서 알림 글 만들기 — 말풍선 하나에 알림 하나"""
     title = cfg.get('contact') or cfg.get('name') or '시온'
     out = []
+    if patch.get('call_new'):
+        out.append({'title': title, 'body': '📞 전화가 와요', 'tab': 'Call', 'tag': 'sion-call-' + patch['call_new']['id']})
     if patch.get('alert'):
         a = patch['alert']
         out.append({'title': title, 'body': a['text'], 'tab': 'Notice', 'tag': 'sion-wx-' + a['at']})
@@ -949,12 +1008,13 @@ def notify(patch, cfg):
 # ----------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'tick', 'apply', 'notify', 'preview'])
+    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'tick', 'call', 'apply', 'notify', 'preview'])
     ap.add_argument('patch', nargs='?')
     ap.add_argument('--date')
     ap.add_argument('--slot', choices=list(SLOTS) + [''], default='')
     ap.add_argument('--force', action='store_true')
     ap.add_argument('--out')
+    ap.add_argument('--id', default='')
     a = ap.parse_args()
 
     if a.mode == 'preview':
@@ -986,6 +1046,8 @@ def main():
         patch = make_chat(store, cfg)
     elif a.mode == 'weather':
         patch = make_weather(store, cfg)
+    elif a.mode == 'call':
+        patch = make_call(store, cfg, a.id)
     elif a.mode == 'tick':
         patch = make_tick(store, cfg)
     else:

@@ -20,13 +20,17 @@ on:
         required: true
         default: chat
         type: choice
-        options: [chat, letter, reply, message, weather, tick]
+        options: [chat, letter, reply, message, weather, tick, call]
       date:
         description: '날짜 (YYYY-MM-DD, 비우면 오늘)'
         required: false
         default: ''
       slot:
         description: 'message일 때: morning / lunch / evening (비우면 지금 시각)'
+        required: false
+        default: ''
+      id:
+        description: 'call일 때: 통화 id'
         required: false
         default: ''
       force:
@@ -62,6 +66,7 @@ jobs:
           DATE: ${{ inputs.date }}
           SLOT: ${{ inputs.slot }}
           FORCE: ${{ inputs.force }}
+          CALLID: ${{ inputs.id }}
         run: |
           if [ -n "$SCHEDULE" ]; then
             args=(tick)
@@ -70,6 +75,7 @@ jobs:
             [ -n "$DATE" ] && args+=(--date "$DATE")
             [ -n "$SLOT" ] && args+=(--slot "$SLOT")
             [ "$FORCE" = "true" ] && args+=(--force)
+            [ -n "$CALLID" ] && args+=(--id "$CALLID")
           fi
           python .github/scripts/letter.py "${args[@]}" --out "$RUNNER_TEMP/patch.json"
       - name: 저장

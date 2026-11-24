@@ -92,12 +92,12 @@ const WIN = {
     food:      { title: 'Meal · Medicine', tabs: ['All', 'Meal', 'Medicine'], types: ['meal', 'medicine'], w: 380 },
     state:     { title: 'Symptom · Mood',  tabs: ['All', 'Symptom', 'Mood'], types: ['symptom', 'mood'], w: 380 },
     daily:     { title: 'Daily',     tabs: ['Beauty', 'Outfit'], main: true, w: 480 },
-    diary:     { title: 'Diary',     tabs: ['Diary', 'To Do'], main: true, w: 400 },
+    diary:     { title: 'Diary',     tabs: ['Diary', 'Daily', 'Letter'], main: true, w: 400 },
     hp:        { title: 'HP Log',    w: 340 },
     quest:     { title: 'Quest',     tabs: ['Daily', 'Weekly'], w: 400 },
     room:      { title: 'Backgrounds', w: 420 },
     lines:     { title: 'Lines',     w: 360 },
-    sion:      { title: '내 여보♡',  tabs: ['Message', 'Daily', 'Letter'], w: 390 },
+    sion:      { title: '내 여보♡',  tabs: ['Message'], w: 390 },
     bang:      { title: 'BANG',      tabs: ['Profile', 'Prompt', 'Memory', 'Log'], w: 430 }
 };
 /* 아래 메뉴 / 바탕화면 아이콘 5개 — pick이 있으면 누를 때 작은 고르기 팝업이 먼저 뜸 */
@@ -885,10 +885,13 @@ export function init() {
         const top = body ? body.scrollTop : 0;
         const tabsEl = w.el.querySelector('.mj-tabs'), tabsLeft = tabsEl ? tabsEl.scrollLeft : 0;
         const tabs = tabsOf(id), canList = id === 'library' || id === 'daily' || id === 'food' || id === 'state';
-        w.el.innerHTML = id === 'sion' ? `
-            <div class="mj-win-head sn-head" data-drag><span class="sp"></span><button class="mj-x" data-act="close" aria-label="닫기">${X_SVG}</button></div>
-            <div class="mj-tabs">${tabs.map(t => `<button data-act="tab" data-v="${t}" class="${st.tab === t ? 'on' : ''}">${t}</button>`).join('')}</div>
-            <div class="mj-win-body">${VIEW[id](st)}</div>` : `
+        w.el.innerHTML = id === 'sion' ? (st.view === 'call' || st.view === 'ring' ? `<div class="mj-win-body kk-callbody">${VIEW[id](st)}</div>` : `
+            <div class="mj-win-head sn-head kk-head" data-drag>
+                <button class="kk-back" data-act="sn-back" aria-label="뒤로">${KK.back}${!st.view || st.view === 'chat' ? `<span class="n">${(sion.data && sion.data.chat || []).length}</span>` : ''}</button>
+                <b class="kk-name">${esc(st.view === 'contact' || st.view === 'calllog' ? '' : contact())}</b>
+                <span class="kk-r">${!st.view || st.view === 'chat' ? `<button data-act="sn-search" aria-label="검색">${KK.search}</button><button data-act="sn-contact" aria-label="전화">${KK.phone}</button><button data-act="sn-menu" aria-label="메뉴">${KK.menu}</button>` : ''}</span>
+            </div>
+            <div class="mj-win-body">${VIEW[id](st)}</div>`) : `
             <div class="mj-win-head" data-drag>
                 <button class="mj-badge" ${(id !== 'hp' && id !== 'lines') ? 'data-act="icon" title="아이콘 바꾸기"' : 'tabindex="-1"'}>${iconHtml(id)}</button>
                 <div class="mj-title">${def.title}</div>
@@ -971,7 +974,7 @@ export function init() {
             window.addEventListener('pointerup', up);
             e.preventDefault();
         });
-        if (id === 'sion') sionBind(w);
+        if (id === 'sion' || id === 'diary') sionBind(w);
         if (id === 'bang') el.addEventListener('input', e => {
             const t = e.target;
             if (t.matches('[data-bg=mem]')) { w.st.mdraft = t.value; const n = el.querySelector('.bg-count'); if (n) n.textContent = t.value.length + '자'; }
@@ -1003,6 +1006,22 @@ export function init() {
                 case 'dl-open': st.dday = v; fresh(); break;
                 case 'dl-back': st.dday = null; fresh(); break;
                 case 'dl-del': dailyDelete(v); break;
+                case 'sn-back': if (st.view === 'calllog') { st.view = 'contact'; fresh(); } else if (st.view && st.view !== 'chat') { st.view = 'chat'; fresh(); } else closeWin(id); break;
+                case 'sn-contact': st.view = 'contact'; fresh(); break;
+                case 'sn-menu': showPick(b, [
+                        { icon: SN_SVG.heart(!st.favs), label: st.favs ? '하트 모아 보기 닫기' : '하트 모아 보기', run: () => { st.favs = !st.favs; st.searching = false; st.q = ''; st.stick = true; fresh(); } },
+                        { icon: SN_SVG.bell(sion.push === true), label: sion.push === true ? '알림 끄기' : '알림 켜기', run: sionPushToggle }
+                    ]); break;
+                case 'call-start': startCall(); break;
+                case 'call-log': st.view = 'calllog'; st.logId = v; fresh(); break;
+                case 'call-accept': acceptCall(v); break;
+                case 'call-decline': missCall(v, true); break;
+                case 'call-end': endCall(); break;
+                case 'call-mic': callListen(); break;
+                case 'call-keypad': sion.callKeypad = !sion.callKeypad; fresh(); if (sion.callKeypad) { const i = el.querySelector('[data-call=in]'); if (i) i.focus(); } break;
+                case 'call-speaker': sion.callSpeaker = !sion.callSpeaker; if (!sion.callSpeaker && window.speechSynthesis) speechSynthesis.cancel(); fresh(); break;
+                case 'call-send': callSendTyped(); break;
+                case 'sn-callback': startCall(); break;
                 case 'sn-favs': st.favs = !st.favs; st.stick = true; fresh(); break;
                 case 'sn-search': st.searching = !st.searching; st.q = ''; st.lfavs = false; st.stick = true; fresh(); if (st.searching) { const q = el.querySelector('[data-sn=q]'); if (q) q.focus(); } break;
                 case 'sn-push': sionPushToggle(); break;
@@ -1503,7 +1522,7 @@ export function init() {
 
     const VIEW = {
         /* 하시온: 메시지(iMessage) · 편지 */
-        sion(st) { return st.tab === 'Letter' ? sionLetterView(st) : st.tab === 'Daily' ? dailyView(st) : sionChatView(st); },
+        sion(st) { return st.view === 'contact' ? callContactView(st) : st.view === 'calllog' ? callLogView(st) : st.view === 'call' ? callView(st) : st.view === 'ring' ? ringView(st) : sionChatView(st); },
         /* BANG: 시온의 기억 (보고 고치기) · 그동안 정리한 기억 */
         bang(st) { return bangView(st); },
         /* 체력 */
@@ -1609,7 +1628,9 @@ export function init() {
         },
         /* 다이어리 + 투두 */
         diary(st) {
-            if (st.tab === 'To Do') return todoView();
+            // Daily(오늘의 알림 아카이브) · Letter(밤 편지)는 시온 기록이라 sion 쪽 화면을 그대로
+            if (st.tab === 'Daily') { if (!sion.data) loadSion(); return dailyView(st); }
+            if (st.tab === 'Letter') { if (!sion.data) loadSion(); return sionLetterView(st); }
             if (st.form) {
                 const it = st.form;
                 return `
@@ -1866,7 +1887,7 @@ export function init() {
         if (wins.diary) renderWin('diary');
         // 오늘의 알림 카드 · Daily 의 할 일도 지금 상태로 다시
         const np = root.querySelector('.mj-noti-panel'); if (np) notiRender(np);
-        if (wins.sion && wins.sion.st.tab === 'Daily') renderWin('sion');
+        if (wins.diary && wins.diary.st.tab === 'Daily') renderWin('diary');
     }
     async function toggleTodo(tid) {
         const x = (todos || []).find(t => t.id === tid);
@@ -1895,6 +1916,18 @@ export function init() {
     const sionName = () => (sion.cfg && sion.cfg.short) || '시온';
     const PHOTO_RE = /^\(\s*사진\s*[:：]\s*([\s\S]+?)\s*\)$/;
     const IMG_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m3.5 16 5-5 4 4 3-3 5 5"/><circle cx="15.5" cy="9" r="1.5"/></svg>';
+    const KK = {   // 카톡처럼 위 헤더 아이콘
+        back: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+        search: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="m15.2 15.2 4.8 4.8"/></svg>',
+        phone: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>',
+        chat: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 4C7 4 3 7.1 3 11c0 2.3 1.4 4.3 3.6 5.6L6 20l4-2.2c.6.1 1.3.2 2 .2 5 0 9-3.1 9-7s-4-7-9-7z"/></svg>',
+        menu: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+        mic: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+        keypad: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><circle cx="6" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="18" cy="5" r="1.6"/><circle cx="6" cy="11" r="1.6"/><circle cx="12" cy="11" r="1.6"/><circle cx="18" cy="11" r="1.6"/><circle cx="6" cy="17" r="1.6"/><circle cx="12" cy="17" r="1.6"/><circle cx="18" cy="17" r="1.6"/></svg>',
+        speaker: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+        hang: '<svg viewBox="0 0 24 24" width="30" height="30" fill="#fff"><path d="M12 9c-2.6 0-5.1.5-7.4 1.5-.7.3-1.1 1-1.1 1.8v2.3c0 .8.7 1.4 1.5 1.3l2.9-.4c.7-.1 1.2-.7 1.2-1.4v-1.6c1.9-.6 3.9-.6 5.8 0v1.6c0 .7.5 1.3 1.2 1.4l2.9.4c.8.1 1.5-.5 1.5-1.3v-2.3c0-.8-.4-1.5-1.1-1.8C17.1 9.5 14.6 9 12 9z"/></svg>',
+        pick: '<svg viewBox="0 0 24 24" width="30" height="30" fill="#fff"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>'
+    };
     const SN_SVG = {
         search: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4.5 4.5"/></svg>',
         heart: on => `<svg viewBox="0 0 24 24" width="16" height="16" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 19.5s-7-4.3-7-9.4A3.9 3.9 0 0 1 12 7.8a3.9 3.9 0 0 1 7 2.3c0 5.1-7 9.4-7 9.4z"/></svg>`,
@@ -1930,7 +1963,10 @@ export function init() {
         } catch (e) { console.error(e); if (!sion.data) sion.data = { letters: {}, chat: [] }; }
         sionCheckNew(quiet);
         drawSionBtn();
-        if (wins.sion && !(wins.sion.el.contains(document.activeElement) && document.activeElement.matches('[data-sn=q], [data-sn=lreply]'))) renderWin('sion');
+        const typingIn = w => w && w.el.contains(document.activeElement) && document.activeElement.matches('[data-sn=q], [data-sn=lreply], [data-sn=msg], [data-call=in]');
+        if (wins.sion && !typingIn(wins.sion)) renderWin('sion');
+        if (wins.diary && (wins.diary.st.tab === 'Daily' || wins.diary.st.tab === 'Letter') && !typingIn(wins.diary)) renderWin('diary');
+        callAfterLoad();
         if (wins.bang && !wins.bang.el.contains(document.activeElement) && wins.bang.st.mdraft == null && !(wins.bang.st.pd && Object.keys(wins.bang.st.pd).length)) renderWin('bang');
         sionOpenFromNotice();
     }
@@ -1959,7 +1995,7 @@ export function init() {
         } else if (a && a.id !== sion.lastAi && !quiet && (first ? sionUnread() : true) && !viewing('Message') && !root.querySelector('.sn-banner.open') && !(a.slot === 'morning' && briefs()[todayKey()])) {
             const run = sion.data.chat.filter(r => r.from === 'ai' && r.at === a.at);
             sionBanner(run.map(r => PHOTO_RE.test(r.text) ? '사진' : r.text).join(' '), 'Message');
-        } else if (today && sion.lastLetters !== null && !sion.lastLetters && !viewing('Letter')) sionBanner('편지가 도착했어요 ♡', 'Letter');
+        } else if (today && sion.lastLetters !== null && !sion.lastLetters && !(wins.diary && wins.diary.st.tab === 'Letter')) sionBanner('편지가 도착했어요 ♡', null, { run: () => openArchive('Letter') });
         sion.lastAi = a ? a.id : '';
         sion.lastLetters = !!today;
     }
@@ -1980,16 +2016,31 @@ export function init() {
     function sionOpenFromNotice() {
         let tab = null;
         try { tab = sessionStorage.getItem('sion_open'); sessionStorage.removeItem('sion_open'); } catch (e) {}
-        if (tab) tab === 'Notice' ? notiOpen(todayKey()) : openSion(tab);
+        if (tab) tab === 'Notice' ? notiOpen(todayKey()) : tab === 'Letter' ? openArchive('Letter') : tab === 'Call' ? callCheckRing(true) : openSion('Message');
     }
-    window.__openSion = tab => { if (!root.isConnected) return; if (tab === 'Notice') notiOpen(todayKey()); else openSion(tab || 'Message'); };
+    window.__openSion = tab => { if (!root.isConnected) return; if (tab === 'Notice') notiOpen(todayKey()); else if (tab === 'Letter') openArchive('Letter'); else if (tab === 'Call') { loadSion(true, true).then(() => callCheckRing(true)); } else openSion('Message'); };
     function openSion(tab) {
         const fresh = !wins.sion;
         openWin('sion');
         const st = wins.sion.st;
         if (fresh) Object.assign(st, { ldate: sionLetterDay(), stick: true, draft: '', ldraft: '', q: '', searching: false, favs: false, lfavs: false });
-        st.tab = tab; st.stick = true; renderWin('sion');
+        st.tab = 'Message'; st.stick = true;
+        if (st.view !== 'call' && st.view !== 'ring') st.view = 'chat';   // 통화 중이면 통화 화면 그대로
+        renderWin('sion');
         root.querySelectorAll('.sn-banner').forEach(x => x.remove());
+        if (!sion.data) loadSion();
+    }
+    // 시온 창 + Diary 창(Daily·Letter 보고 있을 때) 다시 그리기
+    function sionRefresh() {
+        if (wins.sion) renderWin('sion');
+        if (wins.diary && (wins.diary.st.tab === 'Daily' || wins.diary.st.tab === 'Letter')) renderWin('diary');
+    }
+    // Daily · Letter 는 Diary 창으로
+    function openArchive(tab, extra) {
+        openWin('diary');
+        const st = wins.diary.st;
+        st.tab = tab; Object.assign(st, { ldate: st.ldate || sionLetterDay() }, extra || {});
+        renderWin('diary');
         if (!sion.data) loadSion();
     }
     function sionAfterRender(w) {
@@ -2026,12 +2077,16 @@ export function init() {
         });
         el.addEventListener('keydown', e => {
             if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229 && e.target.matches('[data-sn=msg]')) { e.preventDefault(); sionSendChat(w.st); }
-            if (e.key === 'Escape' && e.target.matches('[data-sn=q]')) { w.st.searching = false; w.st.q = ''; renderWin('sion'); }
+            if (e.key === 'Escape' && e.target.matches('[data-sn=q]')) { w.st.searching = false; w.st.q = ''; renderWin(el.dataset.win); }
+            if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && e.target.matches('[data-call=in]')) { e.preventDefault(); callSendTyped(); }
         });
         el.addEventListener('scroll', e => { if (e.target.classList && e.target.classList.contains('sn-chat')) { const c = e.target; w.st.stick = c.scrollHeight - c.scrollTop - c.clientHeight < 40; } }, true);
         // 말풍선 두 번 누르기 → 수정 · 하트 · 삭제 (꾹 누르면 글자 선택해서 복사)
         onDoubleTap(el, '.sn-b[data-id]', sionBubbleMenu);
-        onDoubleTap(el, '.sn-b[data-bi]', b => briefMenuFor(b.dataset.bk, Number(b.dataset.bi), b, () => renderWin('sion')));
+        onDoubleTap(el, '.sn-b[data-bi]', b => briefMenuFor(b.dataset.bk, Number(b.dataset.bi), b, sionRefresh));
+        // 메시지 입력 중엔 보내 준 폰처럼 화면 전체를 고정 (아이폰이 위아래로 밀지 않게)
+        el.addEventListener('focusin', e => { if (e.target.matches('[data-sn=msg], [data-call=in]')) { document.documentElement.classList.add('sn-lock'); window.scrollTo(0, 0); } });
+        el.addEventListener('focusout', e => { if (e.target.matches('[data-sn=msg], [data-call=in]')) document.documentElement.classList.remove('sn-lock'); });
         // Daily 목록: 꾹 누르면 그 날 지우기
         let lp = null;
         el.addEventListener('pointerdown', e => {
@@ -2083,6 +2138,11 @@ export function init() {
             const head = filtered || !prev || t(r) - t(prev) > 3600000;
             const tail = filtered || !next || next.from !== r.from || t(next) - t(r) > 3600000;
             if (head) html += `<div class="sn-when">${sionStamp(r.at)}</div>`;
+            if (r.kind === 'call') {   // 통화 기록 말풍선 (부재중이면 눌러서 다시 걸기)
+                const missed = r.status === 'missed';
+                html += `<div class="sn-row ${r.from === 'me' ? 'me' : 'you'} tail"><button class="sn-b sn-callb${missed ? ' missed' : ''}" data-act="sn-callback">${KK.phone}<span><b>${missed ? '부재중 전화' : r.from === 'me' ? '보이스톡' : '보이스톡'}</b><small>${missed ? '눌러서 다시 걸기' : '통화 ' + esc(r.text || '')}</small></span></button></div>`;
+                return;
+            }
             const ph = PHOTO_RE.exec(r.text);
             const inner = ph ? `<span class="ph">${IMG_SVG}</span><span class="cap">${snMark(ph[1], q)}</span>` : snMark(r.text, q);
             html += `<div class="sn-row ${r.from === 'me' ? 'me' : 'you'}${tail && !ph ? ' tail' : ''}${r.fav ? ' fav' : ''}${ph ? ' photo' : ''}">
@@ -2105,7 +2165,9 @@ export function init() {
     function sionChatView(st) {
         if (!sion.data) return '<div class="sn-chat">' + empty('불러오는 중…') + '</div>';
         if (sion.push === null) sionPushState();
-        return sionTools(st) + `<div class="sn-chat sn-results">${sionBubbles(st)}</div>
+        const top = st.searching ? `<div class="kk-search"><input data-sn="q" type="text" enterkeyhint="search" placeholder="대화 내용 검색" value="${esc(st.q || '')}" autocomplete="off"><button data-act="sn-search">취소</button></div>`
+            : st.favs ? `<div class="kk-search kk-fav"><span>♥ 하트 모아 보기</span><button data-act="sn-favs">닫기</button></div>` : '';
+        return top + `<div class="sn-chat sn-results">${sionBubbles(st)}</div>
             <div class="sn-bar">
                 <span class="sn-plus">+</span>
                 <div class="sn-field">
@@ -2165,7 +2227,7 @@ export function init() {
         const lt = sion.data.letters[k]; if (!lt || sionNeedToken()) return;
         const on = !lt.fav;
         const set = x => { if (!x) return; if (on) x.fav = true; else delete x.fav; };
-        set(lt); renderWin('sion');
+        set(lt); sionRefresh();
         sionCommit(on ? '편지 하트' : '편지 하트 빼기', cur => set(cur.letters[k])).catch(e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
     }
 
@@ -2275,7 +2337,7 @@ export function init() {
         const edit = (fn, msg) => {
             if (sionNeedToken()) return;
             const apply = d => { const bb = d.briefs && d.briefs[k]; if (!bb || !bb.sion || i >= bb.sion.length) return; const cur = sItem(bb.sion[i]); const r = fn(Object.assign({}, cur)); if (r === null) bb.sion.splice(i, 1); else bb.sion[i] = r.fav ? r : r.text; };
-            apply(sion.data); after(); if (wins.sion && wins.sion.st.tab === 'Daily') renderWin('sion');
+            apply(sion.data); after(); sionRefresh();
             sionCommit(msg, apply).catch(e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
         };
         showPick(el, [
@@ -2320,7 +2382,8 @@ export function init() {
         if (!briefs()[k] || sionNeedToken()) return;
         if (!await mjConfirm(kDate(k) + ' 기록을 지울까요?', '삭제')) return;
         delete sion.data.briefs[k];
-        if (wins.sion) { wins.sion.st.dday = null; renderWin('sion'); }
+        if (wins.diary) wins.diary.st.dday = null;
+        sionRefresh();
         drawNoti();
         sionCommit('Daily ' + k + ' 지우기', d => { if (d.briefs) delete d.briefs[k]; }).catch(e => { mjAlert('지우지 못했어요.\n' + (e.message || e)); loadSion(true); });
     }
@@ -2329,7 +2392,7 @@ export function init() {
     const PROMPT_GROUPS = [
         ['캐릭터', [['personality', '성격'], ['relationship', '관계'], ['speech', '말투'], ['examples', '말투 예시'], ['rules', '절대 규칙']]],
         ['쓰는 법', [['writing', '메시지·편지 공통 규칙'], ['photo', '사진 보내기']]],
-        ['상황별', [['morning', '아침 (오늘의 알림)'], ['proactive', '선톡 공통'], ['lunch', '점심 선톡'], ['evening', '저녁 선톡'], ['night', '밤 선톡'], ['dawn', '새벽 선톡 (가끔)'], ['trip', '여행·캠핑 중 (같이 안 있음)'], ['tripam', '여행·캠핑 날 아침 선톡'], ['chat', '내 메시지에 답장'], ['letter', '밤 편지'], ['reply', '편지 답글']]]
+        ['상황별', [['morning', '아침 (오늘의 알림)'], ['proactive', '선톡 공통'], ['lunch', '점심 선톡'], ['evening', '저녁 선톡'], ['night', '밤 선톡'], ['dawn', '새벽 선톡 (가끔)'], ['trip', '여행·캠핑 중 (같이 안 있음)'], ['tripam', '여행·캠핑 날 아침 선톡'], ['chat', '내 메시지에 답장'], ['callmsg', '시온이 전화 걸기 (언제)'], ['call', '전화 통화 말투'], ['letter', '밤 편지'], ['reply', '편지 답글']]]
     ];
     const pval = (st, k) => st.pd && st.pd[k] != null ? st.pd[k] : ((sion.cfg && sion.cfg.prompt) || {})[k] || '';
     const fval = (st, k) => st.pd && st.pd['@' + k] != null ? st.pd['@' + k] : (sion.cfg || {})[k] || '';
@@ -2410,6 +2473,206 @@ export function init() {
         sionCommit('시온 기억 고치기', set).then(() => toast('기억을 고쳤어요'), e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
     }
 
+    /* ---------------- 전화 (내 여보♡ 🐱) ----------------
+       진짜 음성 통화는 못 해서: 나는 말하기(글자로 바뀜)나 키패드로, 시온은 글자로 + 스피커를 켜면 폰 목소리로 읽어 줌
+       통화 한마디마다 GitHub Actions(letter.yml, mode=call)가 시온 대사를 만들어 letters.json calls 에 붙임 (보통 20초~1분) */
+    const calls = () => (sion.data && sion.data.calls) || [];
+    const callOf = id => calls().find(c => c.id === id);
+    const callAvatar = (cls) => sion.cfg && sion.cfg.photo ? imgTag(sion.cfg.photo, cls || '') : '<span class="kk-emoji">🐱</span>';
+    const mmss = sec => pad(Math.floor(sec / 60)) + ':' + pad(sec % 60);
+    sion.callSpeaker = false; sion.callKeypad = false; sion.spoken = new Set(); sion.missing = new Set();
+    function callCommit(msg, fn) { return sionCommit(msg, d => { d.calls = d.calls || []; d.chat = d.chat || []; fn(d); }); }
+    function callChat(c, status, dur) {   // 대화창에 남는 통화 기록
+        return { id: uid('m'), from: c.dir === 'out' ? 'me' : 'ai', kind: 'call', status, call: c.id, text: dur != null ? mmss(dur) : '', at: stamp() };
+    }
+    function enterCall(id) {
+        openSion('Message');
+        const st = wins.sion.st;
+        st.view = 'call'; st.callId = id;
+        clearInterval(sion.callTimer);
+        sion.callStart = Date.now();
+        sion.callTimer = setInterval(() => {
+            const t = wins.sion && wins.sion.el.querySelector('.kk-tmr');
+            if (!wins.sion || wins.sion.st.view !== 'call') { clearInterval(sion.callTimer); return; }
+            if (t) t.textContent = mmss(Math.floor((Date.now() - sion.callStart) / 1000));
+        }, 1000);
+        renderWin('sion');
+    }
+    function startCall() {
+        if (sionNeedToken() || !sion.data) return;
+        const c = { id: uid('k'), dir: 'out', status: 'live', at: stamp(), lines: [] };
+        sion.data.calls = calls().concat([c]);
+        callCommit('시온에게 전화', d => { if (!d.calls.some(x => x.id === c.id)) d.calls.push(c); });
+        enterCall(c.id);
+        sionRun('call', '', '', c.id);
+    }
+    function acceptCall(id) {
+        const c = callOf(id); if (!c) return;
+        c.status = 'live';
+        clearTimeout(sion.ringTimer); ringStop();
+        callCommit('시온 전화 받기', d => { const x = d.calls.find(y => y.id === id); if (x) x.status = 'live'; });
+        enterCall(id);
+        sionRun('call', '', '', id);
+    }
+    function missCall(id, declined) {
+        const c = callOf(id); if (!c || c.status === 'missed' || c.status === 'done') return;
+        c.status = 'missed';
+        clearTimeout(sion.ringTimer); ringStop();
+        const m = callChat(c, 'missed');
+        sion.data.chat.push(m);
+        callCommit(declined ? '시온 전화 거절' : '시온 부재중 전화', d => {
+            const x = d.calls.find(y => y.id === id); if (x) x.status = 'missed';
+            if (!d.chat.some(y => y.call === id)) d.chat.push(m);
+        });
+        if (wins.sion && wins.sion.st.view === 'ring') wins.sion.st.view = 'chat';
+        sionRefresh(); drawSionBtn();
+    }
+    function endCall() {
+        const st = wins.sion && wins.sion.st, c = st && callOf(st.callId);
+        clearInterval(sion.callTimer); callStopListen();
+        if (window.speechSynthesis) speechSynthesis.cancel();
+        if (st) st.view = 'chat';
+        if (!c) { sionRefresh(); return; }
+        const dur = Math.max(1, Math.floor((Date.now() - (sion.callStart || Date.now())) / 1000));
+        c.status = 'done'; c.dur = dur;
+        const m = callChat(c, 'done', dur);
+        sion.data.chat.push(m);
+        callCommit('시온 통화 끝', d => {
+            const x = d.calls.find(y => y.id === c.id); if (x) { x.status = 'done'; x.dur = dur; x.end = stamp(); }
+            if (!d.chat.some(y => y.call === c.id)) d.chat.push(m);
+        });
+        if (st) st.stick = true;
+        sionRefresh();
+    }
+    function callSay(text) {
+        const st = wins.sion && wins.sion.st, c = st && callOf(st.callId);
+        text = (text || '').trim(); if (!text || !c) return;
+        const line = { id: uid('l'), from: 'me', text, at: stamp() };
+        (c.lines = c.lines || []).push(line);
+        renderWin('sion');
+        callCommit('시온과 통화', d => { const x = d.calls.find(y => y.id === c.id); if (x) { x.lines = x.lines || []; if (!x.lines.some(y => y.id === line.id)) x.lines.push(line); } });
+        sionRun('call', '', '', c.id);
+    }
+    function callSendTyped() {
+        const i = wins.sion && wins.sion.el.querySelector('[data-call=in]');
+        if (!i) return; const v = i.value; i.value = ''; callSay(v);
+    }
+    // 말하기: 휴대폰 받아쓰기(음성 → 글자)로 한마디 듣고 보냄. 안 되는 기기면 키패드로
+    function callListen() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) { sion.callKeypad = true; renderWin('sion'); return toast('이 기기에선 말하기가 안 돼요 · 키패드로 입력해요'); }
+        if (sion.rec) { callStopListen(); return; }
+        if (window.speechSynthesis) speechSynthesis.cancel();
+        const r = new SR(); r.lang = 'ko-KR'; r.interimResults = true; r.continuous = false;
+        let finalText = '';
+        r.onresult = e => {
+            let interim = '';
+            for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) finalText += t; else interim += t; }
+            const box = wins.sion && wins.sion.el.querySelector('.kk-hear'); if (box) box.textContent = (finalText + interim) || '듣고 있어요…';
+        };
+        r.onerror = () => { callStopListen(); };
+        r.onend = () => { sion.rec = null; renderWin('sion'); if (finalText.trim()) callSay(finalText); };
+        sion.rec = r;
+        try { r.start(); } catch (e) { sion.rec = null; }
+        renderWin('sion');
+    }
+    function callStopListen() { if (sion.rec) { try { sion.rec.stop(); } catch (e) {} } }
+    // 시온 새 대사: 스피커가 켜져 있으면 폰 목소리로 읽음
+    function callSpeakNew(c) {
+        (c.lines || []).filter(l => l.from === 'ai' && !sion.spoken.has(l.id)).forEach(l => {
+            sion.spoken.add(l.id);
+            if (sion.callSpeaker && window.speechSynthesis) {
+                const u = new SpeechSynthesisUtterance(l.text.replace(/…/g, ', ')); u.lang = 'ko-KR'; u.rate = 0.92; u.pitch = 0.8;
+                speechSynthesis.speak(u);
+            }
+        });
+    }
+    // 불러온 뒤: 걸려 온 전화 울리기 / 오래 안 받은 전화는 부재중 / 통화 중이면 새 대사
+    function callAfterLoad() {
+        const st = wins.sion && wins.sion.st;
+        if (st && st.view === 'call') { const c = callOf(st.callId); if (c) callSpeakNew(c); }
+        callCheckRing(false);
+    }
+    function callCheckRing(force) {
+        const ring = calls().filter(c => c.dir === 'in' && c.status === 'ringing');
+        ring.forEach(c => {
+            const age = Date.now() - new Date(c.at).getTime();
+            if (age > 3 * 60000) { if (!sion.missing.has(c.id)) { sion.missing.add(c.id); missCall(c.id); } return; }
+            const st = wins.sion && wins.sion.st;
+            if (st && (st.view === 'call' || (st.view === 'ring' && st.callId === c.id))) return;
+            openSion('Message');
+            Object.assign(wins.sion.st, { view: 'ring', callId: c.id });
+            renderWin('sion');
+            ringStart();
+            clearTimeout(sion.ringTimer);
+            sion.ringTimer = setTimeout(() => missCall(c.id), Math.max(15000, 60000 - age));
+        });
+        if (force && !ring.length) openSion('Message');
+    }
+    function ringStart() { if (navigator.vibrate) try { navigator.vibrate([400, 300, 400, 300, 400]); } catch (e) {} }
+    function ringStop() { if (navigator.vibrate) try { navigator.vibrate(0); } catch (e) {} }
+
+    function ringView(st) {
+        const c = callOf(st.callId);
+        if (!c) return empty('전화가 끊겼어요');
+        const bg = sion.cfg && sion.cfg.photo ? `<div class="kk-ringbg">${imgTag(sion.cfg.photo, '')}</div>` : '<div class="kk-ringbg none"></div>';
+        return `${bg}<div class="kk-ring">
+                <div class="kk-ringtop"><b>${esc(contact())}</b><span>모바일 · 수신 중…</span></div>
+                <div class="kk-ringbtns">
+                    <button class="kk-rb no" data-act="call-decline" data-v="${c.id}">${KK.hang}<span>거절</span></button>
+                    <button class="kk-rb yes" data-act="call-accept" data-v="${c.id}">${KK.pick}<span>수락</span></button>
+                </div>
+            </div>`;
+    }
+    function callView(st) {
+        const c = callOf(st.callId);
+        if (!c) return empty('통화가 끝났어요');
+        const lines = (c.lines || []).slice(-6);
+        const waiting = sion.wait.call || !lines.length || lines[lines.length - 1].from === 'me';
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        return `<div class="kk-call">
+                <div class="kk-ctop"><div class="kk-cav">${callAvatar('kk-avimg')}</div><b>${esc(contact())}</b>
+                    <span class="kk-tmr">${mmss(Math.floor((Date.now() - (sion.callStart || Date.now())) / 1000))}</span></div>
+                <div class="kk-lines">${lines.map(l => `<p class="${l.from === 'me' ? 'me' : 'you'}">${esc(l.text)}</p>`).join('')}
+                    ${sion.rec ? '<p class="me kk-hear">듣고 있어요…</p>' : waiting ? '<p class="you kk-dots"><i></i><i></i><i></i></p>' : ''}</div>
+                ${sion.callKeypad ? `<div class="kk-type"><input data-call="in" type="text" enterkeyhint="send" placeholder="할 말 입력" autocomplete="off"><button data-act="call-send">보내기</button></div>` : ''}
+                <div class="kk-ctl">
+                    <button class="${sion.rec ? 'on' : ''}${SR ? '' : ' off'}" data-act="call-mic">${KK.mic}<span>${sion.rec ? '듣는 중' : '말하기'}</span></button>
+                    <button class="${sion.callKeypad ? 'on' : ''}" data-act="call-keypad">${KK.keypad}<span>키패드</span></button>
+                    <button class="${sion.callSpeaker ? 'on' : ''}" data-act="call-speaker">${KK.speaker}<span>스피커</span></button>
+                </div>
+                <button class="kk-end" data-act="call-end" aria-label="통화 종료">${KK.hang}</button>
+            </div>`;
+    }
+    function callContactView(st) {
+        if (!sion.data) return empty('불러오는 중…');
+        const list = calls().slice().reverse();
+        let lastDay = '';
+        const rows = list.map(c => {
+            const d = c.at.slice(0, 10), head = d !== lastDay ? `<div class="kk-sec">${d === todayKey() ? '오늘' : kDate(d)}</div>` : '';
+            lastDay = d;
+            const miss = c.status === 'missed' || c.status === 'ringing';
+            const kind = miss ? '부재중' : c.dir === 'out' ? '발신' : '수신';
+            return head + `<button class="kk-row${miss ? ' miss' : ''}" data-act="call-log" data-v="${c.id}">
+                <span class="ico">${miss ? '✕' : c.dir === 'out' ? '↗' : '↙'}</span>
+                <span class="mid"><b>${esc(contact())}</b><small>${kind}${c.dur ? ' · ' + mmss(c.dur) : ''}</small></span>
+                <span class="tm">${kTime(c.at)}</span></button>`;
+        }).join('');
+        return `<div class="kk-contact">
+                <div class="kk-bigav">${callAvatar('kk-avimg')}</div>
+                <b class="kk-cname">${esc(contact())}</b><span class="kk-csub">모바일</span>
+                <div class="kk-cbtns"><button data-act="call-start">${KK.phone}<span>전화</span></button><button data-act="sn-back">${KK.chat}<span>메시지</span></button></div>
+            </div>
+            <div class="kk-sec top">통화 기록</div>${rows || empty('아직 통화 기록이 없어요')}`;
+    }
+    function callLogView(st) {
+        const c = callOf(st.logId); if (!c) return empty('기록이 없어요');
+        const miss = c.status === 'missed';
+        return `<div class="kk-logh"><b>${kDate(c.at.slice(0, 10))} ${kTime(c.at)}</b><span>${miss ? '부재중' : (c.dir === 'out' ? '발신' : '수신') + (c.dur ? ' · ' + mmss(c.dur) : '')}</span></div>
+            <div class="sn-chat kk-log">${(c.lines || []).map((l, i, a) => `<div class="sn-row ${l.from === 'me' ? 'me' : 'you'}${!a[i + 1] || a[i + 1].from !== l.from ? ' tail' : ''}"><div class="sn-b">${esc(l.text)}</div></div>`).join('') || empty('주고받은 말이 없어요')}</div>
+            <div class="kk-logbtn"><button class="mj-btn" data-act="call-start">다시 걸기</button></div>`;
+    }
+
     // 내 글을 letters.json 에 커밋 (사이트에서 보낸 글끼리는 차례대로)
     function sionCommit(message, fn) {
         sion.writeAt = Date.now();
@@ -2448,23 +2711,23 @@ export function init() {
         const r = { id: uid('r'), from: 'me', text, at: stamp() };
         (sion.data.letters[k].replies = sion.data.letters[k].replies || []).push(r);
         st.ldraft = '';
-        sion.wait.reply = true; renderWin('sion');
+        sion.wait.reply = true; sionRefresh();
         sionCommit('편지 답장', cur => { const lt = cur.letters[k]; if (lt) { lt.replies = lt.replies || []; if (!lt.replies.some(x => x.id === r.id)) lt.replies.push(r); } })
             .then(() => sionRun('reply', k), e => {
                 sion.wait.reply = false; sion.data.letters[k].replies.pop();
-                if (wins.sion) { wins.sion.st.ldraft = text; renderWin('sion'); }
+                st.ldraft = text; sionRefresh();
                 mjAlert('답장을 보내지 못했어요.\n' + (e.message || e));
             });
     }
     // GitHub Actions 실행 → 끝날 때까지 기다렸다가 새로 불러옴 (토큰에 Actions 읽기·쓰기 권한 필요)
-    async function sionRun(mode, date, slot) {
+    async function sionRun(mode, date, slot, id) {
         if (sionNeedToken()) return;
-        sion.wait[mode] = true; if (wins.sion) renderWin('sion');
-        const done = msg => { sion.wait[mode] = false; if (wins.sion) renderWin('sion'); if (msg) toast(msg); };
+        sion.wait[mode] = true; sionRefresh();
+        const done = msg => { sion.wait[mode] = false; sionRefresh(); if (msg) toast(msg); };
         try {
             await sion.last;                                    // 내 글이 먼저 저장된 뒤에 실행
             const since = Date.now() - 5000;
-            await repo.api(SION_WF + '/dispatches', { method: 'POST', body: { ref: 'main', inputs: Object.assign({ mode, date: date || '' }, slot ? { slot } : {}) } });
+            await repo.api(SION_WF + '/dispatches', { method: 'POST', body: { ref: 'main', inputs: Object.assign({ mode, date: date || '' }, slot ? { slot } : {}, id ? { id } : {}) } });
             for (let i = 0; i < 36; i++) {
                 await new Promise(r => setTimeout(r, i < 3 ? 6000 : 10000));
                 if (!root.isConnected) return;
