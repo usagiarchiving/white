@@ -1016,8 +1016,8 @@ export function init() {
         const sun = addDays(k, -d.getDay());
         let week = '';
         for (let i = 0; i < 7; i++) {
-            const kk = addDays(sun, i), n = ext.todos.some(x => !x.parent_id && (x.target_date === kk || (x.is_completed && x.completed_date === kk)));
-            week += '<button data-a="t-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[i] + '<small>' + parseKey(kk).getDate() + '</small><i>' + (n ? '♥' : '') + '</i></button>';
+            const kk = addDays(sun, i);
+            week += '<button data-a="t-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[i] + '<small>' + parseKey(kk).getDate() + '</small></button>';
         }
         const pct = list.length ? Math.round(done / list.length * 100) : 0;
         body.innerHTML =
@@ -1270,7 +1270,8 @@ export function init() {
     const toMin = (dk, hm) => { const d = parseKey(dk); const [h, m] = String(hm || '0:0').split(':').map(Number); return Math.round(d.getTime() / 60000) + h * 60 + m; };
     const fromMin = m => { const d = new Date(m * 60000); return { date: ymd(d), time: pad(d.getHours()) + ':' + pad(d.getMinutes()) }; };
     function ttEvents() {           // 동기화된 캘린더 + 직접 넣은 것
-        const synced = (ext.cal.events || []).map(e => Object.assign({ src: 'cal', color: calColor(e.cal) }, e));
+        const TITLE_CAL = { '요리': '일상' };      // ATracker 캘린더여도 이 일은 이 색으로
+        const synced = (ext.cal.events || []).map(e => Object.assign({ src: 'cal', color: calColor(TITLE_CAL[(e.title || '').trim()] || e.cal) }, e));
         const mine = (db.tt || []).map(e => Object.assign({ src: 'me', cal: '직접 기록', color: TT_PEN['직접 기록'] }, e));
         return synced.concat(mine);
     }
@@ -1283,9 +1284,16 @@ export function init() {
             if (en > d0 && s < d1) timed.push(Object.assign({ s: Math.max(s, d0) - d0, e: Math.min(en, d1) - d0 }, e));
         });
         timed.sort((a, b) => a.s - b.s || b.e - a.e);
-        const lanes = [];               // 겹치는 일정은 줄을 나눠서
-        timed.forEach(ev => { let i = lanes.findIndex(end => end <= ev.s); if (i < 0) { i = lanes.length; lanes.push(0); } lanes[i] = ev.e; ev.lane = i; });
-        return { all, timed, lanes: Math.max(1, lanes.length) };
+        // 겹치는 일정끼리만 줄을 나눔 (안 겹치는 일정은 칸 높이를 다 씀)
+        let group = [], lanes = [], gEnd = -1;
+        const close = () => { group.forEach(ev => { ev.lanes = Math.max(1, lanes.length); }); group = []; lanes = []; };
+        timed.forEach(ev => {
+            if (ev.s >= gEnd) { close(); gEnd = -1; }
+            let i = lanes.findIndex(end => end <= ev.s); if (i < 0) { i = lanes.length; lanes.push(0); }
+            lanes[i] = ev.e; ev.lane = i; group.push(ev); gEnd = Math.max(gEnd, ev.e);
+        });
+        close();
+        return { all, timed };
     }
     RENDER.tt = (body, tools) => {
         tools.innerHTML = '<button class="dy-rb round' + (TTS.busy ? ' spin' : '') + '" data-tool="tt-sync" title="아이폰 캘린더 지금 받아오기">' + ic('reload') + '</button>' +
@@ -1298,8 +1306,8 @@ export function init() {
         const mon = addDays(k, -((d.getDay() + 6) % 7));       // 월요일부터
         let week = '';
         for (let i = 0; i < 7; i++) {
-            const kk = addDays(mon, i), dd = ttDay(kk), has = dd.timed.length || dd.all.length;
-            week += '<button data-a="tt-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[(i + 1) % 7] + '<small>' + parseKey(kk).getDate() + '</small><i>' + (has ? '♥' : '') + '</i></button>';
+            const kk = addDays(mon, i);
+            week += '<button data-a="tt-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[(i + 1) % 7] + '<small>' + parseKey(kk).getDate() + '</small></button>';
         }
         const day = ttDay(k);
         let rows = '';
@@ -1307,7 +1315,7 @@ export function init() {
             const h = (TT_START + r) % 24, rs = r * 60, re = rs + 60;
             const segs = day.timed.filter(ev => ev.e > rs && ev.s < re).map(ev => {
                 const a = Math.max(ev.s, rs) - rs, b = Math.min(ev.e, re) - rs, first = ev.s >= rs;
-                const lh = 100 / day.lanes;
+                const lh = 100 / ev.lanes;
                 return '<button class="tt-ev" data-a="tt-ev" data-id="' + esc(ev.id) + '" style="left:' + (a / 60 * 100) + '%;width:' + ((b - a) / 60 * 100) + '%;top:' + (ev.lane * lh) + '%;height:' + lh + '%;background:' + penFill(ev.color) + ';color:' + penInk(ev.color) + '" title="' + esc(ev.title) + '">' +
                     (first || r === 0 ? '<span>' + esc(ev.title) + '</span>' : '') + '</button>';
             }).join('');
