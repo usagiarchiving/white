@@ -1016,8 +1016,8 @@ export function init() {
         const sun = addDays(k, -d.getDay());
         let week = '';
         for (let i = 0; i < 7; i++) {
-            const kk = addDays(sun, i), n = ext.todos.some(x => !x.parent_id && (x.target_date === kk || (x.is_completed && x.completed_date === kk)));
-            week += '<button data-a="t-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[i] + '<small>' + parseKey(kk).getDate() + '</small><i>' + (n ? '♥' : '') + '</i></button>';
+            const kk = addDays(sun, i);
+            week += '<button data-a="t-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[i] + '<small>' + parseKey(kk).getDate() + '</small></button>';
         }
         const pct = list.length ? Math.round(done / list.length * 100) : 0;
         body.innerHTML =
@@ -1026,17 +1026,25 @@ export function init() {
                 '<button class="dy-rb round" data-a="t-next">' + ic('right') + '</button><button class="dy-rb" data-a="t-today">오늘</button></div>' +
                 '<div class="dy-week">' + week + '</div>' +
                 '<div style="display:flex;align-items:center;gap:8px"><div class="dy-prog" style="flex:1"><i style="width:' + pct + '%"></i></div><span style="font-family:var(--dy-title);font-size:11px">' + done + ' / ' + list.length + '</span></div>' +
-                '<div class="dy-add" style="margin:0"><input class="dy-in" data-enter="t-add"><button class="dy-rb round" data-a="t-add" title="추가">' + ic('plus') + '</button></div>' +
-                (list.length ? '<div class="dy-list">' + list.map(t => {
-                    const late = !t.is_completed && t.target_date && t.target_date < k;
-                    const sub = (t.subtasks || []).length ? '<span class="tm">' + t.subtasks.filter(x => x.is_completed).length + '/' + t.subtasks.length + '</span>' : '';
-                    return '<div class="dy-li' + (t.is_completed ? ' done' : '') + '" data-id="' + esc(t.id) + '">' +
-                        '<button class="dy-chk" data-a="t-chk">' + (t.is_completed ? ic('check') : '') + '</button>' +
-                        '<span class="tx" data-a="t-edit">' + esc(t.content) + '</span>' + sub +
-                        (late ? '<span class="tm late">' + t.target_date.slice(5).replace('-', '.') + '</span>' : '') +
-                        (t.is_completed && t.completed_at ? '<span class="tm">' + hhmm(t.completed_at) + '</span>' : '') +
-                        '<button class="dy-del" data-a="t-up" title="위로">' + ic('up') + '</button><button class="dy-del" data-a="t-del" title="지우기">' + ic('x') + '</button></div>';
-                }).join('') + '</div>' : '') +
+                // 추가: 왼쪽 색 동그라미로 분류, + 옆에서 영역 (고른 건 다음 추가에도 그대로, 새로고침하면 기본으로)
+                '<div class="t-add"><button class="t-cat" data-a="t-pick" data-k="cat" title="분류: ' + esc(TODO_CAT[V.tCat || 'gray'] || '주황') + '" style="background:' + TODO_COLORS[V.tCat || 'gray'] + '"></button>' +
+                    '<input class="dy-in" data-enter="t-add">' +
+                    '<button class="t-quad" data-a="t-pick" data-k="quad" title="영역">' + esc((QUAD_OPT.find(x => x[0] === (V.tQuad || 0)) || QUAD_OPT[0])[1]) + '</button>' +
+                    '<button class="dy-rb round" data-a="t-add" title="추가">' + ic('plus') + '</button></div>' +
+                (V.tPick === 'cat' ? '<div class="t-pop">' + Object.keys(TODO_COLORS).map(c => '<button data-a="t-set" data-k="cat:' + c + '" class="' + ((V.tCat || 'gray') === c ? 'on' : '') + '"><i style="background:' + TODO_COLORS[c] + '"></i>' + esc(TODO_CAT[c] || '') + '</button>').join('') + '</div>' : '') +
+                (V.tPick === 'quad' ? '<div class="t-pop">' + QUAD_OPT.map(([q, n]) => '<button data-a="t-set" data-k="quad:' + q + '" class="' + ((V.tQuad || 0) === q ? 'on' : '') + '">' + n + '</button>').join('') + '</div>' : '') +
+                // 목록: 분류별로 묶고, 오른쪽 네모 체크는 그 분류 색
+                Object.keys(TODO_COLORS).map(c => {
+                    const L = list.filter(t => (t.category || 'gray') === c); if (!L.length) return '';
+                    const col = TODO_COLORS[c];
+                    return '<div class="t-grp" style="--c:' + col + '"><div class="gh"><span class="pill" style="background:' + hexA(col, .28) + '"><i style="background:' + col + '"></i>' + esc(TODO_CAT[c] || '') + '</span></div><div class="gl">' + L.map(t => {
+                        const late = !t.is_completed && t.target_date && t.target_date < k;
+                        const meta = [late ? '<b class="late">' + t.target_date.slice(5).replace('-', '.') + '</b>' : '', (t.subtasks || []).length ? t.subtasks.filter(x => x.is_completed).length + '/' + t.subtasks.length : '',
+                            t.is_completed && t.completed_at ? hhmm(t.completed_at) : ''].filter(Boolean).join(' · ');
+                        return '<div class="t-row' + (t.is_completed ? ' done' : '') + '" data-id="' + esc(t.id) + '"><div class="tx" data-a="t-edit"><span class="t">' + esc(t.content) + '</span>' + (meta ? '<span class="m">' + meta + '</span>' : '') + '</div>' +
+                            '<button class="t-box" data-a="t-chk" title="' + (t.is_completed ? '안 한 걸로' : '했어요') + '" style="' + (t.is_completed ? 'background:' + col + ';border-color:' + col : 'border-color:' + col) + '">' + (t.is_completed ? ic('check') : '') + '</button></div>';
+                    }).join('') + '</div></div>';
+                }).join('') +
                 (k < tk && list.some(t => !t.is_completed) ? '<button class="dy-rb" data-a="t-carry" style="align-self:flex-start">못 한 일 오늘로 옮기기</button>' : '') +
             '</div>';
     };
@@ -1061,8 +1069,8 @@ export function init() {
                     '<input class="dy-in' + (st.is_completed ? ' done' : '') + '" data-subtx value="' + esc(st.content || '') + '"><button class="dy-del" data-sub="del" title="지우기">' + ic('x') + '</button></div>').join('') +
                     '<div class="dy-add" style="margin:0"><input class="dy-in" id="td-new-sub"><button class="dy-rb round" data-sub="add" title="하위 할 일 추가">' + ic('plus') + '</button></div></div>' +
                 '<div class="lb">영역</div>' + seg('quad', QUAD_OPT, d.q) +
-                '<div class="td-dates"><span class="lb">계획일</span><span></span><span class="lb">완료일</span>' +
-                    '<input class="dy-in" type="date" id="td-target" value="' + esc(d.target) + '"><span class="dash"></span><input class="dy-in" type="date" id="td-done" value="' + esc(d.done) + '"></div>' +
+                '<div class="td-dates"><span class="lb">계획일</span><span class="lb">완료일</span>' +
+                    '<input class="dy-in" type="date" id="td-target" value="' + esc(d.target) + '"><input class="dy-in" type="date" id="td-done" value="' + esc(d.done) + '"></div>' +
                 '<div class="lb">반복</div>' + seg('rep', REPEAT_OPT, d.repeat) +
                 '<div class="foot"><button class="dy-rb" data-c="del">' + ic('x') + '<span class="lbl">지우기</span></button><span style="flex:1"></span>' +
                     '<button class="dy-rb" data-c="close">닫기</button><button class="dy-rb on" data-c="save">저장</button></div>';
@@ -1270,7 +1278,8 @@ export function init() {
     const toMin = (dk, hm) => { const d = parseKey(dk); const [h, m] = String(hm || '0:0').split(':').map(Number); return Math.round(d.getTime() / 60000) + h * 60 + m; };
     const fromMin = m => { const d = new Date(m * 60000); return { date: ymd(d), time: pad(d.getHours()) + ':' + pad(d.getMinutes()) }; };
     function ttEvents() {           // 동기화된 캘린더 + 직접 넣은 것
-        const synced = (ext.cal.events || []).map(e => Object.assign({ src: 'cal', color: calColor(e.cal) }, e));
+        const TITLE_CAL = { '요리': '일상' };      // ATracker 캘린더여도 이 일은 이 색으로
+        const synced = (ext.cal.events || []).map(e => Object.assign({ src: 'cal', color: calColor(TITLE_CAL[(e.title || '').trim()] || e.cal) }, e));
         const mine = (db.tt || []).map(e => Object.assign({ src: 'me', cal: '직접 기록', color: TT_PEN['직접 기록'] }, e));
         return synced.concat(mine);
     }
@@ -1283,9 +1292,16 @@ export function init() {
             if (en > d0 && s < d1) timed.push(Object.assign({ s: Math.max(s, d0) - d0, e: Math.min(en, d1) - d0 }, e));
         });
         timed.sort((a, b) => a.s - b.s || b.e - a.e);
-        const lanes = [];               // 겹치는 일정은 줄을 나눠서
-        timed.forEach(ev => { let i = lanes.findIndex(end => end <= ev.s); if (i < 0) { i = lanes.length; lanes.push(0); } lanes[i] = ev.e; ev.lane = i; });
-        return { all, timed, lanes: Math.max(1, lanes.length) };
+        // 겹치는 일정끼리만 줄을 나눔 (안 겹치는 일정은 칸 높이를 다 씀)
+        let group = [], lanes = [], gEnd = -1;
+        const close = () => { group.forEach(ev => { ev.lanes = Math.max(1, lanes.length); }); group = []; lanes = []; };
+        timed.forEach(ev => {
+            if (ev.s >= gEnd) { close(); gEnd = -1; }
+            let i = lanes.findIndex(end => end <= ev.s); if (i < 0) { i = lanes.length; lanes.push(0); }
+            lanes[i] = ev.e; ev.lane = i; group.push(ev); gEnd = Math.max(gEnd, ev.e);
+        });
+        close();
+        return { all, timed };
     }
     RENDER.tt = (body, tools) => {
         tools.innerHTML = '<button class="dy-rb round' + (TTS.busy ? ' spin' : '') + '" data-tool="tt-sync" title="아이폰 캘린더 지금 받아오기">' + ic('reload') + '</button>' +
@@ -1298,8 +1314,8 @@ export function init() {
         const mon = addDays(k, -((d.getDay() + 6) % 7));       // 월요일부터
         let week = '';
         for (let i = 0; i < 7; i++) {
-            const kk = addDays(mon, i), dd = ttDay(kk), has = dd.timed.length || dd.all.length;
-            week += '<button data-a="tt-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[(i + 1) % 7] + '<small>' + parseKey(kk).getDate() + '</small><i>' + (has ? '♥' : '') + '</i></button>';
+            const kk = addDays(mon, i);
+            week += '<button data-a="tt-go" data-k="' + kk + '" class="' + (kk === k ? 'on ' : '') + (kk === tk ? 'today' : '') + '">' + WEEK_KO[(i + 1) % 7] + '<small>' + parseKey(kk).getDate() + '</small></button>';
         }
         const day = ttDay(k);
         let rows = '';
@@ -1307,7 +1323,7 @@ export function init() {
             const h = (TT_START + r) % 24, rs = r * 60, re = rs + 60;
             const segs = day.timed.filter(ev => ev.e > rs && ev.s < re).map(ev => {
                 const a = Math.max(ev.s, rs) - rs, b = Math.min(ev.e, re) - rs, first = ev.s >= rs;
-                const lh = 100 / day.lanes;
+                const lh = 100 / ev.lanes;
                 return '<button class="tt-ev" data-a="tt-ev" data-id="' + esc(ev.id) + '" style="left:' + (a / 60 * 100) + '%;width:' + ((b - a) / 60 * 100) + '%;top:' + (ev.lane * lh) + '%;height:' + lh + '%;background:' + penFill(ev.color) + ';color:' + penInk(ev.color) + '" title="' + esc(ev.title) + '">' +
                     (first || r === 0 ? '<span>' + esc(ev.title) + '</span>' : '') + '</button>';
             }).join('');
@@ -2015,10 +2031,12 @@ export function init() {
             case 't-next': V.tDate = addDays(V.tDate, 1); return render('todo');
             case 't-today': V.tDate = todayKey(); return render('todo');
             case 't-go': V.tDate = t.dataset.k; return render('todo');
+            case 't-pick': V.tPick = V.tPick === t.dataset.k ? null : t.dataset.k; return render('todo');
+            case 't-set': { const [kk, v] = t.dataset.k.split(':'); if (kk === 'cat') V.tCat = v; else V.tQuad = Number(v); V.tPick = null; render('todo'); const n = document.querySelector('[data-enter="t-add"]'); n && n.focus(); return; }
             case 't-add': {
-                const inp = inputOf(t); const v = inp && inp.value.trim(); if (!v) { inp && inp.focus(); return; }
+                const inp = document.querySelector('[data-enter="t-add"]'); const v = inp && inp.value.trim(); if (!v) { inp && inp.focus(); return; }
                 const now = Date.now();
-                const row = { id: now, created_at: new Date().toISOString(), content: v, category: 'gray', matrix_quadrant: 0, is_completed: false,
+                const row = { id: now, created_at: new Date().toISOString(), content: v, category: V.tCat || 'gray', matrix_quadrant: V.tQuad || 0, is_completed: false,
                     target_date: V.tDate, parent_id: null, subtasks: [], repeat_type: null, repeat_days: null, sort_order: now, completed_date: null };
                 inp.value = '';
                 save('할 일 추가', null, null, { todos: L => { L.push(JSON.parse(JSON.stringify(row))); } });

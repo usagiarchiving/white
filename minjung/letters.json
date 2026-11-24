@@ -45,14 +45,6 @@
    "model": "gemini-3.5-flash-lite"
   },
   {
-   "id": "s1a20d251f4dc859",
-   "from": "ai",
-   "text": "졸업전시 준비하느라 고생했어요. 내일이면 끝이네. 조금만 힘내자, 여보.",
-   "at": "2026-11-24T19:41:04+09:00",
-   "slot": "morning",
-   "model": "gemini-3.5-flash-lite"
-  },
-  {
    "id": "c1a20d2560657056",
    "from": "ai",
    "text": "보고 싶어 죽겠네 진짜",
