@@ -2329,7 +2329,7 @@ export function init() {
     const PROMPT_GROUPS = [
         ['캐릭터', [['personality', '성격'], ['relationship', '관계'], ['speech', '말투'], ['examples', '말투 예시'], ['rules', '절대 규칙']]],
         ['쓰는 법', [['writing', '메시지·편지 공통 규칙'], ['photo', '사진 보내기']]],
-        ['상황별', [['morning', '아침 메시지 (오늘의 알림)'], ['lunch', '점심 메시지'], ['evening', '저녁 메시지'], ['chat', '내 메시지에 답장'], ['letter', '밤 편지'], ['reply', '편지 답글']]]
+        ['상황별', [['morning', '아침 (오늘의 알림)'], ['proactive', '선톡 공통'], ['lunch', '점심 선톡'], ['evening', '저녁 선톡'], ['night', '밤 선톡'], ['dawn', '새벽 선톡 (가끔)'], ['chat', '내 메시지에 답장'], ['letter', '밤 편지'], ['reply', '편지 답글']]]
     ];
     const pval = (st, k) => st.pd && st.pd[k] != null ? st.pd[k] : ((sion.cfg && sion.cfg.prompt) || {})[k] || '';
     const fval = (st, k) => st.pd && st.pd['@' + k] != null ? st.pd['@' + k] : (sion.cfg || {})[k] || '';

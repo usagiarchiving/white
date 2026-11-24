@@ -25,7 +25,10 @@ KST = timezone(timedelta(hours=9))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 STORE = 'minjung/letters.json'
 CONFIG = 'minjung/sion.json'
-SLOTS = {'morning': '아침', 'lunch': '점심', 'evening': '저녁'}
+SLOTS = {'morning': '아침', 'lunch': '점심', 'evening': '저녁', 'night': '밤', 'dawn': '새벽'}
+# 먼저 보내는 메시지: 시간 창 안에서 하루 한 번, 시각은 랜덤 (30분마다 확인). 새벽은 가끔만
+WINDOWS = {'lunch': (11.5, 14.0), 'evening': (17.0, 20.5), 'night': (21.0, 23.5), 'dawn': (1.0, 3.5)}
+DAWN_CHANCE = 0.25
 WEEK = '월화수목금토일'
 KEEP_CHAT_DAYS = 90
 
@@ -520,24 +523,67 @@ def make_message(store, cfg, slot):
     t = now()
     day = t.strftime('%Y-%m-%d')
     if not slot:
-        slot = 'morning' if 5 <= t.hour < 11 else 'lunch' if 11 <= t.hour < 16 else 'evening'
+        slot = 'morning' if 5 <= t.hour < 11 else 'lunch' if 11 <= t.hour < 16 else 'evening' if t.hour < 21 else 'night'
     if slot == 'morning':
         return make_morning(store, cfg, t, day)
     if any(r.get('slot') == slot and r['at'][:10] == day for r in store['chat']):
         print(f'{day} {SLOTS[slot]} 메시지는 이미 있어요.')
         return None
     yesterday = (t - timedelta(days=1)).strftime('%Y-%m-%d')
-    focus = P(cfg, slot, {'lunch': '점심 무렵 안부.', 'evening': '저녁 안부.'}.get(slot, ''))
-    prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 {SLOTS[slot]} 메시지를 먼저 보내.\n{focus}\n\n"
+    focus = P(cfg, slot, {'lunch': '점심 무렵 안부.', 'evening': '저녁 안부.', 'night': '밤 안부.', 'dawn': '새벽에 문득.'}.get(slot, ''))
+    prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 {SLOTS[slot]} 메시지를 먼저 보내 (선톡).\n{focus}\n"
+              f"{P(cfg, 'proactive', '')}\n\n"
               f"# 기억\n{memory(store)}\n\n"
               f"# 어젯밤 편지\n{clip((store['letters'].get(yesterday) or {}).get('body'), 400) or '(없음)'}\n\n"
               f"# 오늘 주고받은 메시지 (참고만. 이어서 답하는 게 아니라 새로 먼저 보내는 메시지야)\n{chat_history(store, 8, days=0.5) or '(없음)'}\n\n"
               f"# 오늘의 알림 (날씨·운세·일정)\n{brief_text((store.get('briefs') or {}).get(day) or {}) or '(없음)'}\n\n"
+              f"# 다가오는 일정\n{upcoming(day) or '(없음)'}\n\n"
               f"# 오늘 지금까지 민정의 기록\n{gather(day, upto=t.strftime('%H:%M')) or '(아직 없음)'}\n\n"
               f"# 쓰는 법\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
     at = stamp(t)
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': slot, 'model': model} for b in bubbles(text, 4)]}
+
+
+def make_tick(store, cfg):
+    """30분마다: 날씨 확인 + (오늘 알림이 없으면 8시 이후 만들기) + 시간 창 안에서 랜덤하게 선톡 하나"""
+    import random
+    t = now()
+    day = t.strftime('%Y-%m-%d')
+    h = t.hour + t.minute / 60
+    patch = {}
+    w = make_weather(store, cfg)
+    if w:
+        patch.update(w)
+    if h >= 8 and not (store.get('briefs') or {}).get(day):
+        m = make_morning(store, cfg, t, day)
+        if m:
+            patch.update(m)
+        return patch or None
+    # 새벽(1~3시)은 그 '밤'의 날짜 기준, 25% 정도의 날만
+    sday = (t - timedelta(hours=5)).strftime('%Y-%m-%d') if h < 5 else day
+    for slot, (a, b) in WINDOWS.items():
+        if not (a <= h < b):
+            continue
+        if slot == 'dawn' and random.Random(sday + 'dawn').random() >= DAWN_CHANCE:
+            print('오늘 새벽은 조용히')
+            break
+        if any(r.get('slot') == slot and (r['at'][:10] == day) for r in store['chat']):
+            print(f'{SLOTS[slot]} 선톡은 오늘 이미 보냄')
+            break
+        last = store['chat'][-1] if store['chat'] else None
+        if last and (t - datetime.fromisoformat(last['at'])).total_seconds() < 25 * 60:
+            print('방금 대화 중이라 선톡은 미룸')
+            break
+        left = max(1, int((b - h) * 2))          # 이 창에 남은 확인 횟수 → 남은 동안 고르게 한 번
+        if random.random() < 1 / left:
+            m = make_message(store, cfg, slot)
+            if m:
+                patch.setdefault('chat', []).extend(m['chat'])
+        else:
+            print(f'{SLOTS[slot]} 선톡은 조금 이따가 (확률 1/{left})')
+        break
+    return patch or None
 
 
 def make_morning(store, cfg, t, day):
@@ -593,7 +639,7 @@ def make_weather(store, cfg):
     t = now()
     day = t.strftime('%Y-%m-%d')
     b = (store.get('briefs') or {}).get(day)
-    if not b or not (7 <= t.hour < 23):
+    if not b or not (7 <= t.hour < 23) or t.minute >= 30:   # 날씨는 한 시간에 한 번만
         print('오늘의 알림이 없거나 밤이라 건너뜀')
         return None
     pl = cfg.get('place') or {'name': '부산 동구', 'lat': 35.1295, 'lon': 129.0454}
@@ -780,20 +826,20 @@ def vapid_header(endpoint, private_b64):
 def notices_of(patch, cfg):
     """결과에서 알림 글 만들기 — 말풍선 하나에 알림 하나"""
     title = cfg.get('contact') or cfg.get('name') or '시온'
+    out = []
     if patch.get('alert'):
         a = patch['alert']
-        return [{'title': title, 'body': a['text'], 'tab': 'Notice', 'tag': 'sion-wx-' + a['at']}]
+        out.append({'title': title, 'body': a['text'], 'tab': 'Notice', 'tag': 'sion-wx-' + a['at']})
     if patch.get('brief_new'):
         b = patch['brief']
-        return [{'title': title, 'body': '사진' if PHOTO.fullmatch(t) else clip(t, 180), 'tab': 'Notice', 'tag': f"sion-am-{b['date']}-{i}"} for i, t in enumerate(sion_lines(b))]
-    chat = [r for r in patch.get('chat') or [] if r['from'] == 'ai']
-    if chat:
-        return [{'title': title, 'body': '사진' if PHOTO.fullmatch(r['text']) else clip(r['text'], 180), 'tab': 'Message', 'tag': 'sion-' + r['id']} for r in chat]
+        out += [{'title': title, 'body': '사진' if PHOTO.fullmatch(t) else clip(t, 180), 'tab': 'Notice', 'tag': f"sion-am-{b['date']}-{i}"} for i, t in enumerate(sion_lines(b))]
+    out += [{'title': title, 'body': '사진' if PHOTO.fullmatch(r['text']) else clip(r['text'], 180), 'tab': 'Message', 'tag': 'sion-' + r['id']}
+            for r in patch.get('chat') or [] if r['from'] == 'ai']
     if patch.get('letter'):
-        return [{'title': title, 'body': '편지가 도착했어요 ♡', 'tab': 'Letter', 'tag': 'sion-letter'}]
+        out.append({'title': title, 'body': '편지가 도착했어요 ♡', 'tab': 'Letter', 'tag': 'sion-letter'})
     if patch.get('reply'):
-        return [{'title': title, 'body': clip(patch['reply']['item']['text'], 180), 'tab': 'Letter', 'tag': 'sion-' + patch['reply']['item']['id']}]
-    return []
+        out.append({'title': title, 'body': clip(patch['reply']['item']['text'], 180), 'tab': 'Letter', 'tag': 'sion-' + patch['reply']['item']['id']})
+    return out
 
 
 def notify(patch, cfg):
@@ -834,7 +880,7 @@ def notify(patch, cfg):
 # ----------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'apply', 'notify', 'preview'])
+    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'tick', 'apply', 'notify', 'preview'])
     ap.add_argument('patch', nargs='?')
     ap.add_argument('--date')
     ap.add_argument('--slot', choices=list(SLOTS) + [''], default='')
@@ -871,6 +917,8 @@ def main():
         patch = make_chat(store, cfg)
     elif a.mode == 'weather':
         patch = make_weather(store, cfg)
+    elif a.mode == 'tick':
+        patch = make_tick(store, cfg)
     else:
         patch = make_reply(store, cfg, a.date or letter_day())
     if patch and a.out:
