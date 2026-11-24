@@ -84,6 +84,15 @@
    "call": "kmwutsuq57qj5",
    "text": "00:34",
    "at": "2026-11-25T00:05:19+09:00"
+  },
+  {
+   "id": "mmwutunzzh9t5",
+   "from": "me",
+   "kind": "call",
+   "status": "done",
+   "call": "kmwutumw7hgmv",
+   "text": "00:01",
+   "at": "2026-11-25T00:06:09+09:00"
   }
  ],
  "memory": {
@@ -162,9 +171,11 @@
   {
    "id": "kmwutumw7hgmv",
    "dir": "out",
-   "status": "live",
+   "status": "done",
    "at": "2026-11-25T00:06:08+09:00",
-   "lines": []
+   "lines": [],
+   "dur": 1,
+   "end": "2026-11-25T00:06:11+09:00"
   }
  ]
 }
