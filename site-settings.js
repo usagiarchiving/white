@@ -4,7 +4,7 @@
    - 처음 열 화면
    저장: data/site.json  (사진: data/images/appicons/)
    { "start": "home", "categories": [ { "hash", "name", "active", "icon", "app" } ] }   ← 배열 순서 = 메뉴 순서
-   홈 화면에 추가할 때는 그때 보고 있는 카테고리의 사진·이름이 쓰임 (카테고리를 옮길 때마다 바꿔 둠)
+   홈 화면에 추가할 때는 그때 보고 있는 카테고리의 주소·사진·이름이 쓰임 (카테고리를 옮길 때마다 바꿔 둠)
    ========================================================================== */
 (function () {
     var FILE = 'data/site.json';
@@ -57,13 +57,8 @@
         setLink('apple-touch-icon', icon);
         setLink('icon', icon);
         setMeta('apple-mobile-web-app-title', name);
-        var base = baseUrl();
-        var manifest = {
-            name: name, short_name: name, start_url: base + (cat.hash && cat.hash !== 'home' ? '?c=' + cat.hash + '#' + cat.hash : ''), scope: base,
-            display: 'standalone', background_color: '#fafafa', theme_color: '#fafafa',
-            icons: [{ src: icon, sizes: '512x512', type: /\.png(\?|$)/i.test(icon) ? 'image/png' : 'image/jpeg', purpose: 'any' }]
-        };
-        setLink('manifest', 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest)));
+        // 아이폰은 웹앱 설정 파일(manifest)이 있으면 처음 읽은 것만 써서 카테고리별로 못 바꿈 → 파일 없이
+        // '지금 주소(?c=카테고리) · 위 아이콘 · 위 이름'으로 홈 화면에 추가되게 둠
     }
     var current = function () { return location.hash.replace('#', '') || 'home'; };
 
