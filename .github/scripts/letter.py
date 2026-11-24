@@ -496,42 +496,44 @@ def vapid_header(endpoint, private_b64):
     return f'vapid t={jwt}, k={b64u(pub)}'
 
 
-def notice_of(patch, cfg):
-    """결과에서 알림 글 만들기"""
+def notices_of(patch, cfg):
+    """결과에서 알림 글 만들기 — 말풍선 하나에 알림 하나"""
     title = cfg.get('contact') or cfg.get('name') or '시온'
     chat = [r for r in patch.get('chat') or [] if r['from'] == 'ai']
     if chat:
-        body = '\n'.join('사진' if PHOTO.fullmatch(r['text']) else r['text'] for r in chat)
-        return {'title': title, 'body': clip(body, 180), 'tab': 'Message', 'tag': 'sion-msg'}
+        return [{'title': title, 'body': '사진' if PHOTO.fullmatch(r['text']) else clip(r['text'], 180), 'tab': 'Message', 'tag': 'sion-' + r['id']} for r in chat]
     if patch.get('letter'):
-        return {'title': title, 'body': '편지가 도착했어요 ♡', 'tab': 'Letter', 'tag': 'sion-letter'}
+        return [{'title': title, 'body': '편지가 도착했어요 ♡', 'tab': 'Letter', 'tag': 'sion-letter'}]
     if patch.get('reply'):
-        return {'title': title, 'body': clip(patch['reply']['item']['text'], 180), 'tab': 'Letter', 'tag': 'sion-letter'}
-    return None
+        return [{'title': title, 'body': clip(patch['reply']['item']['text'], 180), 'tab': 'Letter', 'tag': 'sion-' + patch['reply']['item']['id']}]
+    return []
 
 
 def notify(patch, cfg):
     key = os.environ.get('VAPID_PRIVATE_KEY', '').strip()
     subs = (load(PUSH_SUBS, {}) or {}).get('subs') or []
-    note = notice_of(patch, cfg)
-    if not note or not subs:
+    notes = notices_of(patch, cfg)
+    if not notes or not subs:
         print('알림 보낼 것 없음')
         return
     if not key:
         print('VAPID_PRIVATE_KEY가 없어서 알림은 건너뜀')
         return
-    data = json.dumps(note, ensure_ascii=False).encode()
-    for sub in subs:
-        try:
-            req = urllib.request.Request(sub['endpoint'], data=push_encrypt(data, sub['keys']['p256dh'], sub['keys']['auth']), method='POST', headers={
-                'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', 'TTL': '86400', 'Urgency': 'high',
-                'Authorization': vapid_header(sub['endpoint'], key)})
-            with urllib.request.urlopen(req, timeout=30) as r:
-                print(f'[알림] {r.status}')
-        except urllib.error.HTTPError as e:
-            print(f'[알림 실패] HTTP {e.code} {e.read().decode(errors="replace")[:200]}')
-        except Exception as e:
-            print(f'[알림 실패] {e}')
+    for i, note in enumerate(notes):
+        if i:
+            time.sleep(1.2)   # 순서대로 도착하게
+        data = json.dumps(note, ensure_ascii=False).encode()
+        for sub in subs:
+            try:
+                req = urllib.request.Request(sub['endpoint'], data=push_encrypt(data, sub['keys']['p256dh'], sub['keys']['auth']), method='POST', headers={
+                    'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', 'TTL': '86400', 'Urgency': 'high',
+                    'Authorization': vapid_header(sub['endpoint'], key)})
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    print(f'[알림] {r.status}')
+            except urllib.error.HTTPError as e:
+                print(f'[알림 실패] HTTP {e.code} {e.read().decode(errors="replace")[:200]}')
+            except Exception as e:
+                print(f'[알림 실패] {e}')
 
 
 # ----------------------------------------------------------------
