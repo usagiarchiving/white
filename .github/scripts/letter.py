@@ -319,9 +319,28 @@ def bubbles(text, limit=4):
     """메시지 답을 말풍선 여러 개로 (줄바꿈 기준, 사진은 따로 한 칸)"""
     text = PHOTO.sub(lambda m: f'\n(사진: {m.group(1).strip()})\n', clean(text))
     parts = [p.strip().strip('"“”').strip() for p in re.split(r'\n+', text) if p.strip().strip('"“”').strip()]
-    if len(parts) > limit:
-        parts = parts[:limit - 1] + [' '.join(parts[limit - 1:])]
-    return parts or [text.strip() or '…']
+    return enforce_bubbles(parts, limit) or [text.strip() or '…']
+
+
+SENT_END = re.compile(r'(?<=[.!?…~])\s+(?=\S)')
+
+
+def enforce_bubbles(parts, limit=4):
+    """메시지 규칙: 첫 말풍선은 한 문장, 말풍선 하나에 한 문장(두 문장짜리는 하나만), 최대 limit 개"""
+    out, two_used = [], False
+    for p in parts:
+        if PHOTO.fullmatch(p):
+            out.append(p)
+            continue
+        sents = [x.strip() for x in SENT_END.split(p) if x.strip()]
+        while sents:
+            if out and not two_used and len(sents) >= 2:
+                out.append(sents[0] + ' ' + sents[1])
+                two_used = True
+                sents = sents[2:]
+            else:
+                out.append(sents.pop(0))
+    return out[:limit]
 
 
 def chat_history(store, n=24, days=3):
