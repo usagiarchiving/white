@@ -2,12 +2,6 @@
  "letters": {},
  "chat": [
   {
-   "id": "mmwujcwt2ry2g",
-   "from": "me",
-   "text": "여보!",
-   "at": "2026-11-24T19:12:25+09:00"
-  },
-  {
    "id": "c1a20d0b1b900d1d",
    "from": "ai",
    "text": "내 토끼",
