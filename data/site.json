@@ -1,0 +1,66 @@
+{
+ "version": 1,
+ "start": "home",
+ "categories": [
+  {
+   "hash": "home",
+   "active": true
+  },
+  {
+   "hash": "hasion",
+   "active": false
+  },
+  {
+   "hash": "archive",
+   "active": true
+  },
+  {
+   "hash": "capture",
+   "active": true
+  },
+  {
+   "hash": "minjung",
+   "active": true,
+   "icon": "data/images/appicons/minjung-mwuhuppu.jpg"
+  },
+  {
+   "hash": "myhome",
+   "active": true,
+   "icon": "data/images/appicons/myhome-mwuhuppu.jpg"
+  },
+  {
+   "hash": "diary",
+   "active": true,
+   "icon": "data/images/appicons/diary-mwuhuppu.jpg"
+  },
+  {
+   "hash": "memo",
+   "active": false
+  },
+  {
+   "hash": "todo",
+   "active": true
+  },
+  {
+   "hash": "notice",
+   "active": false
+  },
+  {
+   "hash": "log",
+   "active": false
+  },
+  {
+   "hash": "list",
+   "active": false
+  },
+  {
+   "hash": "playlist",
+   "active": false
+  },
+  {
+   "hash": "check",
+   "active": false
+  }
+ ],
+ "updated_at": "2026-11-24T09:30:18.262Z"
+}
