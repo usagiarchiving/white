@@ -42,13 +42,11 @@ function renderMenu() {
 window.renderMenu = renderMenu;
 
 // 주소창의 해시(#)를 분석해서 맞는 페이지를 찾아 대령하는 함수
-// 주소에 카테고리를 ?c= 로도 적어 둠 → 아이폰 홈 화면 앱은 # 부분을 버릴 때가 있어서, 추가한 카테고리로 바로 열리게
+// 주소는 #카테고리 그대로 (예쁘게). ?c=카테고리 로 들어와도 그 카테고리로 열고, 주소는 #카테고리로 정리
 function setCatUrl(hash) {
-    const q = hash && hash !== 'home' ? '?c=' + encodeURIComponent(hash) : '';
-    const url = location.pathname + q + (hash ? '#' + hash : '');
-    if (location.pathname + location.search + location.hash !== url) history.replaceState(null, '', url);
+    if (!location.search.includes('c=')) return;
+    history.replaceState(null, '', location.pathname + (hash ? '#' + hash : ''));
 }
-window.setCatUrl = setCatUrl;
 
 function initPageLoad() {
     const qc = /[?&]c=([^&#]+)/.exec(location.search);
