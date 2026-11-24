@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-25T00:26:59+09:00",
+ "updated_at": "2026-11-25T03:31:21+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -827,6 +827,17 @@
    "time": "14:40",
    "at": "2026-07-11T14:40:50+09:00",
    "memo": "다봄 존잼"
+  },
+  {
+   "id": "lbmwv16hze1akk",
+   "type": "youtube",
+   "title": "ADHD가 계속 실패하는 진짜 이유 (집중력이 아니었다)",
+   "url": "https://youtu.be/bDklBaDN4qA?si=rcRihA6bVGlO_s-Z",
+   "status": "done",
+   "date": "2026-11-25",
+   "time": "03:31",
+   "at": "2026-11-25T03:31:19+09:00",
+   "creator": "정신없는 정신과의사"
   }
  ],
  "condition": [
