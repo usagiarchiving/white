@@ -704,8 +704,7 @@ def apply(store, patch):
         b = patch['brief']
         briefs = store.setdefault('briefs', {})
         briefs[b['date']] = b
-        for k in sorted(briefs)[:-30]:   # 30일만 보관
-            del briefs[k]
+        # 오늘의 알림은 Daily 아카이브로 계속 보관 (지우는 건 사이트에서)
     ids = {r.get('id') for r in store['chat']}
     for r in patch.get('chat') or []:
         if r['id'] not in ids:
