@@ -25,7 +25,7 @@ KST = timezone(timedelta(hours=9))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 STORE = 'minjung/letters.json'
 CONFIG = 'minjung/sion.json'
-SLOTS = {'morning': '아침', 'tripam': '아침', 'lunch': '점심', 'evening': '저녁', 'night': '밤', 'dawn': '새벽'}
+SLOTS = {'morning': '아침', 'tripam': '아침', 'remind': '일정 전', 'lunch': '점심', 'evening': '저녁', 'night': '밤', 'dawn': '새벽'}
 # 먼저 보내는 메시지: 시간 창 안에서 하루 한 번, 시각은 랜덤 (30분마다 확인). 새벽은 가끔만
 WINDOWS = {'lunch': (11.5, 14.0), 'evening': (17.0, 20.5), 'night': (21.0, 23.5), 'dawn': (1.0, 3.5)}
 DAWN_CHANCE = 0.25
@@ -142,7 +142,7 @@ def gather(day, upto=None):
     ev = [e for e in cal.get('events') or [] if (e.get('date') or '') <= day <= (e.get('endDate') or e.get('date') or '') and ok_time(e.get('start'))]
     ev.sort(key=lambda e: e.get('start') or '')
     add('일정·활동(ATracker는 실제로 한 활동 기록)', [
-        f"- {(e.get('start','')+'~'+e.get('end','')) if e.get('start') else '종일'} [{e.get('cal')}] {e.get('title')}"
+        f"- {(e.get('start','')+'~'+e.get('end','')) if e.get('start') else '종일'} [{e.get('cal')}] {e.get('title')}{'' if str(e.get('cal', '')).startswith('AT') else wtag(e)}"
         + (f" ({clip(e['note'], 80)})" if e.get('note') and 'Hash ID' not in e['note'] else '') for e in ev])
 
     dy = load('diary/diary.json', {})
@@ -297,6 +297,7 @@ def system_prompt(cfg):
         v = P(cfg, k)
         if v:
             parts.append((title + '\n' if title else '') + v)
+    parts.append('일정 규칙\n' + SCHED_RULE)
     return '\n\n'.join(parts)
 
 
@@ -368,6 +369,19 @@ def recent_letters(store, before, n=1):
     return '\n\n'.join(f"[{k}]\n{clip(store['letters'][k]['body'], 500)}" for k in keys)
 
 
+WITH_SION = re.compile(r'시온')
+SCHED_RULE = ("- 캘린더 일정은 '(시온과 함께)' 표시가 없으면 민정 혼자(또는 다른 사람과) 간 거야. 시온은 같이 안 갔어. "
+              "단 민정이 메시지에서 같이 갔다고 하면 그 말을 따라.")
+
+
+def with_sion(e):
+    return bool(WITH_SION.search(str(e.get('title', '')) + ' ' + str(e.get('note', '') or '')))
+
+
+def wtag(e):
+    return ' (시온과 함께)' if with_sion(e) else ''
+
+
 def upcoming(day, days=3):
     """다가오는 일정: 내일~days일 캘린더(ATracker 빼고), 마감 할 일, 7일 안 디데이"""
     d0 = datetime.strptime(day, '%Y-%m-%d').date()
@@ -376,7 +390,7 @@ def upcoming(day, days=3):
     cal = load('diary/calendar.json', {})
     for e in sorted(cal.get('events') or [], key=lambda e: (e.get('date') or '', e.get('start') or '')):
         if (e.get('date') in keys) and not str(e.get('cal', '')).startswith('AT'):
-            out.append(f"- {e['date'][5:]} {e.get('start') or '종일'} {e.get('title')}")
+            out.append(f"- {e['date'][5:]} {e.get('start') or '종일'} {e.get('title')}{wtag(e)}")
     todos = load('data/todos.json', [])
     for t in todos if isinstance(todos, list) else []:
         if not t.get('is_completed') and t.get('target_date') in keys:
@@ -514,7 +528,7 @@ def schedule_today(day):
             continue
         if 0 <= left <= 14:
             dd.append({'title': x.get('title'), 'left': left})
-    return ([{'time': (e.get('start', '') + ('~' + e['end'] if e.get('end') else '')) if e.get('start') else '종일', 'title': e.get('title'), 'cal': e.get('cal')} for e in ev],
+    return ([dict({'time': (e.get('start', '') + ('~' + e['end'] if e.get('end') else '')) if e.get('start') else '종일', 'title': e.get('title'), 'cal': e.get('cal')}, **({'with': True} if with_sion(e) else {})) for e in ev],
             td, dd)
 
 
@@ -535,12 +549,14 @@ def brief_text(b):
     if f:
         out.append(f"- 오하아사 운세({f['sign']}): 12위 중 {f['rank']}위 · {' / '.join(f['jp'])}")
     for e in b.get('schedule') or []:
-        out.append(f"- 일정 {e['time']} {e['title']}")
+        out.append(f"- 일정 {e['time']} {e['title']}" + (' (시온과 함께)' if e.get('with') else ''))
     for t in b.get('todos') or []:
         t = t if isinstance(t, dict) else {'text': t}
         out.append(f"- 할 일: {t.get('text')}" + (' (끝냄)' if t.get('done') else ''))
     for d in b.get('ddays') or []:
         out.append(f"- D-{d['left'] or 'DAY'} {d['title']}")
+    if b.get('special'):
+        out.insert(0, f"- 오늘은 기념일: {', '.join(b['special'])}")
     return '\n'.join(out)
 
 
@@ -621,6 +637,93 @@ def make_message(store, cfg, slot):
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': slot, 'model': model} for b in bubbles(text, 4)]}
 
 
+# ---------------------------------------------------------------- 기념일 (아침 메시지는 무조건 이 이야기)
+FIXED_DAYS = {'01-01': '새해 첫날', '02-14': '밸런타인데이', '03-14': '화이트데이', '05-05': '어린이날', '10-31': '핼러윈',
+              '11-11': '빼빼로데이', '12-24': '크리스마스 이브', '12-25': '크리스마스', '12-31': '한 해의 마지막 날'}
+LUNAR_DAYS = {'2026-02-17': '설날', '2027-02-07': '설날', '2028-01-27': '설날', '2029-02-13': '설날', '2030-02-03': '설날',
+              '2026-09-25': '추석', '2027-09-15': '추석', '2028-10-03': '추석', '2029-09-22': '추석', '2030-09-12': '추석'}
+
+
+def specials(cfg, day):
+    out = []
+    if LUNAR_DAYS.get(day):
+        out.append(LUNAR_DAYS[day])
+    if FIXED_DAYS.get(day[5:]):
+        out.append(FIXED_DAYS[day[5:]])
+    try:
+        d0 = datetime.strptime(cfg.get('since') or '2026-01-02', '%Y-%m-%d').date()
+        d = datetime.strptime(day, '%Y-%m-%d').date()
+        n = (d - d0).days + 1
+        if n > 1 and n % 100 == 0:
+            out.append(f'시온과 함께한 지 {n}일')
+        if d != d0 and (d.month, d.day) == (d0.month, d0.day):
+            out.append(f'시온과 만난 지 {d.year - d0.year}주년')
+    except ValueError:
+        pass
+    mj = load('minjung/minjung.json', {})
+    v = next((x.get('value') for x in mj.get('profile') or [] if x.get('label') == '생년월일'), '') or ''
+    m = re.search(r'(\d{4})\D+(\d{1,2})\D+(\d{1,2})', v)
+    if m and f'{int(m.group(2)):02d}-{int(m.group(3)):02d}' == day[5:]:
+        out.append('민정의 생일')
+    return out
+
+
+# ---------------------------------------------------------------- 일정 5분 전 (내가 미리 넣은 일정만. ATracker·하루 종일은 빼고)
+REMIND_AHEAD = 36      # 30분마다 확인 → 다음 확인 전까지 올 일정을 미리 잡아 둠 (분)
+
+
+def due_events(store, t):
+    """앞으로 REMIND_AHEAD 분 안에 '5분 전'이 오는 일정 (아직 알리지 않은 것)"""
+    day = t.strftime('%Y-%m-%d')
+    done = set(store.get('reminded') or [])
+    cal = load('diary/calendar.json', {})
+    out = []
+    for e in cal.get('events') or []:
+        if e.get('date') != day or not e.get('start') or str(e.get('cal', '')).startswith('AT'):
+            continue
+        try:
+            st = datetime.strptime(day + ' ' + e['start'][:5], '%Y-%m-%d %H:%M').replace(tzinfo=KST)
+        except ValueError:
+            continue
+        key = f"{day} {e['start'][:5]} {e.get('title')}"
+        if key in done or st <= t:
+            continue
+        if (st - timedelta(minutes=5) - t).total_seconds() <= REMIND_AHEAD * 60:
+            out.append((st, key, e))
+    return sorted(out, key=lambda x: x[0])
+
+
+def make_remind(store, cfg):
+    """다음 일정 5분 전까지 기다렸다가 메시지 (15분 안에 이어지는 일정은 한 번에)"""
+    due = due_events(store, now())
+    if not due:
+        print('곧 시작하는 일정 없음')
+        return None
+    first = due[0][0]
+    group = [x for x in due if (x[0] - first).total_seconds() <= 15 * 60]
+    wait = (first - timedelta(minutes=5) - now()).total_seconds()
+    if wait > 0:
+        print(f'{int(wait)}초 기다렸다가 보냄')
+        time.sleep(wait)
+    t = now()
+    day = t.strftime('%Y-%m-%d')
+    lines = '\n'.join(f"- {st.strftime('%H:%M')} {e.get('title')}"
+                      + (f" (메모: {clip(e['note'], 120)})" if e.get('note') and 'Hash ID' not in e['note'] else '')
+                      + (' — 시온도 같이 감' if with_sion(e) else ' — 시온은 같이 안 감') for st, _, e in group)
+    prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정의 일정이 곧(5분쯤 뒤) 시작해. 그 일정에 맞춰 먼저 메시지를 보내.\n"
+              f"# 곧 시작하는 일정\n{lines}\n\n"
+              f"{P(cfg, 'remind', '일정 이름과 메모를 보고 그 일에 맞는 짧은 말. 같이 안 가는 일정이면 떨어져서 응원하거나 챙겨 주는 말, 같이 가는 일정이면 같이 가는 사람으로서. 시간 알려 주는 알람처럼 딱딱하게 말하지 마.')}\n\n"
+              f"{trip_note(cfg, day)}"
+              f"# 기억\n{memory(store)}\n\n"
+              f"# 최근 메시지 (참고)\n{chat_history(store, 8, days=0.5) or '(없음)'}\n\n"
+              f"# 오늘의 알림\n{brief_text((store.get('briefs') or {}).get(day) or {}) or '(없음)'}\n\n"
+              f"# 쓰는 법\n- 말풍선 1~3개. 말풍선마다 줄을 바꿔. 메시지 본문만.")
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
+    at = stamp(t)
+    return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': 'remind', 'model': model} for b in bubbles(text, 3)],
+            'reminded': [k for _, k, _ in group]}
+
+
 def make_tick(store, cfg):
     """30분마다: 날씨 확인 + (오늘 알림이 없으면 8시 이후 만들기) + 시간 창 안에서 랜덤하게 선톡 하나"""
     import random
@@ -628,6 +731,10 @@ def make_tick(store, cfg):
     day = t.strftime('%Y-%m-%d')
     h = t.hour + t.minute / 60
     patch = {}
+    if due_events(store, t) and os.environ.get('GITHUB_OUTPUT'):
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            f.write('remind=1\n')     # → 따로 기다렸다가 5분 전에 보내는 작업(remind)이 뜸
+        print('곧 시작하는 일정 있음 → remind')
     w = make_weather(store, cfg)
     if w:
         patch.update(w)
@@ -675,6 +782,9 @@ def make_morning(store, cfg, t, day):
         return None
     sched, todos, ddays = schedule_today(day)
     b = {'date': day, 'at': stamp(t), 'weather': weather(cfg), 'fortune': fo, 'schedule': sched, 'todos': todos, 'ddays': ddays}
+    sp = specials(cfg, day)
+    if sp:
+        b['special'] = sp
     if old and sent:
         # 메시지는 이미 보냈고 운세만 늦게 나온 경우: 번역만 (짧은 호출 하나)
         text, _ = gemini(cfg['models']['light'], '너는 일본어를 자연스러운 한국어로 옮기는 번역가야.',
@@ -683,7 +793,9 @@ def make_morning(store, cfg, t, day):
         fo['ko'] = parse_json(text, list) or []
         return {'brief': dict(old, fortune=fo, weather=old.get('weather') or b['weather'])}
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 아침 메시지를 먼저 보내.\n"
-              f"{P(cfg, 'morning', '나른한 아침 인사. 오늘의 알림에서 필요한 것 한두 개만 짚어.')}\n\n"
+              f"{P(cfg, 'morning', '나른한 아침 인사. 오늘의 알림에서 필요한 것 한두 개만 짚어.')}\n"
+              + (f"- 오늘은 {', '.join(sp)}. 아침 메시지는 무조건 이 기념일 이야기로 해. 기념일 이야기가 중심이고 날씨·운세는 곁들일 때만.\n" if sp else '')
+              + "\n"
               f"{trip_note(cfg, day)}"
               f"# 오늘의 알림\n{brief_text(b) or '(없음)'}\n\n"
               f"# 기억\n{memory(store)}\n\n"
@@ -883,6 +995,8 @@ def apply(store, patch):
                 log.append({k: old[k] for k in ('summary', 'upto', 'at', 'from', 'edited') if k in old})
             store['memory_log'] = log[-40:]
         store['memory'] = patch['memory']
+    if patch.get('reminded'):
+        store['reminded'] = (list(dict.fromkeys((store.get('reminded') or []) + patch['reminded'])))[-60:]
     if patch.get('brief'):
         b = patch['brief']
         briefs = store.setdefault('briefs', {})
@@ -1016,7 +1130,7 @@ def notify(patch, cfg):
 # ----------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'tick', 'call', 'apply', 'notify', 'preview'])
+    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'weather', 'tick', 'remind', 'call', 'apply', 'notify', 'preview'])
     ap.add_argument('patch', nargs='?')
     ap.add_argument('--date')
     ap.add_argument('--slot', choices=list(SLOTS) + [''], default='')
@@ -1058,6 +1172,8 @@ def main():
         patch = make_call(store, cfg, a.id)
     elif a.mode == 'tick':
         patch = make_tick(store, cfg)
+    elif a.mode == 'remind':
+        patch = make_remind(store, cfg)
     else:
         patch = make_reply(store, cfg, a.date or letter_day())
     if patch and a.out:

@@ -1,5 +1,6 @@
 # 하시온(내 여보♡) 메시지·편지 (김민정 첫 화면 → 퀘스트 아래 버튼)
 #   - 오늘의 알림(아침) · 점심·저녁·밤·가끔 새벽 선톡: 30분마다 확인해서 랜덤 시각에
+#   - 내가 미리 넣은 일정 5분 전 메시지 (ATracker·하루 종일 제외)
 #   - 내가 보낸 메시지에 답장 / 밤 편지(하루 한 통) / 편지 답글: 사이트에서 실행
 # → minjung/letters.json 에 저장
 # 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
@@ -20,7 +21,7 @@ on:
         required: true
         default: chat
         type: choice
-        options: [chat, letter, reply, message, weather, tick, call]
+        options: [chat, letter, reply, message, weather, tick, call, remind]
       date:
         description: '날짜 (YYYY-MM-DD, 비우면 오늘)'
         required: false
@@ -42,20 +43,22 @@ on:
 permissions:
   contents: write
 
-# 통화는 따로 줄 서기: 메시지·편지 만드는 동안에도 기다리지 않고 바로
-concurrency:
-  group: letter-${{ inputs.mode == 'call' && 'call' || 'main' }}
-  cancel-in-progress: false
-
 jobs:
   write:
     runs-on: ubuntu-latest
+    # 통화는 따로 줄 서기: 메시지·편지 만드는 동안에도 기다리지 않고 바로
+    concurrency:
+      group: letter-${{ inputs.mode == 'call' && 'call' || 'main' }}
+      cancel-in-progress: false
+    outputs:
+      remind: ${{ steps.make.outputs.remind }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: 만들기
+        id: make
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
@@ -92,6 +95,52 @@ jobs:
             git add minjung/letters.json
             git diff --cached --quiet && { echo '변경 없음'; exit 0; }
             git commit -q -m '김민정: 시온 메시지'
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo saved=1 >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep $((i * 3))
+          done
+          exit 1
+      - name: 웹앱 알림
+        if: steps.save.outputs.saved == '1'
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: |
+          pip install --quiet cryptography
+          python .github/scripts/letter.py notify "$RUNNER_TEMP/patch.json"
+
+  # 내가 미리 넣은 일정 5분 전 메시지: 30분 확인 때 곧 시작하는 일정이 있으면 떠서, 5분 전까지 기다렸다가 보냄
+  remind:
+    needs: write
+    if: always() && needs.write.outputs.remind == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: letter-remind
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 기다렸다가 만들기
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+        run: python .github/scripts/letter.py remind --out "$RUNNER_TEMP/patch.json"
+      - name: 저장
+        id: save
+        run: |
+          if [ ! -f "$RUNNER_TEMP/patch.json" ]; then echo '변경 없음'; exit 0; fi
+          git config user.name 'sion-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for i in 1 2 3 4 5; do
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard FETCH_HEAD
+            python .github/scripts/letter.py apply "$RUNNER_TEMP/patch.json"
+            git add minjung/letters.json
+            git diff --cached --quiet && { echo '변경 없음'; exit 0; }
+            git commit -q -m '김민정: 시온 일정 메시지'
             if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo saved=1 >> "$GITHUB_OUTPUT"; exit 0; fi
             sleep $((i * 3))
           done
