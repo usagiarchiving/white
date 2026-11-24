@@ -195,7 +195,7 @@ def api_keys():
     return out
 
 
-def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=False, think='low'):
+def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=False, think='high'):
     """좋은 모델부터, 키를 차례로 써 봄. 한도가 차면(429) 다음 키로, 그 모델을 모든 키가 못 쓰면 다음 모델로"""
     keys = api_keys()
     if not keys:
@@ -208,7 +208,7 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
     }
     if json_mode:
         body['generationConfig']['responseMimeType'] = 'application/json'
-    # 생각(thinking)을 줄여서 빠르고 토큰을 덜 씀 (편지는 think=None 으로 모델 기본값). 모델이 안 받으면 빼고 다시
+    # 생각(thinking)은 높게. 모델이 thinkingLevel 을 모르면 빼고 다시
     errors = []
     for model in models:
         skip_model = False
@@ -439,9 +439,16 @@ def schedule_today(day):
             td, dd)
 
 
+def sion_lines(b):
+    """오늘의 알림 속 시온 아침 메시지 (사이트에서 고치면 {text, fav} 모양)"""
+    return [x if isinstance(x, str) else str(x.get('text', '')) for x in (b or {}).get('sion') or [] if x]
+
+
 def brief_text(b):
     """프롬프트에 넣을 오늘의 알림 요약"""
     out = []
+    if sion_lines(b):
+        out.append(f"- 아침에 시온이 보낸 메시지: {' / '.join(sion_lines(b))}")
     w = b.get('weather')
     if w:
         out.append(f"- 날씨({w['place']}): 지금 {w['now']}°, {w['desc']}, 최고 {w['max']}° 최저 {w['min']}°, 비 올 확률 {w['rain']}%")
@@ -474,7 +481,7 @@ def make_letter(store, cfg, day, force):
               f"# 내일부터 사흘 일정 (내일 챙길 것)\n{upcoming(day) or '(없음)'}\n\n"
               f"# 오늘 {r}의 기록\n{gather(day) or '(오늘은 남긴 기록이 거의 없음)'}\n\n"
               f"# 쓰는 법\n{P(cfg, 'letter', '손편지. 600~1000자. 마지막은 잘 자라는 말로.')}\n- 서명 없이 편지 본문만 출력.")
-    body, model = gemini(cfg['models']['letter'], system_prompt(cfg), prompt, max_tokens=8192, think=None)
+    body, model = gemini(cfg['models']['letter'], system_prompt(cfg), prompt, max_tokens=8192)
     body = clean(body)
     patch = {'letter': {'date': day, 'body': body, 'at': stamp(), 'model': model, 'replies': []}, 'force': force}
     mem = make_memory(store, cfg, day, body)
@@ -525,7 +532,7 @@ def make_message(store, cfg, slot):
               f"# 오늘의 알림 (날씨·운세·일정)\n{brief_text((store.get('briefs') or {}).get(day) or {}) or '(없음)'}\n\n"
               f"# 오늘 지금까지 민정의 기록\n{gather(day, upto=t.strftime('%H:%M')) or '(아직 없음)'}\n\n"
               f"# 쓰는 법\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
     at = stamp(t)
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': slot, 'model': model} for b in bubbles(text, 3)]}
 
@@ -533,7 +540,7 @@ def make_message(store, cfg, slot):
 def make_morning(store, cfg, t, day):
     """아침: 오늘의 알림(날씨·운세·일정) + 시온 아침 메시지를 AI 한 번으로. 운세 번역도 같이"""
     old = (store.get('briefs') or {}).get(day)
-    sent = any(r.get('slot') == 'morning' and r['at'][:10] == day for r in store['chat'])
+    sent = bool(old and old.get('sion'))   # 아침 메시지는 오늘의 알림(Daily 카드)에만, 대화창에는 안 넣음
     fo = fortune(day)
     if old and sent and (old.get('fortune') or not fo):
         print(f'{day} 아침 알림·메시지는 이미 있어요.')
@@ -556,7 +563,7 @@ def make_morning(store, cfg, t, day):
               '{"messages": ["말풍선1", "말풍선2"], "fortune_ko": ["운세 문장을 한 줄씩 자연스러운 한국어로", "...", "행운의 아이템"]}\n'
               "- messages: 실제 메신저 말풍선들 (위 지시대로).\n"
               "- fortune_ko: 운세가 없으면 빈 배열.")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048, json_mode=True)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096, json_mode=True)
     out = parse_json(text, dict) or {'messages': [text]}
     if fo:
         fo['ko'] = [x for x in out.get('fortune_ko') or [] if isinstance(x, str)]
@@ -565,11 +572,8 @@ def make_morning(store, cfg, t, day):
         msgs += bubbles(str(m), 3)
     msgs = msgs[:3] or ['…좋은 아침, 내 토끼.']
     b['sion'] = msgs
-    patch = {'brief': b}
-    if not sent:
-        at = stamp(t)
-        patch['chat'] = [{'id': new_id('s'), 'from': 'ai', 'text': m, 'at': at, 'slot': 'morning', 'model': model} for m in msgs]
-    return patch
+    b['model'] = model
+    return {'brief': b, 'brief_new': True}
 
 
 # ---------------------------------------------------------------- 날씨가 바뀌면 (AI 안 씀)
@@ -655,7 +659,7 @@ def make_chat(store, cfg):
               f"# 오늘의 알림·다가오는 일정\n{brief_text((store.get('briefs') or {}).get(day) or {})}\n{upcoming(day)}\n\n"
               f"# 대화 (마지막이 방금 온 메시지)\n{chat_history(store, 16)}\n\n"
               f"# 쓰는 법\n{P(cfg, 'chat', '짧은 말풍선 1~4개.')}\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
     at = stamp(t)
     return {'chat': [{'id': new_id('c'), 'from': 'ai', 'text': b, 'at': at, 'model': model} for b in bubbles(text, 4)]}
 
@@ -676,7 +680,7 @@ def make_reply(store, cfg, day):
     prompt = (f"{date_label(day)} 밤에 네가 쓴 편지와, 민정이 거기에 단 답장이야. 마지막 답장에 짧게 답글을 써.\n\n"
               f"# 네 편지\n{lt['body']}\n\n# 답장\n{thread}\n\n"
               f"# 쓰는 법\n{P(cfg, 'reply', '짧은 추신. 2~5문장.')}\n- 본문만.")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
     text = clean(text)
     return {'reply': {'date': day, 'item': {'id': new_id('r'), 'from': 'ai', 'text': text, 'at': stamp(), 'model': model}}}
 
@@ -777,6 +781,9 @@ def notices_of(patch, cfg):
     if patch.get('alert'):
         a = patch['alert']
         return [{'title': title, 'body': a['text'], 'tab': 'Notice', 'tag': 'sion-wx-' + a['at']}]
+    if patch.get('brief_new'):
+        b = patch['brief']
+        return [{'title': title, 'body': '사진' if PHOTO.fullmatch(t) else clip(t, 180), 'tab': 'Notice', 'tag': f"sion-am-{b['date']}-{i}"} for i, t in enumerate(sion_lines(b))]
     chat = [r for r in patch.get('chat') or [] if r['from'] == 'ai']
     if chat:
         return [{'title': title, 'body': '사진' if PHOTO.fullmatch(r['text']) else clip(r['text'], 180), 'tab': 'Message', 'tag': 'sion-' + r['id']} for r in chat]
