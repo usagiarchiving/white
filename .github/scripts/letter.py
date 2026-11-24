@@ -194,7 +194,7 @@ def api_keys():
     return out
 
 
-def gemini(models, system, prompt, max_tokens=4096, temperature=0.95):
+def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=False):
     """좋은 모델부터, 키를 차례로 써 봄. 한도가 차면(429) 다음 키로, 그 모델을 모든 키가 못 쓰면 다음 모델로"""
     keys = api_keys()
     if not keys:
@@ -205,6 +205,8 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95):
         'generationConfig': {'temperature': temperature, 'maxOutputTokens': max_tokens},
         'safetySettings': SAFETY,
     }
+    if json_mode:
+        body['generationConfig']['responseMimeType'] = 'application/json'
     errors = []
     for model in models:
         for name, key in keys:
@@ -259,6 +261,7 @@ def system_prompt(cfg):
             '- 행동·표정·상황 서술은 절대 금지. *별표*나 (괄호)로 행동을 묘사하지 말고, 휴대폰으로 실제로 보내는 글자만 써.\n'
             '- 민정이 답장을 안 했거나 늦게 했어도 그걸 따지거나 "왜 답이 없냐"고 묻지 마. 메시지가 끊기는 건 자연스러운 일이야.\n'
             '- 지난 대화는 참고만 해. 같은 이야기를 또 해도 되지만 예전 주제를 오래 끌고 가지 말고, 지금 시각과 지금 기록을 중심으로 말해.\n'
+            '- 상황극·롤플레잉 전개 금지. 평범한 부부의 일상 메신저처럼, 민정의 오늘 일정과 기록에 맞춘 말을 해.\n'
             '- 마크다운(#, **, - 목록)과 이모지는 쓰지 마.')
 
 
@@ -288,15 +291,141 @@ def bubbles(text, limit=4):
     return parts or [text.strip() or '…']
 
 
-def chat_history(store, n=24):
-    rows = store['chat'][-n:]
+def chat_history(store, n=24, days=3):
+    """최근 대화 — 단기 기억 위주: 최근 days일 안의 것만, 최대 n개"""
+    cut = (now() - timedelta(days=days)).isoformat()
+    rows = [r for r in store['chat'] if r['at'] >= cut][-n:]
     who = lambda r: '시온' if r['from'] == 'ai' else '민정'
     return '\n'.join(f"[{r['at'][5:16].replace('T', ' ')}] {who(r)}: {r['text']}" for r in rows)
 
 
-def recent_letters(store, before, n=3):
+def recent_letters(store, before, n=1):
     keys = sorted(k for k in store['letters'] if k < before)[-n:]
     return '\n\n'.join(f"[{k}]\n{clip(store['letters'][k]['body'], 500)}" for k in keys)
+
+
+def upcoming(day, days=3):
+    """다가오는 일정: 내일~days일 캘린더(ATracker 빼고), 마감 할 일, 7일 안 디데이"""
+    d0 = datetime.strptime(day, '%Y-%m-%d').date()
+    keys = [(d0 + timedelta(days=i)).isoformat() for i in range(1, days + 1)]
+    out = []
+    cal = load('diary/calendar.json', {})
+    for e in sorted(cal.get('events') or [], key=lambda e: (e.get('date') or '', e.get('start') or '')):
+        if (e.get('date') in keys) and not str(e.get('cal', '')).startswith('AT'):
+            out.append(f"- {e['date'][5:]} {e.get('start') or '종일'} {e.get('title')}")
+    todos = load('data/todos.json', [])
+    for t in todos if isinstance(todos, list) else []:
+        if not t.get('is_completed') and t.get('target_date') in keys:
+            out.append(f"- {t['target_date'][5:]} 할 일: {t.get('content')}")
+    dy = load('diary/diary.json', {})
+    for dd in dy.get('ddays') or []:
+        try:
+            left = (datetime.strptime(dd['date'], '%Y-%m-%d').date() - d0).days
+        except (KeyError, ValueError):
+            continue
+        if 1 <= left <= 7:
+            out.append(f"- D-{left} {dd.get('title')}")
+    return '\n'.join(out)
+
+
+# ---------------------------------------------------------------- 오늘의 알림 (날씨 · 오하아사 · 일정)
+WMO = [((0,), '맑음'), ((1, 2), '구름 조금'), ((3,), '흐림'), ((45, 48), '안개'), ((51, 53, 55, 56, 57), '이슬비'),
+       ((61, 63, 65, 66, 67), '비'), ((71, 73, 75, 77, 85, 86), '눈'), ((80, 81, 82), '소나기'), ((95, 96, 99), '뇌우')]
+SIGNS = ['양자리', '황소자리', '쌍둥이자리', '게자리', '사자자리', '처녀자리', '천칭자리', '전갈자리', '사수자리', '염소자리', '물병자리', '물고기자리']
+
+
+def wdesc(code):
+    return next((n for cs, n in WMO if code in cs), '')
+
+
+def weather(cfg):
+    pl = cfg.get('place') or {'name': '부산 동구', 'lat': 35.1295, 'lon': 129.0454}
+    url = (f"https://api.open-meteo.com/v1/forecast?latitude={pl['lat']}&longitude={pl['lon']}"
+           '&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+           '&timezone=Asia%2FSeoul&forecast_days=2')
+    try:
+        with urllib.request.urlopen(url, timeout=20) as r:
+            w = json.load(r)
+        d = w['daily']
+        day = lambda i: {'code': d['weather_code'][i], 'desc': wdesc(d['weather_code'][i]), 'max': round(d['temperature_2m_max'][i]),
+                         'min': round(d['temperature_2m_min'][i]), 'rain': d['precipitation_probability_max'][i]}
+        return dict(day(0), place=pl['name'], now=round(w['current']['temperature_2m']), tomorrow=day(1))
+    except Exception as e:
+        print(f'[날씨 건너뜀] {e}', file=sys.stderr)
+        return None
+
+
+def my_sign():
+    """김민정 프로필 생년월일 → 별자리 번호(1=양자리)"""
+    mj = load('minjung/minjung.json', {})
+    v = next((x.get('value') for x in mj.get('profile') or [] if x.get('label') == '생년월일'), '') or ''
+    m = re.search(r'(\d{4})\D+(\d{1,2})\D+(\d{1,2})', v)
+    md = int(m.group(2)) * 100 + int(m.group(3)) if m else 411
+    start = [321, 420, 521, 622, 723, 823, 923, 1024, 1123, 1222, 120, 219]
+    for i in range(11, -1, -1):
+        st, nx = start[i], start[(i + 1) % 12]
+        if (md >= st and md < nx) if st < nx else (md >= st or md < nx):
+            return i + 1
+    return 1
+
+
+def fortune(day):
+    """오하아사: 바로 받아 보고, 안 되면 저장소의 diary/ohaasa.json"""
+    raw = None
+    try:
+        req = urllib.request.Request('https://www.asahi.co.jp/data/ohaasa2020/horoscope.json', headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            raw = json.load(r)
+    except Exception as e:
+        print(f'[운세 직접 받기 실패] {e}', file=sys.stderr)
+    raw = raw or load('diary/ohaasa.json', None)
+    top = raw[0] if isinstance(raw, list) and raw else raw if isinstance(raw, dict) else None
+    if not top or str(top.get('onair_date', '')) != day.replace('-', ''):
+        return None
+    sign = my_sign()
+    for d in top.get('detail') or []:
+        if int(d.get('horoscope_st') or 0) == sign:
+            lines = [x.strip() for x in str(d.get('horoscope_text', '')).split('\t') if x.strip()]
+            return {'rank': int(d.get('ranking_no') or 0), 'sign': SIGNS[sign - 1], 'jp': lines}
+    return None
+
+
+def schedule_today(day):
+    cal = load('diary/calendar.json', {})
+    ev = [e for e in cal.get('events') or [] if (e.get('date') or '') <= day <= (e.get('endDate') or e.get('date') or '')
+          and not str(e.get('cal', '')).startswith('AT')]
+    ev.sort(key=lambda e: e.get('start') or '')
+    todos = load('data/todos.json', [])
+    td = [t.get('content') for t in (todos if isinstance(todos, list) else []) if t.get('target_date') == day and not t.get('is_completed')]
+    dy = load('diary/diary.json', {})
+    dd = []
+    for x in dy.get('ddays') or []:
+        try:
+            left = (datetime.strptime(x['date'], '%Y-%m-%d').date() - datetime.strptime(day, '%Y-%m-%d').date()).days
+        except (KeyError, ValueError):
+            continue
+        if 0 <= left <= 14:
+            dd.append({'title': x.get('title'), 'left': left})
+    return ([{'time': (e.get('start', '') + ('~' + e['end'] if e.get('end') else '')) if e.get('start') else '종일', 'title': e.get('title'), 'cal': e.get('cal')} for e in ev],
+            td, dd)
+
+
+def brief_text(b):
+    """프롬프트에 넣을 오늘의 알림 요약"""
+    out = []
+    w = b.get('weather')
+    if w:
+        out.append(f"- 날씨({w['place']}): 지금 {w['now']}°, {w['desc']}, 최고 {w['max']}° 최저 {w['min']}°, 비 올 확률 {w['rain']}%")
+    f = b.get('fortune')
+    if f:
+        out.append(f"- 오하아사 운세({f['sign']}): 12위 중 {f['rank']}위 · {' / '.join(f['jp'])}")
+    for e in b.get('schedule') or []:
+        out.append(f"- 일정 {e['time']} {e['title']}")
+    for t in b.get('todos') or []:
+        out.append(f"- 할 일: {t}")
+    for d in b.get('ddays') or []:
+        out.append(f"- D-{d['left'] or 'DAY'} {d['title']}")
+    return '\n'.join(out)
 
 
 def memory(store):
@@ -312,7 +441,8 @@ def make_letter(store, cfg, day, force):
     prompt = (f"오늘은 {date_label(day)}. 자기 전, {r}에게 남길 오늘의 편지를 써 줘.\n\n"
               f"# {r}에 대해 기억하는 것\n{memory(store)}\n\n"
               f"# 최근에 쓴 편지 (같은 말 되풀이하지 않기)\n{recent_letters(store, day) or '(없음)'}\n\n"
-              f"# 오늘 주고받은 메시지\n{chat_history(store) or '(없음)'}\n\n"
+              f"# 오늘 주고받은 메시지\n{chat_history(store, 20, days=1) or '(없음)'}\n\n"
+              f"# 내일부터 사흘 일정 (내일 챙길 것)\n{upcoming(day) or '(없음)'}\n\n"
               f"# 오늘 {r}의 기록\n{gather(day) or '(오늘은 남긴 기록이 거의 없음)'}\n\n"
               f"# 쓰는 법\n- 손편지. 길이 {cfg.get('letter_length', '600~1000자')}. 메시지보다는 조금 더 솔직하고 깊게.\n"
               "- 첫 줄은 호칭(여보, 내 토끼 등)으로 시작해 평범한 문단으로.\n"
@@ -328,7 +458,7 @@ def make_letter(store, cfg, day, force):
 
 
 def make_memory(store, cfg, day, new_body):
-    every = int(cfg.get('memory_every') or 7)
+    every = int(cfg.get('memory_every') or 3)
     upto = store['memory'].get('upto') or ''
     letters = dict(store['letters'])
     letters[day] = {'body': new_body, 'replies': (store['letters'].get(day) or {}).get('replies', [])}
@@ -337,16 +467,16 @@ def make_memory(store, cfg, day, new_body):
         return None
     chunk = '\n\n'.join(f"[{k}]\n{letters[k]['body']}" + ''.join(
         f"\n  ({'민정' if x['from'] == 'me' else '시온'}) {x['text']}" for x in letters[k].get('replies', [])) for k in new)
-    prompt = (f"아래는 기존 기억과 최근 {len(new)}일의 편지·답장, 그리고 최근 메시지야. 하시온이 아내 {cfg['recipient']}에게 "
-              "앞으로 메시지와 편지를 쓸 때 참고할 기억을 800자 안쪽으로 다시 정리해 줘. 반복되는 생활 패턴, 좋아하는 것, 고민, "
-              "진행 중인 일(시험·전시 등은 날짜 포함), 둘 사이에 생긴 약속이나 농담을 짧은 문장 목록으로. 사실로 드러난 것만.\n\n"
-              f"# 기존 기억\n{store['memory'].get('summary') or '(없음)'}\n\n# 최근 편지\n{chunk}\n\n# 최근 메시지\n{chat_history(store, 40)}")
+    prompt = (f"아래는 기존 기억과 최근 {len(new)}일의 편지·답장이야. 하시온이 아내 {cfg['recipient']}에게 메시지와 편지를 쓸 때 참고할 "
+              "짧은 기억을 500자 안쪽으로 다시 정리해 줘. 오래된 일은 과감히 빼고, 요즘 며칠의 상태와 앞으로 있을 일(날짜 포함) 위주로. "
+              "민정이 직접 고친 내용(기존 기억)은 존중해. 짧은 문장 목록으로, 사실로 드러난 것만.\n\n"
+              f"# 기존 기억\n{store['memory'].get('summary') or '(없음)'}\n\n# 최근 편지\n{chunk}")
     try:
         summary, _ = gemini(cfg['models']['light'], '너는 기록을 간결하게 정리하는 비서야.', prompt, temperature=0.3)
     except SystemExit as e:
         print(f'[기억 정리 건너뜀] {e}', file=sys.stderr)
         return None
-    return {'summary': summary, 'upto': new[-1], 'at': stamp()}
+    return {'summary': summary, 'upto': new[-1], 'at': stamp(), 'from': new[0]}
 
 
 # ---------------------------------------------------------------- 아침·점심·저녁 메시지
@@ -355,6 +485,8 @@ def make_message(store, cfg, slot):
     day = t.strftime('%Y-%m-%d')
     if not slot:
         slot = 'morning' if 5 <= t.hour < 11 else 'lunch' if 11 <= t.hour < 16 else 'evening'
+    if slot == 'morning':
+        return make_morning(store, cfg, t, day)
     if any(r.get('slot') == slot and r['at'][:10] == day for r in store['chat']):
         print(f'{day} {SLOTS[slot]} 메시지는 이미 있어요.')
         return None
@@ -367,12 +499,68 @@ def make_message(store, cfg, slot):
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 {SLOTS[slot]} 메시지를 먼저 보내.\n{focus}\n\n"
               f"# 기억\n{memory(store)}\n\n"
               f"# 어젯밤 편지\n{clip((store['letters'].get(yesterday) or {}).get('body'), 400) or '(없음)'}\n\n"
-              f"# 최근 메시지 (참고만. 이어서 답하는 게 아니라 새로 먼저 보내는 메시지야)\n{chat_history(store, 8) or '(없음)'}\n\n"
+              f"# 오늘 주고받은 메시지 (참고만. 이어서 답하는 게 아니라 새로 먼저 보내는 메시지야)\n{chat_history(store, 8, days=0.5) or '(없음)'}\n\n"
+              f"# 오늘의 알림 (날씨·운세·일정)\n{brief_text((store.get('briefs') or {}).get(day) or {}) or '(없음)'}\n\n"
               f"# 오늘 지금까지 민정의 기록\n{gather(day, upto=t.strftime('%H:%M')) or '(아직 없음)'}\n\n"
               f"# 쓰는 법\n- 실제 메신저처럼 짧은 말풍선 1~3개. 말풍선마다 줄을 바꿔. 전체 100자 안쪽. 메시지 본문만.\n{PHOTO_RULE}")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
     at = stamp(t)
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': slot, 'model': model} for b in bubbles(text, 3)]}
+
+
+def make_morning(store, cfg, t, day):
+    """아침: 오늘의 알림(날씨·운세·일정) + 시온 아침 메시지를 AI 한 번으로. 운세 번역도 같이"""
+    old = (store.get('briefs') or {}).get(day)
+    sent = any(r.get('slot') == 'morning' and r['at'][:10] == day for r in store['chat'])
+    fo = fortune(day)
+    if old and sent and (old.get('fortune') or not fo):
+        print(f'{day} 아침 알림·메시지는 이미 있어요.')
+        return None
+    sched, todos, ddays = schedule_today(day)
+    b = {'date': day, 'at': stamp(t), 'weather': weather(cfg), 'fortune': fo, 'schedule': sched, 'todos': todos, 'ddays': ddays}
+    if old and sent:
+        # 메시지는 이미 보냈고 운세만 늦게 나온 경우: 번역만 (짧은 호출 하나)
+        text, _ = gemini(cfg['models']['light'], '너는 일본어를 자연스러운 한국어로 옮기는 번역가야.',
+                         '아래 오하아사 운세 문장들을 한 줄씩 자연스러운 한국어로 옮겨. 마지막 줄은 행운의 아이템이야. JSON 배열(문자열)만 출력.\n' + '\n'.join(fo['jp']),
+                         max_tokens=512, temperature=0.3, json_mode=True)
+        fo['ko'] = parse_json(text, list) or []
+        return {'brief': dict(old, fortune=fo, weather=old.get('weather') or b['weather'])}
+    prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 아침 메시지를 먼저 보내.\n"
+              "막 일어났을 민정에게 나른한 아침 인사. 아래 '오늘의 알림'에서 정말 필요한 것 한두 개만 시온답게 짚어 "
+              "(비 오면 우산, 추우면 따뜻하게, 운세가 좋거나 나쁘면 한마디, 중요한 일정이나 디데이). 나열하지 마.\n\n"
+              f"# 오늘의 알림\n{brief_text(b) or '(없음)'}\n\n"
+              f"# 기억\n{memory(store)}\n\n"
+              f"# 어젯밤 편지\n{clip((store['letters'].get((t - timedelta(days=1)).strftime('%Y-%m-%d')) or {}).get('body'), 300) or '(없음)'}\n\n"
+              "# 출력 (JSON 하나만)\n"
+              '{"messages": ["말풍선1", "말풍선2"], "fortune_ko": ["운세 문장을 한 줄씩 자연스러운 한국어로", "...", "행운의 아이템"]}\n'
+              "- messages: 실제 메신저처럼 짧은 말풍선 1~3개, 전체 100자 안쪽.\n"
+              "- fortune_ko: 운세가 없으면 빈 배열.")
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024, json_mode=True)
+    out = parse_json(text, dict) or {'messages': [text]}
+    if fo:
+        fo['ko'] = [x for x in out.get('fortune_ko') or [] if isinstance(x, str)]
+    msgs = []
+    for m in out.get('messages') or []:
+        msgs += bubbles(str(m), 3)
+    msgs = msgs[:3] or ['…좋은 아침, 내 토끼.']
+    b['sion'] = msgs
+    patch = {'brief': b}
+    if not sent:
+        at = stamp(t)
+        patch['chat'] = [{'id': new_id('s'), 'from': 'ai', 'text': m, 'at': at, 'slot': 'morning', 'model': model} for m in msgs]
+    return patch
+
+
+def parse_json(text, kind):
+    try:
+        v = json.loads(text)
+    except Exception:
+        m = re.search(r'[\[{].*[\]}]', text or '', re.S)
+        try:
+            v = json.loads(m.group(0)) if m else None
+        except Exception:
+            v = None
+    return v if isinstance(v, kind) else None
 
 
 # ---------------------------------------------------------------- 내 메시지에 답장
@@ -390,7 +578,8 @@ def make_chat(store, cfg):
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정이 메시지를 보냈어. 이어서 답장해.\n\n"
               f"# 기억\n{memory(store)}\n\n"
               f"# 오늘 민정의 기록 (참고)\n{clip(gather(day, upto=t.strftime('%H:%M')), 2500) or '(아직 없음)'}\n\n"
-              f"# 대화 (마지막이 방금 온 메시지)\n{chat_history(store, 30)}\n\n"
+              f"# 오늘의 알림·다가오는 일정\n{brief_text((store.get('briefs') or {}).get(day) or {})}\n{upcoming(day)}\n\n"
+              f"# 대화 (마지막이 방금 온 메시지)\n{chat_history(store, 16)}\n\n"
               f"# 쓰는 법\n- 실제 메신저처럼 짧은 말풍선 1~4개. 말풍선마다 줄을 바꿔. 마지막 메시지에 직접 반응. 메시지 본문만.\n{PHOTO_RULE}")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
     at = stamp(t)
@@ -426,7 +615,19 @@ def apply(store, patch):
         if not old or patch.get('force'):
             store['letters'][lt['date']] = lt
     if patch.get('memory'):
+        old = store.get('memory') or {}
+        if old.get('summary'):
+            log = store.setdefault('memory_log', [])
+            if not any(x.get('summary') == old['summary'] for x in log):
+                log.append({k: old[k] for k in ('summary', 'upto', 'at', 'from', 'edited') if k in old})
+            store['memory_log'] = log[-40:]
         store['memory'] = patch['memory']
+    if patch.get('brief'):
+        b = patch['brief']
+        briefs = store.setdefault('briefs', {})
+        briefs[b['date']] = b
+        for k in sorted(briefs)[:-30]:   # 30일만 보관
+            del briefs[k]
     ids = {r.get('id') for r in store['chat']}
     for r in patch.get('chat') or []:
         if r['id'] not in ids:
