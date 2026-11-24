@@ -1015,15 +1015,16 @@ export function init() {
                         { icon: SN_SVG.bell(sion.push === true), label: sion.push === true ? '알림 끄기' : '알림 켜기', run: sionPushToggle },
                         { icon: KK.menu, label: '채팅방 설정 · 테마', run: () => { st.view = 'kset'; fresh(); } }
                     ]); break;
-                case 'kk-opt': KT.opt[v] = !KT.opt[v]; ktSaveOpt(); fresh(); break;
+                case 'kk-opt': if (sionNeedToken()) break; KT.opt[v] = !KT.opt[v]; ktSaveOpt(); fresh(); break;
                 case 'kk-font':
-                    if (v === 'mine') { pickAny('.ttf,.otf,.woff,.woff2,font/*', async f => { await ktSet('font', { blob: f, name: f.name }); KT.opt.font = 'mine'; ktSaveOpt(); await ktApply(); toast('글꼴을 바꿨어요'); }); break; }
-                    KT.opt.font = v; ktSaveOpt(); ktApply(); break;
-                case 'kk-theme': pickAny('.ktheme,.apk,.zip,application/zip,application/vnd.android.package-archive', async f => {
+                    if (sionNeedToken()) break;
+                    if (v === 'mine') { pickAny('.ttf,.otf,.woff,.woff2,font/*', async f => { toast('글꼴 올리는 중…'); try { await ktFont(f); toast('글꼴을 바꿨어요'); } catch (err) { mjAlert('글꼴을 넣지 못했어요.\n' + (err.message || err)); } }); break; }
+                    KT.opt.font = v; ktSaveOpt(); break;
+                case 'kk-theme': if (sionNeedToken()) break; pickAny('.ktheme,.apk,.zip,application/zip,application/vnd.android.package-archive', async f => {
                         toast('테마 읽는 중…');
                         try { const th = await ktImport(f); toast(th.name + ' 적용 ♡'); } catch (err) { console.error(err); mjAlert('테마를 넣지 못했어요.\n' + (err.message || err)); }
                     }); break;
-                case 'kk-theme-del': ktSet('theme', null).then(ktApply); break;
+                case 'kk-theme-del': if (!sionNeedToken()) ktReset().catch(err => mjAlert('되돌리지 못했어요.\n' + (err.message || err))); break;
                 case 'kk-name': (async () => {
                         const t = ((await mjPrompt('대화 상대 이름', contact())) || '').trim(); if (!t || t === contact() || sionNeedToken()) return;
                         sion.cfg.contact = t; WIN.sion.title = t; fresh(); drawSionBtn();
@@ -2509,20 +2510,28 @@ export function init() {
     }
 
     /* ---------------- 채팅방 테마 (카톡 .ktheme · 안드로이드 .apk 통째로) ----------------
-       테마 파일은 저작권이 있는 그림이라 공개 저장소에 올리지 않고 이 기기(IndexedDB)에만 저장
-       글꼴 파일도 마찬가지. 상대 이름 · 프사 보이기 같은 화면 설정도 이 기기에 */
-    const KT = { theme: null, urls: [], font: null, opt: { showName: true, showPic: true, font: 'pretendard' } };
-    try { Object.assign(KT.opt, JSON.parse(localStorage.getItem('mj_kk_opt') || '{}')); } catch (e) {}
-    const ktSaveOpt = () => { try { localStorage.setItem('mj_kk_opt', JSON.stringify(KT.opt)); } catch (e) {} };
-    function ktDB() {
-        return new Promise((ok, fail) => {
-            const r = indexedDB.open('mj-kakao-theme', 1);
-            r.onupgradeneeded = () => r.result.createObjectStore('kv');
-            r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error);
-        });
+       넣은 테마는 저장소 minjung/theme/ 에 그림 + theme.json 으로 저장 → 폰·PC 어디서나 같은 테마
+       theme.json: { name, kind, colors, img:{bg,profile}, bubbles:{send1,send2,recv1,recv2}, font:{path,name}, opt:{showName,showPic,font} } */
+    const THEME_DIR = 'minjung/theme/', THEME_FILE = THEME_DIR + 'theme.json';
+    const KT = { data: null, local: {}, opt: { showName: true, showPic: true, font: 'pretendard' } };
+    try { const c = JSON.parse(localStorage.getItem('mj_kk_theme') || 'null'); if (c) { KT.data = c; Object.assign(KT.opt, c.opt || {}); } } catch (e) {}
+    Object.defineProperty(KT, 'theme', { get: () => KT.data && KT.data.bubbles ? KT.data : null });
+    const ktSrc = p => KT.local[p] || repo.url(p);
+    const ktPaths = d => { const out = []; if (!d) return out; Object.values(d.img || {}).forEach(p => p && out.push(p)); Object.values(d.bubbles || {}).forEach(b => b && b.path && out.push(b.path)); if (d.font && d.font.path) out.push(d.font.path); return out; };
+    function ktCommit(message, files, next) {
+        if (sionNeedToken()) return Promise.reject(new Error('토큰이 없어요'));
+        KT.data = next; Object.assign(KT.opt, (next && next.opt) || {});
+        try { localStorage.setItem('mj_kk_theme', JSON.stringify(next)); } catch (e) {}
+        ktApply();
+        return repo.commit('김민정: ' + message, files || {}, { [THEME_FILE]: { fallback: {}, mutate: () => next } });
     }
-    async function ktGet(k) { const db = await ktDB(); return new Promise(ok => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => ok(q.result); q.onerror = () => ok(null); }); }
-    async function ktSet(k, v) { const db = await ktDB(); return new Promise((ok, fail) => { const t = db.transaction('kv', 'readwrite'); v == null ? t.objectStore('kv').delete(k) : t.objectStore('kv').put(v, k); t.oncomplete = ok; t.onerror = () => fail(t.error); }); }
+    function ktSaveOpt() { const next = Object.assign({}, KT.data || {}, { opt: Object.assign({}, KT.opt) }); ktCommit('채팅방 설정', {}, next).catch(e => console.warn(e)); }
+    async function ktLoad() {
+        try {
+            const d = await repo.readJSON(THEME_FILE, null);
+            if (d && JSON.stringify(d) !== JSON.stringify(KT.data)) { KT.data = d; Object.assign(KT.opt, d.opt || {}); try { localStorage.setItem('mj_kk_theme', JSON.stringify(d)); } catch (e) {} ktApply(); }
+        } catch (e) { console.warn('theme', e); }
+    }
     let jszip = null;
     function loadZip() {
         if (window.JSZip) return Promise.resolve(window.JSZip);
@@ -2648,19 +2657,44 @@ export function init() {
         if (names.some(n => /KakaoTalkTheme\.css$/i.test(n))) th = await ktFromKtheme(zip);
         else if (names.some(n => /^res\/drawable/i.test(n))) th = await ktFromApk(zip);
         else throw new Error('카톡 테마 파일(.ktheme · .apk)이 아니에요');
-        await ktSet('theme', th);
-        await ktApply();
+        // 그림을 저장소에 올리고 theme.json 엔 경로만
+        const files = {}, stamp36 = Date.now().toString(36);
+        const put = async (blob, name) => {
+            const p = THEME_DIR + stamp36 + '-' + name + '.png';
+            files[p] = await repo.putBlob(new Uint8Array(await blob.arrayBuffer()));
+            KT.local[p] = URL.createObjectURL(blob);
+            return p;
+        };
+        const next = { name: th.name, kind: th.kind, colors: th.colors, img: {}, bubbles: {}, font: KT.data && KT.data.font, opt: Object.assign({}, KT.opt) };
+        for (const k of ['bg', 'profile']) if (th.img[k]) next.img[k] = await put(th.img[k], k);
+        for (const k of ['send1', 'send2', 'recv1', 'recv2']) {
+            const b = th.bubbles[k]; if (!b) continue;
+            const o = Object.assign({}, b); delete o.blob; o.path = await put(b.blob, k);
+            next.bubbles[k] = o;
+        }
+        ktPaths(KT.data).forEach(p => { if (!files[p] && !(next.font && next.font.path === p)) files[p] = null; });   // 예전 테마 그림 지우기
+        await ktCommit('채팅방 테마 ' + th.name, files, next);
         return th;
+    }
+    async function ktReset() {
+        const files = {}; ktPaths(KT.data).forEach(p => { if (!(KT.data.font && KT.data.font.path === p)) files[p] = null; });
+        await ktCommit('채팅방 테마 기본으로', files, { font: KT.data && KT.data.font, opt: Object.assign({}, KT.opt) });
+    }
+    async function ktFont(f) {
+        const ext = (/\.(ttf|otf|woff2?)$/i.exec(f.name) || [, 'ttf'])[1].toLowerCase();
+        const p = THEME_DIR + Date.now().toString(36) + '-font.' + ext, files = {};
+        files[p] = await repo.putBlob(new Uint8Array(await f.arrayBuffer()));
+        KT.local[p] = URL.createObjectURL(f);
+        if (KT.data && KT.data.font && KT.data.font.path) files[KT.data.font.path] = null;
+        KT.opt.font = 'mine';
+        await ktCommit('채팅방 글꼴', files, Object.assign({}, KT.data || {}, { font: { path: p, name: f.name }, opt: Object.assign({}, KT.opt) }));
     }
     // 테마 → CSS (말풍선은 이미지를 늘려 쓰는 border-image, 첫 말풍선은 01 · 이어지는 말풍선은 02)
     async function ktApply() {
-        KT.urls.forEach(u => URL.revokeObjectURL(u)); KT.urls = [];
-        const url = b => { const u = URL.createObjectURL(b); KT.urls.push(u); return u; };
-        let th = null, font = null;
-        try { th = await ktGet('theme'); font = await ktGet('font'); } catch (e) {}
-        KT.theme = th;
+        const url = p => ktSrc(p);
+        const th = KT.theme, font = KT.data && KT.data.font;
         let css = '';
-        if (font && KT.opt.font === 'mine') css += `@font-face { font-family: 'KKMine'; src: url(${url(font.blob)}); font-display: swap; }\n`;
+        if (font && font.path && KT.opt.font === 'mine') css += `@font-face { font-family: 'KKMine'; src: url(${url(font.path)}); font-display: swap; }\n`;
         const fam = { pretendard: "'Pretendard Variable', Pretendard", system: '-apple-system, BlinkMacSystemFont, system-ui', galmuri: "'Galmuri11'", mine: "'KKMine'" }[KT.opt.font] || "'Pretendard Variable', Pretendard";
         css += `.mj-win-sion { --kk-font: ${fam}, -apple-system, sans-serif; }\n`;
         if (th) {
@@ -2675,7 +2709,7 @@ export function init() {
                 if (!b) return '';
                 const R = b.R != null ? b.R : b.w / b.scale - b.L - 1, B = b.B != null ? b.B : b.h / b.scale - b.T - 1;
                 const sl = [b.T * b.scale, R * b.scale, B * b.scale, b.L * b.scale].map(Math.round).join(' ');
-                return `${S} ${sel} { --bub: transparent; background: none; border-style: solid; border-width: 0; border-image: url(${url(b.blob)}) ${sl} fill / ${b.T}px ${R}px ${B}px ${b.L}px stretch;
+                return `${S} ${sel} { --bub: transparent; background: none; border-style: solid; border-width: 0; border-image: url(${url(b.path)}) ${sl} fill / ${b.T}px ${R}px ${B}px ${b.L}px stretch;
                     padding: ${b.pad.t}px ${b.pad.r}px ${b.pad.b}px ${b.pad.l}px; min-width: ${Math.ceil(b.L + R + 1)}px; min-height: ${Math.ceil(b.T + B + 1)}px; max-width: 82%; box-sizing: border-box; color: ${color}; text-shadow: none; border-radius: 0; }
                     ${S} ${sel}::before, ${S} ${sel}::after { display: none; }\n`;
             };
@@ -2684,14 +2718,14 @@ export function init() {
             css += bub('.sn-row.me.first .sn-b:not(.sn-photo):not(.sn-callb)', bb.send1, c.sendText || '#3a3235');
             css += bub('.sn-row.you .sn-b:not(.sn-photo):not(.sn-callb):not(.sn-typing)', bb.recv2 || bb.recv1, c.recvText || '#3a3235');
             css += bub('.sn-row.you.first .sn-b:not(.sn-photo):not(.sn-callb):not(.sn-typing)', bb.recv1, c.recvText || '#3a3235');
-            if (th.img && th.img.profile) KT.profileUrl = url(th.img.profile); else KT.profileUrl = null;
+            KT.profileUrl = th.img && th.img.profile ? url(th.img.profile) : null;
         } else KT.profileUrl = null;
         let el = document.getElementById('kk-theme-css');
         if (!el) { el = document.createElement('style'); el.id = 'kk-theme-css'; document.head.appendChild(el); }
         el.textContent = css;
         if (wins.sion) renderWin('sion');
     }
-    ktApply();
+    ktApply(); ktLoad();
     // 상대 프사: 전화 프로필 사진 > 테마 기본 프사 > 이모티콘
     const kkAvatar = () => sion.cfg && sion.cfg.call_photo ? imgTag(sion.cfg.call_photo, '') : KT.profileUrl ? `<img src="${KT.profileUrl}" alt="">` : `<span class="kk-emoji">${esc((sion.cfg && sion.cfg.call_emoji) || '🐱')}</span>`;
     function pickAny(accept, cb) {
@@ -2705,7 +2739,7 @@ export function init() {
         const fonts = [['pretendard', 'Pretendard'], ['system', '시스템'], ['galmuri', '갈무리'], ['mine', '내 글꼴']];
         return `<div class="kk-set">
             <div class="kk-sec">테마</div>
-            <div class="kk-card"><b>${th ? esc(th.name) : '기본 (블랙·핑크)'}</b><small>${th ? (th.kind === 'apk' ? '안드로이드 테마 · ' : '카톡 테마 · ') + '이 기기에만 저장' : '카톡 테마 파일을 넣으면 통째로 바뀌어요'}</small>
+            <div class="kk-card"><b>${th ? esc(th.name) : '기본 (블랙·핑크)'}</b><small>${th ? (th.kind === 'apk' ? '안드로이드 테마' : '카톡 테마') + ' · 모든 기기에 같이 적용' : '카톡 테마 파일을 넣으면 통째로 바뀌어요'}</small>
                 <div class="kk-btns"><button class="mj-btn" data-act="kk-theme">테마 파일 넣기</button>${th ? '<button class="mj-btn ghost" data-act="kk-theme-del">기본으로</button>' : ''}</div></div>
             <div class="kk-sec">글꼴</div>
             <div class="kk-card kk-fonts">${fonts.map(([k, l]) => `<button class="${o.font === k ? 'on' : ''}" data-act="kk-font" data-v="${k}">${l}</button>`).join('')}
