@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-24T17:31:53+09:00",
+ "updated_at": "2026-11-24T21:37:48+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -991,6 +991,16 @@
    "type": "meal",
    "slot": "lunch",
    "memo": "비빔면, 찐만두",
+   "from": "myhome-cook"
+  },
+  {
+   "id": "cd_cook_2026-11-24_dinner",
+   "date": "2026-11-24",
+   "time": "21:37",
+   "at": "2026-11-24T21:37:48+09:00",
+   "type": "meal",
+   "slot": "dinner",
+   "memo": "밥짓기",
    "from": "myhome-cook"
   }
  ],
