@@ -897,3 +897,20 @@ textarea.dy-in { font-size: 11px; }
 .t-box svg.ic { width: 13px; height: 13px; stroke-width: 2.2; }
 .dy-todo { gap: 12px; }
 .dy-wrap .t-box { color: #fff; }
+
+/* 할 일 목록 다듬기: 프리텐다드, 날씬하게, 작은 체크·하트 */
+.t-grp .gh .pill, .t-row .t, .t-row .m, .t-add .t-quad { font-family: 'Pretendard', 'Gowun Dodum', sans-serif; }
+.t-grp { gap: 4px; }
+.t-grp .gh .pill { padding: 1px 8px 1px 6px; gap: 4px; font-size: 11.5px; font-weight: 600; border-radius: 7px; }
+.t-grp .gl { margin-left: 5px; padding-left: 10px; border-left-width: 2px; }
+.t-row { gap: 10px; padding: 7px 2px 7px 0; }
+.t-row .tx { gap: 1px; }
+.t-row .t { font-size: 12px; font-weight: 500; line-height: 1.45; letter-spacing: -0.01em; }
+.t-row.done .t { font-weight: 400; }
+.t-box { width: 15px; height: 15px; border-radius: 4px; border-width: 1.5px; }
+.t-box svg.ic { width: 10px; height: 10px; stroke-width: 2.4; }
+.t-add .t-quad { border: 0; background: none; padding: 0 4px; font-size: 11px; color: var(--dy-sub); border-radius: 0; }
+.t-add .t-cat { width: 18px; height: 18px; border: 0; box-shadow: none; background: none; display: grid; place-items: center; }
+.svg-heart, .t-add .t-cat .hrt { width: 13px; height: 13px; }
+.t-grp .gh .pill .hrt { width: 9px; height: 9px; }
+.dy-todo { gap: 10px; }
