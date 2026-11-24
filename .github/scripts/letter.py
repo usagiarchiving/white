@@ -180,9 +180,24 @@ SAFETY = [{'category': c, 'threshold': 'BLOCK_ONLY_HIGH'} for c in (
     'HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_DANGEROUS_CONTENT', 'HARM_CATEGORY_SEXUALLY_EXPLICIT')]
 
 
+KEY_NAMES = ['GEMINI_API_KEY', 'GEMINI_API_KEY_2', 'GEMINI_API_KEY_3', 'GEMINI_API_KEY_4']
+SPENT = set()   # 이번 실행에서 한도가 찬 (키, 모델) — 다음 호출 때 바로 건너뜀
+
+
+def api_keys():
+    """메인 키 + 서브 키 (넣은 것만, 순서대로)"""
+    out = []
+    for n in KEY_NAMES:
+        k = os.environ.get(n, '').strip()
+        if k and k not in [x for _, x in out]:
+            out.append((n, k))
+    return out
+
+
 def gemini(models, system, prompt, max_tokens=4096, temperature=0.95):
-    key = os.environ.get('GEMINI_API_KEY', '').strip()
-    if not key:
+    """좋은 모델부터, 키를 차례로 써 봄. 한도가 차면(429) 다음 키로, 그 모델을 모든 키가 못 쓰면 다음 모델로"""
+    keys = api_keys()
+    if not keys:
         sys.exit('GEMINI_API_KEY가 없어요. 저장소 Settings → Secrets and variables → Actions에 넣어 주세요.')
     body = {
         'systemInstruction': {'parts': [{'text': system}]},
@@ -192,30 +207,44 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95):
     }
     errors = []
     for model in models:
-        for attempt in range(2):
-            req = urllib.request.Request(
-                f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-                data=json.dumps(body).encode(), method='POST',
-                headers={'Content-Type': 'application/json', 'x-goog-api-key': key})
-            try:
-                with urllib.request.urlopen(req, timeout=180) as r:
-                    data = json.load(r)
-                cand = (data.get('candidates') or [{}])[0]
-                text = ''.join(p.get('text', '') for p in (cand.get('content') or {}).get('parts') or [] if not p.get('thought')).strip()
-                if text:
-                    print(f'[모델] {model}')
-                    return text, model
-                errors.append(f'{model}: 빈 응답 ({cand.get("finishReason") or data.get("promptFeedback")})')
-                break
-            except urllib.error.HTTPError as e:
-                errors.append(f'{model}: HTTP {e.code} {e.read().decode(errors="replace")[:300]}')
-                if e.code in (429, 500, 503) and attempt == 0:
-                    time.sleep(20)
-                    continue
-                break
-            except Exception as e:
-                errors.append(f'{model}: {e}')
-                break
+        for name, key in keys:
+            if (name, model) in SPENT:
+                continue
+            for attempt in range(2):
+                req = urllib.request.Request(
+                    f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+                    data=json.dumps(body).encode(), method='POST',
+                    headers={'Content-Type': 'application/json', 'x-goog-api-key': key})
+                try:
+                    with urllib.request.urlopen(req, timeout=180) as r:
+                        data = json.load(r)
+                    cand = (data.get('candidates') or [{}])[0]
+                    text = ''.join(p.get('text', '') for p in (cand.get('content') or {}).get('parts') or [] if not p.get('thought')).strip()
+                    if text:
+                        print(f'[모델] {model} · {name}')
+                        return text, model
+                    errors.append(f'{model} · {name}: 빈 응답 ({cand.get("finishReason") or data.get("promptFeedback")})')
+                    break
+                except urllib.error.HTTPError as e:
+                    msg = e.read().decode(errors='replace')[:300]
+                    errors.append(f'{model} · {name}: HTTP {e.code} {msg}')
+                    if e.code == 429:
+                        # 분당 한도면 잠깐 기다렸다 한 번 더, 하루 한도면 바로 다음 키
+                        if attempt == 0 and 'PerDay' not in msg and 'per day' not in msg.lower():
+                            time.sleep(20)
+                            continue
+                        SPENT.add((name, model))
+                        print(f'[한도] {name} · {model} → 다음 키')
+                        break
+                    if e.code in (500, 503) and attempt == 0:
+                        time.sleep(10)
+                        continue
+                    if e.code in (401, 403):        # 키가 틀렸거나 막힘 → 다음 키
+                        SPENT.add((name, model))
+                    break
+                except Exception as e:
+                    errors.append(f'{model} · {name}: {e}')
+                    break
     sys.exit('AI 호출 실패\n' + '\n'.join(errors))
 
 

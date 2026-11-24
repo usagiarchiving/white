@@ -212,7 +212,7 @@ To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대�
 
 - `minjung/sion.json` — 하시온 캐릭터 설정(말투·관계·규칙)과 쓰는 Gemini 모델. 고쳐서 저장하면 다음 메시지부터 반영.
 - `minjung/letters.json` — 주고받은 메시지(`chat`)와 밤 편지(`letters`), 7통마다 정리되는 기억(`memory`).
-- 만드는 곳: `.github/workflows/letter.yml` + `.github/scripts/letter.py` (저장소 Secret `GEMINI_API_KEY` 필요)
+- 만드는 곳: `.github/workflows/letter.yml` + `.github/scripts/letter.py` (저장소 Secret `GEMINI_API_KEY` 필요, 서브 키 `GEMINI_API_KEY_2`~`_4`는 한도가 차면 차례로 씀)
   - 아침 8:02 · 점심 12:32 · 저녁 7:02(한국 시간)에 시온이 먼저 메시지를 보냄 (GitHub 예약 실행이라 조금 늦을 수 있음)
   - 메시지를 보내면 4초 뒤 한 번에 답장, 편지는 Letter 탭에서 하루 한 통, 편지에 답장하면 답글
   - 시온은 그날의 혼잣말·일기·식사·기분·할 일·캘린더·다이어리·메모·집안일 기록을 읽고 씀

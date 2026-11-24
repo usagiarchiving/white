@@ -4,6 +4,7 @@
 # → minjung/letters.json 에 저장
 # 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
 #   이름: GEMINI_API_KEY      값: AI Studio에서 받은 키 (AQ. 로 시작)
+#   (서브 키) GEMINI_API_KEY_2 · _3 · _4 — 한도가 차면 차례로 씀. 서로 다른 Google Cloud 프로젝트의 키여야 한도가 따로임
 #   이름: VAPID_PRIVATE_KEY   값: 웹앱 알림용 비밀 키 (없으면 알림만 안 감)
 # 캐릭터·모델 바꾸기: minjung/sion.json
 name: letter
@@ -54,6 +55,9 @@ jobs:
       - name: 만들기
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
           SCHEDULE: ${{ github.event.schedule }}
           MODE: ${{ inputs.mode }}
           DATE: ${{ inputs.date }}
