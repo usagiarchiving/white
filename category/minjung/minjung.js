@@ -2794,25 +2794,33 @@ export function init() {
     function callChat(c, status, dur) {   // 대화창에 남는 통화 기록
         return { id: uid('m'), from: c.dir === 'out' ? 'me' : 'ai', kind: 'call', status, call: c.id, text: dur != null ? mmss(dur) : '', at: stamp() };
     }
-    function enterCall(id) {
+    // delay: 시온이 받기까지 기다리는 시간(ms). 그동안 '연결 중…' 이고 시간은 받은 뒤부터
+    function enterCall(id, delay) {
         openSion('Message');
         const st = wins.sion.st;
         st.view = 'call'; st.callId = id;
         clearInterval(sion.callTimer);
-        sion.callStart = Date.now();
+        sion.callStart = Date.now() + (delay || 0);
+        let wasRinging = !!delay;
         sion.callTimer = setInterval(() => {
-            const t = wins.sion && wins.sion.el.querySelector('.kk-tmr');
             if (!wins.sion || wins.sion.st.view !== 'call') { clearInterval(sion.callTimer); return; }
-            if (t) t.textContent = mmss(Math.floor((Date.now() - sion.callStart) / 1000));
+            const ringing = Date.now() < sion.callStart;
+            if (wasRinging && !ringing) { wasRinging = false; renderWin('sion'); const c = callOf(id); if (c) callSpeakNew(c); return; }
+            const t = wins.sion.el.querySelector('.kk-tmr');
+            if (t) t.textContent = ringing ? '연결 중…' : mmss(Math.floor((Date.now() - sion.callStart) / 1000));
         }, 1000);
         renderWin('sion');
     }
+    const callRinging = () => sion.callStart && Date.now() < sion.callStart;
     function startCall() {
         if (sionNeedToken() || !sion.data) return;
         const c = { id: uid('k'), dir: 'out', status: 'live', at: stamp(), lines: [] };
         sion.data.calls = calls().concat([c]);
         callCommit('시온에게 전화', d => { if (!d.calls.some(x => x.id === c.id)) d.calls.push(c); });
-        enterCall(c.id);
+        // 방금까지 메시지 주고받던 중이면 금방(1~3초), 아니면 30초 안에 랜덤으로 받음
+        const last = (sion.data.chat || []).slice(-1)[0];
+        const chatting = last && Date.now() - new Date(last.at).getTime() < 5 * 60000;
+        enterCall(c.id, chatting ? 1000 + Math.random() * 2000 : 4000 + Math.random() * 26000);
         sionRun('call', '', '', c.id);
     }
     function acceptCall(id) {
@@ -2842,6 +2850,11 @@ export function init() {
         if (window.speechSynthesis) speechSynthesis.cancel();
         if (st) st.view = 'chat';
         if (!c) { sionRefresh(); return; }
+        if (callRinging()) {   // 받기 전에 끊음 → 취소
+            c.status = 'cancelled';
+            callCommit('시온 전화 취소', d => { const x = d.calls.find(y => y.id === c.id); if (x) x.status = 'cancelled'; });
+            sion.callStart = 0; sionRefresh(); return;
+        }
         const dur = Math.max(1, Math.floor((Date.now() - (sion.callStart || Date.now())) / 1000));
         c.status = 'done'; c.dur = dur;
         const m = callChat(c, 'done', dur);
@@ -2888,6 +2901,7 @@ export function init() {
     function callStopListen() { if (sion.rec) { try { sion.rec.stop(); } catch (e) {} } }
     // 시온 새 대사: 스피커가 켜져 있으면 폰 목소리로 읽음
     function callSpeakNew(c) {
+        if (callRinging()) return;
         (c.lines || []).filter(l => l.from === 'ai' && !sion.spoken.has(l.id)).forEach(l => {
             sion.spoken.add(l.id);
             if (sion.callSpeaker && window.speechSynthesis) {
@@ -2936,12 +2950,13 @@ export function init() {
     function callView(st) {
         const c = callOf(st.callId);
         if (!c) return empty('통화가 끝났어요');
-        const lines = (c.lines || []).slice(-6);
-        const waiting = sion.wait.call || !lines.length || lines[lines.length - 1].from === 'me';
+        const ringing = callRinging();
+        const lines = ringing ? [] : (c.lines || []).slice(-6);
+        const waiting = !ringing && (sion.wait.call || !lines.length || lines[lines.length - 1].from === 'me');
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         return `<div class="kk-call">
                 <div class="kk-ctop"><div class="kk-cav">${callAvatar('kk-avimg')}</div><b>${esc(contact())}</b>
-                    <span class="kk-tmr">${mmss(Math.floor((Date.now() - (sion.callStart || Date.now())) / 1000))}</span></div>
+                    <span class="kk-tmr">${ringing ? '연결 중…' : mmss(Math.floor((Date.now() - (sion.callStart || Date.now())) / 1000))}</span></div>
                 <div class="kk-lines">${lines.map(l => `<p class="${l.from === 'me' ? 'me' : 'you'}">${esc(l.text)}</p>`).join('')}
                     ${sion.rec ? '<p class="me kk-hear">듣고 있어요…</p>' : waiting ? '<p class="you kk-dots"><i></i><i></i><i></i></p>' : ''}</div>
                 ${sion.callKeypad ? `<div class="kk-type"><input data-call="in" type="text" enterkeyhint="send" autocomplete="off" aria-label="할 말"><button data-act="call-send" aria-label="보내기">${KK.up}</button></div>` : ''}
@@ -2961,7 +2976,7 @@ export function init() {
             const d = c.at.slice(0, 10), head = d !== lastDay ? `<div class="kk-sec">${d === todayKey() ? '오늘' : kDate(d)}</div>` : '';
             lastDay = d;
             const miss = c.status === 'missed' || c.status === 'ringing';
-            const kind = miss ? '부재중' : c.dir === 'out' ? '발신' : '수신';
+            const kind = miss ? '부재중' : c.status === 'cancelled' ? '취소' : c.dir === 'out' ? '발신' : '수신';
             return head + `<button class="kk-row${miss ? ' miss' : ''}" data-act="call-log" data-v="${c.id}">
                 <span class="ico">${miss ? '✕' : c.dir === 'out' ? '↗' : '↙'}</span>
                 <span class="mid"><b>${esc(contact())}</b><small>${kind}${c.dur ? ' · ' + mmss(c.dur) : ''}</small></span>

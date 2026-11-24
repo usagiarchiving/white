@@ -825,7 +825,7 @@ def make_call(store, cfg, call_id):
               f"# 최근 메시지\n{chat_history(store, 8, days=1) or '(없음)'}\n\n"
               f"# 지금까지 통화\n{talk or '(방금 연결됨)'}\n\n"
               f"# 말하는 법\n{P(cfg, 'call', '전화로 말하는 대사만. 한두 문장. 숨소리나 행동 묘사, 괄호 금지.')}\n- 시온이 지금 할 말만 출력.")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048, think='low')   # 통화는 빠르게
     text = re.sub(r'\s{2,}', ' ', re.sub(r'[(（][^)）]*[)）]', '', clean(text)).replace('\n', ' ')).strip() or '…여보?'   # 통화엔 괄호 묘사 없이
     return {'call_line': {'id': call_id, 'item': {'id': new_id('l'), 'from': 'ai', 'text': text, 'at': stamp(t), 'model': model}}}
 
