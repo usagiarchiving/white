@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-24T17:31:16+09:00",
+ "updated_at": "2026-11-24T17:31:41+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -1331,19 +1331,26 @@
   {
    "id": "q5",
    "kind": "repeat",
+   "title": "빨래",
    "mode": "every",
-   "every": 3,
-   "title": "빨래"
+   "every": 3
   },
   {
    "id": "q6",
    "kind": "repeat",
+   "title": "분리수거",
    "mode": "week",
    "days": [
     1,
     4
-   ],
-   "title": "분리수거"
+   ]
+  },
+  {
+   "id": "qmwufrdrg7gzf",
+   "kind": "repeat",
+   "title": "🪴💦",
+   "mode": "every",
+   "every": 10
   }
  ],
  "quest_log": {
