@@ -1160,15 +1160,15 @@ export function init() {
     function receiptLines(k) {
         const L = [], mj = ext.mj;
         ext.todos.filter(t => !t.parent_id && t.is_completed && (t.completed_date || t.target_date) === k)
-            .forEach(t => L.push({ x: t.content, p: hhmm(t.completed_at) }));
+            .forEach(t => L.push({ x: t.content, p: hhmm(t.completed_at), s: 1 }));
         const ql = mj.quest_log[k] || {};
-        Object.keys(ql).forEach(id => { const q = mj.quests.find(x => x.id === id); if (q) L.push({ x: '[루틴] ' + q.title, p: String(ql[id] || '').slice(0, 5) }); });
+        Object.keys(ql).forEach(id => { const q = mj.quests.find(x => x.id === id); if (q) L.push({ x: '☘️ ' + q.title, p: String(ql[id] || '').slice(0, 5) }); });
         Object.keys(ext.mh.log).forEach(id => { const r = (ext.mh.log[id] || {})[k]; if (r && r.done) L.push({ x: (MYHOME_ACTS[id] || id) + (r.count > 1 ? ' ×' + r.count : ''), p: hhmm(r.at) }); });
         mj.condition.filter(c => c.date === k).forEach(c => {
-            if (c.type === 'meal') L.push({ x: '[식사] ' + (MEAL_KO[c.slot] || '') + (c.memo ? ': ' + c.memo : ''), p: c.time || '' });
+            if (c.type === 'meal') L.push({ x: '🍽️ ' + (MEAL_KO[c.slot] || '') + (c.memo ? ': ' + c.memo : ''), p: c.time || '' });
             if (c.type === 'medicine') L.push({ x: '[약] ' + (c.name || '') + (c.memo ? ': ' + c.memo : ''), p: c.time || '' });
         });
-        mj.beauty.filter(b => b.date === k).forEach(b => L.push({ x: '[뷰티] ' + (BEAUTY_KO[b.slot] || b.slot || '') + ((b.steps || []).length ? ': ' + b.steps.join(', ') : ''), p: b.time || '' }));
+        mj.beauty.filter(b => b.date === k).forEach(b => L.push({ x: '💅 ' + (BEAUTY_KO[b.slot] || b.slot || '') + ((b.steps || []).length ? ': ' + b.steps.join(', ') : ''), p: b.time || '' }));
         Object.values(db.goals).forEach(arr => (arr || []).forEach(g => { if (g.done && g.at && g.at.slice(0, 10) === k) L.push({ x: '[목표] ' + g.text, p: hhmm(g.at) }); }));
         db.bucket.forEach(b => { if (b.done && b.at && b.at.slice(0, 10) === k) L.push({ x: '[버킷] ' + b.text, p: hhmm(b.at) }); });
         return L.sort((a, b) => (a.p || '99') < (b.p || '99') ? -1 : 1).map(l => Object.assign(l, { p: l.p || '✓' }));
@@ -1189,7 +1189,7 @@ export function init() {
                     '<div class="top"><button class="rimg' + (isPhoto ? ' photo' : '') + '" data-a="r-img" title="그림 바꾸기"><img src="' + esc(src(rc)) + '" alt=""></button>' +
                     '<b>TODAY\'S RECEIPT</b><small>' + d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' (' + WEEK_KO[d.getDay()] + ')</small></div>' +
                     '<hr><div class="ln"><span class="q">QTY</span><span class="x">ITEM</span><span class="p">TIME</span></div><hr>' +
-                    lines.map(l => '<div class="ln"><span class="q">1</span><span class="x">' + esc(l.x) + '</span><span class="p">' + esc(l.p) + '</span></div>').join('') +
+                    lines.map(l => '<div class="ln"><span class="q">1</span><span class="x">' + (l.s ? '<s>' + esc(l.x) + '</s>' : esc(l.x)) + '</span><span class="p">' + esc(l.p) + '</span></div>').join('') +
                     '<hr><div class="tot"><span>TOTAL</span><span>' + lines.length + '</span></div>' +
                     (left ? '<div class="ln"><span class="x">남은 할 일</span><span class="p">' + left + '</span></div>' : '') +
                     '<hr><div class="msg">' + esc(entry ? (entry.title || (entry.body || '').split('\n')[0]) : (lines.length ? '오늘도 수고했어요 ♡' : '')) + '</div>' +
