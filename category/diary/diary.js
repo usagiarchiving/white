@@ -695,7 +695,7 @@ export function init() {
             '<button class="dy-ibtn big" data-a="yt-pp" title="재생/멈춤">' + ic(playing && YT.paused === false ? 'pause' : 'play') + '</button>' +
             '<button class="dy-ibtn" data-a="yt-next" title="다음">' + ic('next') + '</button>' +
             '<button class="dy-ibtn' + (YT.rep ? ' on' : '') + '" data-a="yt-rep" title="반복">' + ic('repeat') + '</button>' +
-            '<button class="dy-ibtn" data-a="yt-full" title="전체화면">' + ic('full') + '</button>' +
+            '<button class="dy-ibtn' + (YT.ctrl ? ' on' : '') + '" data-a="yt-full" title="전체화면">' + ic('full') + '</button>' +
             '<span style="flex:1"></span><button class="dy-ibtn" data-a="yt-add" title="영상 추가">' + ic('plus') + '</button></div></div>', 'yt');
     }
     // YouTube IFrame API: 재생바·이전·재생/멈춤·다음·반복은 위젯 버튼으로
@@ -712,23 +712,26 @@ export function init() {
     }
     const mmss = v => { v = Math.max(0, Math.floor(v || 0)); return Math.floor(v / 60) + ':' + pad(v % 60); };
     function ytWidget() { return document.querySelector('.dy-w.yt'); }
-    // 전체화면: 되는 기기는 진짜 전체화면, 아이폰처럼 안 되는 곳은 화면 가득 덮기 (× 로 닫기)
+    // 전체화면: 되는 기기(PC·안드로이드)는 진짜 전체화면.
+    // 아이폰은 페이지에서 전체화면을 못 띄워서, 버튼을 누르면 유튜브 기본 버튼(오른쪽 아래 전체화면 포함)을 보이게 함 (다시 누르면 숨김)
     function ytFull() {
-        const box = document.querySelector('.dy-w.yt .yt-p'); if (!box) return;
-        if (box.classList.contains('yt-full')) return ytUnfull();
-        const req = box.requestFullscreen || box.webkitRequestFullscreen;
-        if (req) { try { const r = req.call(box); if (r && r.catch) r.catch(() => ytFake(box)); return; } catch (e) {} }
-        ytFake(box);
+        const box = document.querySelector('.dy-w.yt .yt-p');
+        const req = box && (box.requestFullscreen || box.webkitRequestFullscreen);
+        if (box && req && YT.on) { try { const r = req.call(box); if (r && r.catch) r.catch(() => ytCtrl()); return; } catch (e) {} }
+        ytCtrl();
     }
-    function ytFake(box) {
-        box.classList.add('yt-full'); document.documentElement.classList.add('dy-ytfull');
-        const x = document.createElement('button'); x.className = 'yt-fx'; x.type = 'button'; x.setAttribute('aria-label', '전체화면 닫기'); x.innerHTML = ic('x');
-        x.onclick = e => { e.stopPropagation(); ytUnfull(); };
-        box.appendChild(x);
-    }
-    function ytUnfull() {
-        const box = document.querySelector('.dy-w.yt .yt-p.yt-full'); if (!box) return;
-        box.classList.remove('yt-full'); document.documentElement.classList.remove('dy-ytfull'); const x = box.querySelector('.yt-fx'); if (x) x.remove();
+    function ytCtrl() {
+        YT.ctrl = !YT.ctrl;
+        if (YT.ctrl) toast('유튜브 화면 오른쪽 아래 전체화면 버튼을 눌러요');
+        if (!YT.on) {                                    // 아직 재생 전이면: 유튜브 버튼이 보이는 채로 재생 시작
+            const x = ytList(todayKey())[YT.i]; if (!x || !ytId(x.url)) return render('diary');
+            YT.on = x.id; YT.paused = false; return render('diary');
+        }
+        let at = 0; try { at = YT.player && YT.ready ? YT.player.getCurrentTime() : 0; } catch (e) {}
+        YT.at = Math.floor(at);
+        if (YT.player) { try { YT.player.destroy(); } catch (e) {} YT.player = null; YT.ready = false; }
+        const p = document.querySelector('.dy-w.yt .yt-p'); if (p) p.innerHTML = '';   // 새 설정으로 다시 그리게
+        render('diary');
     }
     function ytSetIcon(playing) { const b = document.querySelector('.dy-w.yt [data-a="yt-pp"]'); if (b) b.innerHTML = ic(playing ? 'pause' : 'play'); }
     async function ytMount() {
@@ -740,9 +743,9 @@ export function init() {
         YT.ready = false;
         YT.player = new window.YT.Player(el, {
             videoId: el.dataset.v, host: 'https://www.youtube-nocookie.com',
-            playerVars: { autoplay: 1, playsinline: 1, rel: 0, controls: 0, modestbranding: 1, iv_load_policy: 3 },
+            playerVars: Object.assign({ autoplay: 1, playsinline: 1, rel: 0, controls: YT.ctrl ? 1 : 0, fs: 1, modestbranding: 1, iv_load_policy: 3 }, YT.at ? { start: YT.at } : {}),
             events: {
-                onReady: e => { YT.ready = true; const f = e.target.getIframe(); f.classList.add('dy-yt-frame'); f.dataset.k = YT.on; e.target.playVideo(); },
+                onReady: e => { YT.ready = true; YT.at = 0; const f = e.target.getIframe(); f.classList.add('dy-yt-frame'); f.dataset.k = YT.on; e.target.playVideo(); },
                 onStateChange: e => {
                     ytSetIcon(e.data === 1);
                     YT.paused = e.data !== 1;
@@ -773,7 +776,6 @@ export function init() {
         if (!sk.matches(':active')) sk.value = dur ? Math.round(cur / dur * 1000) : 0;
         w.querySelector('.cur').textContent = mmss(cur); w.querySelector('.dur').textContent = mmss(dur);
     }, 500);
-    offs.push(() => { document.documentElement.classList.remove('dy-ytfull'); });
     offs.push(() => { clearInterval(ytTick); try { if (YT.player) YT.player.destroy(); } catch (e) {} });
     on(wrap, 'input', e => {
         if (!e.target.matches('.yt-seek') || !YT.player || !YT.ready) return;
