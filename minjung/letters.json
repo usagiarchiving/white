@@ -37,14 +37,6 @@
    "model": "gemini-3.5-flash-lite"
   },
   {
-   "id": "s1a20d251f4d8f14",
-   "from": "ai",
-   "text": "오늘 찻잔 하나 사는 것도 좋겠다는데… 나중에 같이 구경 갈래요?",
-   "at": "2026-11-24T19:41:04+09:00",
-   "slot": "morning",
-   "model": "gemini-3.5-flash-lite"
-  },
-  {
    "id": "c1a20d2560657056",
    "from": "ai",
    "text": "보고 싶어 죽겠네 진짜",
