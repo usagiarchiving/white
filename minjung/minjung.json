@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-25T00:16:44+09:00",
+ "updated_at": "2026-11-25T00:16:53+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -1317,26 +1317,14 @@
   {
    "id": "q1",
    "kind": "daily",
-   "slot": "morning",
-   "title": "이부자리 정리"
+   "title": "이부자리 정리",
+   "slot": "morning"
   },
   {
    "id": "q2",
    "kind": "daily",
-   "slot": "morning",
-   "title": "물 한 잔"
-  },
-  {
-   "id": "q3",
-   "kind": "daily",
-   "slot": "lunch",
-   "title": "점심 챙겨 먹기"
-  },
-  {
-   "id": "q4",
-   "kind": "daily",
-   "slot": "evening",
-   "title": "스킨케어"
+   "title": "물 한 잔",
+   "slot": "morning"
   },
   {
    "id": "q5",
