@@ -6,18 +6,7 @@
  */
 
 $(document).ready(function () {
-    // [추가] index.html의 마스터 주머니를 읽어서 메뉴판 동적 인쇄
-    if (typeof CATEGORIES !== 'undefined') {
-        const menuContainer = $('#dropdown-menu');
-        menuContainer.empty(); // 기존 메뉴 초기화
-        
-        CATEGORIES.forEach(cat => {
-            if (cat.active) {
-                // [핀셋 수정] 메뉴 클릭 시 페이지 로드와 동시에 주소창의 hash(#)도 함께 변경되도록 연동
-                menuContainer.append(`<a href="#${cat.hash}" onclick="loadPageByHash('${cat.hash}'); return false;">${cat.name}</a>`);
-            }
-        });
-    }
+    renderMenu();
 
     $(".dropdown-bars").click(function (e) {
         e.stopPropagation();
@@ -36,10 +25,28 @@ $(document).ready(function () {
     initPageLoad();
 });
 
+// index.html의 마스터 주머니(설정에서 바꾼 순서·이름 반영됨)를 읽어서 메뉴판 인쇄
+function renderMenu() {
+    if (typeof CATEGORIES === 'undefined') return;
+    const menuContainer = $('#dropdown-menu');
+    menuContainer.empty();
+    CATEGORIES.forEach(cat => {
+        if (cat.active) {
+            // 메뉴 클릭 시 페이지 로드와 동시에 주소창의 hash(#)도 함께 변경
+            const a = $('<a>').attr('href', '#' + cat.hash).text(cat.name);
+            a.on('click', () => { loadPageByHash(cat.hash); return false; });
+            menuContainer.append(a);
+        }
+    });
+}
+window.renderMenu = renderMenu;
+
 // 주소창의 해시(#)를 분석해서 맞는 페이지를 찾아 대령하는 함수
 function initPageLoad() {
     const currentHash = window.location.hash.replace('#', '');
-    let targetPage = 'category/home.html'; // 기본값 (홈)
+    let targetPage = 'category/home.html'; // 기본값 (홈, 설정의 '처음 열 화면')
+    const start = typeof CATEGORIES !== 'undefined' && CATEGORIES.find(cat => cat.hash === window.SITE_START && cat.active);
+    if (start) targetPage = start.path;
 
     if (currentHash && typeof CATEGORIES !== 'undefined') {
         const matched = CATEGORIES.find(cat => cat.hash === currentHash && cat.active);
@@ -73,6 +80,12 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(setHeaderH
 
 function loadPage(url) {
     const contentArea = $('#content-area');
+    // 홈 화면(웹앱) 사진·이름은 지금 카테고리 것으로, 설정 톱니바퀴는 토끼굴 메인에서만
+    if (window.siteSettings) {
+        const cat = typeof CATEGORIES !== 'undefined' && CATEGORIES.find(c => c.path === url);
+        window.siteSettings.identity(cat ? cat.hash : 'home');
+        window.siteSettings.showGear(url === 'category/home.html');
+    }
     const game = GAME_PAGES.test(url);
     if (game) {
         // 게임 화면은 기다림 없이 바로 바꿈 (전환이 버벅이지 않게)

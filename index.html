@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&display=swap" />
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
     
-    <link rel="stylesheet" href="style.css?v=4" />
+    <link rel="stylesheet" href="style.css?v=5" />
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- '빛이 꺾이는 각도'(archive)만 아직 Supabase를 씁니다 -->
@@ -32,6 +32,7 @@
             
             <header id="header">
                 <div class="inner_header">
+                    <button id="btn-settings" class="nav-icon-btn" title="설정" style="display:none"></button>
                     <button id="btn-key" class="nav-icon-btn" title="글쓰기 켜기"><i class="xi-lock-o"></i></button>
 
                     <button id="btn-theme" class="nav-icon-btn" onclick="toggleTheme()" title="테마 변경">
@@ -76,7 +77,8 @@
         ];
     </script>
 
+    <script src="site-settings.js?v=1"></script>
     <script src="lightbox.js?v=2"></script>
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
 </body>
 </html>
