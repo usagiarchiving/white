@@ -1166,11 +1166,11 @@ export function init() {
         Object.keys(ext.mh.log).forEach(id => { const r = (ext.mh.log[id] || {})[k]; if (r && r.done) L.push({ x: (MYHOME_ACTS[id] || id) + (r.count > 1 ? ' ×' + r.count : ''), p: hhmm(r.at) }); });
         mj.condition.filter(c => c.date === k).forEach(c => {
             if (c.type === 'meal') L.push({ x: '🍽️ ' + (MEAL_KO[c.slot] || '') + (c.memo ? ': ' + c.memo : ''), p: c.time || '' });
-            if (c.type === 'medicine') L.push({ x: '[약] ' + (c.name || '') + (c.memo ? ': ' + c.memo : ''), p: c.time || '' });
+            if (c.type === 'medicine') L.push({ x: '💊 ' + (c.name || '') + (c.memo ? ': ' + c.memo : ''), p: c.time || '' });
         });
         mj.beauty.filter(b => b.date === k).forEach(b => L.push({ x: '💅 ' + (BEAUTY_KO[b.slot] || b.slot || '') + ((b.steps || []).length ? ': ' + b.steps.join(', ') : ''), p: b.time || '' }));
-        Object.values(db.goals).forEach(arr => (arr || []).forEach(g => { if (g.done && g.at && g.at.slice(0, 10) === k) L.push({ x: '[목표] ' + g.text, p: hhmm(g.at) }); }));
-        db.bucket.forEach(b => { if (b.done && b.at && b.at.slice(0, 10) === k) L.push({ x: '[버킷] ' + b.text, p: hhmm(b.at) }); });
+        Object.values(db.goals).forEach(arr => (arr || []).forEach(g => { if (g.done && g.at && g.at.slice(0, 10) === k) L.push({ x: '🔫 ' + g.text, p: hhmm(g.at) }); }));
+        db.bucket.forEach(b => { if (b.done && b.at && b.at.slice(0, 10) === k) L.push({ x: '🐰 ' + b.text, p: hhmm(b.at) }); });
         return L.sort((a, b) => (a.p || '99') < (b.p || '99') ? -1 : 1).map(l => Object.assign(l, { p: l.p || '✓' }));
     }
     RENDER.done = (body, tools) => {
