@@ -1027,7 +1027,7 @@ export function init() {
                 '<div class="dy-week">' + week + '</div>' +
                 '<div style="display:flex;align-items:center;gap:8px"><div class="dy-prog" style="flex:1"><i style="width:' + pct + '%"></i></div><span style="font-family:var(--dy-title);font-size:11px">' + done + ' / ' + list.length + '</span></div>' +
                 // 추가: 왼쪽 색 동그라미로 분류, + 옆에서 영역 (고른 건 다음 추가에도 그대로, 새로고침하면 기본으로)
-                '<div class="t-add"><button class="t-cat" data-a="t-pick" data-k="cat" title="분류: ' + esc(TODO_CAT[V.tCat || 'gray'] || '주황') + '" style="background:' + TODO_COLORS[V.tCat || 'gray'] + '"></button>' +
+                '<div class="t-add"><button class="t-cat" data-a="t-pick" data-k="cat" title="분류: ' + esc(TODO_CAT[V.tCat || 'gray'] || '주황') + '"><svg class="hrt" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13.6S2.4 10.4 2.4 6.3A2.8 2.8 0 0 1 8 4.6a2.8 2.8 0 0 1 5.6 1.7c0 4.1-5.6 7.3-5.6 7.3z" fill="' + TODO_COLORS[V.tCat || 'gray'] + '"></path></svg></button>' +
                     '<input class="dy-in" data-enter="t-add">' +
                     '<button class="t-quad" data-a="t-pick" data-k="quad" title="영역">' + esc((QUAD_OPT.find(x => x[0] === (V.tQuad || 0)) || QUAD_OPT[0])[1]) + '</button>' +
                     '<button class="dy-rb round" data-a="t-add" title="추가">' + ic('plus') + '</button></div>' +
@@ -1037,10 +1037,9 @@ export function init() {
                 Object.keys(TODO_COLORS).map(c => {
                     const L = list.filter(t => (t.category || 'gray') === c); if (!L.length) return '';
                     const col = TODO_COLORS[c];
-                    return '<div class="t-grp" style="--c:' + col + '"><div class="gh"><span class="pill" style="background:' + hexA(col, .28) + '"><i style="background:' + col + '"></i>' + esc(TODO_CAT[c] || '') + '</span></div><div class="gl">' + L.map(t => {
+                    return '<div class="t-grp" style="--c:' + col + '"><div class="gh"><span class="pill" style="background:' + hexA(col, .28) + '"><svg class="hrt" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13.6S2.4 10.4 2.4 6.3A2.8 2.8 0 0 1 8 4.6a2.8 2.8 0 0 1 5.6 1.7c0 4.1-5.6 7.3-5.6 7.3z" fill="' + col + '"></path></svg>' + esc(TODO_CAT[c] || '') + '</span></div><div class="gl">' + L.map(t => {
                         const late = !t.is_completed && t.target_date && t.target_date < k;
-                        const meta = [late ? '<b class="late">' + t.target_date.slice(5).replace('-', '.') + '</b>' : '', (t.subtasks || []).length ? t.subtasks.filter(x => x.is_completed).length + '/' + t.subtasks.length : '',
-                            t.is_completed && t.completed_at ? hhmm(t.completed_at) : ''].filter(Boolean).join(' · ');
+                        const meta = [late ? '<b class="late">' + t.target_date.slice(5).replace('-', '.') + '</b>' : '', (t.subtasks || []).length ? t.subtasks.filter(x => x.is_completed).length + '/' + t.subtasks.length : ''].filter(Boolean).join(' · ');
                         return '<div class="t-row' + (t.is_completed ? ' done' : '') + '" data-id="' + esc(t.id) + '"><div class="tx" data-a="t-edit"><span class="t">' + esc(t.content) + '</span>' + (meta ? '<span class="m">' + meta + '</span>' : '') + '</div>' +
                             '<button class="t-box" data-a="t-chk" title="' + (t.is_completed ? '안 한 걸로' : '했어요') + '" style="' + (t.is_completed ? 'background:' + col + ';border-color:' + col : 'border-color:' + col) + '">' + (t.is_completed ? ic('check') : '') + '</button></div>';
                     }).join('') + '</div></div>';
