@@ -144,6 +144,7 @@ const ICO = {
     prev: '<path d="M4 3.5v9"/><path d="M12.5 3.8v8.4L6 8z" fill="currentColor"/>', next: '<path d="M12 3.5v9"/><path d="M3.5 3.8v8.4L10 8z" fill="currentColor"/>',
     pause: '<rect x="4.2" y="3.5" width="2.6" height="9" rx=".8" fill="currentColor" stroke="none"/><rect x="9.2" y="3.5" width="2.6" height="9" rx=".8" fill="currentColor" stroke="none"/>',
     repeat: '<path d="M3 7V6a2 2 0 0 1 2-2h7.5l-2-2M13 9v1a2 2 0 0 1-2 2H3.5l2 2"/>',
+    full: '<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/>',
     list: '<path d="M5.5 4.5h7M5.5 8h7M5.5 11.5h7"/><circle cx="3" cy="4.5" r=".6" fill="currentColor"/><circle cx="3" cy="8" r=".6" fill="currentColor"/><circle cx="3" cy="11.5" r=".6" fill="currentColor"/>',
     out: '<path d="M9 3.5h3.5V7M12.5 3.5L7.5 8.5"/><path d="M11 9.5v3H3.5V5h3"/>',
     search: '<circle cx="7" cy="7" r="4"/><path d="M10 10l3.2 3.2"/>', alignl: '<path d="M3 4h10M3 7h6.5M3 10h10M3 13h6.5"/>', alignc: '<path d="M3 4h10M4.8 7h6.4M3 10h10M4.8 13h6.4"/>',
@@ -694,6 +695,7 @@ export function init() {
             '<button class="dy-ibtn big" data-a="yt-pp" title="재생/멈춤">' + ic(playing && YT.paused === false ? 'pause' : 'play') + '</button>' +
             '<button class="dy-ibtn" data-a="yt-next" title="다음">' + ic('next') + '</button>' +
             '<button class="dy-ibtn' + (YT.rep ? ' on' : '') + '" data-a="yt-rep" title="반복">' + ic('repeat') + '</button>' +
+            '<button class="dy-ibtn" data-a="yt-full" title="전체화면">' + ic('full') + '</button>' +
             '<span style="flex:1"></span><button class="dy-ibtn" data-a="yt-add" title="영상 추가">' + ic('plus') + '</button></div></div>', 'yt');
     }
     // YouTube IFrame API: 재생바·이전·재생/멈춤·다음·반복은 위젯 버튼으로
@@ -710,6 +712,24 @@ export function init() {
     }
     const mmss = v => { v = Math.max(0, Math.floor(v || 0)); return Math.floor(v / 60) + ':' + pad(v % 60); };
     function ytWidget() { return document.querySelector('.dy-w.yt'); }
+    // 전체화면: 되는 기기는 진짜 전체화면, 아이폰처럼 안 되는 곳은 화면 가득 덮기 (× 로 닫기)
+    function ytFull() {
+        const box = document.querySelector('.dy-w.yt .yt-p'); if (!box) return;
+        if (box.classList.contains('yt-full')) return ytUnfull();
+        const req = box.requestFullscreen || box.webkitRequestFullscreen;
+        if (req) { try { const r = req.call(box); if (r && r.catch) r.catch(() => ytFake(box)); return; } catch (e) {} }
+        ytFake(box);
+    }
+    function ytFake(box) {
+        box.classList.add('yt-full'); document.documentElement.classList.add('dy-ytfull');
+        const x = document.createElement('button'); x.className = 'yt-fx'; x.type = 'button'; x.setAttribute('aria-label', '전체화면 닫기'); x.innerHTML = ic('x');
+        x.onclick = e => { e.stopPropagation(); ytUnfull(); };
+        box.appendChild(x);
+    }
+    function ytUnfull() {
+        const box = document.querySelector('.dy-w.yt .yt-p.yt-full'); if (!box) return;
+        box.classList.remove('yt-full'); document.documentElement.classList.remove('dy-ytfull'); const x = box.querySelector('.yt-fx'); if (x) x.remove();
+    }
     function ytSetIcon(playing) { const b = document.querySelector('.dy-w.yt [data-a="yt-pp"]'); if (b) b.innerHTML = ic(playing ? 'pause' : 'play'); }
     async function ytMount() {
         const el = document.getElementById('dy-ytp');
@@ -753,6 +773,7 @@ export function init() {
         if (!sk.matches(':active')) sk.value = dur ? Math.round(cur / dur * 1000) : 0;
         w.querySelector('.cur').textContent = mmss(cur); w.querySelector('.dur').textContent = mmss(dur);
     }, 500);
+    offs.push(() => { document.documentElement.classList.remove('dy-ytfull'); });
     offs.push(() => { clearInterval(ytTick); try { if (YT.player) YT.player.destroy(); } catch (e) {} });
     on(wrap, 'input', e => {
         if (!e.target.matches('.yt-seek') || !YT.player || !YT.ready) return;
@@ -1989,6 +2010,7 @@ export function init() {
                 YT.on = x.id; YT.paused = false; return render('diary');
             }
             case 'yt-rep': YT.rep = !YT.rep; t.classList.toggle('on', YT.rep); return;
+            case 'yt-full': return ytFull();
             case 'yt-add': return ytForm(null);
             case 'yt-list': return openYtList();
             /* 스티커 */

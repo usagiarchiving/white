@@ -920,3 +920,11 @@ textarea.dy-in { font-size: 11px; }
 .td-dates > * { min-width: 0; }
 .td-dates input.dy-in { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; -webkit-appearance: none; appearance: none; display: block; }
 .dy-rcpt .ln .x s { text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: rgba(48,48,54,.28); }
+
+/* YouTube 전체화면 */
+.dy-yt .yt-p:fullscreen, .dy-yt .yt-p:-webkit-full-screen { border: 0; border-radius: 0; width: 100%; height: 100%; aspect-ratio: auto; }
+.dy-yt .yt-p.yt-full { position: fixed; inset: 0; z-index: 100000; width: 100vw; height: 100vh; height: 100dvh; aspect-ratio: auto; border: 0; border-radius: 0; }
+.dy-yt .yt-p .yt-fx { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(0,0,0,.45); color: #fff; display: grid; place-items: center; cursor: pointer; z-index: 2; }
+.dy-yt .yt-p .yt-fx svg { width: 14px; height: 14px; }
+html.dy-ytfull #header, html.dy-ytfull .dy-bar, html.dy-ytfull .dy-sticker, html.dy-ytfull .dy-stk { display: none !important; }
+html.dy-ytfull .dy-win:has(.yt-full) { z-index: 99999 !important; }
