@@ -1920,10 +1920,11 @@ export function init() {
         b.title = contact() + ' · ' + days + '일';
         b.classList.toggle('unread', sionUnread());
     }
-    async function loadSion(quiet) {
+    async function loadSion(quiet, force) {
         try {
             const [d, c] = await Promise.all([repo.readJSON(SION_DATA, {}), repo.readJSON(SION_CFG, null)]);
-            sion.data = Object.assign({ letters: {}, chat: [] }, d || {});
+            // 방금 저장한 직후엔 GitHub가 잠깐 옛 내용을 줄 때가 있음 → 30초 동안은 화면을 되돌리지 않음 (시온 새 글은 force 로 바로)
+            if (force || !(sion.writeAt && Date.now() - sion.writeAt < 30000)) sion.data = Object.assign({ letters: {}, chat: [] }, d || {});
             if (c) { sion.cfg = c; WIN.sion.title = contact(); }
             try { localStorage.setItem(SION_CACHE, JSON.stringify({ data: sion.data, cfg: sion.cfg })); } catch (e) {}
         } catch (e) { console.error(e); if (!sion.data) sion.data = { letters: {}, chat: [] }; }
@@ -1992,7 +1993,6 @@ export function init() {
         if (!sion.data) loadSion();
     }
     function sionAfterRender(w) {
-        sionFit();
         const c = w.el.querySelector('.sn-chat');
         if (c && w.st.stick !== false) c.scrollTop = c.scrollHeight;
         if (w.st.tab === 'Message' && sion.data && document.visibilityState === 'visible') sionMarkSeen();
@@ -2168,33 +2168,6 @@ export function init() {
         set(lt); renderWin('sion');
         sionCommit(on ? '편지 하트' : '편지 하트 빼기', cur => set(cur.letters[k])).catch(e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
     }
-    // 휴대폰: 키보드가 올라와도 창 위(탭·검색)는 그대로, 창 높이만 보이는 화면(키보드 위)에 맞춤
-    // 아이폰은 입력칸을 누르면 화면 전체를 밀어 올림 → 바로 되돌리고, 키보드가 다 올라온 뒤 값으로 한 번 더 맞춤
-    let fitRaf = 0;
-    function sionFit() {
-        cancelAnimationFrame(fitRaf);
-        fitRaf = requestAnimationFrame(() => {
-            const w = wins.sion, vv = window.visualViewport;
-            if (!w || !vv) return;
-            if (isPC()) { w.el.style.top = w.el.style.height = ''; return; }
-            if (vv.offsetTop > 0 || window.scrollY > 0) window.scrollTo(0, 0);
-            w.el.style.top = Math.max(0, Math.round(vv.offsetTop)) + 'px';
-            w.el.style.height = Math.round(vv.height) + 'px';
-            const c = w.el.querySelector('.sn-chat'); if (c && w.st.stick !== false) c.scrollTop = c.scrollHeight;
-        });
-    }
-    if (window.visualViewport) {
-        const onVV = () => { if (!root.isConnected) { visualViewport.removeEventListener('resize', onVV); visualViewport.removeEventListener('scroll', onVV); return; } sionFit(); };
-        visualViewport.addEventListener('resize', onVV);
-        visualViewport.addEventListener('scroll', onVV);
-    }
-    const onFocusMove = e => {
-        if (!root.isConnected) { document.removeEventListener('focusin', onFocusMove); document.removeEventListener('focusout', onFocusMove); return; }
-        if (!wins.sion || !wins.sion.el.contains(e.target)) return;
-        [0, 120, 350, 700].forEach(t => setTimeout(sionFit, t));
-    };
-    document.addEventListener('focusin', onFocusMove);
-    document.addEventListener('focusout', onFocusMove);
 
     /* ---------------- 오늘의 알림 (날씨 · 오하아사 · 일정 · 시온 아침 메시지) ----------------
        아침 메시지를 만들 때 GitHub Actions가 letters.json 의 briefs 에 저장. 하트 밑 종 = 알림 카드 목록 */
@@ -2439,9 +2412,10 @@ export function init() {
 
     // 내 글을 letters.json 에 커밋 (사이트에서 보낸 글끼리는 차례대로)
     function sionCommit(message, fn) {
+        sion.writeAt = Date.now();
         const job = sion.last.then(() => repo.commit('김민정: ' + message, {}, {
             [SION_DATA]: { fallback: { letters: {}, chat: [] }, mutate: cur => { cur = Object.assign({ letters: {}, chat: [] }, cur); fn(cur); return cur; } }
-        }));
+        })).then(res => { sion.writeAt = Date.now(); return res; });
         sion.last = job.catch(() => {});
         return job;
     }
@@ -2499,7 +2473,7 @@ export function init() {
                 if (!run || run.status !== 'completed') continue;
                 if (run.conclusion !== 'success') return done('실패했어요. GitHub → Actions → letter 기록을 확인해 주세요');
                 sion.wait[mode] = false;
-                await loadSion();
+                await loadSion(false, true);   // 시온이 쓴 새 글은 바로
                 if (wins.bang) renderWin('bang');
                 return done('');
             }
