@@ -59,7 +59,7 @@
         setMeta('apple-mobile-web-app-title', name);
         var base = baseUrl();
         var manifest = {
-            name: name, short_name: name, start_url: base + (cat.hash && cat.hash !== 'home' ? '#' + cat.hash : ''), scope: base,
+            name: name, short_name: name, start_url: base + (cat.hash && cat.hash !== 'home' ? '?c=' + cat.hash + '#' + cat.hash : ''), scope: base,
             display: 'standalone', background_color: '#fafafa', theme_color: '#fafafa',
             icons: [{ src: icon, sizes: '512x512', type: /\.png(\?|$)/i.test(icon) ? 'image/png' : 'image/jpeg', purpose: 'any' }]
         };

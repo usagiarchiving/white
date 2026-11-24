@@ -42,8 +42,17 @@ function renderMenu() {
 window.renderMenu = renderMenu;
 
 // 주소창의 해시(#)를 분석해서 맞는 페이지를 찾아 대령하는 함수
+// 주소에 카테고리를 ?c= 로도 적어 둠 → 아이폰 홈 화면 앱은 # 부분을 버릴 때가 있어서, 추가한 카테고리로 바로 열리게
+function setCatUrl(hash) {
+    const q = hash && hash !== 'home' ? '?c=' + encodeURIComponent(hash) : '';
+    const url = location.pathname + q + (hash ? '#' + hash : '');
+    if (location.pathname + location.search + location.hash !== url) history.replaceState(null, '', url);
+}
+window.setCatUrl = setCatUrl;
+
 function initPageLoad() {
-    const currentHash = window.location.hash.replace('#', '');
+    const qc = /[?&]c=([^&#]+)/.exec(location.search);
+    const currentHash = window.location.hash.replace('#', '') || (qc ? decodeURIComponent(qc[1]) : '');
     let targetPage = 'category/home.html'; // 기본값 (홈, 설정의 '처음 열 화면')
     const start = typeof CATEGORIES !== 'undefined' && CATEGORIES.find(cat => cat.hash === window.SITE_START && cat.active);
     if (start) targetPage = start.path;
@@ -54,6 +63,8 @@ function initPageLoad() {
             targetPage = matched.path;
         }
     }
+    const cur = typeof CATEGORIES !== 'undefined' && CATEGORIES.find(cat => cat.path === targetPage);
+    if (cur) setCatUrl(cur.hash);
     loadPage(targetPage);
 }
 
@@ -63,6 +74,7 @@ function loadPageByHash(hashName) {
         const matched = CATEGORIES.find(cat => cat.hash === hashName);
         if (matched) {
             window.location.hash = hashName;
+            setCatUrl(hashName);
             loadPage(matched.path);
         }
     }
