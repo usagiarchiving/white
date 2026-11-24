@@ -1,6 +1,13 @@
 {
  "letters": {},
- "chat": [],
+ "chat": [
+  {
+   "id": "mmwujcwt2ry2g",
+   "from": "me",
+   "text": "여보!",
+   "at": "2026-11-24T19:12:25+09:00"
+  }
+ ],
  "memory": {
   "summary": "",
   "upto": ""
