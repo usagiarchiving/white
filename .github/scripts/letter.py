@@ -182,6 +182,7 @@ SAFETY = [{'category': c, 'threshold': 'BLOCK_ONLY_HIGH'} for c in (
 
 KEY_NAMES = ['GEMINI_API_KEY', 'GEMINI_API_KEY_2', 'GEMINI_API_KEY_3', 'GEMINI_API_KEY_4']
 SPENT = set()   # 이번 실행에서 한도가 찬 (키, 모델) — 다음 호출 때 바로 건너뜀
+NO_THINK = set()   # thinkingLevel 을 모르는 모델
 
 
 def api_keys():
@@ -194,7 +195,7 @@ def api_keys():
     return out
 
 
-def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=False):
+def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=False, think='low'):
     """좋은 모델부터, 키를 차례로 써 봄. 한도가 차면(429) 다음 키로, 그 모델을 모든 키가 못 쓰면 다음 모델로"""
     keys = api_keys()
     if not keys:
@@ -207,12 +208,19 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
     }
     if json_mode:
         body['generationConfig']['responseMimeType'] = 'application/json'
+    # 생각(thinking)을 줄여서 빠르고 토큰을 덜 씀 (편지는 think=None 으로 모델 기본값). 모델이 안 받으면 빼고 다시
     errors = []
     for model in models:
+        skip_model = False
+        body['generationConfig'].pop('thinkingConfig', None)
+        if think and model not in NO_THINK:
+            body['generationConfig']['thinkingConfig'] = {'thinkingLevel': think}
         for name, key in keys:
+            if skip_model:
+                break
             if (name, model) in SPENT:
                 continue
-            for attempt in range(2):
+            for attempt in range(3):
                 req = urllib.request.Request(
                     f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
                     data=json.dumps(body).encode(), method='POST',
@@ -226,10 +234,21 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
                         print(f'[모델] {model} · {name}')
                         return text, model
                     errors.append(f'{model} · {name}: 빈 응답 ({cand.get("finishReason") or data.get("promptFeedback")})')
+                    skip_model = True       # 막힘·길이 초과는 키를 바꿔도 같음 → 다음 모델로
                     break
                 except urllib.error.HTTPError as e:
                     msg = e.read().decode(errors='replace')[:300]
                     errors.append(f'{model} · {name}: HTTP {e.code} {msg}')
+                    if e.code == 400 and 'thinkingConfig' in body['generationConfig'] and 'think' in msg.lower():
+                        del body['generationConfig']['thinkingConfig']   # 이 모델은 thinkingLevel 을 모름
+                        NO_THINK.add(model)
+                        continue
+                    if e.code == 400 and 'api key' in msg.lower():   # 키가 틀림 → 다음 키
+                        SPENT.add((name, model))
+                        break
+                    if e.code in (400, 404):    # 모델 이름이 틀렸거나 없음 → 키를 바꿔도 같음
+                        skip_model = True
+                        break
                     if e.code == 429:
                         # 분당 한도면 잠깐 기다렸다 한 번 더, 하루 한도면 바로 다음 키
                         if attempt == 0 and 'PerDay' not in msg and 'per day' not in msg.lower():
@@ -455,7 +474,7 @@ def make_letter(store, cfg, day, force):
               f"# 내일부터 사흘 일정 (내일 챙길 것)\n{upcoming(day) or '(없음)'}\n\n"
               f"# 오늘 {r}의 기록\n{gather(day) or '(오늘은 남긴 기록이 거의 없음)'}\n\n"
               f"# 쓰는 법\n{P(cfg, 'letter', '손편지. 600~1000자. 마지막은 잘 자라는 말로.')}\n- 서명 없이 편지 본문만 출력.")
-    body, model = gemini(cfg['models']['letter'], system_prompt(cfg), prompt, max_tokens=8192)
+    body, model = gemini(cfg['models']['letter'], system_prompt(cfg), prompt, max_tokens=8192, think=None)
     body = clean(body)
     patch = {'letter': {'date': day, 'body': body, 'at': stamp(), 'model': model, 'replies': []}, 'force': force}
     mem = make_memory(store, cfg, day, body)
@@ -506,7 +525,7 @@ def make_message(store, cfg, slot):
               f"# 오늘의 알림 (날씨·운세·일정)\n{brief_text((store.get('briefs') or {}).get(day) or {}) or '(없음)'}\n\n"
               f"# 오늘 지금까지 민정의 기록\n{gather(day, upto=t.strftime('%H:%M')) or '(아직 없음)'}\n\n"
               f"# 쓰는 법\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048)
     at = stamp(t)
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': slot, 'model': model} for b in bubbles(text, 3)]}
 
@@ -537,7 +556,7 @@ def make_morning(store, cfg, t, day):
               '{"messages": ["말풍선1", "말풍선2"], "fortune_ko": ["운세 문장을 한 줄씩 자연스러운 한국어로", "...", "행운의 아이템"]}\n'
               "- messages: 실제 메신저 말풍선들 (위 지시대로).\n"
               "- fortune_ko: 운세가 없으면 빈 배열.")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024, json_mode=True)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048, json_mode=True)
     out = parse_json(text, dict) or {'messages': [text]}
     if fo:
         fo['ko'] = [x for x in out.get('fortune_ko') or [] if isinstance(x, str)]
@@ -636,7 +655,7 @@ def make_chat(store, cfg):
               f"# 오늘의 알림·다가오는 일정\n{brief_text((store.get('briefs') or {}).get(day) or {})}\n{upcoming(day)}\n\n"
               f"# 대화 (마지막이 방금 온 메시지)\n{chat_history(store, 16)}\n\n"
               f"# 쓰는 법\n{P(cfg, 'chat', '짧은 말풍선 1~4개.')}\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048)
     at = stamp(t)
     return {'chat': [{'id': new_id('c'), 'from': 'ai', 'text': b, 'at': at, 'model': model} for b in bubbles(text, 4)]}
 
