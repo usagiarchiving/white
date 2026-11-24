@@ -889,7 +889,7 @@ export function init() {
         w.el.innerHTML = id === 'sion' ? (st.view === 'call' || st.view === 'ring' ? `<div class="mj-win-body kk-callbody">${VIEW[id](st)}</div>` : `
             <div class="mj-win-head sn-head kk-head" data-drag>
                 <button class="kk-pill kk-back" data-act="sn-back" aria-label="뒤로">${KK.back}${!st.view || st.view === 'chat' ? `<span class="n">${(sion.data && sion.data.chat || []).length}</span>` : ''}</button>
-                <b class="kk-name">${esc(st.view === 'kset' ? '채팅방 설정' : st.view === 'cedit' ? '프로필 편집' : st.view === 'contact' || st.view === 'calllog' ? '' : contact())}</b>
+                <b class="kk-name">${esc(st.view === 'kset' ? '채팅방 설정' : st.view === 'cedit' ? '프로필 편집' : '')}</b>
                 ${!st.view || st.view === 'chat' ? `<span class="kk-pill kk-r"><button data-act="sn-search" aria-label="검색">${KK.search}</button><button data-act="sn-contact" aria-label="전화">${KK.phone}</button><button data-act="sn-menu" aria-label="메뉴">${KK.menu}</button></span>`
                     : st.view === 'contact' ? '<span class="kk-pill kk-r kk-txt"><button data-act="call-edit">편집</button></span>' : '<span class="kk-r"></span>'}
             </div>

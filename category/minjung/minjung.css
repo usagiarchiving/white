@@ -610,7 +610,7 @@
 .sn-chat { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 10px 10px; display: flex; flex-direction: column; }
 .sn-chat > .mj-empty { margin: auto 0; line-height: 1.9; }
 .sn-chat, .sn-bar textarea { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif; -webkit-font-smoothing: antialiased; }
-.sn-when { text-align: center; margin: 15px 0 10px; font-size: 10.5px; color: var(--mj-sub); font-weight: 500; }
+.sn-when { align-self: center; text-align: center; margin: 15px 0 10px; padding: 3px 11px; border-radius: 999px; background: rgba(255, 255, 255, .5); font-size: 10.5px; color: var(--mj-sub); font-weight: 500; }
 .sn-when b { font-weight: 700; }
 .sn-row { display: flex; margin-bottom: 3.5px; }
 .sn-row.tail, .sn-row.photo { margin-bottom: 10px; }
@@ -623,7 +623,7 @@
 }
 .sn-b.held { transform: scale(.97); }
 .sn-row.you .sn-b { margin-left: 10px; }
-.sn-row.me .sn-b { --bub: #e9a7ba; color: #fff; margin-right: 10px; text-shadow: 0 1px 1px rgba(170, 85, 115, .45); }
+.sn-row.me .sn-b { --bub: #e9a7ba; color: #fff; margin-right: 0; text-shadow: 0 1px 1px rgba(170, 85, 115, .45); }
 /* 말풍선 꼬리: 같은 색 둥근 조각 + 창 바탕색으로 파낸 조각 */
 .sn-row.tail .sn-b::before, .sn-row.tail .sn-b::after { content: ''; position: absolute; bottom: 0; height: 20px; z-index: -1; }
 .sn-row.you.tail .sn-b::before { left: -6px; width: 20px; background: var(--bub); border-bottom-right-radius: 15px; }
