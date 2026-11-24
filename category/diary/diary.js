@@ -1037,7 +1037,7 @@ export function init() {
                 Object.keys(TODO_COLORS).map(c => {
                     const L = list.filter(t => (t.category || 'gray') === c); if (!L.length) return '';
                     const col = TODO_COLORS[c];
-                    return '<div class="t-grp" style="--c:' + col + '"><div class="gh"><span class="pill" style="background:' + hexA(col, .28) + '"><svg class="hrt" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13.6S2.4 10.4 2.4 6.3A2.8 2.8 0 0 1 8 4.6a2.8 2.8 0 0 1 5.6 1.7c0 4.1-5.6 7.3-5.6 7.3z" fill="' + col + '"></path></svg>' + esc(TODO_CAT[c] || '') + '</span></div><div class="gl">' + L.map(t => {
+                    return '<div class="t-grp" style="--c:' + col + '"><div class="gh"><span class="pill" style="background:' + hexA(col, .28) + ';color:' + penInk(col, .38, .45) + '"><svg class="hrt" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13.6S2.4 10.4 2.4 6.3A2.8 2.8 0 0 1 8 4.6a2.8 2.8 0 0 1 5.6 1.7c0 4.1-5.6 7.3-5.6 7.3z" fill="' + col + '"></path></svg>' + esc(TODO_CAT[c] || '') + '</span></div><div class="gl">' + L.map(t => {
                         const late = !t.is_completed && t.target_date && t.target_date < k;
                         const meta = [late ? '<b class="late">' + t.target_date.slice(5).replace('-', '.') + '</b>' : '', (t.subtasks || []).length ? t.subtasks.filter(x => x.is_completed).length + '/' + t.subtasks.length : ''].filter(Boolean).join(' · ');
                         return '<div class="t-row' + (t.is_completed ? ' done' : '') + '" data-id="' + esc(t.id) + '"><div class="tx" data-a="t-edit"><span class="t">' + esc(t.content) + '</span>' + (meta ? '<span class="m">' + meta + '</span>' : '') + '</div>' +
@@ -1264,13 +1264,13 @@ export function init() {
         if (h !== SLEEP) { const avg = (r + g + b) / 3; [r, g, b] = [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(avg + (v - avg) * 1.18)))); }
         return 'rgba(' + r + ',' + g + ',' + b + ',.6)';
     }
-    function penInk(h) {            // 글자: 같은 색 계열의 진한 색
+    function penInk(h, LL, SS) {    // 글자: 같은 색 계열의 진한 색
         if (h === SLEEP) return '#3A3B3F';
         let [r, g, b] = rgbOf(h).map(v => v / 255);
         const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
         let H = 0;
         if (d) { H = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; H *= 60; if (H < 0) H += 360; }
-        const S = d < 0.04 ? 0.06 : 0.42, L = 0.30, c = (1 - Math.abs(2 * L - 1)) * S, x = c * (1 - Math.abs((H / 60) % 2 - 1)), m = L - c / 2;
+        const S = d < 0.04 ? 0.06 : (SS || 0.42), L = LL || 0.30, c = (1 - Math.abs(2 * L - 1)) * S, x = c * (1 - Math.abs((H / 60) % 2 - 1)), m = L - c / 2;
         const [a, bb, cc] = H < 60 ? [c, x, 0] : H < 120 ? [x, c, 0] : H < 180 ? [0, c, x] : H < 240 ? [0, x, c] : H < 300 ? [x, 0, c] : [c, 0, x];
         return '#' + [a, bb, cc].map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
     }
