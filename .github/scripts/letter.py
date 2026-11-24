@@ -661,7 +661,7 @@ def make_chat(store, cfg):
               f"# 쓰는 법\n{P(cfg, 'chat', '짧은 말풍선 1~4개.')}\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
     at = stamp(t)
-    return {'chat': [{'id': new_id('c'), 'from': 'ai', 'text': b, 'at': at, 'model': model} for b in bubbles(text, 4)]}
+    return {'chat': [{'id': new_id('c'), 'from': 'ai', 'text': b, 'at': at, 'model': model} for b in bubbles(text, 3)]}
 
 
 # ---------------------------------------------------------------- 편지 답장에 답글

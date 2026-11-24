@@ -1993,6 +1993,19 @@ export function init() {
         const t = w.el.querySelector('[data-sn=msg]');
         if (t && t.value) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 110) + 'px'; }
     }
+    // 두 번 누르기 (휴대폰 · PC 둘 다). 꾹 누르기는 글자 선택(복사)으로 남겨 둠
+    function onDoubleTap(el, sel, fn) {
+        let last = null;
+        el.addEventListener('pointerup', e => {
+            const b = e.target.closest(sel); if (!b) { last = null; return; }
+            const now = Date.now();
+            if (last && last.b === b && now - last.t < 380 && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 24) {
+                last = null;
+                try { const s = window.getSelection(); if (s) s.removeAllRanges(); } catch (err) {}
+                fn(b);
+            } else last = { b, t: now, x: e.clientX, y: e.clientY };
+        });
+    }
     function sionBind(w) {
         const el = w.el;
         // 적던 글은 다시 그려도 남게, 칸 높이는 글 길이에 맞게, Enter = 보내기 (Shift+Enter 줄바꿈)
@@ -2010,33 +2023,23 @@ export function init() {
             if (e.key === 'Escape' && e.target.matches('[data-sn=q]')) { w.st.searching = false; w.st.q = ''; renderWin('sion'); }
         });
         el.addEventListener('scroll', e => { if (e.target.classList && e.target.classList.contains('sn-chat')) { const c = e.target; w.st.stick = c.scrollHeight - c.scrollTop - c.clientHeight < 40; } }, true);
-        // 말풍선 꾹 누르기(PC는 오른쪽 클릭) → 하트 · 수정 · 삭제
-        let press = null;
-        el.addEventListener('pointerdown', e => {
-            const b = e.target.closest('.sn-b[data-id]'); if (!b) return;
-            press = { b, x: e.clientX, y: e.clientY, t: setTimeout(() => { press = null; b.classList.add('held'); sionBubbleMenu(b); }, 480) };
-        });
-        const cancel = () => { if (press) { clearTimeout(press.t); press = null; } };
-        el.addEventListener('pointermove', e => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 8) cancel(); });
-        el.addEventListener('pointerup', cancel); el.addEventListener('pointercancel', cancel);
-        el.addEventListener('contextmenu', e => { const b = e.target.closest('.sn-b[data-id]'); if (!b) return; e.preventDefault(); cancel(); sionBubbleMenu(b); });
+        // 말풍선 두 번 누르기 → 수정 · 하트 · 삭제 (꾹 누르면 글자 선택해서 복사)
+        onDoubleTap(el, '.sn-b[data-id]', sionBubbleMenu);
     }
     function sionBubbleMenu(b) {
         const m = (sion.data.chat || []).find(x => x.id === b.dataset.id); if (!m) return;
         if (navigator.vibrate) try { navigator.vibrate(10); } catch (e) {}
         showPick(b, [
-            { icon: SN_SVG.heart(!m.fav), label: '', run: () => sionEditMsg(m.id, x => { x.fav = !x.fav; if (!x.fav) delete x.fav; }, m.fav ? '하트 빼기' : '하트') },
             { label: '수정', run: async () => {
                 const t = await mjPrompt('수정', m.text); if (t == null || !t.trim() || t.trim() === m.text) return;
                 sionEditMsg(m.id, x => { x.text = t.trim().slice(0, SION_MAX); x.edited = stamp(); }, '메시지 수정');
             } },
-            { label: '복사', run: () => { try { navigator.clipboard.writeText(m.text); toast('복사했어요'); } catch (e) {} } },
+            { icon: SN_SVG.heart(!m.fav), label: '', run: () => sionEditMsg(m.id, x => { x.fav = !x.fav; if (!x.fav) delete x.fav; }, m.fav ? '하트 빼기' : '하트') },
             { label: '삭제', run: async () => {
                 if (!await mjConfirm('이 메시지를 지울까요?', '삭제')) return;
                 sionEditMsg(m.id, null, '메시지 삭제');
             } }
         ]);
-        setTimeout(() => b.classList.remove('held'), 400);
     }
     // 메시지 하나 고치기(fn) 또는 지우기(fn 없음)
     function sionEditMsg(mid, fn, message) {
@@ -2235,16 +2238,8 @@ export function init() {
             if (a.dataset.na === 'back') { delete p.dataset.k; notiRender(p); }
             if (a.dataset.na === 'close') notiClose();
         });
-        // 카드 속 시온 말풍선 꾹 누르기(PC는 오른쪽 클릭) → 하트 · 수정 · 복사 · 삭제
-        let press = null;
-        const cancel = () => { if (press) { clearTimeout(press.t); press = null; } };
-        p.addEventListener('pointerdown', e => {
-            const b = e.target.closest('.nt-sion .b[data-i]'); if (!b) return;
-            press = { x: e.clientX, y: e.clientY, t: setTimeout(() => { press = null; briefMenu(p, b); }, 480) };
-        });
-        p.addEventListener('pointermove', e => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 8) cancel(); });
-        p.addEventListener('pointerup', cancel); p.addEventListener('pointercancel', cancel);
-        p.addEventListener('contextmenu', e => { const b = e.target.closest('.nt-sion .b[data-i]'); if (!b) return; e.preventDefault(); cancel(); briefMenu(p, b); });
+        // 카드 속 시온 말풍선: 두 번 누르기 → 수정 · 하트 · 삭제 (꾹 누르면 글자 선택해서 복사)
+        onDoubleTap(p, '.nt-sion .b[data-i]', b => briefMenu(p, b));
         notiRender(p);
     }
     function notiRender(p) {
@@ -2264,7 +2259,6 @@ export function init() {
         p.innerHTML = `<div class="nt-head">${keys.length > 1 ? '<button data-na="back" aria-label="목록">‹</button>' : ''}<span class="nt-when"><b>${kDate(k)}</b> ${kTime(b.at)}</span><button data-na="close" aria-label="닫기">${X_SVG}</button></div>
             <div class="nt-body">
                 ${items.length ? `<div class="nt-sion">${items.map((x, i) => `<span class="b${i === items.length - 1 ? ' tail' : ''}${x.fav ? ' fav' : ''}" data-i="${i}">${esc(x.text)}${x.fav ? `<i class="sn-heart">${SN_SVG.heart(true)}</i>` : ''}</span>`).join('')}</div>` : ''}
-                ${(b.alerts || []).map(a => `<div class="nt-alert"><b>${esc(a.kind)}</b>${esc(a.text)}<span>${kTime(a.at)}</span></div>`).join('')}
                 ${sec('Weather', w ? `<div class="nt-wx"><b class="ic">${WX[w.desc] || '·'}</b><div><b>${esc(w.desc)} ${w.now}°</b><span>${w.min}° / ${w.max}° · 비 ${w.rain}% · ${esc(w.place)}</span>
                     ${w.tomorrow ? `<span class="tm">내일 ${esc(w.tomorrow.desc)} ${w.tomorrow.min}° / ${w.tomorrow.max}° · 비 ${w.tomorrow.rain}%</span>` : ''}</div></div>` : '')}
                 ${sec('Fortune', f ? `<div class="nt-fo"><div class="rk"><b>${f.rank}</b>위</div><div class="tx"><span class="sg">${esc(f.sign)} · おは朝</span>
@@ -2286,9 +2280,8 @@ export function init() {
             sionCommit(msg, apply).catch(e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
         };
         showPick(el, [
-            { icon: SN_SVG.heart(!x.fav), label: '', run: () => edit(y => { y.fav = !y.fav; if (!y.fav) delete y.fav; return y; }, '아침 메시지 하트') },
             { label: '수정', run: async () => { const t = await mjPrompt('수정', x.text); if (t == null || !t.trim() || t.trim() === x.text) return; edit(y => { y.text = t.trim(); return y; }, '아침 메시지 수정'); } },
-            { label: '복사', run: () => { try { navigator.clipboard.writeText(x.text); toast('복사했어요'); } catch (e) {} } },
+            { icon: SN_SVG.heart(!x.fav), label: '', run: () => edit(y => { y.fav = !y.fav; if (!y.fav) delete y.fav; return y; }, '아침 메시지 하트') },
             { label: '삭제', run: async () => { if (!await mjConfirm('이 메시지를 지울까요?', '삭제')) return; edit(() => null, '아침 메시지 삭제'); } }
         ]);
     }
@@ -2318,13 +2311,12 @@ export function init() {
                 </div>
                 <div class="bg-phbtns"><button class="mj-link" data-act="bg-photo">${ph ? '사진 바꾸기' : '사진 넣기'}</button>${ph ? ' · <button class="mj-link" data-act="bg-photo-del">사진 지우기</button>' : ''}</div>
                 <div class="mj-sec">Profile prompt</div>
-                <div class="mj-form"><textarea data-bf="profile" rows="9" placeholder="기본 정보 · 외형">${esc(pval(st, 'profile'))}</textarea></div>
+                <div class="mj-form"><textarea data-bf="profile" rows="14" placeholder="기본 정보 · 외형">${esc(pval(st, 'profile'))}</textarea></div>
                 ${saveBar}`;
         }
         if (st.tab === 'Prompt') {
-            return `<p class="bg-info">${esc(sionName())}이 메시지·편지를 쓸 때 읽는 설정이에요. 고치고 Save 하면 다음 메시지부터 바뀌어요.</p>` +
-                PROMPT_GROUPS.map(([g, items]) => `<div class="bg-group">${g}</div>` + items.map(([k, l]) => `<div class="mj-sec">${l}</div>
-                    <div class="mj-form"><textarea data-bf="${k}" rows="${k === 'examples' || k === 'writing' ? 8 : 4}">${esc(pval(st, k))}</textarea></div>`).join('')).join('') + saveBar;
+            return PROMPT_GROUPS.map(([g, items]) => `<div class="bg-group">${g}</div>` + items.map(([k, l]) => `<div class="mj-sec">${l}</div>
+                    <div class="mj-form"><textarea data-bf="${k}" rows="${k === 'examples' ? 18 : ['profile', 'personality', 'relationship', 'writing', 'rules'].includes(k) ? 12 : 6}">${esc(pval(st, k))}</textarea></div>`).join('')).join('') + saveBar;
         }
         const m = sion.data.memory || {}, every = sion.cfg.memory_every || 3;
         if (st.tab === 'Log') {
@@ -2334,8 +2326,7 @@ export function init() {
         }
         const left = every - Object.keys(sion.data.letters || {}).filter(k => k > (m.upto || '')).length;
         const val = st.mdraft != null ? st.mdraft : (m.summary || '');
-        return `<p class="bg-info">${esc(sionName())}이 요즘 며칠을 짧게 기억해 두는 곳이에요. 틀린 건 고쳐서 저장하면 그대로 기억해요.<br>
-                편지 ${every}통마다 새로 정리 · 다음 정리까지 ${Math.max(0, left)}통${m.at ? ' · 마지막 ' + esc(m.at.slice(5, 16).replace('T', ' ')) : ''}${m.edited ? ' · 고친 기억' : ''}</p>
+        return `<p class="bg-info">편지 ${every}통마다 새로 정리 · 다음 정리까지 ${Math.max(0, left)}통${m.at ? ' · 마지막 ' + esc(m.at.slice(5, 16).replace('T', ' ')) : ''}${m.edited ? ' · 고친 기억' : ''}</p>
             <div class="mj-form"><textarea data-bg="mem" rows="12" placeholder="아직 정리된 기억이 없어요. 직접 적어 둬도 돼요.">${esc(val)}</textarea></div>
             <div class="mj-btns"><span class="bg-count">${val.length}자</span><span class="sp"></span>
                 ${st.mdraft != null ? '<button class="mj-btn ghost" data-act="bg-reset">Cancel</button>' : ''}<button class="mj-btn" data-act="bg-save">Save</button></div>`;

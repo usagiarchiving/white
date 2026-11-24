@@ -846,3 +846,16 @@
 .nt-sion .b.fav { margin-top: 8px; }
 .nt-sion .b .sn-heart { top: -10px; right: -10px; width: 20px; height: 20px; background: #fff; border: 1.5px solid var(--mj-line); }
 .nt-sion .b .sn-heart svg { width: 11px; height: 11px; }
+
+/* 꾹 누르면 글자 선택(복사), 두 번 누르면 메뉴 */
+.sn-b, .nt-sion .b { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; cursor: text; }
+/* 오늘의 알림 카드 말풍선: 민트 */
+.nt-sion .b { background: #eef8f3; color: #1d6f60; }
+.nt-sion .b.tail::before { background: #eef8f3; }
+.nt-sion .b .sn-heart { border-color: #cfe9dd; }
+/* BANG 프롬프트: Pretendard로 읽기 편하게 */
+.mj-win-bang .mj-form textarea, .mj-win-bang .bg-log .tx {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 13px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased; letter-spacing: -0.01em;
+}
+.mj-win-bang .mj-form textarea[data-bg=mem] { font-size: 13px; min-height: 300px; }
