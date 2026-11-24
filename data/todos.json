@@ -956,20 +956,5 @@
   "repeat_days": null,
   "sort_order": 1795520055415,
   "completed_date": null
- },
- {
-  "id": 1795520114092,
-  "created_at": "2026-11-24T11:35:14.092Z",
-  "content": "취미",
-  "category": "pink",
-  "matrix_quadrant": 0,
-  "is_completed": false,
-  "target_date": "2026-11-24",
-  "parent_id": null,
-  "subtasks": [],
-  "repeat_type": null,
-  "repeat_days": null,
-  "sort_order": 1795520114092,
-  "completed_date": null
  }
 ]
