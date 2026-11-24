@@ -919,4 +919,4 @@ textarea.dy-in { font-size: 11px; }
 .t-row .t { color: #45464d; }
 .td-dates > * { min-width: 0; }
 .td-dates input.dy-in { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; -webkit-appearance: none; appearance: none; display: block; }
-.dy-rcpt .ln .x s { text-decoration: line-through; text-decoration-thickness: 1px; }
+.dy-rcpt .ln .x s { text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: rgba(48,48,54,.28); }
