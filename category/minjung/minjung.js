@@ -873,7 +873,10 @@ export function init() {
         const top = body ? body.scrollTop : 0;
         const tabsEl = w.el.querySelector('.mj-tabs'), tabsLeft = tabsEl ? tabsEl.scrollLeft : 0;
         const tabs = tabsOf(id), canList = id === 'library' || id === 'daily' || id === 'food' || id === 'state';
-        w.el.innerHTML = `
+        w.el.innerHTML = id === 'sion' ? `
+            <div class="mj-win-head sn-head" data-drag><span class="sp"></span><button class="mj-x" data-act="close" aria-label="닫기">${X_SVG}</button></div>
+            <div class="mj-tabs">${tabs.map(t => `<button data-act="tab" data-v="${t}" class="${st.tab === t ? 'on' : ''}">${t}</button>`).join('')}</div>
+            <div class="mj-win-body">${VIEW[id](st)}</div>` : `
             <div class="mj-win-head" data-drag>
                 <button class="mj-badge" ${(id !== 'hp' && id !== 'lines') ? 'data-act="icon" title="아이콘 바꾸기"' : 'tabindex="-1"'}>${iconHtml(id)}</button>
                 <div class="mj-title">${def.title}</div>
@@ -971,9 +974,11 @@ export function init() {
                 case 'sn-lsend': sionSendLetterReply(st); break;
                 case 'sn-retry': sionRun(v, st.ldate); break;
                 case 'sn-favs': st.favs = !st.favs; st.stick = true; fresh(); break;
-                case 'sn-search': st.searching = !st.searching; st.q = ''; st.stick = true; fresh(); if (st.searching) { const q = el.querySelector('[data-sn=q]'); if (q) q.focus(); } break;
+                case 'sn-search': st.searching = !st.searching; st.q = ''; st.lfavs = false; st.stick = true; fresh(); if (st.searching) { const q = el.querySelector('[data-sn=q]'); if (q) q.focus(); } break;
                 case 'sn-push': sionPushToggle(); break;
-                case 'sn-lgo': st.ldate = v; st.searching = false; st.q = ''; fresh(); break;
+                case 'sn-lgo': st.ldate = v; st.searching = false; st.q = ''; st.lfavs = false; fresh(); break;
+                case 'sn-lfavs': st.lfavs = !st.lfavs; st.searching = false; st.q = ''; fresh(); break;
+                case 'sn-lfav': sionLetterFav(st.ldate); break;
                 case 'sn-ld': { const ks = sionDays(), i = ks.indexOf(st.ldate) + Number(v); if (ks[i]) { st.ldate = ks[i]; fresh(); } break; }
                 case 'plus': plus(id, st, b); break;
                 // 퀘스트
@@ -1869,7 +1874,11 @@ export function init() {
     // 첫 화면 퀘스트 아래 버튼
     function drawSionBtn() {
         const b = $('mj-sion'); if (!b) return;
-        b.innerHTML = `<span class="mj-ico">${iconHtml('sion')}</span><span class="n">${esc(contact())}</span>`;
+        // 2026.01.02(처음 만난 날)을 1일로 센 날짜
+        const [y, m, d] = ((sion.cfg && sion.cfg.since) || '2026-01-02').split('-').map(Number);
+        const now = new Date(), days = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(y, m - 1, d)) / 86400000) + 1;
+        b.innerHTML = `<span class="mj-ico">${pixelHeart(true)}</span><span class="n">${days}</span>`;
+        b.title = contact() + ' · ' + days + '일';
         b.classList.toggle('unread', sionUnread());
     }
     async function loadSion(quiet) {
@@ -1916,12 +1925,13 @@ export function init() {
         const fresh = !wins.sion;
         openWin('sion');
         const st = wins.sion.st;
-        if (fresh) Object.assign(st, { ldate: sionLetterDay(), stick: true, draft: '', ldraft: '', q: '', searching: false, favs: false });
+        if (fresh) Object.assign(st, { ldate: sionLetterDay(), stick: true, draft: '', ldraft: '', q: '', searching: false, favs: false, lfavs: false });
         st.tab = tab; st.stick = true; renderWin('sion');
         root.querySelectorAll('.sn-banner').forEach(x => x.remove());
         if (!sion.data) loadSion();
     }
     function sionAfterRender(w) {
+        sionFit();
         const c = w.el.querySelector('.sn-chat');
         if (c && w.st.stick !== false) c.scrollTop = c.scrollHeight;
         if (w.st.tab === 'Message' && sion.data && document.visibilityState === 'visible') sionMarkSeen();
@@ -2013,7 +2023,8 @@ export function init() {
         return `<div class="sn-tools">
             <button class="${st.searching ? 'on' : ''}" data-act="sn-search" title="검색">${SN_SVG.search}</button>
             ${st.searching ? `<input data-sn="q" type="text" enterkeyhint="search" placeholder="${st.tab === 'Letter' ? '편지 검색' : '메시지 검색'}" value="${esc(st.q || '')}" autocomplete="off">` : '<span class="sp"></span>'}
-            ${st.tab === 'Message' ? `<button class="${st.favs ? 'on' : ''}" data-act="sn-favs" title="하트 모아 보기">${SN_SVG.heart(st.favs)}</button>` : ''}
+            ${st.tab === 'Message' ? `<button class="${st.favs ? 'on' : ''}" data-act="sn-favs" title="하트 모아 보기">${SN_SVG.heart(st.favs)}</button>`
+                : `<button class="${st.lfavs ? 'on' : ''}" data-act="sn-lfavs" title="하트 편지 모아 보기">${SN_SVG.heart(st.lfavs)}</button>`}
             <button class="${pushOn ? 'on' : ''}" data-act="sn-push" title="${pushOn ? '알림 켜짐' : '알림 켜기'}">${SN_SVG.bell(pushOn)}</button>
         </div>`;
     }
@@ -2051,6 +2062,11 @@ export function init() {
     function sionLetterView(st) {
         if (!sion.data) return empty('불러오는 중…');
         if (st.searching) return sionTools(st) + `<div class="sn-results">${sionLetterResults(st)}</div>`;
+        if (st.lfavs) {
+            const favs = Object.keys(sion.data.letters).sort().reverse().filter(k => sion.data.letters[k].fav);
+            return sionTools(st) + (favs.length ? favs.map(k => `<button class="sn-hit" data-act="sn-lgo" data-v="${k}"><span class="d">${dayTitle(k)}</span><span class="s">${esc((sion.data.letters[k].body || '').replace(/\s+/g, ' ').slice(0, 70))}…</span></button>`).join('')
+                : empty('하트를 누른 편지가 없어요.<br>편지 오른쪽 위 하트를 눌러 모아 둘 수 있어요.'));
+        }
         const k = st.ldate || sionLetterDay(), ks = sionDays(), i = ks.indexOf(k);
         const lt = sion.data.letters[k], name = esc(contact());
         const nav = sionTools(st) + `<div class="sn-lnav"><button data-act="sn-ld" data-v="-1" ${i > 0 ? '' : 'disabled'}>‹</button><span>${dayTitle(k)}</span><button data-act="sn-ld" data-v="1" ${i < ks.length - 1 ? '' : 'disabled'}>›</button></div>`;
@@ -2058,18 +2074,39 @@ export function init() {
             if (k !== sionLetterDay()) return nav + empty('이 날은 편지가 없어요.');
             return nav + `<div class="sn-env">
                 <div class="sn-seal">${ICON.letter}</div>
-                <p>하루를 마치고 자기 전에 눌러 주세요.<br>오늘 남긴 기록을 읽고 ${esc(sionName())}이 편지를 써요.</p>
-                <button class="mj-btn" data-act="sn-letter" ${sion.wait.letter ? 'disabled' : ''}>${sion.wait.letter ? esc(sionName()) + '이 편지 쓰는 중…' : '오늘 편지 받기'}</button>
+                <button class="mj-btn" data-act="sn-letter" ${sion.wait.letter ? 'disabled' : ''}>${sion.wait.letter ? esc(sionName()) + '이 편지 쓰는 중…' : '내 토끼에게'}</button>
             </div>`;
         }
         const reps = lt.replies || [], waiting = reps.length && reps[reps.length - 1].from === 'me';
         const maxed = reps.filter(r => r.from === 'ai').length >= ((sion.cfg && sion.cfg.max_letter_replies) || 5);
-        return nav + `<article class="sn-paper"><div class="sn-body">${esc(lt.body).split(/\n{2,}/).map(p => '<p>' + p.replace(/\n/g, '<br>') + '</p>').join('')}</div></article>
+        return nav + `<article class="sn-paper"><button class="sn-lheart${lt.fav ? ' on' : ''}" data-act="sn-lfav" title="하트">${SN_SVG.heart(!!lt.fav)}</button><div class="sn-body">${esc(lt.body).split(/\n{2,}/).map(p => '<p>' + p.replace(/\n/g, '<br>') + '</p>').join('')}</div></article>
             <div class="sn-thread">${reps.map(r => `<div class="sn-rep ${r.from === 'me' ? 'me' : 'you'}"><span class="who">${r.from === 'me' ? 'Me' : name} · ${esc((r.at || '').slice(11, 16))}</span>${nl(r.text)}</div>`).join('')}
                 ${waiting ? `<div class="sn-note">${sion.wait.reply ? esc(sionName()) + '이 답글 쓰는 중…' : `답글을 기다리는 중 · <button class="mj-link" data-act="sn-retry" data-v="reply">다시 부르기</button>`}</div>` : ''}
             </div>
             ${waiting || maxed ? '' : `<div class="mj-form sn-lform"><textarea data-sn="lreply" rows="3" maxlength="${SION_MAX}" placeholder="답장 쓰기">${esc(st.ldraft || '')}</textarea>
                 <div class="mj-btns"><span class="sp"></span><button class="mj-btn" data-act="sn-lsend">Send</button></div></div>`}`;
+    }
+
+    function sionLetterFav(k) {
+        const lt = sion.data.letters[k]; if (!lt || sionNeedToken()) return;
+        const on = !lt.fav;
+        const set = x => { if (!x) return; if (on) x.fav = true; else delete x.fav; };
+        set(lt); renderWin('sion');
+        sionCommit(on ? '편지 하트' : '편지 하트 빼기', cur => set(cur.letters[k])).catch(e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
+    }
+    // 휴대폰: 키보드가 올라와도 창 위(탭·검색)는 그대로, 창 높이만 보이는 화면에 맞춤
+    function sionFit() {
+        const w = wins.sion, vv = window.visualViewport;
+        if (!w || !vv) return;
+        if (isPC()) { w.el.style.top = w.el.style.height = ''; return; }
+        w.el.style.top = vv.offsetTop + 'px';
+        w.el.style.height = vv.height + 'px';
+        const c = w.el.querySelector('.sn-chat'); if (c && w.st.stick !== false) c.scrollTop = c.scrollHeight;
+    }
+    if (window.visualViewport) {
+        const onVV = () => { if (!root.isConnected) { visualViewport.removeEventListener('resize', onVV); visualViewport.removeEventListener('scroll', onVV); return; } sionFit(); };
+        visualViewport.addEventListener('resize', onVV);
+        visualViewport.addEventListener('scroll', onVV);
     }
 
     // 내 글을 letters.json 에 커밋 (사이트에서 보낸 글끼리는 차례대로)

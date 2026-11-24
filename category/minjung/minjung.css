@@ -565,8 +565,9 @@
     background: rgba(255, 255, 255, .78); box-shadow: 0 0 0 2px rgba(255, 255, 255, .45);
     font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-ink);
 }
-.mj-sion .mj-ico { position: relative; width: 16px; height: 16px; }
-.mj-sion .mj-ico .mj-ico-img { width: 16px; height: 16px; margin: 0; border-radius: 3px; }
+.mj-sion .mj-ico { position: relative; width: 14px; height: 13px; align-items: center; }
+.mj-sion .mj-ico .mj-heart { width: 14px; height: 12px; }
+.mj-sion .n { font-variant-numeric: tabular-nums; }
 .mj-sion.unread { border-color: var(--mj-tag); }
 .mj-sion.unread .mj-ico::after { content: ''; position: absolute; top: -3px; right: -3px; width: 6px; height: 6px; border-radius: 50%; background: #f08aa8; box-shadow: 0 0 0 1.5px #fff; }
 @media (min-width: 744px) { .mj-sion { top: 80px; left: 14px; } }
@@ -653,7 +654,6 @@
 .sn-send.on { background: #e9a7ba; color: #fff; }
 
 /* 편지 탭 */
-.mj-win-sion .mj-win-body:has(.sn-tools) > .sn-tools { padding: 0 0 6px; }
 .sn-lnav { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 0 14px; font-family: 'Galmuri9', sans-serif; font-size: 11px; letter-spacing: 1px; }
 .sn-lnav button { width: 28px; height: 28px; border: 1px solid var(--mj-line); background: var(--mj-card); border-radius: 2px; }
 .sn-lnav button:disabled { opacity: .35; cursor: default; }
@@ -672,3 +672,18 @@
 .sn-hit .d { font-family: 'Galmuri9', sans-serif; font-size: 10px; color: var(--mj-deep); letter-spacing: 1px; }
 .sn-hit .s { font-size: 11.5px; line-height: 1.6; color: var(--mj-ink); }
 @media (min-width: 744px) { .mj-win-sion { height: min(600px, calc(100vh - 110px)); } }
+
+/* Sion 창 머리: 제목·아이콘·점 없이 닫기만 */
+.sn-head { display: flex; align-items: center; justify-content: flex-end; min-height: 0; padding: calc(6px + env(safe-area-inset-top)) 8px 0; }
+.sn-head .sp { flex: 1; }
+.sn-head .mj-x { position: static; }
+@media (min-width: 744px) { .sn-head { padding: 0 8px; } }
+.mj-win-sion { overscroll-behavior: contain; }
+.mj-win-sion .mj-win-body:not(:has(.sn-chat)) > .sn-tools { position: sticky; top: -12px; z-index: 2; margin: -12px -14px 4px; padding: 6px 14px; background: var(--mj-paper); }
+/* 편지 하트 */
+.sn-paper { position: relative; }
+.sn-lheart { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 0; background: none; color: var(--mj-sub); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.sn-lheart svg { width: 17px !important; height: 17px !important; }
+.sn-lheart.on { color: #f08aa8; }
+.sn-env { padding: 30px 14px 26px; }
+.sn-env .mj-btn { margin-top: 14px; }
