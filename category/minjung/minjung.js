@@ -97,7 +97,7 @@ const WIN = {
     quest:     { title: 'Quest',     tabs: ['Daily', 'Weekly'], w: 400 },
     room:      { title: 'Backgrounds', w: 420 },
     lines:     { title: 'Lines',     w: 360 },
-    sion:      { title: '내 여보♡',  tabs: ['Message', 'Letter'], w: 390 },
+    sion:      { title: '내 여보♡',  tabs: ['Message', 'Daily', 'Letter'], w: 390 },
     bang:      { title: 'BANG',      tabs: ['Profile', 'Prompt', 'Memory', 'Log'], w: 430 }
 };
 /* 아래 메뉴 / 바탕화면 아이콘 5개 — pick이 있으면 누를 때 작은 고르기 팝업이 먼저 뜸 */
@@ -613,7 +613,7 @@ export function init() {
     $('mj-hp').addEventListener('click', () => openWin('hp'));
     $('mj-quest').addEventListener('click', () => openWin('quest'));
     $('mj-sion').addEventListener('click', () => openSion('Message'));
-    $('mj-noti').addEventListener('click', e => { e.stopPropagation(); notiToggle(); });
+    $('mj-noti').addEventListener('click', e => { e.stopPropagation(); openDaily(); });
 
     /* ---------------- 퀘스트 ---------------- */
     const qDone = (date, id) => !!(db.quest_log[date] || {})[id];
@@ -1000,6 +1000,8 @@ export function init() {
                 case 'bg-photo': bangPhoto(st); break;
                 case 'bg-photo-del': bangPhoto(st, true); break;
                 case 'bg-reset': st.mdraft = null; fresh(); break;
+                case 'dl-open': st.dday = v; fresh(); break;
+                case 'dl-back': st.dday = null; fresh(); break;
                 case 'sn-favs': st.favs = !st.favs; st.stick = true; fresh(); break;
                 case 'sn-search': st.searching = !st.searching; st.q = ''; st.lfavs = false; st.stick = true; fresh(); if (st.searching) { const q = el.querySelector('[data-sn=q]'); if (q) q.focus(); } break;
                 case 'sn-push': sionPushToggle(); break;
@@ -1021,7 +1023,7 @@ export function init() {
                 case 'le-save': saveListEdit(id, el); break;
                 case 'le-del': b.closest('.mj-le-row').remove(); break;
                 case 'le-add': { const box = el.querySelector(v ? `.mj-le[data-list=${v}]` : '.mj-le'); box.insertAdjacentHTML('beforeend', leRow(id, { key: '', label: '', tab: true }, v === 'mood')); box.lastElementChild.querySelector('input').focus(); break; }
-                case 'tab': st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; st.qedit = false; fresh(); if (v === 'To Do') loadTodos(); break;
+                case 'tab': if (id === 'sion' && v === 'Daily') st.dday = null; st.tab = v; st.form = (id === 'hp' || id === 'lines') ? {} : null; st.pedit = false; st.qedit = false; fresh(); if (v === 'To Do') loadTodos(); break;
                 case 'sub': st.sub = v; st.form = null; fresh(); break;
                 case 'icon': pickFile(f => setIcon(id, f, WIN[id].title)); break;
                 case 'day': st.date = v === '0' ? todayKey() : shiftDay(st.date, Number(v)); fresh(); break;
@@ -1500,7 +1502,7 @@ export function init() {
 
     const VIEW = {
         /* 하시온: 메시지(iMessage) · 편지 */
-        sion(st) { return st.tab === 'Letter' ? sionLetterView(st) : sionChatView(st); },
+        sion(st) { return st.tab === 'Letter' ? sionLetterView(st) : st.tab === 'Daily' ? dailyView(st) : sionChatView(st); },
         /* BANG: 시온의 기억 (보고 고치기) · 그동안 정리한 기억 */
         bang(st) { return bangView(st); },
         /* 체력 */
@@ -1956,35 +1958,26 @@ export function init() {
         sion.lastAi = a ? a.id : '';
         sion.lastLetters = !!today;
     }
-    // 화면 위 알림 띠. o.bubbles = 시온 말풍선들, o.more = 작은 ▾ 를 누르면 펼쳐지는 오늘 기록
+    // 화면 위 알림 띠 (아이폰 알림처럼): 프사 · 이름 · 내용 한두 줄
     function sionBanner(text, tab, o) {
         o = o || {};
         root.querySelectorAll('.sn-banner').forEach(x => x.remove());
-        const el = document.createElement('div');
+        const el = document.createElement('button');
         el.className = 'sn-banner';
         const ph = sionPhoto();
-        const body = o.bubbles && o.bubbles.length ? `<span class="bb">${o.bubbles.map(t => `<span class="b">${esc(t)}</span>`).join('')}</span>` : `<span class="t">${esc(text)}</span>`;
-        el.innerHTML = `<div class="top"><span class="ic${ph ? ' ph' : ''}">${ph || o.icon || iconHtml('sion')}</span>
-                <span class="tx"><b>${esc(o.title || contact())}</b>${body}</span>
-                <span class="side"><span class="tm">지금</span>${o.more ? '<button class="fold" aria-label="오늘 기록 펼치기">▾</button>' : ''}</span></div>
-            ${o.more ? `<div class="more">${o.more}</div>` : ''}`;
-        let t1, t2;
-        el.addEventListener('click', e => {
-            if (e.target.closest('.fold')) { clearTimeout(t1); clearTimeout(t2); el.classList.toggle('open'); return; }
-            if (e.target.closest('.more')) return;
-            el.remove(); if (o.run) o.run(); else openSion(tab);
-        });
+        el.innerHTML = `<span class="ic${ph ? ' ph' : ''}">${ph || o.icon || iconHtml('sion')}</span><span class="tx"><b>${esc(o.title || contact())}</b><span>${esc(text)}</span></span><span class="tm">지금</span>`;
+        el.addEventListener('click', () => { el.remove(); if (o.run) o.run(); else openSion(tab); });
         root.appendChild(el);
-        t1 = setTimeout(() => el.classList.add('out'), o.long ? 7600 : 5200);
-        t2 = setTimeout(() => el.remove(), o.long ? 8000 : 5600);
+        setTimeout(() => el.classList.add('out'), 6200);
+        setTimeout(() => el.remove(), 6600);
     }
     // 알림을 눌러서 들어왔으면 그 탭으로 열기
     function sionOpenFromNotice() {
         let tab = null;
         try { tab = sessionStorage.getItem('sion_open'); sessionStorage.removeItem('sion_open'); } catch (e) {}
-        if (tab) tab === 'Notice' ? notiOpen(todayKey()) : openSion(tab);
+        if (tab) tab === 'Notice' ? openDaily(todayKey()) : openSion(tab);
     }
-    window.__openSion = tab => { if (!root.isConnected) return; if (tab === 'Notice') notiOpen(todayKey()); else openSion(tab || 'Message'); };
+    window.__openSion = tab => { if (!root.isConnected) return; if (tab === 'Notice') openDaily(todayKey()); else openSion(tab || 'Message'); };
     function openSion(tab) {
         const fresh = !wins.sion;
         openWin('sion');
@@ -2211,7 +2204,6 @@ export function init() {
         b.title = n ? '안 본 알림 ' + n + '개' : '알림';
         b.classList.toggle('unread', !!n);
         b.style.display = any ? '' : 'none';
-        const p = root.querySelector('.mj-noti-panel'); if (p && !p.dataset.k) notiRender(p);
     }
     // 아침(5시 이후) 김민정에 처음 들어왔을 때 한 번만 위에 띠로. 아직 오늘 것이 없으면 만들어 달라고 함
     function briefBanner() {
@@ -2223,59 +2215,51 @@ export function init() {
         }
         if (lsGet(NOTI_BANNER, '') === k) return false;
         lsSet(NOTI_BANNER, k);
-        sionBanner(briefLine(b), null, { title: '오늘의 알림', icon: ICON.bell, long: true, run: () => notiOpen(k), bubbles: b.sion, more: briefRecords(b) });
+        sionBanner(b.sion && b.sion.length ? b.sion.join(' ') : briefLine(b), null, { run: () => openDaily(k) });
         return true;
     }
-    function notiToggle() { const p = root.querySelector('.mj-noti-panel'); if (p) notiClose(); else notiOpen(); }
-    function notiClose() { root.querySelectorAll('.mj-noti-panel, .mj-noti-bg').forEach(x => x.remove()); }
-    function notiOpen(k) {
-        notiClose();
-        const bg = document.createElement('div'); bg.className = 'mj-noti-bg'; bg.addEventListener('click', notiClose);
-        const p = document.createElement('div'); p.className = 'mj-noti-panel';
-        if (k) p.dataset.k = k;
-        root.appendChild(bg); root.appendChild(p);
-        p.addEventListener('click', e => {
-            const c = e.target.closest('[data-nk]'); if (c) { p.dataset.k = c.dataset.nk; notiRender(p); return; }
-            const a = e.target.closest('[data-na]'); if (!a) return;
-            if (a.dataset.na === 'back') { delete p.dataset.k; delete p.dataset.open; notiRender(p); }
-            if (a.dataset.na === 'close') notiClose();
-            if (a.dataset.na === 'fold') { p.dataset.open = p.dataset.open === '1' ? '' : '1'; notiRender(p); }
-            if (a.dataset.na === 'sion') { notiClose(); openSion('Message'); }
-        });
-        notiRender(p);
+    /* Daily 탭: 날짜별 오늘의 알림 목록 → 누르면 그날 알림 (하나뿐이면 바로) */
+    function openDaily(k) {
+        openSion('Daily');
+        const st = wins.sion.st;
+        st.dday = k || null;
+        renderWin('sion');
     }
-    function notiRender(p) {
-        const all = briefs(), keys = Object.keys(all).sort().reverse(), k = p.dataset.k, seen = seenSet();
-        if (!k) {
-            p.innerHTML = `<div class="nt-head"><span>NOTICE</span><button data-na="close" aria-label="닫기">${X_SVG}</button></div>
-                <div class="nt-list">${keys.length ? keys.map(d => `<button class="nt-card${seen.has(briefKey(d)) ? '' : ' new'}" data-nk="${d}">
-                    <span class="d">${dayTitle(d)}${d === todayKey() ? ' · TODAY' : ''}</span><span class="t">오늘의 알림</span><span class="s">${esc(briefLine(all[d]))}</span></button>`).join('')
-                    : empty('아침마다 오늘의 알림이 와요')}</div>`;
-            return;
-        }
-        const b = all[k]; if (!b) { delete p.dataset.k; return notiRender(p); }
+    const kDate = k => { const [y, m, d] = k.split('-').map(Number); return `${m}월 ${d}일 (${KDOW[new Date(y, m - 1, d).getDay()]})`; };
+    const kTime = at => { const [h, mi] = ((at || '').slice(11, 16) || '00:00').split(':').map(Number); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${pad(mi)}`; };
+    function dailyView(st) {
+        if (!sion.data) return empty('불러오는 중…');
+        const all = briefs(), keys = Object.keys(all).sort().reverse();
+        if (!keys.length) return empty('아침마다 오늘의 알림이 여기 쌓여요');
+        const k = st.dday && all[st.dday] ? st.dday : keys.length === 1 ? keys[0] : null;
+        if (k) return dailyDetail(all[k], k, keys.length > 1);
+        const seen = seenSet();
+        return `<div class="dl-list">${keys.map(d => {
+            const b = all[d], al = (b.alerts || []).slice(-1)[0];
+            const first = al ? al.text : (b.sion && b.sion[0]) || briefLine(b);
+            return `<button class="dl-item${seen.has(briefKey(d)) ? '' : ' new'}" data-act="dl-open" data-v="${d}">
+                <span class="dot"></span>
+                <span class="mid"><span class="row"><b>${kDate(d)}</b><span class="tm">${kTime((al || b).at)}</span></span>
+                    <span class="pv">${esc(first)}</span><span class="sm">${esc(briefLine(Object.assign({}, b, { alerts: [] })))}</span></span>
+            </button>`;
+        }).join('')}</div>`;
+    }
+    function dailyDetail(b, k, canBack) {
         markBriefSeen(k);
-        const open = p.dataset.open === '1' || !(b.sion && b.sion.length);
-        p.innerHTML = `<div class="nt-head"><button data-na="back" aria-label="목록">‹</button><span>${dayTitle(k)}</span><button data-na="close" aria-label="닫기">${X_SVG}</button></div>
-            <div class="nt-body">
-                ${b.sion && b.sion.length ? `<button class="nt-sion" data-na="sion">${b.sion.map((t, i, a) => `<span class="b${i === a.length - 1 ? ' tail' : ''}">${esc(t)}</span>`).join('')}</button>` : ''}
-                <button class="nt-fold${open ? ' open' : ''}" data-na="fold"><span>오늘 기록</span><i>${(b.alerts || []).length ? '날씨 알림 · ' : ''}${esc(briefLine(Object.assign({}, b, { alerts: [] })))}</i><b>▾</b></button>
-                ${open ? `<div class="nt-recs">${briefRecords(b)}</div>` : ''}
-            </div>`;
-    }
-    // 오늘 기록 (날씨 알림 · 날씨 · 운세 · 일정) — 알림 띠와 카드에서 접었다 펼침
-    function briefRecords(b) {
         const w = b.weather, f = b.fortune;
-        const sec = (t, h) => h ? `<div class="nt-sec">${t}</div>${h}` : '';
-        return (b.alerts || []).map(a => `<div class="nt-alert"><b>${esc(a.kind)}</b>${esc(a.text)}<span>${esc((a.at || '').slice(11, 16))}</span></div>`).join('') +
-            sec('Weather', w ? `<div class="nt-wx"><b class="ic">${WX[w.desc] || '·'}</b><div><b>${esc(w.desc)} ${w.now}°</b><span>${w.min}° / ${w.max}° · 비 ${w.rain}% · ${esc(w.place)}</span>
-                ${w.tomorrow ? `<span class="tm">내일 ${esc(w.tomorrow.desc)} ${w.tomorrow.min}° / ${w.tomorrow.max}° · 비 ${w.tomorrow.rain}%</span>` : ''}</div></div>` : '') +
-            sec('Fortune', f ? `<div class="nt-fo"><div class="rk"><b>${f.rank}</b>위</div><div class="tx"><span class="sg">${esc(f.sign)} · おは朝</span>
-                ${(f.ko && f.ko.length ? f.ko : f.jp).map((t, i, a) => `<p${i === a.length - 1 && a.length > 1 ? ' class="lucky"' : ''}>${i === a.length - 1 && a.length > 1 ? '♡ 럭키 아이템 · ' : ''}${esc(t)}</p>`).join('')}</div></div>`
-                : '<p class="nt-none">오늘은 운세가 없어요 (주말엔 쉬어요)</p>') +
-            sec('Today', (b.schedule || []).map(e => `<p class="nt-row"><span>${esc(e.time)}</span>${esc(e.title)}</p>`).join('') +
-                (b.todos || []).map(t => `<p class="nt-row"><span>To do</span>${esc(t)}</p>`).join('') +
-                (b.ddays || []).map(d => `<p class="nt-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') || '<p class="nt-none">오늘 일정이 없어요</p>');
+        const card = (t, h) => `<div class="dl-card"><div class="dl-t">${t}</div>${h}</div>`;
+        const bubbles = (b.sion || []).map((t, i, a) => `<div class="sn-row you${i === a.length - 1 ? ' tail' : ''}"><div class="sn-b">${esc(t)}</div></div>`).join('');
+        return `<div class="dl-head">${canBack ? '<button data-act="dl-back" aria-label="목록">‹</button>' : '<span></span>'}<b>${kDate(k)}</b><span class="tm">${kTime(b.at)}</span></div>
+            ${bubbles ? `<div class="dl-msgs sn-chat-like">${bubbles}</div>` : ''}
+            ${(b.alerts || []).map(a => `<div class="dl-alert"><span class="k">${esc(a.kind)}</span><span>${esc(a.text)}</span><span class="tm">${kTime(a.at)}</span></div>`).join('')}
+            ${w ? card('Weather', `<div class="dl-wx"><span class="ic">${WX[w.desc] || '·'}</span><div><b>${esc(w.desc)} ${w.now}°</b><span>${w.min}° / ${w.max}° · 비 ${w.rain}% · ${esc(w.place)}</span>
+                ${w.tomorrow ? `<span>내일 ${esc(w.tomorrow.desc)} ${w.tomorrow.min}° / ${w.tomorrow.max}° · 비 ${w.tomorrow.rain}%</span>` : ''}</div></div>`) : ''}
+            ${card('Fortune', f ? `<div class="dl-fo"><span class="rk"><b>${f.rank}</b>위</span><div><span class="sg">${esc(f.sign)} · おは朝</span>
+                ${(f.ko && f.ko.length ? f.ko : f.jp).map((t, i, a) => `<p${i === a.length - 1 && a.length > 1 ? ' class="lucky"' : ''}>${i === a.length - 1 && a.length > 1 ? '♡ ' : ''}${esc(t)}</p>`).join('')}</div></div>`
+                : '<p class="dl-none">오늘은 운세가 없어요 (주말엔 쉬어요)</p>')}
+            ${card('Today', (b.schedule || []).map(e => `<p class="dl-row"><span>${esc(e.time)}</span>${esc(e.title)}</p>`).join('') +
+                (b.todos || []).map(t => `<p class="dl-row"><span>To do</span>${esc(t)}</p>`).join('') +
+                (b.ddays || []).map(d => `<p class="dl-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') || '<p class="dl-none">오늘 일정이 없어요</p>')}`;
     }
 
     /* ---------------- BANG: 시온의 기억 ---------------- */
