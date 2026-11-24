@@ -1949,24 +1949,34 @@ export function init() {
         const briefShown = !quiet && briefBanner();
         if (briefShown) {
             // 아침 알림 띠에 시온 아침 메시지도 같이 보이니까 메시지 띠는 생략
-        } else if (a && a.id !== sion.lastAi && !quiet && (first ? sionUnread() : true) && !viewing('Message')) {
+        } else if (a && a.id !== sion.lastAi && !quiet && (first ? sionUnread() : true) && !viewing('Message') && !root.querySelector('.sn-banner.open') && !(a.slot === 'morning' && briefs()[todayKey()])) {
             const run = sion.data.chat.filter(r => r.from === 'ai' && r.at === a.at);
             sionBanner(run.map(r => PHOTO_RE.test(r.text) ? '사진' : r.text).join(' '), 'Message');
         } else if (today && sion.lastLetters !== null && !sion.lastLetters && !viewing('Letter')) sionBanner('편지가 도착했어요 ♡', 'Letter');
         sion.lastAi = a ? a.id : '';
         sion.lastLetters = !!today;
     }
+    // 화면 위 알림 띠. o.bubbles = 시온 말풍선들, o.more = 작은 ▾ 를 누르면 펼쳐지는 오늘 기록
     function sionBanner(text, tab, o) {
         o = o || {};
         root.querySelectorAll('.sn-banner').forEach(x => x.remove());
-        const el = document.createElement('button');
+        const el = document.createElement('div');
         el.className = 'sn-banner';
         const ph = sionPhoto();
-        el.innerHTML = `<span class="ic${ph ? ' ph' : ''}">${ph || o.icon || iconHtml('sion')}</span><span class="tx"><b>${esc(o.title || contact())}</b><span>${esc(text)}</span></span><span class="tm">지금</span>`;
-        el.addEventListener('click', () => { el.remove(); if (o.run) o.run(); else openSion(tab); });
+        const body = o.bubbles && o.bubbles.length ? `<span class="bb">${o.bubbles.map(t => `<span class="b">${esc(t)}</span>`).join('')}</span>` : `<span class="t">${esc(text)}</span>`;
+        el.innerHTML = `<div class="top"><span class="ic${ph ? ' ph' : ''}">${ph || o.icon || iconHtml('sion')}</span>
+                <span class="tx"><b>${esc(o.title || contact())}</b>${body}</span>
+                <span class="side"><span class="tm">지금</span>${o.more ? '<button class="fold" aria-label="오늘 기록 펼치기">▾</button>' : ''}</span></div>
+            ${o.more ? `<div class="more">${o.more}</div>` : ''}`;
+        let t1, t2;
+        el.addEventListener('click', e => {
+            if (e.target.closest('.fold')) { clearTimeout(t1); clearTimeout(t2); el.classList.toggle('open'); return; }
+            if (e.target.closest('.more')) return;
+            el.remove(); if (o.run) o.run(); else openSion(tab);
+        });
         root.appendChild(el);
-        setTimeout(() => el.classList.add('out'), o.long ? 7600 : 5200);
-        setTimeout(() => el.remove(), o.long ? 8000 : 5600);
+        t1 = setTimeout(() => el.classList.add('out'), o.long ? 7600 : 5200);
+        t2 = setTimeout(() => el.remove(), o.long ? 8000 : 5600);
     }
     // 알림을 눌러서 들어왔으면 그 탭으로 열기
     function sionOpenFromNotice() {
@@ -2197,7 +2207,8 @@ export function init() {
     function drawNoti() {
         const b = $('mj-noti'); if (!b) return;
         const n = unreadBriefs().length, any = Object.keys(briefs()).length;
-        b.innerHTML = `<span class="mj-ico">${ICON.bell}</span>${n ? `<span class="n">${n}</span>` : ''}`;
+        b.innerHTML = `<span class="mj-ico">${ICON.bell}</span>`;
+        b.title = n ? '안 본 알림 ' + n + '개' : '알림';
         b.classList.toggle('unread', !!n);
         b.style.display = any ? '' : 'none';
         const p = root.querySelector('.mj-noti-panel'); if (p && !p.dataset.k) notiRender(p);
@@ -2212,8 +2223,7 @@ export function init() {
         }
         if (lsGet(NOTI_BANNER, '') === k) return false;
         lsSet(NOTI_BANNER, k);
-        const text = [briefLine(b)].concat(b.sion && b.sion.length ? [contact() + ': ' + b.sion.join(' ')] : []).join('\n');
-        sionBanner(text, null, { title: '오늘의 알림', icon: ICON.bell, long: true, run: () => notiOpen(k) });
+        sionBanner(briefLine(b), null, { title: '오늘의 알림', icon: ICON.bell, long: true, run: () => notiOpen(k), bubbles: b.sion, more: briefRecords(b) });
         return true;
     }
     function notiToggle() { const p = root.querySelector('.mj-noti-panel'); if (p) notiClose(); else notiOpen(); }
@@ -2227,8 +2237,9 @@ export function init() {
         p.addEventListener('click', e => {
             const c = e.target.closest('[data-nk]'); if (c) { p.dataset.k = c.dataset.nk; notiRender(p); return; }
             const a = e.target.closest('[data-na]'); if (!a) return;
-            if (a.dataset.na === 'back') { delete p.dataset.k; notiRender(p); }
+            if (a.dataset.na === 'back') { delete p.dataset.k; delete p.dataset.open; notiRender(p); }
             if (a.dataset.na === 'close') notiClose();
+            if (a.dataset.na === 'fold') { p.dataset.open = p.dataset.open === '1' ? '' : '1'; notiRender(p); }
             if (a.dataset.na === 'sion') { notiClose(); openSion('Message'); }
         });
         notiRender(p);
@@ -2244,21 +2255,27 @@ export function init() {
         }
         const b = all[k]; if (!b) { delete p.dataset.k; return notiRender(p); }
         markBriefSeen(k);
-        const w = b.weather, f = b.fortune;
-        const sec = (t, h) => h ? `<div class="nt-sec">${t}</div>${h}` : '';
+        const open = p.dataset.open === '1' || !(b.sion && b.sion.length);
         p.innerHTML = `<div class="nt-head"><button data-na="back" aria-label="목록">‹</button><span>${dayTitle(k)}</span><button data-na="close" aria-label="닫기">${X_SVG}</button></div>
             <div class="nt-body">
-                ${b.sion && b.sion.length ? `<button class="nt-sion" data-na="sion">${b.sion.map(t => `<span class="b">${esc(t)}</span>`).join('')}</button>` : ''}
-                ${(b.alerts || []).map(a => `<div class="nt-alert"><b>${esc(a.kind)}</b>${esc(a.text)}<span>${esc((a.at || '').slice(11, 16))}</span></div>`).join('')}
-                ${sec('Weather', w ? `<div class="nt-wx"><b class="ic">${WX[w.desc] || '·'}</b><div><b>${esc(w.desc)} ${w.now}°</b><span>${w.min}° / ${w.max}° · 비 ${w.rain}% · ${esc(w.place)}</span>
-                    ${w.tomorrow ? `<span class="tm">내일 ${esc(w.tomorrow.desc)} ${w.tomorrow.min}° / ${w.tomorrow.max}° · 비 ${w.tomorrow.rain}%</span>` : ''}</div></div>` : '')}
-                ${sec('Fortune', f ? `<div class="nt-fo"><div class="rk"><b>${f.rank}</b>위</div><div class="tx"><span class="sg">${esc(f.sign)} · おは朝</span>
-                    ${(f.ko && f.ko.length ? f.ko : f.jp).map((t, i, a) => `<p${i === a.length - 1 && a.length > 1 ? ' class="lucky"' : ''}>${i === a.length - 1 && a.length > 1 ? '♡ 럭키 아이템 · ' : ''}${esc(t)}</p>`).join('')}</div></div>`
-                    : '<p class="nt-none">오늘은 운세가 없어요 (주말엔 쉬어요)</p>')}
-                ${sec('Today', (b.schedule || []).map(e => `<p class="nt-row"><span>${esc(e.time)}</span>${esc(e.title)}</p>`).join('') +
-                    (b.todos || []).map(t => `<p class="nt-row"><span>To do</span>${esc(t)}</p>`).join('') +
-                    (b.ddays || []).map(d => `<p class="nt-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') || '<p class="nt-none">오늘 일정이 없어요</p>')}
+                ${b.sion && b.sion.length ? `<button class="nt-sion" data-na="sion">${b.sion.map((t, i, a) => `<span class="b${i === a.length - 1 ? ' tail' : ''}">${esc(t)}</span>`).join('')}</button>` : ''}
+                <button class="nt-fold${open ? ' open' : ''}" data-na="fold"><span>오늘 기록</span><i>${(b.alerts || []).length ? '날씨 알림 · ' : ''}${esc(briefLine(Object.assign({}, b, { alerts: [] })))}</i><b>▾</b></button>
+                ${open ? `<div class="nt-recs">${briefRecords(b)}</div>` : ''}
             </div>`;
+    }
+    // 오늘 기록 (날씨 알림 · 날씨 · 운세 · 일정) — 알림 띠와 카드에서 접었다 펼침
+    function briefRecords(b) {
+        const w = b.weather, f = b.fortune;
+        const sec = (t, h) => h ? `<div class="nt-sec">${t}</div>${h}` : '';
+        return (b.alerts || []).map(a => `<div class="nt-alert"><b>${esc(a.kind)}</b>${esc(a.text)}<span>${esc((a.at || '').slice(11, 16))}</span></div>`).join('') +
+            sec('Weather', w ? `<div class="nt-wx"><b class="ic">${WX[w.desc] || '·'}</b><div><b>${esc(w.desc)} ${w.now}°</b><span>${w.min}° / ${w.max}° · 비 ${w.rain}% · ${esc(w.place)}</span>
+                ${w.tomorrow ? `<span class="tm">내일 ${esc(w.tomorrow.desc)} ${w.tomorrow.min}° / ${w.tomorrow.max}° · 비 ${w.tomorrow.rain}%</span>` : ''}</div></div>` : '') +
+            sec('Fortune', f ? `<div class="nt-fo"><div class="rk"><b>${f.rank}</b>위</div><div class="tx"><span class="sg">${esc(f.sign)} · おは朝</span>
+                ${(f.ko && f.ko.length ? f.ko : f.jp).map((t, i, a) => `<p${i === a.length - 1 && a.length > 1 ? ' class="lucky"' : ''}>${i === a.length - 1 && a.length > 1 ? '♡ 럭키 아이템 · ' : ''}${esc(t)}</p>`).join('')}</div></div>`
+                : '<p class="nt-none">오늘은 운세가 없어요 (주말엔 쉬어요)</p>') +
+            sec('Today', (b.schedule || []).map(e => `<p class="nt-row"><span>${esc(e.time)}</span>${esc(e.title)}</p>`).join('') +
+                (b.todos || []).map(t => `<p class="nt-row"><span>To do</span>${esc(t)}</p>`).join('') +
+                (b.ddays || []).map(d => `<p class="nt-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') || '<p class="nt-none">오늘 일정이 없어요</p>');
     }
 
     /* ---------------- BANG: 시온의 기억 ---------------- */
