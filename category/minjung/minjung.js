@@ -1065,6 +1065,7 @@ export function init() {
                         repo.commit('김민정: 시온 전화 이모티콘', {}, { [SION_CFG]: { fallback: {}, mutate: c => { c.call_emoji = t; return c; } } }).then(() => toast('저장했어요'), e => mjAlert('저장하지 못했어요.\n' + (e.message || e)));
                     })(); break;
                 case 'call-start': startCall(); break;
+                case 'call-del': callDelete(v); break;
                 case 'call-log': if (!callOf(v)) break; st.logFrom = st.view; st.view = 'calllog'; st.logId = v; fresh(); break;
                 case 'call-accept': acceptCall(v); break;
                 case 'call-decline': missCall(v, true); break;
@@ -3032,8 +3033,20 @@ export function init() {
         const c = callOf(st.logId); if (!c) return empty('기록이 없어요');
         const miss = c.status === 'missed';
         return `<div class="kk-logh"><b>${kDate(c.at.slice(0, 10))} ${kTime(c.at)}</b><span>${miss ? '부재중' : c.status === 'noanswer' ? '응답 없음' : c.status === 'cancelled' ? '취소' : (c.dir === 'out' ? '발신' : '수신') + (c.dur ? ' · ' + mmss(c.dur) : '')}</span></div>
-            <div class="sn-chat kk-log">${(c.lines || []).map((l, i, a) => `<div class="sn-row ${l.from === 'me' ? 'me' : 'you'}${!a[i + 1] || a[i + 1].from !== l.from ? ' tail' : ''}"><div class="sn-b">${esc(l.text)}</div></div>`).join('') || empty('주고받은 말이 없어요')}</div>
-            <div class="kk-logbtn"><button class="mj-btn" data-act="call-start">다시 걸기</button></div>`;
+            <div class="kk-logbtn"><button class="mj-btn" data-act="call-start">다시 걸기</button><button class="mj-btn kk-del" data-act="call-del" data-v="${c.id}">삭제</button></div>
+            <div class="sn-chat kk-log">${(c.lines || []).map((l, i, a) => `<div class="sn-row ${l.from === 'me' ? 'me' : 'you'}${!a[i + 1] || a[i + 1].from !== l.from ? ' tail' : ''}"><div class="sn-b">${esc(l.text)}</div></div>`).join('') || empty('주고받은 말이 없어요')}</div>`;
+    }
+
+    // 통화 기록 지우기 (대화창의 통화 말풍선도 같이)
+    async function callDelete(id) {
+        if (!callOf(id) || sionNeedToken()) return;
+        if (!await mjConfirm('이 통화 기록을 지울까요?', 'Delete')) return;
+        const drop = d => { d.calls = (d.calls || []).filter(x => x.id !== id); d.chat = (d.chat || []).filter(x => x.call !== id); };
+        drop(sion.data);
+        const st = wins.sion && wins.sion.st;
+        if (st) { st.view = st.logFrom === 'chat' ? 'chat' : 'contact'; st.stick = st.view === 'chat'; }
+        sionRefresh();
+        callCommit('시온 통화 기록 지우기', drop).catch(e => mjAlert('지우지 못했어요.\n' + (e.message || e)));
     }
 
     // 내 글을 letters.json 에 커밋 (사이트에서 보낸 글끼리는 차례대로)

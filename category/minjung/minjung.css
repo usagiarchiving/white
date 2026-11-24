@@ -935,7 +935,8 @@ html.sn-lock, html.sn-lock body { height: 100%; overflow: hidden; overscroll-beh
 .kk-logh { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 2px 10px; font-size: 13px; }
 .kk-logh span { font-size: 12px; color: var(--mj-sub); }
 .kk-log { padding: 0 !important; }
-.kk-logbtn { margin-top: 14px; text-align: center; }
+.kk-logbtn { display: flex; gap: 8px; justify-content: center; margin: 0 0 14px; }
+.kk-logbtn .kk-del { opacity: .7; }
 
 /* 통화 화면 */
 .mj-win-sion .kk-callbody { padding: 0 !important; overflow: hidden; position: relative; }
