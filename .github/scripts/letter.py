@@ -425,7 +425,9 @@ def schedule_today(day):
           and not str(e.get('cal', '')).startswith('AT')]
     ev.sort(key=lambda e: e.get('start') or '')
     todos = load('data/todos.json', [])
-    td = [t.get('content') for t in (todos if isinstance(todos, list) else []) if t.get('target_date') == day and not t.get('is_completed')]
+    # 오늘 할 일 전부 (끝낸 것도 done 으로 같이 — 화면에서 줄 긋고 아래로)
+    td = [{'id': t.get('id'), 'text': t.get('content'), 'done': bool(t.get('is_completed'))}
+          for t in (todos if isinstance(todos, list) else []) if t.get('target_date') == day]
     dy = load('diary/diary.json', {})
     dd = []
     for x in dy.get('ddays') or []:
@@ -458,7 +460,8 @@ def brief_text(b):
     for e in b.get('schedule') or []:
         out.append(f"- 일정 {e['time']} {e['title']}")
     for t in b.get('todos') or []:
-        out.append(f"- 할 일: {t}")
+        t = t if isinstance(t, dict) else {'text': t}
+        out.append(f"- 할 일: {t.get('text')}" + (' (끝냄)' if t.get('done') else ''))
     for d in b.get('ddays') or []:
         out.append(f"- D-{d['left'] or 'DAY'} {d['title']}")
     return '\n'.join(out)

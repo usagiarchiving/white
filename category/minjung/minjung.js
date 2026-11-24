@@ -1864,6 +1864,9 @@ export function init() {
         if (error) { todoErr = '투두를 불러오지 못했어요'; todos = null; }
         else todos = data || [];
         if (wins.diary) renderWin('diary');
+        // 오늘의 알림 카드 · Daily 의 할 일도 지금 상태로 다시
+        const np = root.querySelector('.mj-noti-panel'); if (np) notiRender(np);
+        if (wins.sion && wins.sion.st.tab === 'Daily') renderWin('sion');
     }
     async function toggleTodo(tid) {
         const x = (todos || []).find(t => t.id === tid);
@@ -2235,6 +2238,17 @@ export function init() {
     /* 오늘의 알림 카드 (하트 밑 종): 작은 창. 알림이 하나뿐이면 바로 그 카드, 여럿이면 날짜별 목록 → 카드 */
     const sItem = x => typeof x === 'string' ? { text: x } : (x || { text: '' });
     const sLines = b => ((b && b.sion) || []).map(x => sItem(x).text).filter(Boolean);
+    // 알림 속 할 일: 지금 투두 목록에서 끝냈는지 다시 확인 → 끝낸 건 줄 긋고 맨 아래
+    function briefTodos(b, k) {
+        if (todos === null && !briefTodos.tried) { briefTodos.tried = true; loadTodos(); }   // 한 번만 (실패해도 계속 부르지 않게)
+        const list = (b.todos || []).map(t => typeof t === 'string' ? { text: t } : Object.assign({}, t));
+        list.forEach(t => {
+            const live = (todos || []).find(x => (t.id != null && x.id === t.id) || (x.content === t.text && x.target_date === k));
+            if (live) t.done = !!live.is_completed;
+        });
+        return list.filter(t => !t.done).concat(list.filter(t => t.done));
+    }
+    const todoRows = (b, k, cls, done) => briefTodos(b, k).filter(t => !!t.done === done).map(t => `<p class="${cls}${t.done ? ' done' : ''}"><span>To do</span><s>${esc(t.text)}</s></p>`).join('');
     const kDate = k => { const [y, m, d] = k.split('-').map(Number); return `${m}월 ${d}일 (${KDOW[new Date(y, m - 1, d).getDay()]})`; };
     const kTime = at => { const [h, mi] = ((at || '').slice(11, 16) || '00:00').split(':').map(Number); return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${pad(mi)}`; };
     function notiClose() { root.querySelectorAll('.mj-noti-panel, .mj-noti-bg').forEach(x => x.remove()); }
@@ -2275,8 +2289,9 @@ export function init() {
                     ${(f.ko && f.ko.length ? f.ko : f.jp).map((t, i, a) => `<p${i === a.length - 1 && a.length > 1 ? ' class="lucky"' : ''}>${i === a.length - 1 && a.length > 1 ? '♡ 럭키 아이템 · ' : ''}${esc(t)}</p>`).join('')}</div></div>`
                     : '<p class="nt-none">오늘은 운세가 없어요 (주말엔 쉬어요)</p>')}
                 ${sec('Today', (b.schedule || []).map(e => `<p class="nt-row"><span>${esc(e.time)}</span>${esc(e.title)}</p>`).join('') +
-                    (b.todos || []).map(t => `<p class="nt-row"><span>To do</span>${esc(t)}</p>`).join('') +
-                    (b.ddays || []).map(d => `<p class="nt-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') || '<p class="nt-none">오늘 일정이 없어요</p>')}
+                    todoRows(b, k, 'nt-row', false) +
+                    (b.ddays || []).map(d => `<p class="nt-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') +
+                    todoRows(b, k, 'nt-row', true) || '<p class="nt-none">오늘 일정이 없어요</p>')}
             </div>`;
     }
     function briefMenu(p, el) { briefMenuFor(p.dataset.k, Number(el.dataset.i), el, () => notiRender(p)); }
@@ -2324,8 +2339,9 @@ export function init() {
                 ${(f.ko && f.ko.length ? f.ko : f.jp).map((t, i, a) => `<p${i === a.length - 1 && a.length > 1 ? ' class="lucky"' : ''}>${i === a.length - 1 && a.length > 1 ? '♡ ' : ''}${esc(t)}</p>`).join('')}</div></div>`
                 : '<p class="dl-none">이 날은 운세가 없어요</p>')}
             ${card('Today', (b.schedule || []).map(e => `<p class="dl-row"><span>${esc(e.time)}</span>${esc(e.title)}</p>`).join('') +
-                (b.todos || []).map(t => `<p class="dl-row"><span>To do</span>${esc(t)}</p>`).join('') +
-                (b.ddays || []).map(d => `<p class="dl-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') || '<p class="dl-none">일정이 없었어요</p>')}`;
+                todoRows(b, k, 'dl-row', false) +
+                (b.ddays || []).map(d => `<p class="dl-row"><span>D-${d.left || 'DAY'}</span>${esc(d.title)}</p>`).join('') +
+                todoRows(b, k, 'dl-row', true) || '<p class="dl-none">일정이 없었어요</p>')}`;
     }
     async function dailyDelete(k) {
         if (!briefs()[k] || sionNeedToken()) return;

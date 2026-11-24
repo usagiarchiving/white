@@ -870,3 +870,8 @@
 .dl-head .dl-del { width: 26px; height: 26px; border: 0; background: none; color: var(--mj-sub); display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 12px; }
 .dl-head .dl-del:hover { color: #ff9fb5; }
 .dl-msgs .sn-b { cursor: text; }
+
+/* 알림 속 할 일: 끝낸 건 줄 긋고 흐리게 (맨 아래로) */
+.nt-row s, .dl-row s { text-decoration: none; }
+.nt-row.done s, .dl-row.done s { text-decoration: line-through; text-decoration-thickness: 1px; opacity: .5; }
+.nt-row.done span, .dl-row.done span { opacity: .45; }
