@@ -1,0 +1,12 @@
+{
+ "name": "토끼굴",
+ "short_name": "토끼굴",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#fafafa",
+ "theme_color": "#fafafa",
+ "icons": [
+  { "src": "https://i.ibb.co/tTdNpX19/IMG-2904.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" }
+ ]
+}

@@ -227,15 +227,36 @@ def system_prompt(cfg):
             f"- 너는 {cfg['recipient']}가 남긴 기록(혼잣말, 식사, 일정, 할 일, 일기 등)을 다 보고 있는 남편이다. 기록에 있는 일은 자연스럽게 알고 있는 듯 말하되, 기록을 나열하거나 보고하듯 요약하지 마.\n"
             '- 기록에 없는 사건·사람·감정을 사실처럼 지어내지 마. 시온 자신의 하루(임무, 낮잠 등)는 가볍게 곁들여도 된다.\n'
             '- 아프거나 지친 기록이 있으면 시온다운 방식으로 챙겨. 의학적 조언은 하지 마.\n'
+            '- 행동·표정·상황 서술은 절대 금지. *별표*나 (괄호)로 행동을 묘사하지 말고, 휴대폰으로 실제로 보내는 글자만 써.\n'
+            '- 민정이 답장을 안 했거나 늦게 했어도 그걸 따지거나 "왜 답이 없냐"고 묻지 마. 메시지가 끊기는 건 자연스러운 일이야.\n'
+            '- 지난 대화는 참고만 해. 같은 이야기를 또 해도 되지만 예전 주제를 오래 끌고 가지 말고, 지금 시각과 지금 기록을 중심으로 말해.\n'
             '- 마크다운(#, **, - 목록)과 이모지는 쓰지 마.')
 
 
+PHOTO = re.compile(r'\(\s*사진\s*[:：]\s*([^()]+?)\s*\)')
+PHOTO_RULE = ('- 아주 가끔(대화 몇 번에 한 번 정도) 사진을 보낼 수 있어. 그때는 말풍선 하나를 통째로 (사진: 무엇을 찍은 사진인지 짧은 설명) 형식으로 써. '
+              '괄호는 사진에만 써.')
+
+
+def clean(text):
+    """행동 묘사(*…*, 사진이 아닌 괄호 줄)를 지우고 말만 남김"""
+    text = re.sub(r'\*[^*\n]+\*', '', text)
+    lines = []
+    for l in text.split('\n'):
+        t = l.strip()
+        if re.fullmatch(r'\([^()]*\)', t) and not PHOTO.fullmatch(t):
+            continue
+        lines.append(l)
+    return '\n'.join(lines).strip()
+
+
 def bubbles(text, limit=4):
-    """메시지 답을 말풍선 여러 개로 (빈 줄 또는 줄바꿈 기준)"""
-    parts = [p.strip().strip('"“”') for p in re.split(r'\n+', text) if p.strip()]
+    """메시지 답을 말풍선 여러 개로 (줄바꿈 기준, 사진은 따로 한 칸)"""
+    text = PHOTO.sub(lambda m: f'\n(사진: {m.group(1).strip()})\n', clean(text))
+    parts = [p.strip().strip('"“”').strip() for p in re.split(r'\n+', text) if p.strip().strip('"“”').strip()]
     if len(parts) > limit:
         parts = parts[:limit - 1] + [' '.join(parts[limit - 1:])]
-    return parts or [text.strip()]
+    return parts or [text.strip() or '…']
 
 
 def chat_history(store, n=24):
@@ -269,6 +290,7 @@ def make_letter(store, cfg, day, force):
               "- 오늘 기록 중 마음에 걸린 것 두세 가지를 골라 시온의 시선으로 이야기해.\n"
               "- 마지막은 잘 자라는 말로 끝내고 서명은 쓰지 마(화면에서 따로 붙음). 편지 본문만 출력.")
     body, model = gemini(cfg['models']['letter'], system_prompt(cfg), prompt, max_tokens=8192)
+    body = clean(body)
     patch = {'letter': {'date': day, 'body': body, 'at': stamp(), 'model': model, 'replies': []}, 'force': force}
     mem = make_memory(store, cfg, day, body)
     if mem:
@@ -316,9 +338,9 @@ def make_message(store, cfg, slot):
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 {SLOTS[slot]} 메시지를 먼저 보내.\n{focus}\n\n"
               f"# 기억\n{memory(store)}\n\n"
               f"# 어젯밤 편지\n{clip((store['letters'].get(yesterday) or {}).get('body'), 400) or '(없음)'}\n\n"
-              f"# 최근 메시지\n{chat_history(store, 12) or '(없음)'}\n\n"
+              f"# 최근 메시지 (참고만. 이어서 답하는 게 아니라 새로 먼저 보내는 메시지야)\n{chat_history(store, 8) or '(없음)'}\n\n"
               f"# 오늘 지금까지 민정의 기록\n{gather(day, upto=t.strftime('%H:%M')) or '(아직 없음)'}\n\n"
-              "# 쓰는 법\n- 실제 메신저처럼 짧은 말풍선 1~3개. 말풍선마다 줄을 바꿔. 전체 100자 안쪽. 메시지 본문만.")
+              f"# 쓰는 법\n- 실제 메신저처럼 짧은 말풍선 1~3개. 말풍선마다 줄을 바꿔. 전체 100자 안쪽. 메시지 본문만.\n{PHOTO_RULE}")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
     at = stamp(t)
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': slot, 'model': model} for b in bubbles(text, 3)]}
@@ -340,7 +362,7 @@ def make_chat(store, cfg):
               f"# 기억\n{memory(store)}\n\n"
               f"# 오늘 민정의 기록 (참고)\n{clip(gather(day, upto=t.strftime('%H:%M')), 2500) or '(아직 없음)'}\n\n"
               f"# 대화 (마지막이 방금 온 메시지)\n{chat_history(store, 30)}\n\n"
-              "# 쓰는 법\n- 실제 메신저처럼 짧은 말풍선 1~4개. 말풍선마다 줄을 바꿔. 마지막 메시지에 직접 반응. 메시지 본문만.")
+              f"# 쓰는 법\n- 실제 메신저처럼 짧은 말풍선 1~4개. 말풍선마다 줄을 바꿔. 마지막 메시지에 직접 반응. 메시지 본문만.\n{PHOTO_RULE}")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=1024)
     at = stamp(t)
     return {'chat': [{'id': new_id('c'), 'from': 'ai', 'text': b, 'at': at, 'model': model} for b in bubbles(text, 4)]}
@@ -363,6 +385,7 @@ def make_reply(store, cfg, day):
               f"# 네 편지\n{lt['body']}\n\n# 답장\n{thread}\n\n"
               "# 쓰는 법\n- 2~5문장, 300자 안쪽. 편지에 이어 쓰는 짧은 추신 같은 느낌. 본문만.")
     text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048)
+    text = clean(text)
     return {'reply': {'date': day, 'item': {'id': new_id('r'), 'from': 'ai', 'text': text, 'at': stamp(), 'model': model}}}
 
 
@@ -391,10 +414,101 @@ def apply(store, patch):
     return store
 
 
+# ---------------------------------------------------------------- 웹앱 알림 (Web Push, RFC 8291 · 8292)
+PUSH_SUBS = 'minjung/push.json'
+
+
+def b64u(b):
+    import base64
+    return base64.urlsafe_b64encode(b).rstrip(b'=').decode()
+
+
+def unb64u(s):
+    import base64
+    return base64.urlsafe_b64decode(s + '=' * (-len(s) % 4))
+
+
+def push_encrypt(payload, p256dh, auth):
+    """aes128gcm 암호화 (받는 기기 키로)"""
+    import hashlib
+    import hmac
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    hm = lambda k, m: hmac.new(k, m, hashlib.sha256).digest()
+    ua_pub = unb64u(p256dh)
+    ua_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), ua_pub)
+    as_priv = ec.generate_private_key(ec.SECP256R1())
+    as_pub = as_priv.public_key().public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
+    secret = as_priv.exchange(ec.ECDH(), ua_key)
+    ikm = hm(hm(unb64u(auth), secret), b'WebPush: info\x00' + ua_pub + as_pub + b'\x01')[:32]
+    salt = os.urandom(16)
+    prk = hm(salt, ikm)
+    cek = hm(prk, b'Content-Encoding: aes128gcm\x00\x01')[:16]
+    nonce = hm(prk, b'Content-Encoding: nonce\x00\x01')[:12]
+    body = AESGCM(cek).encrypt(nonce, payload + b'\x02', None)
+    return salt + (4096).to_bytes(4, 'big') + bytes([len(as_pub)]) + as_pub + body
+
+
+def vapid_header(endpoint, private_b64):
+    """보내는 쪽 확인용 서명 (VAPID)"""
+    from urllib.parse import urlparse
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+    key = ec.derive_private_key(int.from_bytes(unb64u(private_b64), 'big'), ec.SECP256R1())
+    pub = key.public_key().public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
+    u = urlparse(endpoint)
+    claims = {'aud': f'{u.scheme}://{u.netloc}', 'exp': int(time.time()) + 12 * 3600,
+              'sub': os.environ.get('VAPID_SUBJECT') or 'mailto:push@example.com'}
+    signing = b64u(json.dumps({'typ': 'JWT', 'alg': 'ES256'}).encode()) + '.' + b64u(json.dumps(claims).encode())
+    r, s_ = decode_dss_signature(key.sign(signing.encode(), ec.ECDSA(hashes.SHA256())))
+    jwt = signing + '.' + b64u(r.to_bytes(32, 'big') + s_.to_bytes(32, 'big'))
+    return f'vapid t={jwt}, k={b64u(pub)}'
+
+
+def notice_of(patch, cfg):
+    """결과에서 알림 글 만들기"""
+    title = cfg.get('contact') or cfg.get('name') or '시온'
+    chat = [r for r in patch.get('chat') or [] if r['from'] == 'ai']
+    if chat:
+        body = '\n'.join('사진' if PHOTO.fullmatch(r['text']) else r['text'] for r in chat)
+        return {'title': title, 'body': clip(body, 180), 'tab': 'Message', 'tag': 'sion-msg'}
+    if patch.get('letter'):
+        return {'title': title, 'body': '편지가 도착했어요 ♡', 'tab': 'Letter', 'tag': 'sion-letter'}
+    if patch.get('reply'):
+        return {'title': title, 'body': clip(patch['reply']['item']['text'], 180), 'tab': 'Letter', 'tag': 'sion-letter'}
+    return None
+
+
+def notify(patch, cfg):
+    key = os.environ.get('VAPID_PRIVATE_KEY', '').strip()
+    subs = (load(PUSH_SUBS, {}) or {}).get('subs') or []
+    note = notice_of(patch, cfg)
+    if not note or not subs:
+        print('알림 보낼 것 없음')
+        return
+    if not key:
+        print('VAPID_PRIVATE_KEY가 없어서 알림은 건너뜀')
+        return
+    data = json.dumps(note, ensure_ascii=False).encode()
+    for sub in subs:
+        try:
+            req = urllib.request.Request(sub['endpoint'], data=push_encrypt(data, sub['keys']['p256dh'], sub['keys']['auth']), method='POST', headers={
+                'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', 'TTL': '86400', 'Urgency': 'high',
+                'Authorization': vapid_header(sub['endpoint'], key)})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                print(f'[알림] {r.status}')
+        except urllib.error.HTTPError as e:
+            print(f'[알림 실패] HTTP {e.code} {e.read().decode(errors="replace")[:200]}')
+        except Exception as e:
+            print(f'[알림 실패] {e}')
+
+
 # ----------------------------------------------------------------
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'apply', 'preview'])
+    ap.add_argument('mode', choices=['letter', 'message', 'chat', 'reply', 'apply', 'notify', 'preview'])
     ap.add_argument('patch', nargs='?')
     ap.add_argument('--date')
     ap.add_argument('--slot', choices=list(SLOTS) + [''], default='')
@@ -417,6 +531,11 @@ def main():
     cfg = load(CONFIG, None)
     if not cfg:
         sys.exit(f'{CONFIG}을 읽지 못했어요.')
+    if a.mode == 'notify':
+        patch = load(a.patch, None)
+        if patch:
+            notify(patch, cfg)
+        return
     store = load_store()
     if a.mode == 'letter':
         patch = make_letter(store, cfg, a.date or letter_day(), a.force)

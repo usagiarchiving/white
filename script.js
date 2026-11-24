@@ -138,3 +138,23 @@ function toggleTheme() {
     document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1 && !e.target.closest('#mh-stage')) e.preventDefault(); }, { passive: false });
     // 두 번 톡 확대는 style.css 의 touch-action: manipulation 으로 막음 (버튼 빠르게 두 번 누르기는 그대로)
 })();
+
+// ==========================================================================
+// 웹앱 알림(하시온 메시지): 알림 받는 일꾼(sw.js) 등록 + 알림을 누르면 김민정 화면의 시온 창 열기
+// ==========================================================================
+(function () {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('sw', e); });
+    function openSion(tab) {
+        try { sessionStorage.setItem('sion_open', tab || 'Message'); } catch (e) {}
+        if (window.__openSion && location.hash === '#minjung') window.__openSion(tab);
+        else loadPageByHash('minjung');
+    }
+    navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.sion) openSion(e.data.sion); });
+    // 앱이 닫혀 있다가 알림으로 열렸을 때: 주소의 ?sion=Message
+    var m = /[?&]sion=(Message|Letter)/.exec(location.search);
+    if (m) {
+        try { sessionStorage.setItem('sion_open', m[1]); } catch (e) {}
+        history.replaceState(null, '', location.pathname + '#minjung');
+    }
+})();

@@ -1,9 +1,10 @@
-# 하시온 메시지·편지 (김민정 → Menu → Sion)
+# 하시온(내 여보♡) 메시지·편지 (김민정 첫 화면 → 퀘스트 아래 버튼)
 #   - 아침·점심·저녁 메시지: 아래 예약 시각에 자동
 #   - 내가 보낸 메시지에 답장 / 밤 편지(하루 한 통) / 편지 답글: 사이트에서 실행
 # → minjung/letters.json 에 저장
 # 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
-#   이름: GEMINI_API_KEY   값: AI Studio에서 받은 키 (AQ. 로 시작)
+#   이름: GEMINI_API_KEY      값: AI Studio에서 받은 키 (AQ. 로 시작)
+#   이름: VAPID_PRIVATE_KEY   값: 웹앱 알림용 비밀 키 (없으면 알림만 안 감)
 # 캐릭터·모델 바꾸기: minjung/sion.json
 name: letter
 
@@ -49,6 +50,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - run: pip install --quiet cryptography
       - name: 만들기
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -74,6 +76,7 @@ jobs:
           fi
           python .github/scripts/letter.py "${args[@]}" --out "$RUNNER_TEMP/patch.json"
       - name: 저장
+        id: save
         run: |
           if [ ! -f "$RUNNER_TEMP/patch.json" ]; then echo '변경 없음'; exit 0; fi
           git config user.name 'sion-bot'
@@ -86,7 +89,12 @@ jobs:
             git add minjung/letters.json
             git diff --cached --quiet && { echo '변경 없음'; exit 0; }
             git commit -q -m '김민정: 시온 메시지'
-            git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo saved=1 >> "$GITHUB_OUTPUT"; exit 0; fi
             sleep $((i * 3))
           done
           exit 1
+      - name: 웹앱 알림
+        if: steps.save.outputs.saved == '1'
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: python .github/scripts/letter.py notify "$RUNNER_TEMP/patch.json"
