@@ -18,14 +18,24 @@
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
     
     <link rel="stylesheet" href="style.css?v=5" />
+    <!-- 깜빡임 방지: 화면을 그리기 전에 테마부터 (script.js보다 먼저) -->
+    <script>try { document.documentElement.className = localStorage.getItem('theme') === 'theme-dark' ? 'theme-dark' : 'theme-light'; } catch (e) {}</script>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- '빛이 꺾이는 각도'(archive)만 아직 Supabase를 씁니다 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="ghdb.js?v=12"></script>
 </head>
 
 <body>
+    <!-- 깜빡임 방지: 김민정·마이홈·다이어리로 바로 들어오면 처음부터 얇은 헤더로 -->
+    <script>
+        (function () {
+            var h = location.hash.replace('#', '') || ((/[?&]c=([^&#]+)/.exec(location.search) || [])[1] || '');
+            if (!h) { try { h = (JSON.parse(localStorage.getItem('site_settings') || 'null') || {}).start || ''; } catch (e) {} }
+            if (/^(minjung|myhome|diary)$/.test(h)) document.body.classList.add('game-page');
+        })();
+    </script>
     <div id="wrap">
         <div id="container">
             
@@ -78,6 +88,6 @@
 
     <script src="site-settings.js?v=3"></script>
     <script src="lightbox.js?v=2"></script>
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
 </body>
 </html>

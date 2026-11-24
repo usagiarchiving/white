@@ -112,7 +112,8 @@ function loadPage(url) {
     }
     document.body.classList.remove('game-page');
     setHeaderHeight();
-    contentArea.fadeOut(200, function() {
+    // 처음 들어올 때(빈 화면)는 사라지는 효과 없이 바로 불러옴
+    contentArea.fadeOut(contentArea.children().length ? 200 : 0, function() {
         $.ajax({
             url: url,
             dataType: 'html',

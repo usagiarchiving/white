@@ -255,7 +255,13 @@ export function init() {
     /* ---------------- 불러오기 / 저장 ---------------- */
     // 첫 화면 꾸미기(배경 끔·배치 등)는 이 기기에도 기억해 둠 → 새로고침 때 기본 화면이 잠깐 튀어나오지 않게
     const ROOM_KEY = 'mj_room_settings';
-    function rememberRoom() { try { localStorage.setItem(ROOM_KEY, JSON.stringify(db.settings)); } catch (e) {} }
+    // 마지막으로 받은 기록 전체도 기억 → 다음에 열 때 HP·퀘스트 등이 기본값으로 잠깐 보였다 바뀌지 않게
+    const DB_KEY = 'mj_db_cache';
+    function rememberRoom() {
+        try { localStorage.setItem(ROOM_KEY, JSON.stringify(db.settings)); } catch (e) {}
+        try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) {}
+    }
+    function recallDb() { try { const v = JSON.parse(localStorage.getItem(DB_KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } }
     function recallRoom() { try { const v = JSON.parse(localStorage.getItem(ROOM_KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } }
     async function load() {
         try { db = normalize(await repo.readJSON(DATA, {})); } catch (e) { console.error(e); }
@@ -1852,6 +1858,8 @@ export function init() {
     const VAPID_PUBLIC = 'BErSE-Jfh-4jLGhteoW66_JV5rrta3rNeHaqBaHNBsS1hLsjVaG9UAtNT5fxYjtwlC5uPay67lYXdzkUF2zG7S4';
     const PUSH_FILE = 'minjung/push.json';
     const sion = { data: null, cfg: null, wait: {}, timer: null, last: Promise.resolve(), lastAi: null, lastLetters: null, push: null };
+    const SION_CACHE = 'mj_sion_cache';   // 마지막으로 받은 메시지·설정 (창을 열 때 '불러오는 중' 없이 바로)
+    try { const c = JSON.parse(localStorage.getItem(SION_CACHE) || 'null'); if (c && c.data) { sion.data = c.data; sion.cfg = c.cfg || null; } } catch (e) {}
     const contact = () => (sion.cfg && sion.cfg.contact) || '내 여보♡';
     const sionName = () => (sion.cfg && sion.cfg.short) || '시온';
     const PHOTO_RE = /^\(\s*사진\s*[:：]\s*([\s\S]+?)\s*\)$/;
@@ -1883,9 +1891,10 @@ export function init() {
     }
     async function loadSion(quiet) {
         try {
-            const [d, c] = await Promise.all([repo.readJSON(SION_DATA, {}), sion.cfg ? sion.cfg : repo.readJSON(SION_CFG, null)]);
+            const [d, c] = await Promise.all([repo.readJSON(SION_DATA, {}), repo.readJSON(SION_CFG, null)]);
             sion.data = Object.assign({ letters: {}, chat: [] }, d || {});
             if (c) { sion.cfg = c; WIN.sion.title = contact(); }
+            try { localStorage.setItem(SION_CACHE, JSON.stringify({ data: sion.data, cfg: sion.cfg })); } catch (e) {}
         } catch (e) { console.error(e); if (!sion.data) sion.data = { letters: {}, chat: [] }; }
         sionCheckNew(quiet);
         drawSionBtn();
@@ -2094,20 +2103,33 @@ export function init() {
         set(lt); renderWin('sion');
         sionCommit(on ? '편지 하트' : '편지 하트 빼기', cur => set(cur.letters[k])).catch(e => { mjAlert('저장하지 못했어요.\n' + (e.message || e)); loadSion(true); });
     }
-    // 휴대폰: 키보드가 올라와도 창 위(탭·검색)는 그대로, 창 높이만 보이는 화면에 맞춤
+    // 휴대폰: 키보드가 올라와도 창 위(탭·검색)는 그대로, 창 높이만 보이는 화면(키보드 위)에 맞춤
+    // 아이폰은 입력칸을 누르면 화면 전체를 밀어 올림 → 바로 되돌리고, 키보드가 다 올라온 뒤 값으로 한 번 더 맞춤
+    let fitRaf = 0;
     function sionFit() {
-        const w = wins.sion, vv = window.visualViewport;
-        if (!w || !vv) return;
-        if (isPC()) { w.el.style.top = w.el.style.height = ''; return; }
-        w.el.style.top = vv.offsetTop + 'px';
-        w.el.style.height = vv.height + 'px';
-        const c = w.el.querySelector('.sn-chat'); if (c && w.st.stick !== false) c.scrollTop = c.scrollHeight;
+        cancelAnimationFrame(fitRaf);
+        fitRaf = requestAnimationFrame(() => {
+            const w = wins.sion, vv = window.visualViewport;
+            if (!w || !vv) return;
+            if (isPC()) { w.el.style.top = w.el.style.height = ''; return; }
+            if (vv.offsetTop > 0 || window.scrollY > 0) window.scrollTo(0, 0);
+            w.el.style.top = Math.max(0, Math.round(vv.offsetTop)) + 'px';
+            w.el.style.height = Math.round(vv.height) + 'px';
+            const c = w.el.querySelector('.sn-chat'); if (c && w.st.stick !== false) c.scrollTop = c.scrollHeight;
+        });
     }
     if (window.visualViewport) {
         const onVV = () => { if (!root.isConnected) { visualViewport.removeEventListener('resize', onVV); visualViewport.removeEventListener('scroll', onVV); return; } sionFit(); };
         visualViewport.addEventListener('resize', onVV);
         visualViewport.addEventListener('scroll', onVV);
     }
+    const onFocusMove = e => {
+        if (!root.isConnected) { document.removeEventListener('focusin', onFocusMove); document.removeEventListener('focusout', onFocusMove); return; }
+        if (!wins.sion || !wins.sion.el.contains(e.target)) return;
+        [0, 120, 350, 700].forEach(t => setTimeout(sionFit, t));
+    };
+    document.addEventListener('focusin', onFocusMove);
+    document.addEventListener('focusout', onFocusMove);
 
     // 내 글을 letters.json 에 커밋 (사이트에서 보낸 글끼리는 차례대로)
     function sionCommit(message, fn) {
@@ -2233,7 +2255,9 @@ export function init() {
     /* ---------------- 시작 ---------------- */
     const remembered = recallRoom();
     // 기억한 설정이 있으면 바로 보여 주고, 없으면 불러올 때까지 방을 숨겨 둠 (index.html의 mj-booting)
-    if (remembered) { db = normalize(Object.assign(db, { settings: remembered })); }
+    const cachedDb = recallDb();
+    if (cachedDb) db = normalize(cachedDb);
+    else if (remembered) { db = normalize(Object.assign(db, { settings: remembered })); }
     bgSig = JSON.stringify(bgList());
     drawBgs();
     drawMenus();
