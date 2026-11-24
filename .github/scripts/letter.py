@@ -189,19 +189,19 @@ SPENT = set()   # 이번 실행에서 한도가 찬 (키, 모델) — 다음 호
 NO_THINK = set()   # thinkingLevel 을 모르는 모델
 
 
-def api_keys():
-    """메인 키 + 서브 키 (넣은 것만, 순서대로)"""
+def api_keys(first=None):
+    """메인 키 + 서브 키 (넣은 것만, 순서대로). first: 그 키를 맨 앞에"""
     out = []
-    for n in KEY_NAMES:
+    for n in ([first] if first else []) + KEY_NAMES:
         k = os.environ.get(n, '').strip()
         if k and k not in [x for _, x in out]:
             out.append((n, k))
     return out
 
 
-def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=False, think='high'):
+def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=False, think='high', key_first=None, fast=False):
     """좋은 모델부터, 키를 차례로 써 봄. 한도가 차면(429) 다음 키로, 그 모델을 모든 키가 못 쓰면 다음 모델로"""
-    keys = api_keys()
+    keys = api_keys(key_first)
     if not keys:
         sys.exit('GEMINI_API_KEY가 없어요. 저장소 Settings → Secrets and variables → Actions에 넣어 주세요.')
     body = {
@@ -214,7 +214,10 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
         body['generationConfig']['responseMimeType'] = 'application/json'
     # 생각(thinking)은 높게. 모델이 thinkingLevel 을 모르면 빼고 다시
     errors = []
-    for model in models:
+    for model in (models + models if fast else models):
+        if fast and model == models[0] and errors:
+            time.sleep(5)       # 통화: 한 바퀴 다 막히면 잠깐 쉬고 한 번 더
+            print('[다시] 한 바퀴 더')
         skip_model = False
         body['generationConfig'].pop('thinkingConfig', None)
         if think and model not in NO_THINK:
@@ -230,7 +233,7 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
                     data=json.dumps(body).encode(), method='POST',
                     headers={'Content-Type': 'application/json', 'x-goog-api-key': key})
                 try:
-                    with urllib.request.urlopen(req, timeout=180) as r:
+                    with urllib.request.urlopen(req, timeout=40 if fast else 180) as r:
                         data = json.load(r)
                     cand = (data.get('candidates') or [{}])[0]
                     text = ''.join(p.get('text', '') for p in (cand.get('content') or {}).get('parts') or [] if not p.get('thought')).strip()
@@ -255,11 +258,14 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
                         break
                     if e.code == 429:
                         # 분당 한도면 잠깐 기다렸다 한 번 더, 하루 한도면 바로 다음 키
-                        if attempt == 0 and 'PerDay' not in msg and 'per day' not in msg.lower():
+                        if not fast and attempt == 0 and 'PerDay' not in msg and 'per day' not in msg.lower():
                             time.sleep(20)
                             continue
                         SPENT.add((name, model))
                         print(f'[한도] {name} · {model} → 다음 키')
+                        break
+                    if e.code in (500, 503) and fast:   # 서버가 붐빔 → 이 모델은 키를 바꿔도 같음, 바로 다음 모델
+                        skip_model = True
                         break
                     if e.code in (500, 503) and attempt == 0:
                         time.sleep(10)
@@ -825,7 +831,9 @@ def make_call(store, cfg, call_id):
               f"# 최근 메시지\n{chat_history(store, 8, days=1) or '(없음)'}\n\n"
               f"# 지금까지 통화\n{talk or '(방금 연결됨)'}\n\n"
               f"# 말하는 법\n{P(cfg, 'call', '전화로 말하는 대사만. 한두 문장. 숨소리나 행동 묘사, 괄호 금지.')}\n- 시온이 지금 할 말만 출력.")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=2048, think='low')   # 통화는 빠르게
+    # 통화는 빠르게: 생각 낮게, 4번 키부터, 막히면 기다리지 않고 바로 다른 모델로
+    models = list(dict.fromkeys(cfg['models']['light'] + cfg['models']['letter']))
+    text, model = gemini(models, system_prompt(cfg), prompt, max_tokens=2048, think='low', key_first='GEMINI_API_KEY_4', fast=True)
     text = re.sub(r'\s{2,}', ' ', re.sub(r'[(（][^)）]*[)）]', '', clean(text)).replace('\n', ' ')).strip() or '…여보?'   # 통화엔 괄호 묘사 없이
     return {'call_line': {'id': call_id, 'item': {'id': new_id('l'), 'from': 'ai', 'text': text, 'at': stamp(t), 'model': model}}}
 

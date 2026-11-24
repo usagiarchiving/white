@@ -42,8 +42,9 @@ on:
 permissions:
   contents: write
 
+# 통화는 따로 줄 서기: 메시지·편지 만드는 동안에도 기다리지 않고 바로
 concurrency:
-  group: letter
+  group: letter-${{ inputs.mode == 'call' && 'call' || 'main' }}
   cancel-in-progress: false
 
 jobs:
@@ -54,7 +55,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install --quiet cryptography
       - name: 만들기
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -100,4 +100,6 @@ jobs:
         if: steps.save.outputs.saved == '1'
         env:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-        run: python .github/scripts/letter.py notify "$RUNNER_TEMP/patch.json"
+        run: |
+          pip install --quiet cryptography
+          python .github/scripts/letter.py notify "$RUNNER_TEMP/patch.json"

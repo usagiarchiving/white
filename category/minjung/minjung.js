@@ -1008,7 +1008,7 @@ export function init() {
                 case 'dl-open': st.dday = v; fresh(); break;
                 case 'dl-back': st.dday = null; fresh(); break;
                 case 'dl-del': dailyDelete(v); break;
-                case 'sn-back': if (st.view === 'cedit') { st.view = st.from === 'kset' ? 'kset' : 'contact'; fresh(); } else if (st.view === 'calllog') { st.view = 'contact'; fresh(); } else if (st.view && st.view !== 'chat') { st.view = 'chat'; fresh(); } else closeWin(id); break;
+                case 'sn-back': if (st.view === 'cedit') { st.view = st.from === 'kset' ? 'kset' : 'contact'; fresh(); } else if (st.view === 'calllog') { st.view = st.logFrom === 'chat' ? 'chat' : 'contact'; fresh(); } else if (st.view && st.view !== 'chat') { st.view = 'chat'; fresh(); } else closeWin(id); break;
                 case 'sn-contact': st.view = 'contact'; fresh(); break;
                 case 'sn-menu': showPick(b, [
                         { icon: SN_SVG.heart(!st.favs), label: st.favs ? '하트 모아 보기 닫기' : '하트 모아 보기', run: () => { st.favs = !st.favs; st.searching = false; st.q = ''; st.stick = true; fresh(); } },
@@ -1041,7 +1041,7 @@ export function init() {
                         repo.commit('김민정: 시온 전화 이모티콘', {}, { [SION_CFG]: { fallback: {}, mutate: c => { c.call_emoji = t; return c; } } }).then(() => toast('저장했어요'), e => mjAlert('저장하지 못했어요.\n' + (e.message || e)));
                     })(); break;
                 case 'call-start': startCall(); break;
-                case 'call-log': st.view = 'calllog'; st.logId = v; fresh(); break;
+                case 'call-log': if (!callOf(v)) break; st.logFrom = st.view; st.view = 'calllog'; st.logId = v; fresh(); break;
                 case 'call-accept': acceptCall(v); break;
                 case 'call-decline': missCall(v, true); break;
                 case 'call-end': endCall(); break;
@@ -2171,7 +2171,7 @@ export function init() {
             if (head) html += `<div class="sn-when">${sionStamp(r.at)}</div>`;
             if (r.kind === 'call') {   // 통화 기록 말풍선 (부재중이면 눌러서 다시 걸기)
                 const missed = r.status === 'missed';
-                html += `<div class="sn-row ${r.from === 'me' ? 'me' : 'you'} tail"><button class="sn-b sn-callb${missed ? ' missed' : ''}" data-act="sn-callback">${KK.phone}<span><b>${missed ? '부재중 전화' : r.from === 'me' ? '보이스톡' : '보이스톡'}</b><small>${missed ? '눌러서 다시 걸기' : '통화 ' + esc(r.text || '')}</small></span></button></div>`;
+                html += `<div class="sn-row ${r.from === 'me' ? 'me' : 'you'} tail"><button class="sn-b sn-callb${missed ? ' missed' : ''}" data-act="${missed ? 'sn-callback' : 'call-log'}" data-v="${esc(r.call || '')}">${KK.phone}<span><b>${missed ? '부재중 전화' : r.from === 'me' ? '보이스톡' : '보이스톡'}</b><small>${missed ? '눌러서 다시 걸기' : r.status === 'noanswer' ? '응답 없음' : '통화 ' + esc(r.text || '')}</small></span></button></div>`;
                 return;
             }
             const ph = PHOTO_RE.exec(r.text);
@@ -2794,33 +2794,48 @@ export function init() {
     function callChat(c, status, dur) {   // 대화창에 남는 통화 기록
         return { id: uid('m'), from: c.dir === 'out' ? 'me' : 'ai', kind: 'call', status, call: c.id, text: dur != null ? mmss(dur) : '', at: stamp() };
     }
-    // delay: 시온이 받기까지 기다리는 시간(ms). 그동안 '연결 중…' 이고 시간은 받은 뒤부터
-    function enterCall(id, delay) {
+    // ring: 내가 건 전화는 시온 첫마디가 만들어질 때까지 '연결 중…' (받는 시간 = 첫 응답까지 걸린 시간). 통화 시간은 받은 뒤부터
+    function enterCall(id, ring) {
         openSion('Message');
         const st = wins.sion.st;
         st.view = 'call'; st.callId = id;
         clearInterval(sion.callTimer);
-        sion.callStart = Date.now() + (delay || 0);
-        let wasRinging = !!delay;
+        sion.callRing = !!ring; sion.callStart = Date.now();
         sion.callTimer = setInterval(() => {
             if (!wins.sion || wins.sion.st.view !== 'call') { clearInterval(sion.callTimer); return; }
-            const ringing = Date.now() < sion.callStart;
-            if (wasRinging && !ringing) { wasRinging = false; renderWin('sion'); const c = callOf(id); if (c) callSpeakNew(c); return; }
             const t = wins.sion.el.querySelector('.kk-tmr');
-            if (t) t.textContent = ringing ? '연결 중…' : mmss(Math.floor((Date.now() - sion.callStart) / 1000));
+            if (t) t.textContent = sion.callRing ? '연결 중…' : mmss(Math.floor((Date.now() - sion.callStart) / 1000));
         }, 1000);
         renderWin('sion');
     }
-    const callRinging = () => sion.callStart && Date.now() < sion.callStart;
+    const callRinging = () => !!sion.callRing;
+    // 첫마디가 오면 받은 걸로
+    function callPickup(c) {
+        if (!sion.callRing || !(c.lines || []).some(l => l.from === 'ai')) return false;
+        sion.callRing = false; sion.callStart = Date.now();
+        renderWin('sion'); callSpeakNew(c);
+        return true;
+    }
+    // 실행이 실패했을 때: 받기 전이면 한 번 더 걸어 보고, 그래도 안 되면 '응답 없음'
+    function callRunFailed() {
+        const st = wins.sion && wins.sion.st, c = st && st.view === 'call' && callOf(st.callId);
+        if (!c) return;
+        if (!sion.callRing) return toast('시온 목소리가 끊겼어요 · 다시 말해 줘요');
+        if (!c.retried) { c.retried = true; return sionRun('call', '', '', c.id); }
+        clearInterval(sion.callTimer); sion.callRing = false;
+        c.status = 'noanswer';
+        const m = callChat(c, 'noanswer');
+        sion.data.chat.push(m);
+        callCommit('시온 전화 응답 없음', d => { const x = d.calls.find(y => y.id === c.id); if (x) x.status = 'noanswer'; if (!d.chat.some(y => y.call === c.id)) d.chat.push(m); });
+        st.view = 'chat'; st.stick = true; sionRefresh();
+        toast('시온이 전화를 못 받았어요 (AI 서버가 바빠요) · 잠시 뒤 다시 걸어 줘요');
+    }
     function startCall() {
         if (sionNeedToken() || !sion.data) return;
         const c = { id: uid('k'), dir: 'out', status: 'live', at: stamp(), lines: [] };
         sion.data.calls = calls().concat([c]);
         callCommit('시온에게 전화', d => { if (!d.calls.some(x => x.id === c.id)) d.calls.push(c); });
-        // 방금까지 메시지 주고받던 중이면 금방(1~3초), 아니면 30초 안에 랜덤으로 받음
-        const last = (sion.data.chat || []).slice(-1)[0];
-        const chatting = last && Date.now() - new Date(last.at).getTime() < 5 * 60000;
-        enterCall(c.id, chatting ? 1000 + Math.random() * 2000 : 4000 + Math.random() * 26000);
+        enterCall(c.id, true);
         sionRun('call', '', '', c.id);
     }
     function acceptCall(id) {
@@ -2853,7 +2868,7 @@ export function init() {
         if (callRinging()) {   // 받기 전에 끊음 → 취소
             c.status = 'cancelled';
             callCommit('시온 전화 취소', d => { const x = d.calls.find(y => y.id === c.id); if (x) x.status = 'cancelled'; });
-            sion.callStart = 0; sionRefresh(); return;
+            sion.callRing = false; sionRefresh(); return;
         }
         const dur = Math.max(1, Math.floor((Date.now() - (sion.callStart || Date.now())) / 1000));
         c.status = 'done'; c.dur = dur;
@@ -2913,7 +2928,7 @@ export function init() {
     // 불러온 뒤: 걸려 온 전화 울리기 / 오래 안 받은 전화는 부재중 / 통화 중이면 새 대사
     function callAfterLoad() {
         const st = wins.sion && wins.sion.st;
-        if (st && st.view === 'call') { const c = callOf(st.callId); if (c) callSpeakNew(c); }
+        if (st && st.view === 'call') { const c = callOf(st.callId); if (c && !callPickup(c)) callSpeakNew(c); }
         callCheckRing(false);
     }
     function callCheckRing(force) {
@@ -2976,7 +2991,7 @@ export function init() {
             const d = c.at.slice(0, 10), head = d !== lastDay ? `<div class="kk-sec">${d === todayKey() ? '오늘' : kDate(d)}</div>` : '';
             lastDay = d;
             const miss = c.status === 'missed' || c.status === 'ringing';
-            const kind = miss ? '부재중' : c.status === 'cancelled' ? '취소' : c.dir === 'out' ? '발신' : '수신';
+            const kind = miss ? '부재중' : c.status === 'cancelled' ? '취소' : c.status === 'noanswer' ? '응답 없음' : c.dir === 'out' ? '발신' : '수신';
             return head + `<button class="kk-row${miss ? ' miss' : ''}" data-act="call-log" data-v="${c.id}">
                 <span class="ico">${miss ? '✕' : c.dir === 'out' ? '↗' : '↙'}</span>
                 <span class="mid"><b>${esc(contact())}</b><small>${kind}${c.dur ? ' · ' + mmss(c.dur) : ''}</small></span>
@@ -2992,7 +3007,7 @@ export function init() {
     function callLogView(st) {
         const c = callOf(st.logId); if (!c) return empty('기록이 없어요');
         const miss = c.status === 'missed';
-        return `<div class="kk-logh"><b>${kDate(c.at.slice(0, 10))} ${kTime(c.at)}</b><span>${miss ? '부재중' : (c.dir === 'out' ? '발신' : '수신') + (c.dur ? ' · ' + mmss(c.dur) : '')}</span></div>
+        return `<div class="kk-logh"><b>${kDate(c.at.slice(0, 10))} ${kTime(c.at)}</b><span>${miss ? '부재중' : c.status === 'noanswer' ? '응답 없음' : c.status === 'cancelled' ? '취소' : (c.dir === 'out' ? '발신' : '수신') + (c.dur ? ' · ' + mmss(c.dur) : '')}</span></div>
             <div class="sn-chat kk-log">${(c.lines || []).map((l, i, a) => `<div class="sn-row ${l.from === 'me' ? 'me' : 'you'}${!a[i + 1] || a[i + 1].from !== l.from ? ' tail' : ''}"><div class="sn-b">${esc(l.text)}</div></div>`).join('') || empty('주고받은 말이 없어요')}</div>
             <div class="kk-logbtn"><button class="mj-btn" data-act="call-start">다시 걸기</button></div>`;
     }
@@ -3058,7 +3073,7 @@ export function init() {
                 let run = null;
                 try { const j = await repo.api(SION_WF + '/runs?event=workflow_dispatch&per_page=5'); run = (j.workflow_runs || []).find(x => new Date(x.created_at).getTime() >= since); } catch (e) {}
                 if (!run || run.status !== 'completed') continue;
-                if (run.conclusion !== 'success') return done('실패했어요. GitHub → Actions → letter 기록을 확인해 주세요');
+                if (run.conclusion !== 'success') { if (mode === 'call') { done(''); return callRunFailed(); } return done('실패했어요. GitHub → Actions → letter 기록을 확인해 주세요'); }
                 sion.wait[mode] = false;
                 await loadSion(false, true);   // 시온이 쓴 새 글은 바로
                 if (wins.bang) renderWin('bang');
