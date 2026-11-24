@@ -941,5 +941,20 @@
   "sort_order": 1795494418492,
   "completed_date": "2026-11-24",
   "completed_at": "2026-11-24T20:16:41+09:00"
+ },
+ {
+  "id": 1795520055415,
+  "created_at": "2026-11-24T11:34:15.415Z",
+  "content": "예시",
+  "category": "red",
+  "matrix_quadrant": 0,
+  "is_completed": false,
+  "target_date": "2026-11-24",
+  "parent_id": null,
+  "subtasks": [],
+  "repeat_type": null,
+  "repeat_days": null,
+  "sort_order": 1795520055415,
+  "completed_date": null
  }
 ]
