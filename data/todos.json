@@ -901,13 +901,14 @@
   "content": "비짓재팬",
   "category": "gray",
   "matrix_quadrant": 0,
-  "is_completed": false,
+  "is_completed": true,
   "target_date": "2026-11-23",
   "parent_id": null,
   "subtasks": [],
   "repeat_type": null,
   "repeat_days": null,
   "sort_order": 1795376037970,
-  "completed_date": null
+  "completed_date": "2026-11-24",
+  "completed_at": "2026-11-24T12:59:41+09:00"
  }
 ]
