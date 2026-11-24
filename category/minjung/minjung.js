@@ -1960,7 +1960,7 @@ export function init() {
         const m = (sion.data.chat || []).find(x => x.id === b.dataset.id); if (!m) return;
         if (navigator.vibrate) try { navigator.vibrate(10); } catch (e) {}
         showPick(b, [
-            { icon: SN_SVG.heart(!m.fav), label: m.fav ? '하트 빼기' : '하트', run: () => sionEditMsg(m.id, x => { x.fav = !x.fav; if (!x.fav) delete x.fav; }, m.fav ? '하트 빼기' : '하트') },
+            { icon: SN_SVG.heart(!m.fav), label: '', run: () => sionEditMsg(m.id, x => { x.fav = !x.fav; if (!x.fav) delete x.fav; }, m.fav ? '하트 빼기' : '하트') },
             { label: '수정', run: async () => {
                 const t = await mjPrompt('수정', m.text); if (t == null || !t.trim() || t.trim() === m.text) return;
                 sionEditMsg(m.id, x => { x.text = t.trim().slice(0, SION_MAX); x.edited = stamp(); }, '메시지 수정');
