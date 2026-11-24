@@ -1,8 +1,10 @@
-# 편지 (하루 한 통, 사이트 편지함에서 '오늘 편지 받기') · 아침/점심/저녁 메시지 · 답장에 답글
-# → letters/letters.json 에 저장, 편지함(#letter)에서 보임
+# 하시온 메시지·편지 (김민정 → Menu → Sion)
+#   - 아침·점심·저녁 메시지: 아래 예약 시각에 자동
+#   - 내가 보낸 메시지에 답장 / 밤 편지(하루 한 통) / 편지 답글: 사이트에서 실행
+# → minjung/letters.json 에 저장
 # 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
 #   이름: GEMINI_API_KEY   값: AI Studio에서 받은 키 (AQ. 로 시작)
-# 캐릭터·모델 바꾸기: letters/config.json
+# 캐릭터·모델 바꾸기: minjung/sion.json
 name: letter
 
 on:
@@ -13,11 +15,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'letter = 오늘 편지 · reply = 답장에 답글 · message = 시간대별 메시지'
+        description: 'chat = 메시지 답장 · letter = 오늘 편지 · reply = 편지 답글 · message = 시간대 메시지'
         required: true
-        default: letter
+        default: chat
         type: choice
-        options: [letter, reply, message]
+        options: [chat, letter, reply, message]
       date:
         description: '날짜 (YYYY-MM-DD, 비우면 오늘)'
         required: false
@@ -56,7 +58,6 @@ jobs:
           SLOT: ${{ inputs.slot }}
           FORCE: ${{ inputs.force }}
         run: |
-          args=()
           if [ -n "$SCHEDULE" ]; then
             # 예약 실행은 늦게 시작될 수 있어서 시각 대신 어느 예약인지로 시간대를 정함
             case "$SCHEDULE" in
@@ -71,14 +72,21 @@ jobs:
             [ -n "$SLOT" ] && args+=(--slot "$SLOT")
             [ "$FORCE" = "true" ] && args+=(--force)
           fi
-          python .github/scripts/letter.py "${args[@]}"
-      - name: 바뀌었으면 저장
+          python .github/scripts/letter.py "${args[@]}" --out "$RUNNER_TEMP/patch.json"
+      - name: 저장
         run: |
-          if git diff --quiet -- letters/letters.json; then
-            echo '변경 없음'; exit 0
-          fi
-          git config user.name 'letter-bot'
+          if [ ! -f "$RUNNER_TEMP/patch.json" ]; then echo '변경 없음'; exit 0; fi
+          git config user.name 'sion-bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add letters/letters.json
-          git commit -m 'letter: 편지함'
-          for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done
+          # 그 사이 사이트에서 메시지를 보냈어도 겹치지 않게: 최신본을 받고 결과만 덧붙여서 올림
+          for i in 1 2 3 4 5; do
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard FETCH_HEAD
+            python .github/scripts/letter.py apply "$RUNNER_TEMP/patch.json"
+            git add minjung/letters.json
+            git diff --cached --quiet && { echo '변경 없음'; exit 0; }
+            git commit -q -m '김민정: 시온 메시지'
+            git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 3))
+          done
+          exit 1
