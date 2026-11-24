@@ -77,7 +77,7 @@
  },
  "opt": {
   "showName": false,
-  "showPic": true,
+  "showPic": false,
   "font": "pretendard"
  }
 }
