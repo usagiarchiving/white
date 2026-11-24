@@ -126,6 +126,23 @@ const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(
 const clone = o => JSON.parse(JSON.stringify(o));
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const label = (list, k) => (list.find(x => x[0] === k) || [k, k])[1];
+// 해 뜨는 시각 (위도·경도로 계산, 인터넷 없이). HP는 마지막 기록 뒤로 해가 한 번 뜨면 5칸 다 참 (자고 일어났으니까)
+function sunriseOn(d, lat, lon) {
+    const rad = Math.PI / 180, day = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(d.getFullYear(), 0, 0)) / 86400000);
+    const g = 2 * Math.PI / 365 * (day - 1);
+    const eq = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+    const dec = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+    const ha = Math.acos(Math.cos(90.833 * rad) / (Math.cos(lat * rad) * Math.cos(dec)) - Math.tan(lat * rad) * Math.tan(dec)) / rad;
+    const min = 720 - 4 * (lon + ha) - eq;   // UTC 분
+    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) + min * 60000;
+}
+function lastSunrise(lat, lon) {
+    const now = new Date();
+    let r = sunriseOn(now, lat, lon);
+    if (isNaN(r)) { const x = new Date(now); x.setHours(7, 10, 0, 0); r = x.getTime(); }
+    if (r > now.getTime()) { const y = new Date(now.getTime() - 86400000); r = sunriseOn(y, lat, lon); if (isNaN(r)) r = new Date(now).setHours(7, 10, 0, 0) - 86400000; }
+    return r;
+}
 const byNewest = (a, b) => ((b.date || '') + (b.time || '')).localeCompare((a.date || '') + (a.time || ''));
 const byOldest = (a, b) => -byNewest(a, b);
 function stamp() { const d = new Date(), o = -d.getTimezoneOffset(); return new Date(d.getTime() + o * 60000).toISOString().slice(0, 19) + (o >= 0 ? '+' : '-') + pad(Math.floor(Math.abs(o) / 60)) + ':' + pad(Math.abs(o) % 60); }
@@ -584,12 +601,19 @@ export function init() {
         const el = $('mj-date');
         if (el) el.textContent = dayTitle(todayKey());
     }
+    // 지금 HP: 마지막 기록 뒤로 해가 떴으면 5 (자고 일어남)
+    function hpNow() {
+        const hp = db.hp.slice().sort(byNewest)[0];
+        if (!hp) return 5;
+        let pl = null; try { pl = sion.cfg && sion.cfg.place; } catch (e) {}
+        const at = new Date((hp.date || '') + 'T' + (hp.time || '00:00')).getTime();
+        return at < lastSunrise(pl && pl.lat || 35.1, pl && pl.lon || 129) ? 5 : hp.v;
+    }
     let shownLine = null, typer = 0;
     function drawScreen() {
         drawDate();
         applyRoom();
-        const hp = db.hp.slice().sort(byNewest)[0];
-        $('mj-hp').innerHTML = hearts(hp ? hp.v : 5);
+        $('mj-hp').innerHTML = hearts(hpNow());
         const qt = todayKey(), qs = db.quests.filter(q => qDue(q, qt)), qd = qs.filter(q => qDone(qt, q.id)).length;
         $('mj-quest').innerHTML = `<span class="mj-ico">${ICON.quest}</span><span class="n">${qd}/${qs.length}</span>${qs.length && qd === qs.length ? '<span class="clr">clear</span>' : ''}`;
         $('mj-quest').classList.toggle('done', !!qs.length && qd === qs.length);
@@ -1556,7 +1580,7 @@ export function init() {
         /* 체력 */
         hp(st) {
             const it = st.form || {};
-            const v = it.v ?? ((db.hp.slice().sort(byNewest)[0] || {}).v ?? 5);
+            const v = it.v ?? hpNow();
             const rows = db.hp.slice().sort(byNewest);
             const groups = {};
             rows.forEach(r => { (groups[r.date] = groups[r.date] || []).push(r); });
