@@ -25,10 +25,11 @@ KST = timezone(timedelta(hours=9))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 STORE = 'minjung/letters.json'
 CONFIG = 'minjung/sion.json'
-SLOTS = {'morning': '아침', 'lunch': '점심', 'evening': '저녁', 'night': '밤', 'dawn': '새벽'}
+SLOTS = {'morning': '아침', 'tripam': '아침', 'lunch': '점심', 'evening': '저녁', 'night': '밤', 'dawn': '새벽'}
 # 먼저 보내는 메시지: 시간 창 안에서 하루 한 번, 시각은 랜덤 (30분마다 확인). 새벽은 가끔만
 WINDOWS = {'lunch': (11.5, 14.0), 'evening': (17.0, 20.5), 'night': (21.0, 23.5), 'dawn': (1.0, 3.5)}
 DAWN_CHANCE = 0.25
+TRIP_WINDOW = ('tripam', (8.5, 11.0))     # 여행·캠핑 날엔 아침부터 선톡
 WEEK = '월화수목금토일'
 KEEP_CHAT_DAYS = 90
 
@@ -360,6 +361,48 @@ def upcoming(day, days=3):
     return '\n'.join(out)
 
 
+# ---------------------------------------------------------------- 여행 · 캠핑 (이런 날엔 시온과 떨어져 있음)
+TRIP_KW = re.compile(r'여행|캠핑|글램핑|비행기|항공|공항|출국|입국|귀국|숙소|호텔|펜션|료칸|리조트|트립|trip|travel', re.I)
+FLIGHT_KW = re.compile(r'비행기|항공|공항|출국|입국|귀국|flight', re.I)
+
+
+def trip_on(day):
+    """day 가 여행·캠핑 중이면 그 일정 이름, 아니면 None
+    - 여러 날에 걸친 일정(캠핑 1박 등) → 그 기간
+    - 가는 비행기와 돌아오는 비행기(2주 안) → 그 사이
+    - 하루짜리 일정 → 그날 (할 일 · 다이어리에 적힌 것도)"""
+    cal = load('diary/calendar.json', {})
+    evs = [e for e in cal.get('events') or [] if not str(e.get('cal', '')).startswith('AT') and TRIP_KW.search(str(e.get('title', '')))]
+    for e in evs:
+        if (e.get('date') or '') <= day <= (e.get('endDate') or e.get('date') or ''):
+            return e.get('title')
+    flights = sorted((e for e in evs if FLIGHT_KW.search(str(e.get('title', '')))), key=lambda e: e.get('date') or '')
+    for a, b in zip(flights, flights[1:]):
+        try:
+            gap = (datetime.strptime(b['date'], '%Y-%m-%d') - datetime.strptime(a['date'], '%Y-%m-%d')).days
+        except (KeyError, ValueError):
+            continue
+        if 0 < gap <= 14 and a['date'] <= day <= b['date']:
+            return '여행 (' + a['date'][5:] + ' ~ ' + b['date'][5:] + ')'
+    todos = load('data/todos.json', [])
+    for t in todos if isinstance(todos, list) else []:
+        if t.get('target_date') == day and TRIP_KW.search(str(t.get('content', ''))):
+            return t.get('content')
+    d = ((load('diary/diary.json', {}).get('days') or {}).get(day) or {})
+    if TRIP_KW.search(json.dumps(d, ensure_ascii=False)):
+        return '여행'
+    return None
+
+
+def trip_note(cfg, day):
+    """프롬프트에 붙일 여행 중 안내 (아니면 빈 문자열)"""
+    tr = trip_on(day)
+    if not tr:
+        return ''
+    return (f"# 오늘은 따로 있는 날\n민정은 지금 '{tr}' 일정으로 밖에 나가 있고, 시온은 같이 가지 않았어 (떨어져 있음). "
+            f"같이 있는 것처럼 말하지 마.\n{P(cfg, 'trip', '')}\n\n")
+
+
 # ---------------------------------------------------------------- 오늘의 알림 (날씨 · 오하아사 · 일정)
 WMO = [((0,), '맑음'), ((1, 2), '구름 조금'), ((3,), '흐림'), ((45, 48), '안개'), ((51, 53, 55, 56, 57), '이슬비'),
        ((61, 63, 65, 66, 67), '비'), ((71, 73, 75, 77, 85, 86), '눈'), ((80, 81, 82), '소나기'), ((95, 96, 99), '뇌우')]
@@ -483,6 +526,7 @@ def make_letter(store, cfg, day, force):
     prompt = (f"오늘은 {date_label(day)}. 자기 전, {r}에게 남길 오늘의 편지를 써 줘.\n\n"
               f"# {r}에 대해 기억하는 것\n{memory(store)}\n\n"
               f"# 최근에 쓴 편지 (같은 말 되풀이하지 않기)\n{recent_letters(store, day) or '(없음)'}\n\n"
+              f"{trip_note(cfg, day)}"
               f"# 오늘 주고받은 메시지\n{chat_history(store, 20, days=1) or '(없음)'}\n\n"
               f"# 내일부터 사흘 일정 (내일 챙길 것)\n{upcoming(day) or '(없음)'}\n\n"
               f"# 오늘 {r}의 기록\n{gather(day) or '(오늘은 남긴 기록이 거의 없음)'}\n\n"
@@ -530,9 +574,10 @@ def make_message(store, cfg, slot):
         print(f'{day} {SLOTS[slot]} 메시지는 이미 있어요.')
         return None
     yesterday = (t - timedelta(days=1)).strftime('%Y-%m-%d')
-    focus = P(cfg, slot, {'lunch': '점심 무렵 안부.', 'evening': '저녁 안부.', 'night': '밤 안부.', 'dawn': '새벽에 문득.'}.get(slot, ''))
+    focus = P(cfg, slot, {'lunch': '점심 무렵 안부.', 'evening': '저녁 안부.', 'night': '밤 안부.', 'dawn': '새벽에 문득.', 'tripam': '여행 중인 민정에게 아침 연락.'}.get(slot, ''))
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 {SLOTS[slot]} 메시지를 먼저 보내 (선톡).\n{focus}\n"
               f"{P(cfg, 'proactive', '')}\n\n"
+              f"{trip_note(cfg, day)}"
               f"# 기억\n{memory(store)}\n\n"
               f"# 어젯밤 편지\n{clip((store['letters'].get(yesterday) or {}).get('body'), 400) or '(없음)'}\n\n"
               f"# 오늘 주고받은 메시지 (참고만. 이어서 답하는 게 아니라 새로 먼저 보내는 메시지야)\n{chat_history(store, 8, days=0.5) or '(없음)'}\n\n"
@@ -562,7 +607,10 @@ def make_tick(store, cfg):
         return patch or None
     # 새벽(1~3시)은 그 '밤'의 날짜 기준, 25% 정도의 날만
     sday = (t - timedelta(hours=5)).strftime('%Y-%m-%d') if h < 5 else day
-    for slot, (a, b) in WINDOWS.items():
+    wins = dict(WINDOWS)
+    if trip_on(day):
+        wins[TRIP_WINDOW[0]] = TRIP_WINDOW[1]
+    for slot, (a, b) in wins.items():
         if not (a <= h < b):
             continue
         if slot == 'dawn' and random.Random(sday + 'dawn').random() >= DAWN_CHANCE:
@@ -605,6 +653,7 @@ def make_morning(store, cfg, t, day):
         return {'brief': dict(old, fortune=fo, weather=old.get('weather') or b['weather'])}
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정에게 아침 메시지를 먼저 보내.\n"
               f"{P(cfg, 'morning', '나른한 아침 인사. 오늘의 알림에서 필요한 것 한두 개만 짚어.')}\n\n"
+              f"{trip_note(cfg, day)}"
               f"# 오늘의 알림\n{brief_text(b) or '(없음)'}\n\n"
               f"# 기억\n{memory(store)}\n\n"
               f"# 어젯밤 편지\n{clip((store['letters'].get((t - timedelta(days=1)).strftime('%Y-%m-%d')) or {}).get('body'), 300) or '(없음)'}\n\n"
@@ -703,6 +752,7 @@ def make_chat(store, cfg):
         print('오늘 답장 한도를 넘었어요.')
         return None
     prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정이 메시지를 보냈어. 이어서 답장해.\n\n"
+              f"{trip_note(cfg, day)}"
               f"# 기억\n{memory(store)}\n\n"
               f"# 오늘 민정의 기록 (참고)\n{clip(gather(day, upto=t.strftime('%H:%M')), 2500) or '(아직 없음)'}\n\n"
               f"# 오늘의 알림·다가오는 일정\n{brief_text((store.get('briefs') or {}).get(day) or {})}\n{upcoming(day)}\n\n"
