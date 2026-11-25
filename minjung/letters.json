@@ -454,7 +454,7 @@
   {
    "id": "k1a210d5f9c29c1a",
    "dir": "in",
-   "status": "ringing",
+   "status": "live",
    "at": "2026-11-25T12:53:08+09:00",
    "lines": []
   }
