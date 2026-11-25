@@ -1,92 +1,92 @@
 [
   {
-    "horoscope_id": "3048",
-    "onair_date": "20261124",
+    "horoscope_id": "3049",
+    "onair_date": "20261125",
     "open_st": "2",
     "detail": [
       {
-        "horoscope_detail_id": "36372",
-        "horoscope_id": "3048",
+        "horoscope_detail_id": "36384",
+        "horoscope_id": "3049",
         "ranking_no": "1",
-        "horoscope_st": "04",
-        "horoscope_text": "ステキな出会いに期待大！\t仲の良い友達と一緒に\t大勢が集まる場所に出かけよう\t\t中華丼"
-      },
-      {
-        "horoscope_detail_id": "36373",
-        "horoscope_id": "3048",
-        "ranking_no": "2",
-        "horoscope_st": "08",
-        "horoscope_text": "チャンスがたくさん舞い込む日\t積極的な行動がＧＯＯＤ\t\t\tバインダー"
-      },
-      {
-        "horoscope_detail_id": "36374",
-        "horoscope_id": "3048",
-        "ranking_no": "3",
-        "horoscope_st": "06",
-        "horoscope_text": "周りに好印象を残せるよ♪\t何事も一生懸命に取り組んで\t\t\t黒色"
-      },
-      {
-        "horoscope_detail_id": "36375",
-        "horoscope_id": "3048",
-        "ranking_no": "4",
         "horoscope_st": "01",
-        "horoscope_text": "良い買い物ができる予感\t量より質を選ぶのがポイント\t\t\tティーカップ"
+        "horoscope_text": "心強い味方が現れる予感♪\t本音で語り合うとＧＯＯＤ\t良い方向に導いてくれるよ\t\t白菜"
       },
       {
-        "horoscope_detail_id": "36376",
-        "horoscope_id": "3048",
-        "ranking_no": "5",
-        "horoscope_st": "12",
-        "horoscope_text": "気になる相手と進展があるかも♥\tあなたからアプローチを\t\t\t麻婆豆腐"
-      },
-      {
-        "horoscope_detail_id": "36377",
-        "horoscope_id": "3048",
-        "ranking_no": "6",
-        "horoscope_st": "10",
-        "horoscope_text": "発想力が豊かになる時\t新しい企画を考えてみては？\t\t\t電卓"
-      },
-      {
-        "horoscope_detail_id": "36378",
-        "horoscope_id": "3048",
-        "ranking_no": "7",
-        "horoscope_st": "05",
-        "horoscope_text": "ヤル気がなくなり運気ダウン\tリフレッシュの時間を作ると◎\t\t\tソーセージ"
-      },
-      {
-        "horoscope_detail_id": "36379",
-        "horoscope_id": "3048",
-        "ranking_no": "8",
-        "horoscope_st": "02",
-        "horoscope_text": "心配事がありモヤモヤ…\t家族に相談してみよう\t\t\t深緑色"
-      },
-      {
-        "horoscope_detail_id": "36380",
-        "horoscope_id": "3048",
-        "ranking_no": "9",
-        "horoscope_st": "11",
-        "horoscope_text": "自分勝手な行動はＮＧ\t協調性を忘れないでね\t\t\tアイスクリーム"
-      },
-      {
-        "horoscope_detail_id": "36381",
-        "horoscope_id": "3048",
-        "ranking_no": "10",
-        "horoscope_st": "09",
-        "horoscope_text": "頼まれ事に注意が必要\t内容は丁寧に確認してね\t\t\tブロッコリー"
-      },
-      {
-        "horoscope_detail_id": "36382",
-        "horoscope_id": "3048",
-        "ranking_no": "11",
-        "horoscope_st": "07",
-        "horoscope_text": "お金の貸し借りはしないように\tしっかり断る事が大切\t\t\tベージュ"
-      },
-      {
-        "horoscope_detail_id": "36383",
-        "horoscope_id": "3048",
-        "ranking_no": "12",
+        "horoscope_detail_id": "36385",
+        "horoscope_id": "3049",
+        "ranking_no": "2",
         "horoscope_st": "03",
-        "horoscope_text": "ハメを外して悪目立ち\t周囲から反感を買ってしまうかも\t慎重な言動を心掛けて\t\t紺色"
+        "horoscope_text": "楽しい時間を過ごせそう\t華やかな場所にツキあり\t\t\t茶色"
+      },
+      {
+        "horoscope_detail_id": "36386",
+        "horoscope_id": "3049",
+        "ranking_no": "3",
+        "horoscope_st": "10",
+        "horoscope_text": "金運が良好でハッピー！\tオシャレに関する買い物が◎\t\t\t万年筆"
+      },
+      {
+        "horoscope_detail_id": "36387",
+        "horoscope_id": "3049",
+        "ranking_no": "4",
+        "horoscope_st": "08",
+        "horoscope_text": "願いをかなえてもらえるかも\t親しい人と行動を共にしてね\t\t\t野菜ジュース"
+      },
+      {
+        "horoscope_detail_id": "36388",
+        "horoscope_id": "3049",
+        "ranking_no": "5",
+        "horoscope_st": "04",
+        "horoscope_text": "周囲から高評価をＧＥＴ\tオリジナリティを大切に\t\t\t新刊本"
+      },
+      {
+        "horoscope_detail_id": "36389",
+        "horoscope_id": "3049",
+        "ranking_no": "6",
+        "horoscope_st": "12",
+        "horoscope_text": "思いがけない再会がある日\t予定がなくても外出してみて\t\t\tクリーム色"
+      },
+      {
+        "horoscope_detail_id": "36390",
+        "horoscope_id": "3049",
+        "ranking_no": "7",
+        "horoscope_st": "06",
+        "horoscope_text": "仲間からのサポートに期待大\t誠実な態度が幸運のカギ\t\t\t肉まん"
+      },
+      {
+        "horoscope_detail_id": "36391",
+        "horoscope_id": "3049",
+        "ranking_no": "8",
+        "horoscope_st": "11",
+        "horoscope_text": "集中力が低下しミスを連発\tリフレッシュの時間を作って\t\t\tコーヒーカップ"
+      },
+      {
+        "horoscope_detail_id": "36392",
+        "horoscope_id": "3049",
+        "ranking_no": "9",
+        "horoscope_st": "07",
+        "horoscope_text": "あなたの気持ちが伝わりそう\t素直な思いを言葉にしてね\t\t\tシャーベット"
+      },
+      {
+        "horoscope_detail_id": "36393",
+        "horoscope_id": "3049",
+        "ranking_no": "10",
+        "horoscope_st": "05",
+        "horoscope_text": "つまらない意地を張るかも\t謙虚な姿勢を忘れずに\t\t\tおにぎり"
+      },
+      {
+        "horoscope_detail_id": "36394",
+        "horoscope_id": "3049",
+        "ranking_no": "11",
+        "horoscope_st": "09",
+        "horoscope_text": "身勝手な振る舞いに注意\tじっくり考えてから行動を\t\t\tカレンダー"
+      },
+      {
+        "horoscope_detail_id": "36395",
+        "horoscope_id": "3049",
+        "ranking_no": "12",
+        "horoscope_st": "02",
+        "horoscope_text": "チャンスを逃して後悔\t目の前の事に丁寧に取り組んで\t最後まで気を抜かないように\t\t春雨"
       }
     ]
   }
