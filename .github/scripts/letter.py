@@ -283,6 +283,31 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
     sys.exit('AI 호출 실패\n' + '\n'.join(errors))
 
 
+# BANG → AI 칸에서 고치는 설정 (minjung/sion.json 의 ai)
+THINK_DEFAULT = {'chat': 'high', 'proactive': 'high', 'letter': 'high', 'call': 'medium'}
+
+
+def AI(cfg, k, d=None):
+    v = (cfg.get('ai') or {}).get(k)
+    return d if v in (None, '') else v
+
+
+def TH(cfg, kind):
+    v = str(AI(cfg, 'think_' + kind, THINK_DEFAULT[kind])).lower()
+    return v if v in ('low', 'medium', 'high') else THINK_DEFAULT[kind]
+
+
+def num(v, d):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return d
+
+
+def slot_on(cfg, slot):
+    return str(AI(cfg, 'slot_' + slot, 'on')) != 'off'
+
+
 PROMPT_TITLES = [('profile', ''), ('personality', '성격'), ('relationship', '관계'), ('speech', '말투'),
                  ('examples', '말투 예시'), ('rules', '절대 규칙'), ('writing', '지금 하는 일 (메시지·편지 쓰는 규칙)')]
 
@@ -582,7 +607,7 @@ def make_letter(store, cfg, day, force):
               f"# 내일부터 사흘 일정 (내일 챙길 것)\n{upcoming(day) or '(없음)'}\n\n"
               f"# 오늘 {r}의 기록\n{gather(day) or '(오늘은 남긴 기록이 거의 없음)'}\n\n"
               f"# 쓰는 법\n{P(cfg, 'letter', '손편지. 600~1000자. 마지막은 잘 자라는 말로.')}\n- 서명 없이 편지 본문만 출력.")
-    body, model = gemini(cfg['models']['letter'], system_prompt(cfg), prompt, max_tokens=8192)
+    body, model = gemini(cfg['models']['letter'], system_prompt(cfg), prompt, max_tokens=8192, think=TH(cfg, 'letter'))
     body = clean(body)
     patch = {'letter': {'date': day, 'body': body, 'at': stamp(), 'model': model, 'replies': []}, 'force': force}
     mem = make_memory(store, cfg, day, body)
@@ -636,7 +661,7 @@ def make_message(store, cfg, slot):
               f"# 다가오는 일정\n{upcoming(day) or '(없음)'}\n\n"
               f"# 오늘 지금까지 민정의 기록\n{gather(day, upto=t.strftime('%H:%M')) or '(아직 없음)'}\n\n"
               f"# 쓰는 법\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096, think=TH(cfg, 'proactive'))
     at = stamp(t)
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': slot, 'model': model} for b in bubbles(text, 4)]}
 
@@ -676,7 +701,10 @@ def specials(cfg, day):
 REMIND_AHEAD = 36      # 30분마다 확인 → 다음 확인 전까지 올 일정을 미리 잡아 둠 (분)
 
 
-def due_events(store, t):
+def due_events(store, t, cfg=None):
+    cfg = cfg or load(CONFIG, {}) or {}
+    if not slot_on(cfg, 'remind'):
+        return []
     """앞으로 REMIND_AHEAD 분 안에 '5분 전'이 오는 일정 (아직 알리지 않은 것)"""
     day = t.strftime('%Y-%m-%d')
     done = set(store.get('reminded') or [])
@@ -692,20 +720,20 @@ def due_events(store, t):
         key = f"{day} {e['start'][:5]} {e.get('title')}"
         if key in done or st <= t:
             continue
-        if (st - timedelta(minutes=5) - t).total_seconds() <= REMIND_AHEAD * 60:
+        if (st - timedelta(minutes=num(AI(cfg, 'remind_min'), 5)) - t).total_seconds() <= REMIND_AHEAD * 60:
             out.append((st, key, e))
     return sorted(out, key=lambda x: x[0])
 
 
 def make_remind(store, cfg):
     """다음 일정 5분 전까지 기다렸다가 메시지 (15분 안에 이어지는 일정은 한 번에)"""
-    due = due_events(store, now())
+    due = due_events(store, now(), cfg)
     if not due:
         print('곧 시작하는 일정 없음')
         return None
     first = due[0][0]
     group = [x for x in due if (x[0] - first).total_seconds() <= 15 * 60]
-    wait = (first - timedelta(minutes=5) - now()).total_seconds()
+    wait = (first - timedelta(minutes=num(AI(cfg, 'remind_min'), 5)) - now()).total_seconds()
     if wait > 0:
         print(f'{int(wait)}초 기다렸다가 보냄')
         time.sleep(wait)
@@ -714,7 +742,7 @@ def make_remind(store, cfg):
     lines = '\n'.join(f"- {st.strftime('%H:%M')} {e.get('title')}"
                       + (f" (메모: {clip(e['note'], 120)})" if e.get('note') and 'Hash ID' not in e['note'] else '')
                       + (' — 시온도 같이 감' if with_sion(e) else ' — 시온은 같이 안 감') for st, _, e in group)
-    prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정의 일정이 곧(5분쯤 뒤) 시작해. 그 일정에 맞춰 먼저 메시지를 보내.\n"
+    prompt = (f"지금은 {date_label(day)} {t.strftime('%H:%M')}. 민정의 일정이 곧({int(num(AI(cfg, 'remind_min'), 5))}분쯤 뒤) 시작해. 그 일정에 맞춰 먼저 메시지를 보내.\n"
               f"# 곧 시작하는 일정\n{lines}\n\n"
               f"{P(cfg, 'remind', '일정 이름과 메모를 보고 그 일에 맞는 짧은 말. 같이 안 가는 일정이면 떨어져서 응원하거나 챙겨 주는 말, 같이 가는 일정이면 같이 가는 사람으로서. 시간 알려 주는 알람처럼 딱딱하게 말하지 마.')}\n\n"
               f"{trip_note(cfg, day)}"
@@ -722,7 +750,7 @@ def make_remind(store, cfg):
               f"# 최근 메시지 (참고)\n{chat_history(store, 8, days=0.5) or '(없음)'}\n\n"
               f"# 오늘의 알림\n{brief_text((store.get('briefs') or {}).get(day) or {}) or '(없음)'}\n\n"
               f"# 쓰는 법\n- 말풍선 1~3개. 말풍선마다 줄을 바꿔. 메시지 본문만.")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096, think=TH(cfg, 'proactive'))
     at = stamp(t)
     return {'chat': [{'id': new_id('s'), 'from': 'ai', 'text': b, 'at': at, 'slot': 'remind', 'model': model} for b in bubbles(text, 3)],
             'reminded': [k for _, k, _ in group]}
@@ -735,7 +763,7 @@ def make_tick(store, cfg):
     day = t.strftime('%Y-%m-%d')
     h = t.hour + t.minute / 60
     patch = {}
-    if due_events(store, t) and os.environ.get('GITHUB_OUTPUT'):
+    if due_events(store, t, cfg) and os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
             f.write('remind=1\n')     # → 따로 기다렸다가 5분 전에 보내는 작업(remind)이 뜸
         print('곧 시작하는 일정 있음 → remind')
@@ -763,7 +791,10 @@ def make_tick(store, cfg):
     for slot, (a, b) in wins.items():
         if not (a <= h < b):
             continue
-        if slot == 'dawn' and random.Random(sday + 'dawn').random() >= DAWN_CHANCE:
+        if not slot_on(cfg, 'trip' if slot == 'tripam' else slot):
+            print(f'{SLOTS[slot]} 선톡은 꺼져 있음')
+            break
+        if slot == 'dawn' and random.Random(sday + 'dawn').random() >= num(AI(cfg, 'dawn_chance'), DAWN_CHANCE * 100) / 100:
             print('오늘 새벽은 조용히')
             break
         if any(r.get('slot') == slot and (r['at'][:10] == day) for r in store['chat']):
@@ -816,7 +847,7 @@ def make_morning(store, cfg, t, day):
               '{"messages": ["말풍선1", "말풍선2"], "fortune_ko": ["운세 문장을 한 줄씩 자연스러운 한국어로", "...", "행운의 아이템"]}\n'
               "- messages: 실제 메신저 말풍선들 (위 지시대로).\n"
               "- fortune_ko: 운세가 없으면 빈 배열.")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096, json_mode=True)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096, json_mode=True, think=TH(cfg, 'proactive'))
     out = parse_json(text, dict) or {'messages': [text]}
     if fo:
         fo['ko'] = [x for x in out.get('fortune_ko') or [] if isinstance(x, str)]
@@ -916,7 +947,7 @@ def make_chat(store, cfg):
               f"# 대화 (마지막이 방금 온 메시지)\n{chat_history(store, 16)}\n\n"
               f"# 쓰는 법\n{P(cfg, 'chat', '짧은 말풍선 1~4개.')}\n- 말풍선마다 줄을 바꿔. 메시지 본문만.\n{photo_rule(cfg)}\n"
               + ('' if ringing else f"{P(cfg, 'callmsg', CALL_RULE)}\n"))
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096, think=TH(cfg, 'chat'))
     at = stamp(t)
     ring = bool(re.search(r'\[\s*전화\s*\]', text)) and not ringing
     text = re.sub(r'\[\s*전화\s*\]', '', text).strip() or '…잠깐만요.'
@@ -958,7 +989,7 @@ def make_call(store, cfg, call_id):
               f"# 말하는 법\n{P(cfg, 'call', '전화로 말하는 대사만. 한두 문장. 숨소리나 행동 묘사, 괄호 금지.')}\n- 시온이 지금 할 말만 출력.")
     # 통화: 생각 보통, 4번 키부터, 막히면 기다리지 않고 바로 다른 모델로
     models = list(dict.fromkeys(cfg['models']['light'] + cfg['models']['letter']))
-    text, model = gemini(models, system_prompt(cfg), prompt, max_tokens=2048, think='medium', key_first='GEMINI_API_KEY_4', fast=True)
+    text, model = gemini(models, system_prompt(cfg), prompt, max_tokens=2048, think=TH(cfg, 'call'), key_first='GEMINI_API_KEY' + ('' if str(AI(cfg, 'call_key', '4')) == '1' else '_' + str(AI(cfg, 'call_key', '4'))), fast=True)
     text = re.sub(r'\s{2,}', ' ', re.sub(r'[(（][^)）]*[)）]', '', clean(text)).replace('\n', ' ')).strip() or '…여보?'   # 통화엔 괄호 묘사 없이
     return {'call_line': {'id': call_id, 'item': {'id': new_id('l'), 'from': 'ai', 'text': text, 'at': stamp(t), 'model': model}}}
 
@@ -979,7 +1010,7 @@ def make_reply(store, cfg, day):
     prompt = (f"{date_label(day)} 밤에 네가 쓴 편지와, 민정이 거기에 단 답장이야. 마지막 답장에 짧게 답글을 써.\n\n"
               f"# 네 편지\n{lt['body']}\n\n# 답장\n{thread}\n\n"
               f"# 쓰는 법\n{P(cfg, 'reply', '짧은 추신. 2~5문장.')}\n- 본문만.")
-    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096)
+    text, model = gemini(cfg['models']['light'], system_prompt(cfg), prompt, max_tokens=4096, think=TH(cfg, 'letter'))
     text = clean(text)
     return {'reply': {'date': day, 'item': {'id': new_id('r'), 'from': 'ai', 'text': text, 'at': stamp(), 'model': model}}}
 

@@ -98,7 +98,7 @@ const WIN = {
     room:      { title: 'Backgrounds', w: 420 },
     lines:     { title: 'Lines',     w: 360 },
     sion:      { title: '내 여보♡',  tabs: ['Message'], w: 390 },
-    bang:      { title: 'BANG',      tabs: ['Profile', 'Prompt', 'Memory', 'Log'], w: 430 }
+    bang:      { title: 'BANG',      tabs: ['Profile', 'Prompt', 'AI', 'Memory', 'Log'], w: 430 }
 };
 /* 아래 메뉴 / 바탕화면 아이콘 5개 — pick이 있으면 누를 때 작은 고르기 팝업이 먼저 뜸 */
 const NAV = [
@@ -2498,6 +2498,7 @@ export function init() {
             return PROMPT_GROUPS.map(([g, items]) => `<div class="bg-group">${g}</div>` + items.map(([k, l]) => `<div class="mj-sec">${l}</div>
                     <div class="mj-form"><textarea data-bf="${k}" rows="${k === 'examples' ? 18 : ['profile', 'personality', 'relationship', 'writing', 'rules'].includes(k) ? 12 : 6}">${esc(pval(st, k))}</textarea></div>`).join('')).join('') + saveBar;
         }
+        if (st.tab === 'AI') return bangAiView(st) + saveBar;
         const m = sion.data.memory || {}, every = sion.cfg.memory_every || 3;
         if (st.tab === 'Log') {
             const log = (sion.data.memory_log || []).slice().reverse();
@@ -2511,13 +2512,54 @@ export function init() {
             <div class="mj-btns"><span class="bg-count">${val.length}자</span><span class="sp"></span>
                 ${st.mdraft != null ? '<button class="mj-btn ghost" data-act="bg-reset">Cancel</button>' : ''}<button class="mj-btn" data-act="bg-save">Save</button></div>`;
     }
+    // AI 칸: 생각 단계 · 모델 · 한도 · 선톡 켜기/끄기 (minjung/sion.json 의 ai · models · max_*)
+    const AI_DEF = { think_chat: 'high', think_proactive: 'high', think_letter: 'high', think_call: 'medium', call_key: '4',
+        slot_lunch: 'on', slot_evening: 'on', slot_night: 'on', slot_dawn: 'on', slot_trip: 'on', slot_remind: 'on', dawn_chance: '25', remind_min: '5' };
+    const aval = (st, k) => st.pd && st.pd['%' + k] != null ? st.pd['%' + k] : String(((sion.cfg || {}).ai || {})[k] ?? AI_DEF[k]);
+    const mval = (st, k) => st.pd && st.pd['#' + k] != null ? st.pd['#' + k] : (((sion.cfg || {}).models || {})[k] || []).join('\n');
+    function bangAiView(st) {
+        const sel = (k, opts) => `<select data-bf="%${k}">${opts.map(([v, l]) => `<option value="${v}"${aval(st, k) === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+        const think = k => sel(k, [['low', '낮음 · 빠름'], ['medium', '보통'], ['high', '높음 · 느림']]);
+        const onoff = k => sel(k, [['on', '켜기'], ['off', '끄기']]);
+        const numIn = (k, src, min, max) => `<input type="number" inputmode="numeric" min="${min}" max="${max}" data-bf="${src}${k}" value="${esc(src === '%' ? aval(st, k) : fval(st, k) || '')}">`;
+        const row = (l, c, sub) => `<label><span>${l}</span>${c}${sub ? `<em>${sub}</em>` : ''}</label>`;
+        return `<div class="bg-group">생각 단계</div>
+            <p class="bg-info">높을수록 말이 깊어지지만 답이 늦게 오고 무료 한도도 빨리 써요.</p>
+            <div class="bg-pf bg-ai">
+                ${row('메시지 답장', think('think_chat'))}${row('선톡·아침·일정', think('think_proactive'))}${row('편지·답글', think('think_letter'))}${row('전화', think('think_call'))}
+            </div>
+            <div class="bg-group">한도</div>
+            <div class="bg-pf bg-ai">
+                ${row('하루 답장', numIn('max_chat_replies_per_day', '@', 1, 500), '번')}
+                ${row('편지 답글', numIn('max_letter_replies', '@', 0, 50), '번')}
+                ${row('기억 정리', numIn('memory_every', '@', 1, 30), '통마다')}
+                ${row('전화 키', sel('call_key', [['1', '1번'], ['2', '2번'], ['3', '3번'], ['4', '4번']]), '부터')}
+            </div>
+            <div class="bg-group">먼저 보내기</div>
+            <div class="bg-pf bg-ai">
+                ${row('점심', onoff('slot_lunch'))}${row('저녁', onoff('slot_evening'))}${row('밤', onoff('slot_night'))}
+                ${row('새벽', onoff('slot_dawn'))}${row('새벽 확률', numIn('dawn_chance', '%', 0, 100), '%')}
+                ${row('여행날 아침', onoff('slot_trip'))}
+                ${row('일정 알림', onoff('slot_remind'))}${row('일정 몇 분 전', numIn('remind_min', '%', 1, 30), '분')}
+            </div>
+            <div class="bg-group">모델</div>
+            <p class="bg-info">한 줄에 하나 · 위에서부터 써 보고 안 되면 다음 줄. 편지는 편지용, 나머지(메시지·선톡·전화)는 가벼운 모델.</p>
+            <div class="mj-sec">편지용</div><div class="mj-form"><textarea data-bf="#letter" rows="3">${esc(mval(st, 'letter'))}</textarea></div>
+            <div class="mj-sec">가벼운 모델</div><div class="mj-form"><textarea data-bf="#light" rows="3">${esc(mval(st, 'light'))}</textarea></div>`;
+    }
     // 시온 설정(minjung/sion.json) 저장: 고친 칸만 (files = 사진 올리기·지우기)
     function bangPromptSave(st, files, extra) {
         if (sionNeedToken()) return Promise.resolve();
         const pd = Object.assign({}, st.pd || {});
         const apply = c => {
             c.prompt = c.prompt || {};
-            Object.keys(pd).forEach(k => { if (k[0] === '@') c[k.slice(1)] = pd[k].trim(); else c.prompt[k] = pd[k].trim(); });
+            Object.keys(pd).forEach(k => {
+                const v = pd[k].trim();
+                if (k[0] === '%') (c.ai = c.ai || {})[k.slice(1)] = v;
+                else if (k[0] === '#') { const list = v.split(/\s*\n\s*/).filter(Boolean); if (list.length) (c.models = c.models || {})[k.slice(1)] = list; }
+                else if (k[0] === '@') c[k.slice(1)] = /^\d+$/.test(v) ? Number(v) : v;
+                else c.prompt[k] = v;
+            });
             if (extra) extra(c);
             return c;
         };
