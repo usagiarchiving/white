@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated_at": "2026-11-25T15:07:29+09:00",
+ "updated_at": "2026-11-26T05:23:16+09:00",
  "profile": [
   {
    "id": "pf0",
@@ -838,6 +838,17 @@
    "time": "03:31",
    "at": "2026-11-25T03:31:19+09:00",
    "creator": "정신없는 정신과의사"
+  },
+  {
+   "id": "lbmwwkm9xvi854",
+   "type": "youtube",
+   "title": "[Playlist] 🎶 내 맘대로 고른 기리보이 갬성 노래 모음 🎶",
+   "url": "https://youtu.be/leZKtzlM8p8?si=ZA-a3QHdmKDi2a4S",
+   "status": "done",
+   "date": "2026-11-26",
+   "time": "05:23",
+   "at": "2026-11-26T05:23:14+09:00",
+   "creator": "리슨모어"
   }
  ],
  "condition": [
