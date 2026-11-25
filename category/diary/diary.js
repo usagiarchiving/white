@@ -306,6 +306,11 @@ export function init() {
         } catch (e) { return false; }
     }
     // 다른 기기에서 쓴 기록: 화면으로 돌아오면 다시 불러옴 (입력 중·저장 중이면 건너뜀)
+    // 모바일: 다른 앱에 갔다 오면 기기가 멈춘 음악을 다시 틀어 줌 (내가 멈춘 거면 그대로)
+    on(document, 'visibilitychange', () => {
+        if (document.visibilityState !== 'visible' || !YT.on || !YT.player || !YT.ready || YT.hold) return;
+        setTimeout(() => { try { if (YT.player && YT.player.getPlayerState() !== 1) YT.player.playVideo(); } catch (e) {} }, 300);
+    });
     on(document, 'visibilitychange', () => {
         const typing = document.activeElement && wrap.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
         if (document.visibilityState === 'visible' && !pending && !typing && !cardFn) load();
@@ -717,7 +722,8 @@ export function init() {
     function ytFull() {
         const box = document.querySelector('.dy-w.yt .yt-p');
         const req = box && (box.requestFullscreen || box.webkitRequestFullscreen);
-        if (box && req && YT.on) { try { const r = req.call(box); if (r && r.catch) r.catch(() => ytCtrl()); return; } catch (e) {} }
+        const can = (document.fullscreenEnabled || document.webkitFullscreenEnabled) && !/iPhone|iPod/.test(navigator.userAgent);
+        if (box && req && can && YT.on) { try { const r = req.call(box); if (r && r.catch) r.catch(() => ytCtrl()); return; } catch (e) {} }
         ytCtrl();
     }
     function ytCtrl() {
@@ -725,7 +731,7 @@ export function init() {
         if (YT.ctrl) toast('유튜브 화면 오른쪽 아래 전체화면 버튼을 눌러요');
         if (!YT.on) {                                    // 아직 재생 전이면: 유튜브 버튼이 보이는 채로 재생 시작
             const x = ytList(todayKey())[YT.i]; if (!x || !ytId(x.url)) return render('diary');
-            YT.on = x.id; YT.paused = false; return render('diary');
+            YT.on = x.id; YT.paused = false; YT.hold = false; return render('diary');
         }
         let at = 0; try { at = YT.player && YT.ready ? YT.player.getCurrentTime() : 0; } catch (e) {}
         YT.at = Math.floor(at);
@@ -2007,9 +2013,9 @@ export function init() {
             case 'yt-prev': return ytStep(-1);
             case 'yt-next': return ytStep(1);
             case 'yt-play': case 'yt-pp': {
-                if (YT.on && YT.player && YT.ready) { const st = YT.player.getPlayerState(); if (st === 1) YT.player.pauseVideo(); else YT.player.playVideo(); return; }
+                if (YT.on && YT.player && YT.ready) { const st = YT.player.getPlayerState(); YT.hold = st === 1; if (st === 1) YT.player.pauseVideo(); else YT.player.playVideo(); return; }
                 const x = ytList(todayKey())[YT.i]; if (!x) return; if (!ytId(x.url)) return window.open(safeUrl(x.url), '_blank', 'noopener');
-                YT.on = x.id; YT.paused = false; return render('diary');
+                YT.on = x.id; YT.paused = false; YT.hold = false; return render('diary');
             }
             case 'yt-rep': YT.rep = !YT.rep; t.classList.toggle('on', YT.rep); return;
             case 'yt-full': return ytFull();
