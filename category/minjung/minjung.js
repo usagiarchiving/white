@@ -2074,6 +2074,23 @@ export function init() {
         try { tab = sessionStorage.getItem('sion_open'); sessionStorage.removeItem('sion_open'); } catch (e) {}
         if (tab) tab === 'Notice' ? notiOpen(todayKey()) : tab === 'Letter' ? openArchive('Letter') : tab === 'Call' ? callCheckRing(true) : openSion('Message');
     }
+    // 시온 새 글: GitHub가 저장 직후 잠깐 옛 파일을 줄 때가 있어서, 바뀐 게 보일 때까지 몇 번 다시 읽음
+    const sionSig = () => {
+        const d = sion.data || {}, c = d.chat || [];
+        return [c.length, (c[c.length - 1] || {}).id, JSON.stringify((d.calls || []).map(x => [x.status, (x.lines || []).length])),
+            JSON.stringify(Object.keys(d.letters || {}).map(k => (d.letters[k].replies || []).length)), Object.keys(d.briefs || {}).length].join('|');
+    };
+    async function sionFresh(tries) {
+        const before = sionSig();
+        for (let i = 0; i < (tries || 6); i++) {
+            if (i) await new Promise(r => setTimeout(r, 2500));
+            if (!root.isConnected) return;
+            await loadSion(false, true);
+            if (sionSig() !== before) return true;
+        }
+        return false;
+    }
+    window.__sionPush = () => { if (root.isConnected) sionFresh(8); };
     window.__openSion = tab => { if (!root.isConnected) return; if (tab === 'Notice') notiOpen(todayKey()); else if (tab === 'Letter') openArchive('Letter'); else if (tab === 'Call') { loadSion(true, true).then(() => callCheckRing(true)); } else openSion('Message'); };
     function openSion(tab) {
         const fresh = !wins.sion;
@@ -3112,7 +3129,7 @@ export function init() {
                 if (!run || run.status !== 'completed') continue;
                 if (run.conclusion !== 'success') { if (mode === 'call') { done(''); return callRunFailed(); } return done('실패했어요. GitHub → Actions → letter 기록을 확인해 주세요'); }
                 sion.wait[mode] = false;
-                await loadSion(false, true);   // 시온이 쓴 새 글은 바로
+                await sionFresh(6);   // 시온이 쓴 새 글은 바로 (옛 파일이 오면 몇 번 더)
                 if (wins.bang) renderWin('bang');
                 return done('');
             }

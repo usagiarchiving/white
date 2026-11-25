@@ -269,8 +269,11 @@ def gemini(models, system, prompt, max_tokens=4096, temperature=0.95, json_mode=
                         skip_model = True
                         break
                     if e.code in (500, 503) and attempt == 0:
-                        time.sleep(10)
+                        time.sleep(8)
                         continue
+                    if e.code in (500, 503):    # 그래도 붐빔 → 이 모델은 키를 바꿔도 같음, 다음 모델로
+                        skip_model = True
+                        break
                     if e.code in (401, 403):        # 키가 틀렸거나 막힘 → 다음 키
                         SPENT.add((name, model))
                     break
@@ -899,8 +902,9 @@ def make_chat(store, cfg):
         return None
     t = now()
     day = t.strftime('%Y-%m-%d')
-    today_ai = sum(1 for r in chat if r['from'] == 'ai' and r['at'][:10] == day and not r.get('slot'))
-    if today_ai >= int(cfg.get('max_chat_replies_per_day') or 30):
+    # 오늘 답장 횟수 (말풍선 수가 아니라 답장 한 번 = 같은 시각에 보낸 말풍선 묶음)
+    today_ai = len({r['at'] for r in chat if r['from'] == 'ai' and r['at'][:10] == day and not r.get('slot') and r.get('kind') != 'call'})
+    if today_ai >= int(cfg.get('max_chat_replies_per_day') or 60):
         print('오늘 답장 한도를 넘었어요.')
         return None
     ringing = any(c.get('status') in ('ringing', 'live') for c in store.get('calls') or [])

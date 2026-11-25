@@ -7,9 +7,13 @@ self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('push', e => {
     let d = {};
     try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data ? e.data.text() : '' }; }
-    e.waitUntil(self.registration.showNotification(d.title || '내 여보♡', {
-        body: d.body || '', tag: d.tag || 'sion', renotify: true, icon: d.icon || ICON, badge: ICON, data: { tab: d.tab || 'Message' }
-    }));
+    e.waitUntil(Promise.all([
+        self.registration.showNotification(d.title || '내 여보♡', {
+            body: d.body || '', tag: d.tag || 'sion', renotify: true, icon: d.icon || ICON, badge: ICON, data: { tab: d.tab || 'Message' }
+        }),
+        // 열려 있는 화면에도 알려서 대화창을 바로 새로 불러오게
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => list.forEach(c => c.postMessage({ sionPush: d.tab || 'Message' })))
+    ]));
 });
 
 // 알림을 누르면: 열린 화면이 있으면 그 화면에서 시온 창을, 없으면 새로 열어서

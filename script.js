@@ -174,7 +174,10 @@ function toggleTheme() {
         if (window.__openSion && location.hash === '#minjung') window.__openSion(tab);
         else loadPageByHash('minjung');
     }
-    navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.sion) openSion(e.data.sion); });
+    navigator.serviceWorker.addEventListener('message', function (e) {
+        if (e.data && e.data.sion) openSion(e.data.sion);
+        else if (e.data && e.data.sionPush && window.__sionPush) window.__sionPush();   // 알림이 왔을 때 열려 있는 화면도 새로 불러옴
+    });
     // 앱이 닫혀 있다가 알림으로 열렸을 때: 주소의 ?sion=Message
     var m = /[?&]sion=(Message|Letter|Notice|Call)/.exec(location.search);
     if (m) {
