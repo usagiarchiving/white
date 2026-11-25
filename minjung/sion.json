@@ -45,6 +45,6 @@
   ]
  },
  "max_letter_replies": 5,
- "max_chat_replies_per_day": 30,
+ "max_chat_replies_per_day": 60,
  "memory_every": 3
 }
