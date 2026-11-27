@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="category/minjung/minjung.css?v=48">
+
+<div class="mj-root mj-booting" id="mj-root">
+    <div class="mj-desk">
+        <!-- PC: 바탕화면 파일 아이콘 -->
+        <div class="mj-icons" id="mj-icons"></div>
+
+        <!-- 게임 화면: 방 배경(옆으로 밀어서 바꾸기) + 캐릭터 + 대사창 -->
+        <div class="mj-frame">
+            <div class="mj-game" id="mj-game">
+                <!-- 방(배경·캐릭터·스티커): 모바일은 아래 메뉴 위까지만 -->
+                <div class="mj-scene" id="mj-scene">
+                    <div class="mj-bgs" id="mj-bgs"></div>
+                    <img class="mj-char" id="mj-char" alt="" draggable="false">
+                    <div class="mj-stickers" id="mj-stickers"></div>
+                </div>
+                <div class="mj-date" id="mj-date"></div>
+                <!-- 날짜 아래: 오늘의 퀘스트 (루틴) -->
+                <button class="mj-quest" id="mj-quest" title="Quest"></button>
+                <!-- 퀘스트 아래: 내 여보♡ (하시온 메시지·편지) -->
+                <button class="mj-sion" id="mj-sion" title="내 여보♡"></button>
+                <button class="mj-hp" id="mj-hp" title="HP"></button>
+                <!-- 하트 아래: 오늘의 알림 (날씨·운세·일정) -->
+                <button class="mj-noti" id="mj-noti" title="알림" style="display:none"></button>
+                <span class="mj-saving" id="mj-saving"></span>
+                <button class="mj-dialog" id="mj-dialog">
+                    <span class="mj-name">김민정</span>
+                    <span class="mj-say" id="mj-say"></span>
+                    <span class="mj-next">▼</span>
+                </button>
+                <!-- 모바일: 아래 메뉴 5개 -->
+                <nav class="mj-nav" id="mj-nav"></nav>
+            </div>
+        </div>
+    </div>
+    <!-- 열린 창들 -->
+    <div class="mj-layer" id="mj-layer"></div>
+    <div class="mj-toast" id="mj-toast"></div>
+    <input type="file" accept="image/*" id="mj-file" hidden>
+</div>
+
+<!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
+<script type="module">
+    import { init } from './category/minjung/minjung.js?v=56';
+    init();
+</script>

@@ -1,0 +1,15 @@
+{
+ "v": 1,
+ "kdf": {
+  "name": "PBKDF2-SHA256",
+  "iter": 1000000,
+  "salt": "j3Q7f+WcC61BR5oVgvxJKQ=="
+ },
+ "wrap": {
+  "iv": "JLGWNCBvfLJJ5YH7",
+  "ct": "opcdVy6NKmMhDwECJSK1rDeXRS0zhobzEpqq12m3idxMNd6bdqqg7H4wztCPgH/l"
+ },
+ "hint": "풀세트",
+ "check": "WENC1.S0MqtuOnIcorfFAfBjm+aje4vjJ4d8Um1BxMrg0pGteOj1GbZ4AWj8iG",
+ "created_at": "2026-11-27T15:18:21.213Z"
+}

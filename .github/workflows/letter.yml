@@ -1,0 +1,161 @@
+# 하시온(내 여보♡) 메시지·편지 (김민정 첫 화면 → 퀘스트 아래 버튼)
+#   - 오늘의 알림(아침) · 점심·저녁·밤·가끔 새벽 선톡: 30분마다 확인해서 랜덤 시각에
+#   - 내가 미리 넣은 일정 5분 전 메시지 (ATracker·하루 종일 제외)
+#   - 내가 보낸 메시지에 답장 / 밤 편지(하루 한 통) / 편지 답글: 사이트에서 실행
+# → minjung/letters.json 에 저장
+# 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
+#   이름: GEMINI_API_KEY      값: AI Studio에서 받은 키 (AQ. 로 시작)
+#   (서브 키) GEMINI_API_KEY_2 · _3 · _4 — 한도가 차면 차례로 씀. 서로 다른 Google Cloud 프로젝트의 키여야 한도가 따로임
+#   이름: VAPID_PRIVATE_KEY   값: 웹앱 알림용 비밀 키 (없으면 알림만 안 감)
+# 캐릭터·모델 바꾸기: minjung/sion.json
+name: letter
+
+on:
+  schedule:
+    # 30분마다: 날씨 확인 + 오늘의 알림(8시 이후 없으면) + 점심·저녁·밤·(가끔)새벽 선톡을 창 안에서 랜덤 시각에 하루 한 번씩
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'chat = 메시지 답장 · letter = 오늘 편지 · reply = 편지 답글 · message = 시간대 메시지 · receipt = 영수증 한 줄'
+        required: true
+        default: chat
+        type: choice
+        options: [chat, letter, reply, message, weather, tick, call, aftercall, remind, receipt]
+      date:
+        description: '날짜 (YYYY-MM-DD, 비우면 오늘)'
+        required: false
+        default: ''
+      slot:
+        description: 'message일 때: morning / lunch / evening (비우면 지금 시각)'
+        required: false
+        default: ''
+      id:
+        description: 'call일 때: 통화 id'
+        required: false
+        default: ''
+      force:
+        description: '이미 있는 편지를 다시 쓰기'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    # 통화는 따로 줄 서기: 메시지·편지 만드는 동안에도 기다리지 않고 바로
+    concurrency:
+      group: letter-${{ inputs.mode == 'call' && 'call' || 'main' }}
+      cancel-in-progress: false
+    outputs:
+      remind: ${{ steps.make.outputs.remind }}
+    env:
+      VAULT_KEY: ${{ secrets.VAULT_KEY }}     # 저장소 암호화 키 (사이트 잠금 설정 때 받은 복구 키)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet cryptography
+      - name: 만들기
+        id: make
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          SCHEDULE: ${{ github.event.schedule }}
+          MODE: ${{ inputs.mode }}
+          DATE: ${{ inputs.date }}
+          SLOT: ${{ inputs.slot }}
+          FORCE: ${{ inputs.force }}
+          CALLID: ${{ inputs.id }}
+        run: |
+          if [ -n "$SCHEDULE" ]; then
+            args=(tick)
+          else
+            args=("$MODE")
+            [ -n "$DATE" ] && args+=(--date "$DATE")
+            [ -n "$SLOT" ] && args+=(--slot "$SLOT")
+            [ "$FORCE" = "true" ] && args+=(--force)
+            [ -n "$CALLID" ] && args+=(--id "$CALLID")
+          fi
+          python .github/scripts/letter.py "${args[@]}" --out "$RUNNER_TEMP/patch.json"
+      - name: 저장
+        id: save
+        run: |
+          if [ ! -f "$RUNNER_TEMP/patch.json" ]; then echo '변경 없음'; exit 0; fi
+          git config user.name 'sion-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # 그 사이 사이트에서 메시지를 보냈어도 겹치지 않게: 최신본을 받고 결과만 덧붙여서 올림
+          for i in 1 2 3 4 5; do
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard FETCH_HEAD
+            python .github/scripts/letter.py apply "$RUNNER_TEMP/patch.json"
+            python .github/scripts/vault.py assert-sealed minjung/letters.json diary/receipt.json
+            git add minjung/letters.json
+            [ -f diary/receipt.json ] && git add diary/receipt.json
+            git diff --cached --quiet && { echo '변경 없음'; exit 0; }
+            git commit -q -m '김민정: 시온 메시지'
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo saved=1 >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep $((i * 3))
+          done
+          exit 1
+      - name: 웹앱 알림
+        if: steps.save.outputs.saved == '1'
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: |
+          python .github/scripts/letter.py notify "$RUNNER_TEMP/patch.json"
+
+  # 내가 미리 넣은 일정 5분 전 메시지: 30분 확인 때 곧 시작하는 일정이 있으면 떠서, 5분 전까지 기다렸다가 보냄
+  remind:
+    needs: write
+    if: always() && needs.write.outputs.remind == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: letter-remind
+      cancel-in-progress: false
+    env:
+      VAULT_KEY: ${{ secrets.VAULT_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet cryptography
+      - name: 기다렸다가 만들기
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+        run: python .github/scripts/letter.py remind --out "$RUNNER_TEMP/patch.json"
+      - name: 저장
+        id: save
+        run: |
+          if [ ! -f "$RUNNER_TEMP/patch.json" ]; then echo '변경 없음'; exit 0; fi
+          git config user.name 'sion-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for i in 1 2 3 4 5; do
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard FETCH_HEAD
+            python .github/scripts/letter.py apply "$RUNNER_TEMP/patch.json"
+            python .github/scripts/vault.py assert-sealed minjung/letters.json
+            git add minjung/letters.json
+            git diff --cached --quiet && { echo '변경 없음'; exit 0; }
+            git commit -q -m '김민정: 시온 일정 메시지'
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo saved=1 >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep $((i * 3))
+          done
+          exit 1
+      - name: 웹앱 알림
+        if: steps.save.outputs.saved == '1'
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: |
+          python .github/scripts/letter.py notify "$RUNNER_TEMP/patch.json"

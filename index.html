@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <!-- 최대 10배까지 수동 줌인을 허용하도록 수정 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+    <title>토끼굴</title>
+    
+    <link rel="apple-touch-icon" href="https://i.ibb.co/tTdNpX19/IMG-2904.jpg">
+    <link rel="icon" href="https://i.ibb.co/tTdNpX19/IMG-2904.jpg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&display=swap" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
+    
+    <link rel="stylesheet" href="style.css?v=5" />
+    <!-- 깜빡임 방지: 화면을 그리기 전에 테마부터 (script.js보다 먼저) -->
+    <script>try { document.documentElement.className = localStorage.getItem('theme') === 'theme-dark' ? 'theme-dark' : 'theme-light'; } catch (e) {}</script>
+    
+    <!-- 사이트 잠금: 비밀번호를 넣기 전에는 아무것도 안 그림 (데이터·사진은 저장소에 암호화돼 있음) -->
+    <script src="vault-core.js?v=1"></script>
+    <script src="vault.js?v=2"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- '빛이 꺾이는 각도'(archive)만 아직 Supabase를 씁니다 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="ghdb.js?v=13"></script>
+</head>
+
+<body>
+    <!-- 깜빡임 방지: 김민정·마이홈·다이어리로 바로 들어오면 처음부터 얇은 헤더로 -->
+    <script>
+        (function () {
+            var h = location.hash.replace('#', '') || ((/[?&]c=([^&#]+)/.exec(location.search) || [])[1] || '');
+            if (!h) { try { h = (JSON.parse(localStorage.getItem('site_settings') || 'null') || {}).start || ''; } catch (e) {} }
+            if (/^(minjung|myhome|diary)$/.test(h)) document.body.classList.add('game-page');
+        })();
+    </script>
+    <div id="wrap">
+        <div id="container">
+            
+            <header id="header">
+                <div class="inner_header">
+                    <button id="btn-settings" class="nav-icon-btn" title="설정" style="display:none"></button>
+                    <button id="btn-key" class="nav-icon-btn" title="글쓰기 켜기"><i class="xi-lock-o"></i></button>
+
+                    <button id="btn-theme" class="nav-icon-btn" onclick="toggleTheme()" title="테마 변경">
+                        <i id="theme-icon" class="xi-toggle-off"></i>
+                    </button>
+
+                    <div class="dropdown">
+                        <div class="dropdown-bars" title="메뉴 열기">
+                            <i id="menu-icon" class="xi-bars"></i>
+                        </div>
+                        <div class="dropdown-inner" id="dropdown-menu"></div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="main">
+                <div class="inner_index">
+                    <div id="content-area"></div>
+                </div>
+            </main>
+
+        </div>
+    </div>
+
+    <script>
+        // 🚨 기존 구조는 완벽히 유지하고, 각 메뉴가 어떤 꼬리표(#)를 가질지 'hash' 속성만 핀셋 추가했습니다.
+        const CATEGORIES = [
+            { hash: 'home',     name: '토끼굴',     path: 'category/home.html',     active: true },
+            { hash: 'notice',   name: '읽지 않은 문장',   path: 'category/notice.html',   active: false },
+            { hash: 'hasion',   name: '이름을 부르는 법',    path: 'category/hasion.html',    active: false },   // 다이어리 메모(탭 2)로 합침
+            { hash: 'archive',  name: '빛이 꺾이는 각도',  path: 'category/archive.html',  active: true },
+            { hash: 'capture',  name: '하시온',          path: 'category/capture/',      active: true },
+            { hash: 'minjung',  name: '김민정',          path: 'category/minjung/',      active: true },
+            { hash: 'myhome',   name: '마이홈',          path: 'category/myhome/',       active: true },
+            { hash: 'diary',    name: '다이어리',        path: 'category/diary/',        active: true },
+            { hash: 'memo',     name: '감각의 잔여물',     path: 'category/memo.html',     active: false },   // 다이어리 메모(탭 1)로 합침
+            { hash: 'log',      name: 'Log',      path: 'category/log.html',      active: false },
+            { hash: 'list',     name: 'List',     path: 'category/list.html',     active: false },
+            { hash: 'todo',     name: 'Todo',     path: 'category/todo/',     active: true },
+            { hash: 'playlist', name: 'Playlist', path: 'category/playlist.html', active: false },
+            { hash: 'check',    name: 'Check',    path: 'category/check.html',    active: false }
+        ];
+    </script>
+
+    <script src="site-settings.js?v=4"></script>
+    <script src="lightbox.js?v=2"></script>
+    <script src="script.js?v=13"></script>
+</body>
+</html>

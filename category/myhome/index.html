@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="category/myhome/myhome.css?v=40">
+
+<div class="mh-wrap" id="mh-wrap">
+    <div class="mh-stage" id="mh-stage">
+        <canvas id="mh-canvas"></canvas>
+        <div class="mh-label" id="mh-label"></div>
+        <div class="mh-loading" id="mh-loading">방을 꾸미는 중…</div>
+
+        <!-- 왼쪽 위: 지금 날씨 (누르면 일주일) -->
+        <button class="mh-weather" id="mh-weather" title="일주일 날씨"></button>
+        <span id="mh-saving" class="mh-saving"></span>
+        <!-- 위쪽: 구역별로 다가가기 -->
+        <div class="mh-zones" id="mh-zones"></div>
+
+        <!-- 오른쪽 아래: 가구 목록 / 회전 / 확대 -->
+        <div class="mh-list" id="mh-list"></div>
+        <div class="mh-ctrl" id="mh-ctrl">
+            <button data-cam="list" title="가구 목록"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 4.5h10M3 8h10M3 11.5h10"/></svg></button>
+            <span class="sep"></span>
+            <button data-cam="left" title="왼쪽으로 돌리기"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a4.5 4.5 0 1 1 1.4 3.3"/><path d="M3.2 3.6v3.9h3.9"/></svg></button>
+            <button data-cam="right" title="오른쪽으로 돌리기"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M3.5 7.5a4.5 4.5 0 1 1 1.4 3.3"/><path d="M3.2 3.6v3.9h3.9"/></svg></button>
+            <span class="sep"></span>
+            <button data-cam="out" title="멀리"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 8h8"/></svg></button>
+            <button data-cam="in" title="가까이"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 8h8M8 4v8"/></svg></button>
+        </div>
+    </div>
+</div>
+
+<!-- 가구를 누르면 뜨는 기록 카드 / 일주일 날씨 카드 -->
+<div class="mh-card-bg" id="mh-card-bg">
+    <div class="mh-card">
+        <!-- Solar close-linear (480 Design, CC BY 4.0) -->
+        <button class="mh-x" id="mh-x" aria-label="닫기"><svg viewBox="0 0 24 24" width="16" height="16"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M19 5L5 19"/><path d="M19 19L5 5"/></g></svg></button>
+        <div id="mh-card"></div>
+    </div>
+</div>
+
+<!-- 모듈은 브라우저가 한 번만 실행하므로, 들어올 때마다 init()을 불러 새로 그림 -->
+<script type="module">
+    import { init } from './category/myhome/myhome.js?v=43';
+    init();
+</script>

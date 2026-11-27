@@ -1,0 +1,53 @@
+# 아이폰 캘린더(+ ATracker가 기록해 두는 캘린더)를 15분마다 (다이어리 타임테이블의 동기화 버튼으로 바로도) 받아서 diary/calendar.json 으로 — 다이어리 타임테이블에 보임
+# 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
+#   이름: CALENDAR_ICS   값: 한 줄에 하나씩  이름|webcal://p..-caldav.icloud.com/published/2/…
+name: calendar
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'      # 15분마다
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: calendar
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      VAULT_KEY: ${{ secrets.VAULT_KEY }}     # 저장소 암호화 키 (사이트 잠금 설정 때 받은 복구 키)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet icalendar recurring-ical-events cryptography
+      - name: 캘린더 받기
+        env:
+          CALENDAR_ICS: ${{ secrets.CALENDAR_ICS }}
+        run: python .github/scripts/calendar_sync.py diary/calendar.json
+      - name: 바뀌었으면 저장
+        run: |
+          if [ ! -f diary/calendar.json ] || git diff --quiet -- diary/calendar.json && git ls-files --error-unmatch diary/calendar.json > /dev/null 2>&1; then
+            echo '변경 없음'; exit 0
+          fi
+          cp diary/calendar.json "$RUNNER_TEMP/calendar.json"
+          git config user.name 'calendar-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # 최신본 위에 이 파일만 바꿔서 올림 (pull --rebase 는 쓰지 않음: 저장소 기록이 바뀌어도 옛 기록을 다시 올리지 않게)
+          for i in 1 2 3 4 5; do
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard FETCH_HEAD
+            cp "$RUNNER_TEMP/calendar.json" diary/calendar.json
+            python .github/scripts/vault.py assert-sealed diary/calendar.json
+            git add diary/calendar.json
+            git diff --cached --quiet && { echo '변경 없음'; exit 0; }
+            git commit -q -m 'diary: 캘린더 동기화'
+            git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 3))
+          done
+          exit 1

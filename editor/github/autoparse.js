@@ -1,0 +1,395 @@
+// ==========================================
+// autoparse.js  (script.js 뒤에 로드)
+// 원문 텍스트(**이름** | "대사" / *나레이션* / <br>(번역) / {{img::..}} / <Apogee .../>)를
+// 블록으로 자동 분류. 기존 importFromHtml() 버튼을 그대로 사용.
+// ==========================================
+(function () {
+    'use strict';
+
+    // 렌더러가 인식하는 raw-HTML 블록 타입 (안 되면 'status'로 변경)
+    const APOGEE_BLOCK_TYPE = 'html';
+    // 소설형에서 이름과 대사 사이 구분자
+    const NOVEL_NAME_SEP = ' | ';
+
+    // -------- 렌더러에서 호출할 헬퍼 --------
+    // 번역: 기본 텍스트보다 2px 작게 (부모 폰트 기준이라 소설/말풍선 모두 자동 적용)
+    window.trHtml = function (b) {
+        return b && b.translation
+            ? '<br><span style="font-size:calc(1em - 2px);">' + escapeHtml(b.translation) + '</span>'
+            : '';
+    };
+    // 소설형: 볼드 이름 (색은 대사 색을 상속 → 민트/핑크)
+    window.novelNameHtml = function (b) {
+        return b && b.customName
+            ? '<strong>' + escapeHtml(b.customName) + '</strong>' + NOVEL_NAME_SEP
+            : '';
+    };
+
+    // -------- 유틸 --------
+    function getVal(id) {
+        const el = document.getElementById(id);
+        return el ? (el.value || '').trim() : '';
+    }
+    function setValIfEmpty(id, v) {
+        const el = document.getElementById(id);
+        if (el && !el.value.trim()) el.value = v;
+    }
+    function nameMatch(a, b) {
+        if (!a || !b) return false;
+        a = a.toLowerCase().trim();
+        b = b.toLowerCase().trim();
+        return a === b || a.includes(b) || b.includes(a) ||
+            a.split(/\s+/)[0] === b.split(/\s+/)[0];
+    }
+    function parseAttrs(str) {
+        const o = {};
+        str.replace(/([\w-]+)\s*=\s*"([^"]*)"/g, function (m, k, v) { o[k] = v; return m; });
+        return o;
+    }
+    function mk(type, content, extra) {
+        return Object.assign({
+            type: type,
+            content: content || '',
+            customTextColor: '#333333',
+            customBgColor: '#E2E8F0',
+            customName: '',
+            customProfileUrl: '',
+            bgmTitle: '',
+            bgmUrl: '',
+            polaroidDate: '',
+            polaroidCaption: '',
+            translation: ''
+        }, extra || {});
+    }
+
+    // -------- Apogee (JSX) → 정적 HTML --------
+    const APOGEE_CSS = `
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
+  .apl{--bg:#0e0b07;--bg2:#141009;--card:#1b1811;--card2:#201c14;--line:#4a4436;--line2:#2c2820;--line3:#6b6250;
+    --acc:#dfb840;--acc2:#f0cc55;--ink:#fdf6e6;--ink2:#ded9cc;--ink3:#cdc7b8;--soft:#f2e2b8;--mute:#9d9686;--red:#a33636;
+    max-width:440px;margin:0 auto;box-sizing:border-box;font-family:'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif;
+    font-size:12px;color:var(--ink2);background:var(--bg);border:1px solid #575044;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.7);
+    word-break:keep-all;overflow-wrap:break-word;text-align:left;letter-spacing:0;line-height:normal}
+  .apl *{box-sizing:border-box}
+  .apl-tag{display:inline-block;background:var(--acc);color:#14100a;font-weight:800;font-size:9.5px;letter-spacing:2px;padding:5px 11px}
+  .apl-head{background:linear-gradient(165deg,#1a1409 0%,var(--bg) 70%);padding:18px 16px;border-bottom:1px solid var(--line)}
+  .apl-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .apl-hq{font-size:9px;letter-spacing:2px;color:var(--mute)}
+  .apl-card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);padding:15px 16px}
+  .apl-rel{display:inline-block;background:var(--acc);color:#14100a;font-size:10px;font-weight:800;padding:3px 9px;margin-bottom:9px}
+  .apl-names{font-weight:800;font-size:19px;color:var(--ink);letter-spacing:-.3px;margin-bottom:6px}
+  .apl-names span{color:var(--acc);font-weight:400;margin:0 4px}
+  .apl-meta{font-size:11px;color:var(--mute);font-weight:500}
+  .apl-toggle{display:block;width:100%;border:0;background:var(--acc);color:#14100a;text-align:center;padding:11px;font-weight:800;letter-spacing:3px;font-size:11px;cursor:pointer;font-family:inherit}
+  .apl-sec{padding:18px 16px;border-top:1px solid var(--line2)}
+  .apl-sec.a{background:#100c07}.apl-sec.b{background:var(--bg2)}
+  .apl-sec .apl-tag{margin-bottom:13px}
+  .apl-row{display:flex;gap:7px}
+  .apl-stat{flex:1;background:var(--card);border:1px solid var(--line);padding:11px 4px;text-align:center}
+  .apl-stat-l{font-size:8.5px;font-weight:700;letter-spacing:1.5px;color:var(--mute)}
+  .apl-stat-v{font-weight:800;font-size:18px;color:var(--ink);margin-top:5px}
+  .apl-stat-v.g{color:var(--acc)}
+  .apl-aff{background:#221c12;border:1px solid var(--line3);padding:11px 14px;margin-top:7px}
+  .apl-aff-top{display:flex;justify-content:space-between;align-items:center}
+  .apl-aff-l{font-size:9px;font-weight:700;letter-spacing:2px;color:#a89467}
+  .apl-aff-v{font-weight:800;font-size:13px;color:var(--acc2)}
+  .apl-bar{height:4px;background:#2b2519;margin-top:8px}
+  .apl-bar i{display:block;height:100%;background:linear-gradient(90deg,#a8862a,var(--acc2))}
+  .apl-who{flex:1;min-width:0;background:var(--card2);border:1px solid var(--line);border-top:2px solid var(--acc);padding:12px 11px}
+  .apl-who.pc{border-top-color:#827d70}
+  .apl-who-n{text-align:center;font-weight:800;font-size:12.5px;color:var(--acc);margin-bottom:6px}
+  .apl-who.pc .apl-who-n{color:#e8ddc4}
+  .apl-kao{text-align:center;font-family:sans-serif;font-size:15px;color:var(--soft);border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:9px;overflow-wrap:anywhere}
+  .apl-k{font-size:9px;font-weight:700;color:var(--mute);letter-spacing:1.5px}
+  .apl-v{font-size:11.5px;font-weight:500;line-height:1.55;margin:2px 0 8px}
+  .apl-v:last-child{margin-bottom:0}
+  .apl-mind{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--acc);padding:13px 14px;font-size:12.5px;line-height:1.75;color:var(--soft);font-style:italic}
+  .apl-nsfw{background:var(--card2);border:1px solid var(--line3);padding:11px 13px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+  .apl-nk{font-size:8.5px;letter-spacing:1.5px;color:var(--mute);font-weight:700;margin-right:5px}
+  .apl-nv{font-weight:800;font-size:12px;color:var(--soft)}
+  .apl-nv.g{color:var(--acc)}
+  .apl-pill{font-weight:800;font-size:10px;letter-spacing:1px;padding:2px 9px;border:1px solid var(--line3);color:var(--mute)}
+  .apl-pill.on{border-color:var(--acc);color:var(--acc);background:rgba(223,184,64,.08)}
+  .apl-sfw{font-size:11px;color:var(--mute);letter-spacing:2px;font-weight:700}
+  .apl-tabs{display:flex;gap:3px;border-bottom:1px solid var(--line3)}
+  .apl-tab{flex:1 1 0;min-width:0;border:1px solid var(--line);border-bottom:0;background:var(--card);color:var(--mute);font-family:inherit;font-weight:800;font-size:10.5px;letter-spacing:2px;padding:8px 4px;cursor:pointer;position:relative;top:1px}
+  .apl-panel{background:var(--card);border:1px solid var(--line3);border-top:0;padding:14px;line-height:1.7;min-height:96px}
+  .apl-chip{display:inline-block;background:#2b2519;border:1px solid var(--line3);color:var(--acc);font-size:9px;font-weight:800;letter-spacing:1px;padding:2px 7px;margin-right:7px}
+  .apl-line{margin-bottom:8px}
+  .apl-dash{border-top:1px dashed #575044;margin:11px 0}
+  .apl-num{display:flex;gap:8px;padding:3px 0}
+  .apl-num b{color:var(--acc);font-size:11px;flex-shrink:0}
+  .apl-comm-t{font-weight:800;font-size:13.5px;line-height:1.5;color:var(--ink);margin:8px 0 10px}
+  .apl-cmt{border-top:1px dashed #575044;padding:9px 0 0;margin-top:9px}
+  .apl-cmt-h{font-size:9.5px;color:var(--acc);letter-spacing:.5px;font-weight:700;margin-bottom:2px}
+  .apl-cmt-b{font-size:11.5px;color:var(--ink3)}
+  .apl-red{display:inline-block;background:var(--red);color:var(--ink);font-size:9px;font-weight:800;letter-spacing:1px;padding:2px 8px}
+  .apl-q{font-size:11.5px;color:var(--mute);margin-bottom:8px}
+  .apl-q b{color:var(--acc);margin-right:6px}
+  .apl-a{font-size:12.5px;color:var(--soft);font-weight:600}
+  .apl-a b{color:var(--acc);margin-right:6px;font-style:normal}
+  .apl-atr{font-size:11.5px;color:var(--mute);margin-top:4px;padding-left:22px}
+  .apl-empty{color:#6e6a5c}
+  .apl-foot{background:#0a0805;border-top:1px solid var(--line);padding:11px 16px;display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#6e6a5c}
+  .apl-foot span:last-child{color:var(--mute)}
+  /* 토글/탭 (JS 상태 대신 class/data-tab 사용) */
+  .apl .apl-full{display:none}
+  .apl.open .apl-full{display:block}
+  .apl .lo{display:none}
+  .apl.open .lo{display:inline}
+  .apl.open .lc{display:none}
+  .apl .pn{display:none}
+  `;
+
+    const APOGEE_TABS = [
+        ['schedule', 'SCH'], ['promise', 'PRM'], ['tmi', 'TMI'],
+        ['community', 'COM'], ['interview', 'INT']
+    ];
+
+    function apogeeToHtml(p) {
+        const g = function (k) { return p[k] == null ? '' : String(p[k]); };
+        const esc = escapeHtml;
+        const nl = function (s) {
+            return String(s || '')
+                .replace(/&#10;|&#x0*a;/gi, '\n')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/\\n/g, '\n');
+        };
+        const lines = function (s) {
+            return nl(s).split(/\r?\n/).map(function (v) { return v.trim(); }).filter(Boolean);
+        };
+        const v = function (s) { return s ? esc(s) : '<span class="apl-empty">-</span>'; };
+
+        const aff = parseInt(g('affection').replace(/[^0-9-]/g, ''), 10);
+        const affPct = isNaN(aff) ? null : Math.max(0, Math.min(100, aff));
+        const condomOn = /^(착용|on|true|1|o|yes)$/i.test(g('condom').trim());
+        const sfw = !g('sexPosition') || /^(n\/?a|-|없음|sfw)$/i.test(g('sexPosition').trim());
+
+        const wants = lines(g('npcWants')).slice(0, 3);
+        const promiseList = lines(g('promises'));
+        const comments = nl(g('communityComments'))
+            .split(/\n\s*\n/)
+            .map(function (b) { return b.split('\n').map(function (x) { return x.trim(); }).filter(Boolean); })
+            .filter(function (b) { return b.length; })
+            .map(function (b) { return { head: b.length > 1 ? b[0] : '', body: (b.length > 1 ? b.slice(1) : b).join(' ') }; });
+
+        const meta = [g('date'), g('time'), g('location'), g('temperature'), g('weather')].filter(Boolean).join(' · ');
+        const npc = g('npc') || 'NPC';
+        const pc = g('pc') || 'YOU';
+        const num = function (i) { return '0' + (i + 1); };
+
+        const tabCss = APOGEE_TABS.map(function (t) {
+            const k = t[0];
+            return '.apl[data-tab=' + k + '] .pn-' + k + '{display:block}' +
+                '.apl[data-tab=' + k + '] .tb-' + k + '{background:var(--acc);border-color:var(--acc);color:#14100a}';
+        }).join('');
+
+        const tabBtns = APOGEE_TABS.map(function (t) {
+            return '<button type="button" class="apl-tab tb-' + t[0] + '" onclick="this.closest(\'.apl\').setAttribute(\'data-tab\',\'' + t[0] + '\')">' + t[1] + '</button>';
+        }).join('');
+
+        const nsfwInner = sfw
+            ? '<div class="apl-nsfw"><span class="apl-sfw">N/A · SFW</span></div>'
+            : '<div class="apl-nsfw">' +
+            '<span><span class="apl-nk">POS</span><span class="apl-nv">' + esc(g('sexPosition')) + '</span></span>' +
+            '<span><span class="apl-nk">CONDOM</span><span class="apl-pill' + (condomOn ? ' on' : '') + '">' + (condomOn ? 'ON' : 'OFF') + '</span></span>' +
+            '<span><span class="apl-nk">' + esc(npc) + '</span><span class="apl-nv g">' + esc(g('npcClimax') || '0') + '</span></span>' +
+            '<span><span class="apl-nk">' + esc(pc) + '</span><span class="apl-nv g">' + esc(g('pcClimax') || '0') + '</span></span>' +
+            '</div>';
+
+        const panelSchedule =
+            '<div class="pn pn-schedule">' +
+            '<div class="apl-line"><span class="apl-chip">NOW</span>' + v(g('scheduleNow')) + '</div>' +
+            '<div class="apl-line"><span class="apl-chip">NEXT</span>' + v(g('scheduleNext')) + '</div>' +
+            '<div class="apl-dash"></div><div class="apl-k" style="margin-bottom:4px">DESIRE</div>' +
+            (wants.length ? wants.map(function (w, i) {
+                return '<div class="apl-num"><b>' + num(i) + '</b><span>' + esc(w) + '</span></div>';
+            }).join('') : '<span class="apl-empty">-</span>') +
+            '</div>';
+
+        const panelPromise =
+            '<div class="pn pn-promise">' +
+            (promiseList.length ? promiseList.map(function (x, i) {
+                return '<div class="apl-num"><b>' + num(i) + '</b><span style="color:var(--soft);font-weight:600">' + esc(x) + '</span></div>';
+            }).join('') : '<span class="apl-empty">아직 맺은 약속이 없다.</span>') +
+            '</div>';
+
+        const panelTmi =
+            '<div class="pn pn-tmi"><div style="color:var(--ink3)">' + v(nl(g('tmi'))) + '</div></div>';
+
+        const panelCommunity =
+            '<div class="pn pn-community"><span class="apl-red">BABYLON</span>' +
+            '<div class="apl-comm-t">' + esc(g('communityTitle') || '-') + '</div>' +
+            comments.map(function (c) {
+                return '<div class="apl-cmt">' +
+                    (c.head ? '<div class="apl-cmt-h">' + esc(c.head) + '</div>' : '') +
+                    '<div class="apl-cmt-b">' + esc(c.body) + '</div></div>';
+            }).join('') +
+            '</div>';
+
+        const panelInterview =
+            '<div class="pn pn-interview">' +
+            '<div class="apl-q"><b>Q.</b>' + esc(g('interviewQ') || '-') + '</div>' +
+            '<div class="apl-a"><b>A.</b>' + esc(g('interviewA') || '-') + '</div>' +
+            (g('interviewATr') ? '<div class="apl-atr">(' + esc(g('interviewATr')) + ')</div>' : '') +
+            '</div>';
+
+        return '<style>' + APOGEE_CSS + tabCss + '</style>' +
+            '<div class="apl" data-tab="schedule">' +
+            '<div class="apl-head">' +
+            '<div class="apl-top"><span class="apl-tag">APOGEE</span><span class="apl-hq">INTERNAL LEDGER</span></div>' +
+            '<div class="apl-card">' +
+            (g('relation') ? '<div class="apl-rel">' + esc(g('relation')) + '</div>' : '') +
+            '<div class="apl-names">' + esc(npc) + '<span>⨯</span>' + esc(pc) + '</div>' +
+            '<div class="apl-meta">' + esc(meta) + '</div>' +
+            '</div></div>' +
+            '<button type="button" class="apl-toggle" onclick="this.closest(\'.apl\').classList.toggle(\'open\')">' +
+            '<span class="lc">▼ OPEN FULL LEDGER</span><span class="lo">▲ CLOSE LEDGER</span></button>' +
+            '<div class="apl-full">' +
+
+            '<div class="apl-sec a"><div class="apl-tag">STATUS</div>' +
+            '<div class="apl-row">' +
+            '<div class="apl-stat"><div class="apl-stat-l">DAYS MET</div><div class="apl-stat-v">' + esc(g('daysMet') || '-') + '</div></div>' +
+            '<div class="apl-stat"><div class="apl-stat-l">TOGETHER</div><div class="apl-stat-v g">' + esc(g('daysTogether') || '-') + '</div></div>' +
+            '</div>' +
+            '<div class="apl-aff"><div class="apl-aff-top"><span class="apl-aff-l">SENTIMENT</span><span class="apl-aff-v">' + esc(g('affection') || '-') + '</span></div>' +
+            (affPct !== null ? '<div class="apl-bar"><i style="width:' + affPct + '%"></i></div>' : '') +
+            '</div></div>' +
+
+            '<div class="apl-sec b"><div class="apl-tag">PRESENT</div>' +
+            '<div class="apl-row" style="gap:9px">' +
+            '<div class="apl-who"><div class="apl-who-n">' + esc(npc) + '</div><div class="apl-kao">' + esc(g('npcKaomoji') || '-') + '</div>' +
+            '<div class="apl-k">OUTFIT</div><div class="apl-v">' + v(g('npcOutfit')) + '</div>' +
+            '<div class="apl-k">POSE</div><div class="apl-v">' + v(g('npcPose')) + '</div></div>' +
+            '<div class="apl-who pc"><div class="apl-who-n">' + esc(pc) + '</div><div class="apl-kao">' + esc(g('pcKaomoji') || '-') + '</div>' +
+            '<div class="apl-k">OUTFIT</div><div class="apl-v">' + v(g('pcOutfit')) + '</div>' +
+            '<div class="apl-k">POSE</div><div class="apl-v">' + v(g('pcPose')) + '</div></div>' +
+            '</div></div>' +
+
+            '<div class="apl-sec a"><div class="apl-tag">INNER VOICE</div>' +
+            '<div class="apl-mind">"' + esc(nl(g('npcMind')) || '...') + '"</div></div>' +
+
+            '<div class="apl-sec b" style="background:linear-gradient(180deg,#160f08 0%,#0e0b07 100%)">' +
+            '<div class="apl-tag" style="background:#a8862a;color:#fdf6e6">NSFW</div>' + nsfwInner + '</div>' +
+
+            '<div class="apl-sec a"><div class="apl-tabs">' + tabBtns + '</div>' +
+            '<div class="apl-panel">' + panelSchedule + panelPromise + panelTmi + panelCommunity + panelInterview + '</div></div>' +
+
+            '<div class="apl-foot"><span>FULCRUM · A.D. 2320</span><span>◆ APOGEE INTERNAL</span></div>' +
+            '</div></div>';
+    }
+    window.apogeeToHtml = apogeeToHtml;
+
+    // -------- 원문 텍스트 감지 / 파싱 --------
+    function looksLikeRawChat(t) {
+        return /^\s*\*\*[^*\n]+\*\*\s*[|｜]/m.test(t) ||
+            /<Apogee\b/.test(t) ||
+            /\{\{\s*img\s*::/.test(t);
+    }
+
+    function importFromRawChat(raw) {
+        let text = String(raw).replace(/\r\n?/g, '\n');
+
+        // 1) {{img::...}} 삭제
+        text = text.replace(/\{\{\s*img\s*::[\s\S]*?\}\}/gi, '');
+
+        // 2) <Apogee ... /> 추출 → 자리표시자
+        const apogees = [];
+        text = text.replace(/<Apogee\b((?:\s+[\w-]+\s*=\s*"[^"]*")*)\s*\/?>/g, function (m, attrs) {
+            apogees.push(parseAttrs(attrs));
+            return '\n@@APOGEE' + (apogees.length - 1) + '@@\n';
+        });
+
+        const lines = text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+
+        // 3) 화자 이름 사전 스캔 → 민트/핑크/제3자 역할 결정
+        const speakerRe = /^\*\*\s*(.+?)\s*\*\*\s*[|｜]\s*(.*)$/;
+        const names = [];
+        lines.forEach(function (l) {
+            const m = l.match(speakerRe);
+            if (m && !names.some(function (n) { return nameMatch(n, m[1]); })) names.push(m[1]);
+        });
+
+        let mint = getVal('mintName');
+        let pink = getVal('pinkName');
+        const inputsUsable = names.some(function (n) { return nameMatch(n, mint) || nameMatch(n, pink); });
+        if (!inputsUsable) { mint = ''; pink = ''; }
+        names.forEach(function (n) {
+            if (nameMatch(n, mint) || nameMatch(n, pink)) return;
+            if (!mint) mint = n;
+            else if (!pink) pink = n;
+        });
+        setValIfEmpty('mintName', mint);
+        setValIfEmpty('pinkName', pink);
+
+        const roleOf = function (name) {
+            if (nameMatch(name, mint)) return 'mint';
+            if (nameMatch(name, pink)) return 'pink';
+            return 'mob';
+        };
+
+        // 4) 줄 단위 분류
+        const out = [];
+        const isDialogue = function (b) { return b && ['mint', 'pink', 'mob'].indexOf(b.type) >= 0; };
+
+        lines.forEach(function (line) {
+            // Apogee 자리표시자
+            const ap = line.match(/^@@APOGEE(\d+)@@$/);
+            if (ap) {
+                out.push(mk(APOGEE_BLOCK_TYPE, apogeeToHtml(apogees[parseInt(ap[1], 10)])));
+                return;
+            }
+
+            // 번역 줄: <br>(번역)
+            const tr = line.match(/^<br\s*\/?>\s*([\s\S]*)$/i);
+            if (tr) {
+                const last = out[out.length - 1];
+                const trText = tr[1].trim();
+                if (isDialogue(last)) {
+                    last.translation = last.translation ? last.translation + ' ' + trText : trText;
+                } else if (trText) {
+                    out.push(mk('narration', trText));
+                }
+                return;
+            }
+
+            // 화자 줄: **이름** | "대사"
+            const sp = line.match(speakerRe);
+            if (sp) {
+                const name = sp[1];
+                const parts = sp[2].split(/<br\s*\/?>/i);
+                const dialogue = parts[0].trim();
+                const inlineTr = parts.slice(1).join(' ').trim();
+                out.push(mk(roleOf(name), dialogue, { customName: name, translation: inlineTr }));
+                return;
+            }
+
+            // 나레이션: *...*  (바깥 별표 제거)
+            const nm = line.match(/^\*([^*]+)\*$/);
+            out.push(mk('narration', nm ? nm[1].trim() : line));
+        });
+
+        if (!out.length) {
+            showToast('유효한 블록이 없습니다. 텍스트를 확인해주세요.');
+            return;
+        }
+
+        blocks = out;
+        if (typeof renderEditor === 'function') renderEditor();
+        saveState();
+        showToast('자동 분류 완료: ' + out.length + '개 블록');
+    }
+    window.importFromRawChat = importFromRawChat;
+
+    // -------- 기존 불러오기 버튼에 연결 --------
+    const originalImport = window.importFromHtml;
+    window.importFromHtml = function () {
+        const el = document.getElementById('finalHtmlCode');
+        const t = el ? el.value : '';
+        if (t.trim() && looksLikeRawChat(t)) {
+            importFromRawChat(t);
+            return;
+        }
+        if (typeof originalImport === 'function') return originalImport.apply(this, arguments);
+    };
+})();

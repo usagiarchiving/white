@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Index</title>
+    <style>
+        /* 기본 스타일 및 가독성 설정 (Apple iCloud 스타일) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #1d1d1f;
+            line-height: 1.6;
+            letter-spacing: -0.01em;
+            margin: 0;
+            padding: 50px 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 400;
+            font-size: 28px;
+            color: #1d1d1f;
+            margin-bottom: 50px;
+        }
+
+        /* 2단 그리드 레이아웃 설정 */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* 모바일 반응형 처리 (992px 이하일 때 1단 배치) */
+        @media (max-width: 992px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+        }
+
+        /* 카드형 링크 디자인 */
+        .index-card {
+            display: flex;
+            align-items: center;
+            padding: 20px 24px;
+            background-color: #fafafa;
+            border: 1px solid #e5e5ea;
+            border-radius: 16px;
+            text-decoration: none;
+            color: #1d1d1f;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        /* 호버 시 파스텔 톤 포인트 및 부드러운 애니메이션 */
+        .index-card:hover {
+            background-color: #ffffff;
+            border-color: #aec6cf; /* 파스텔 블루 포인트 */
+            box-shadow: 0 4px 14px rgba(174, 198, 207, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .icon {
+            margin-right: 16px;
+            font-size: 20px;
+            color: #86868b;
+        }
+        
+        /* 섹션 구분용 투명한 공간 */
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 13px;
+            font-weight: 600;
+            color: #86868b;
+            margin-top: 20px;
+            margin-bottom: -5px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Editor Index</h1>
+        
+        <div class="grid-layout">
+            
+            <!-- 첫 번째 그룹: 플랫폼 에디터 (기존 2단에서 1단으로 이동 및 토글 메뉴 추가) -->
+            <div class="section-title">Platform Editors</div>
+            <a href="txt.html" target="_blank" class="index-card">
+                <span class="icon">📄</span> txt.html
+            </a>
+                <div class="section-title">Platform Editors</div>
+            <a href="luvlogjavier" target="_blank" class="index-card">
+                <span class="icon">🎀</span> luvlogjavier.html
+            </a>
+            <a href="github" target="_blank" class="index-card">
+                <span class="icon">💻</span> github
+            </a>
+                <a href="luvlog1" target="_blank" class="index-card">
+                <span class="icon">🩷</span> luvlog1
+            </a>
+            <a href="page.html" target="_blank" class="index-card">
+                <span class="icon">📑</span> page.html
+            </a>
+            <a href="Tistory.html" target="_blank" class="index-card">
+                <span class="icon">📌</span> Tistory.html
+            </a>
+            <a href="time.html" target="_blank" class="index-card">
+                <span class="icon">⏱️</span> time.html
+            </a>
+            <a href="iMessage.html" target="_blank" class="index-card">
+                <span class="icon">📱</span> iMessage.html
+            </a>
+            <!-- 새롭게 추가된 toggle 메뉴 -->
+            <a href="toggle.html" target="_blank" class="index-card">
+                <span class="icon">🎚️</span> toggle.html
+            </a>
+
+            <!-- 두 번째 그룹: 리스트 에디터 (기존 1단에서 2단으로 이동 및 이름 변경) -->
+            <div class="section-title">List Editors</div>
+            <a href="memory-list-editor.html" target="_blank" class="index-card">
+                <span class="icon">📝</span> memory-list-editor.html
+            </a>
+            <a href="message-list-editor.html" target="_blank" class="index-card">
+                <span class="icon">💬</span> message-list-editor.html
+            </a>
+
+            <!-- 세 번째 그룹 -->
+            <div class="section-title">Utilities & Media</div>
+            <a href="img.html" target="_blank" class="index-card">
+                <span class="icon">🖼️</span> img.html
+            </a>
+            <a href="twtbackup" target="_blank" class="index-card">
+                <span class="icon">🖤</span> twtbackup.html
+            <a href="onemore.html" target="_blank" class="index-card">
+                <span class="icon">➕</span> onemore.html
+            </a>
+            <a href="remove.html" target="_blank" class="index-card">
+                <span class="icon">🗑️</span> remove.html
+            </a>
+
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,312 @@
+/* ==========================================================================
+   [규칙 2] 테마 설정 (iCloud 스타일의 심플 화이트 & 단정한 다크모드)
+   ========================================================================== */
+.theme-light {
+    --back-color: #fafafa;       /* 쨍하지 않은 편안한 화이트 아이클라우드 감성 */
+    --main-color: #2c2c2e;       /* 깊이감 있는 지식인의 먹색 텍스트 */
+    --title-color: #1c1c1e;      /* 또렷한 타이틀 색상 */
+    --sub-color: #8e8e93;        /* 단정한 파스텔 그레이 */
+    --point-color: #7a9c8d;      /* [변경] 눈이 편안한 단정한 잎사귀 그린 */
+    --divider-bg: rgba(0, 0, 0, 0.05);
+    --dropdown-bg: #ffffff;
+    --modal-card-bg: rgba(255, 255, 255, 0.8);
+    --input-bg: rgba(0, 0, 0, 0.03);
+}
+
+.theme-dark {
+    --back-color: #1c1c1e;       /* 깊은 밤 서재 같은 다크 브라운 그레이 */
+    --main-color: #e5e5ea;       /* 눈이 편안한 라이트 그레이 텍스트 */
+    --title-color: #f2f2f7;      /* 밝은 타이틀 */
+    --sub-color: #8e8e93;        /* 정갈한 서브 그레이 */
+    --point-color: #9cbdae;      /* [변경] 다크모드용 톤다운 민트 실버 */
+    --divider-bg: rgba(255, 255, 255, 0.08);
+    --dropdown-bg: #2c2c2e;
+    --modal-card-bg: rgba(44, 44, 46, 0.8);
+    --input-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* ==========================================================================
+   [규칙 1] 기본 가독성 및 자간/줄간격 최적화 (독서하는 지식인 컨셉)
+   ========================================================================== */
+* {
+    font-family: 'Noto Serif KR', serif;
+    box-sizing: border-box;
+    letter-spacing: -0.02em;    /* 한국어 가독성이 가장 정갈해지는 자간 설정 */
+}
+
+::selection {
+    color: var(--back-color);
+    background-color: var(--main-color);
+}
+
+body {
+    background-color: var(--back-color);
+    color: var(--main-color);
+    margin: 0;
+    padding: 0;
+    /* [규칙 4] 모든 배경 전환에 부드러운 애니메이션 부여 */
+    transition: background-color 0.4s ease, color 0.4s ease; 
+}
+
+body, button, input, textarea, p, div, a, span {
+    font-size: 14.5px;
+    line-height: 1.85;          /* 행간을 여유롭게 주어 장문 독서 시 가독성 극대화 */
+}
+
+a {
+    color: var(--sub-color);
+    text-decoration: none;
+    transition: color 0.25s ease;
+}
+
+a:hover {
+    color: var(--main-color);
+}
+
+/* ==========================================================================
+   레이아웃 및 반응형 구조
+   ========================================================================== */
+html, body, #wrap {
+    position: relative;
+    height: 100%;
+}
+
+#container {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+#header {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+
+.inner_header {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 18px;
+}
+
+
+/* 네비게이션 버튼 스타일 정돈 */
+.nav-icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--sub-color);
+    padding: 4px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-icon-btn:hover {
+    color: var(--main-color);
+    transform: translateY(-1px);
+}
+
+
+
+/* 드롭다운 메뉴 스타일 (피드백 반영: 초기 닫힘 및 폰트 축소) */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-bars {
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--sub-color);
+    padding: 4px;
+    transition: color 0.2s ease;
+}
+
+.dropdown-bars:hover {
+    color: var(--main-color);
+}
+
+.dropdown-inner {
+    display: none; /* 피드백: 무조건 완전히 닫힌 채 시작 */
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: var(--dropdown-bg);
+    min-width: 160px;
+    padding: 8px 0;
+    border: 1px solid var(--divider-bg);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    text-align: left;
+    z-index: 1000;
+}
+
+.dropdown-inner a {
+    display: block;
+    padding: 8px 20px;
+    font-size: 11.5px; /* 피드백: 작고 단정하게 축소 */
+    color: var(--sub-color);
+}
+
+.dropdown-inner a:hover {
+    background: var(--divider-bg);
+    color: var(--main-color);
+}
+
+/* 메인 컨테이너 영역 */
+.inner_index {
+    max-width: 700px;  
+    margin: 60px auto;
+    padding: 0 24px;
+}
+
+/* [규칙 4] 본문 내용이 바뀔 때 사용될 부드러운 페이드인 클래스 */
+.fade-in-element {
+    animation: fadeInEffect 0.5s ease forwards;
+}
+
+@keyframes fadeInEffect {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 본문 내 글 관리 버튼 스타일 (수정, 삭제) */
+.article-admin-menu {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 15px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.article-admin-menu:hover { opacity: 1; }
+.btn-admin {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--sub-color);
+    transition: color 0.2s;
+}
+.btn-admin.edit:hover { color: var(--point-color); }
+.btn-admin.delete:hover { color: #ff3b30; } 
+
+/* ==========================================================================
+   [요청사항] 고급스러운 아이클라우드 스타일 로그인 팝업 (모달)
+   ========================================================================== */
+.login-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.15);
+    /* [요청사항] 배경 완벽 블러처리 */
+    backdrop-filter: blur(15px) saturate(140%);
+    -webkit-backdrop-filter: blur(15px) saturate(140%);
+    z-index: 10000; /* 🚨 오타 수정됨 (Chil-index -> z-index) */
+    align-items: center;
+    justify-content: center;
+}
+
+/* ==========================================================================
+   게임 화면(김민정 · 마이홈): 위 헤더를 얇게, 본문은 헤더 바로 아래부터 화면 가득
+   (script.js가 body에 game-page를 붙이고, 헤더 높이를 --hdr-h로 알려 줌)
+   ========================================================================== */
+body.game-page .inner_header { padding: 6px 16px; gap: 14px; min-height: 38px; }
+body.game-page .nav-icon-btn, body.game-page .dropdown-bars { line-height: 1; font-size: 15px; }
+body.game-page .inner_index { margin: 0 auto; }
+body.game-page .fade-in-element { animation-name: fadeOnlyEffect; animation-duration: .25s; }
+@keyframes fadeOnlyEffect { from { opacity: 0; } to { opacity: 1; } }
+body.game-page .mh-wrap { padding-top: 0; }
+body.game-page .mh-stage { margin-top: 0; height: calc(100vh - var(--hdr-h, 40px)); height: calc(100svh - var(--hdr-h, 40px)); }
+
+/* 스크롤바 얇게 (PC) */
+* { scrollbar-width: thin; scrollbar-color: rgba(214, 186, 196, .7) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(214, 186, 196, .7); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(214, 160, 180, .85); }
+
+/* 사진 크게 보기 (lightbox.js) */
+.lb-root { position: fixed; inset: 0; z-index: 300000; display: none; align-items: center; justify-content: center; background: rgba(28, 22, 25, .9); -webkit-touch-callout: default; }
+.lb-root.on { display: flex; }
+.lb-stage { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 48px 12px 64px; box-sizing: border-box; }
+.lb-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 3px; box-shadow: 0 8px 30px rgba(0, 0, 0, .35); -webkit-user-select: auto; user-select: auto; touch-action: pinch-zoom; }
+.lb-x { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: 12px; width: 36px; height: 36px; border: 0; background: none; color: #fff; font-size: 26px; line-height: 1; cursor: pointer; }
+.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 64px; border: 0; background: rgba(255, 255, 255, .08); color: #fff; font-size: 30px; cursor: pointer; display: none; border-radius: 4px; }
+.lb-root.multi .lb-nav { display: block; }
+.lb-prev { left: 8px; } .lb-next { right: 8px; }
+.lb-foot { position: absolute; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: center; gap: 14px; color: #fff; font-size: 12px; }
+.lb-del { display: none; border: 1px solid rgba(255, 255, 255, .5); background: rgba(255, 255, 255, .08); color: #ffd0dc; padding: 6px 16px; border-radius: 3px; cursor: pointer; font-size: 12px; }
+.lb-root.can-del .lb-del { display: inline-block; }
+@media (hover: none) { .lb-root.multi .lb-nav { background: none; } }
+
+/* 휴대폰: 두 번 톡 확대 막기 */
+html, body { touch-action: manipulation; }
+
+/* ==========================================================================
+   홈페이지 설정 (메인 화면 헤더 톱니바퀴) — site-settings.js
+   ========================================================================== */
+#btn-settings svg { display: block; }
+.ss-bg {
+    position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: rgba(0, 0, 0, .15); backdrop-filter: blur(15px) saturate(140%); -webkit-backdrop-filter: blur(15px) saturate(140%);
+}
+.ss-card {
+    position: relative; width: min(520px, 100%); max-height: min(720px, calc(100svh - 32px)); display: flex; flex-direction: column;
+    background: var(--dropdown-bg); color: var(--main-color); border: 1px solid var(--divider-bg); border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .12); overflow: hidden; animation: ssPop .18s ease-out;
+}
+@keyframes ssPop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.ss-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 6px; }
+.ss-head b { font-size: 15px; color: var(--title-color); }
+.ss-x { border: 0; background: none; color: var(--sub-color); font-size: 13px; cursor: pointer; padding: 4px; }
+.ss-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 14px; -webkit-overflow-scrolling: touch; }
+.ss-sec { font-size: 11px; font-weight: 600; color: var(--sub-color); letter-spacing: .04em; margin: 14px 0 6px; }
+.ss-hint { font-size: 11.5px; line-height: 1.65; color: var(--sub-color); margin: 0 0 8px; }
+.ss-hint b { color: var(--main-color); font-weight: 600; }
+.ss-list { display: flex; flex-direction: column; }
+.ss-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--divider-bg); transition: opacity .2s; }
+.ss-row.off .ss-icon, .ss-row.off .ss-fields { opacity: .45; }
+.ss-icon { flex: none; width: 44px; height: 44px; padding: 0; border: 1px solid var(--divider-bg); border-radius: 10px; overflow: hidden; background: var(--input-bg); cursor: pointer; }
+.ss-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ss-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ss-fields input {
+    width: 100%; box-sizing: border-box; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--main-color);
+    padding: 3px 6px; font-size: 13px; font-family: inherit; outline: none;
+}
+.ss-fields input[data-f=app] { font-size: 11.5px; color: var(--sub-color); }
+.ss-fields input:focus { border-color: var(--divider-bg); background: var(--input-bg); }
+.ss-fields input::placeholder { color: var(--sub-color); opacity: .6; }
+.ss-move { flex: none; display: flex; flex-direction: column; gap: 2px; }
+.ss-move button { border: 0; background: none; color: var(--sub-color); font-size: 9px; line-height: 1; padding: 3px 5px; cursor: pointer; }
+.ss-move button:disabled { opacity: .25; cursor: default; }
+.ss-switch { flex: none; position: relative; width: 36px; height: 21px; cursor: pointer; }
+.ss-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ss-switch i { position: absolute; inset: 0; border-radius: 999px; background: var(--divider-bg); transition: background .2s; }
+.ss-switch i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .18); transition: transform .2s; }
+.ss-switch input:checked + i { background: var(--point-color); }
+.ss-switch input:checked + i::after { transform: translateX(15px); }
+.ss-switch.lock { opacity: .45; cursor: default; }
+.ss-select { width: 100%; box-sizing: border-box; border: 1px solid var(--divider-bg); border-radius: 8px; background: var(--input-bg); color: var(--main-color); padding: 8px 10px; font-size: 13px; font-family: inherit; }
+.ss-foot { display: flex; align-items: center; gap: 8px; padding: 12px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--divider-bg); }
+.ss-msg { flex: 1; font-size: 11.5px; color: var(--sub-color); }
+.ss-btn { border: 0; border-radius: 999px; padding: 8px 18px; font-size: 13px; font-family: inherit; cursor: pointer; background: var(--point-color); color: #fff; }
+.ss-btn.ghost { background: var(--input-bg); color: var(--main-color); }
+.ss-btn:disabled { opacity: .55; cursor: default; }
+.ss-pop { position: absolute; z-index: 2; min-width: 140px; padding: 5px; display: flex; flex-direction: column; background: var(--dropdown-bg); border: 1px solid var(--divider-bg); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .12); }
+.ss-pop button { border: 0; background: none; text-align: left; padding: 8px 10px; border-radius: 6px; font-size: 12.5px; font-family: inherit; color: var(--main-color); cursor: pointer; }
+.ss-pop button:hover { background: var(--input-bg); }
+@media (max-width: 600px) {
+    .ss-bg { align-items: flex-end; padding: 0; }
+    .ss-card { width: 100%; max-height: calc(100svh - 40px); border-radius: 16px 16px 0 0; }
+}

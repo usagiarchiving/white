@@ -1,0 +1,53 @@
+# 저장소 암호화 — 사이트의 잠금 설정(헤더 방패)에서 자동으로 실행됨
+#   아직 안 잠긴 데이터·사진을 모두 VAULT_KEY로 암호화해서 커밋 하나로 올림
+# 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
+#   이름: VAULT_KEY   값: 사이트에서 잠금 설정할 때 보여 준 복구 키
+# 내용은 로그에 남기지 않음 (공개 저장소의 Actions 기록은 누구나 볼 수 있음)
+name: vault
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'encrypt = 아직 안 잠긴 파일을 모두 잠금'
+        required: true
+        default: encrypt
+        type: choice
+        options: [encrypt]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vault
+  cancel-in-progress: false
+
+jobs:
+  encrypt:
+    runs-on: ubuntu-latest
+    env:
+      VAULT_KEY: ${{ secrets.VAULT_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet cryptography
+      - name: 키 확인
+        run: python .github/scripts/vault.py check
+      - name: 잠그고 올리기
+        run: |
+          git config user.name 'vault-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for i in 1 2 3 4 5; do
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard FETCH_HEAD
+            python .github/scripts/vault.py encrypt-all
+            python .github/scripts/vault.py verify-all
+            git add -A
+            git diff --cached --quiet && { echo '이미 모두 잠겨 있어요'; exit 0; }
+            git commit -q -m '보안: 암호화'
+            git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 3))
+          done
+          exit 1
