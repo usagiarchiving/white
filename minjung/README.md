@@ -211,6 +211,7 @@ To Do 탭은 이 파일이 아니라 기존 투두(`data/todos.json`)를 그대�
 ## 하시온(내 여보♡) 메시지 · 편지 (첫 화면 퀘스트 아래 버튼)
 
 - `minjung/sion.json` — 하시온 설정: 프로필 사진·이름, 프롬프트(프로필·성격·관계·말투·규칙·상황별 쓰는 법), 날씨 위치, Gemini 모델. Menu → BANG 에서 고침
+  - 날씨 위치 `place: { name, lat, lon, at }` — `at`은 그 위치로 정한 때(ms). 알림 카드 날씨를 **꾹** → '현재 위치로 다시 설정', 마이홈 날씨 → '현재 위치로'. 둘 다 이 기기 `mh-place`와 함께 바뀌고, 더 최근에 정한 위치를 마이홈·김민정이 같이 따라감
 - `minjung/letters.json` — 주고받은 메시지(`chat`)와 밤 편지(`letters`), 7통마다 정리되는 기억(`memory`).
 - 만드는 곳: `.github/workflows/letter.yml` + `.github/scripts/letter.py` (저장소 Secret `GEMINI_API_KEY` 필요, 서브 키 `GEMINI_API_KEY_2`~`_4`는 한도가 차면 차례로 씀)
   - 아침 8:02 · 점심 12:32 · 저녁 7:02(한국 시간)에 시온이 먼저 메시지를 보냄 (GitHub 예약 실행이라 조금 늦을 수 있음)
