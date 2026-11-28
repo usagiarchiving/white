@@ -2300,7 +2300,7 @@ export function init() {
     function sionBubbles(st) {
         const all = sion.data.chat || [], q = (st.q || '').trim().toLowerCase();
         const filtered = st.favs || q;
-        const c = all.filter(r => (!st.favs || r.fav) && (!q || r.text.toLowerCase().includes(q)));
+        const c = all.filter(r => (!st.favs || r.fav) && (!q || (!r.ooc && r.text.toLowerCase().includes(q))));
         const t = r => new Date(r.at).getTime();
         let html = '';
         c.forEach((r, i) => {
@@ -2311,6 +2311,10 @@ export function init() {
             if (r.kind === 'call') {   // 통화 기록 말풍선 (부재중이면 눌러서 다시 걸기)
                 const missed = r.status === 'missed';
                 html += `<div class="sn-row ${r.from === 'me' ? 'me' : 'you'} tail"><button class="sn-b sn-callb${missed ? ' missed' : ''}" data-act="${missed ? 'sn-callback' : 'call-log'}" data-v="${esc(r.call || '')}">${KK.phone}<span><b>${missed ? '부재중 전화' : r.from === 'me' ? '보이스톡' : '보이스톡'}</b><small>${missed ? '눌러서 다시 걸기' : r.status === 'noanswer' ? '응답 없음' : '통화 ' + esc(r.text || '')}</small></span></button></div>`;
+                return;
+            }
+            if (r.ooc) {   // 지시사항: 내용은 숨기고 표시만 (두 번 누르면 수정에서 보임)
+                html += `<div class="sn-row sn-oocrow"><div class="sn-b sn-ooc" data-id="${esc(r.id)}">OOC</div></div>`;
                 return;
             }
             if (r.img) {   // 내가 보낸 사진 (누르면 크게)
@@ -3246,10 +3250,28 @@ export function init() {
         mjAlert('보내려면 오른쪽 위 자물쇠에 GitHub 토큰을 넣어 주세요.');
         return true;
     }
+    // *OOC: 지시사항* → 대화창엔 작은 'OOC' 표시만 (두 번 눌러 수정에서 내용 보기), 시온은 다음 답부터 계속 따름
+    const OOC_RE = /\*\s*OOC\s*[:：]\s*([\s\S]*?)\s*\*/gi;
     function sionSendChat(st) {
-        const text = (st.draft || '').trim().slice(0, SION_MAX);
-        if (!text || !sion.data || sionNeedToken()) return;
-        const m = { id: uid('m'), from: 'me', text, at: stamp() };
+        const raw = (st.draft || '').trim().slice(0, SION_MAX);
+        if (!raw || !sion.data || sionNeedToken()) return;
+        const oocs = [...raw.matchAll(OOC_RE)].map(x => x[1].trim()).filter(Boolean);
+        const text = raw.replace(OOC_RE, ' ').replace(/[ \t]{2,}/g, ' ').trim();
+        const at = stamp();
+        const notes = oocs.map(t => ({ id: uid('m'), from: 'me', ooc: true, text: t, at }));
+        if (!text) {   // 지시사항만: 답장 요청 없이 저장만
+            if (!notes.length) return;
+            sion.data.chat.push(...notes);
+            st.draft = ''; st.stick = true; renderWin('sion');
+            sionCommit('시온 OOC', cur => notes.forEach(n => { if (!cur.chat.some(x => x.id === n.id)) cur.chat.push(n); }))
+                .then(() => toast('OOC 저장 · 다음 답부터 반영돼요'), e => { sion.data.chat = sion.data.chat.filter(x => !notes.includes(x)); mjAlert('저장하지 못했어요.\n' + (e.message || e)); });
+            return;
+        }
+        const m = { id: uid('m'), from: 'me', text, at };
+        if (notes.length) {   // 지시사항 먼저 저장 (메시지 저장은 그 뒤에 차례로)
+            sion.data.chat.push(...notes);
+            sionCommit('시온 OOC', cur => notes.forEach(n => { if (!cur.chat.some(x => x.id === n.id)) cur.chat.push(n); })).catch(e => mjAlert('OOC를 저장하지 못했어요.\n' + (e.message || e)));
+        }
         sion.data.chat.push(m);
         st.draft = ''; st.stick = true; st.favs = false; st.searching = false; st.q = '';
         // 여러 개를 이어 보내면 마지막 걸 보내고 잠깐 기다렸다가 한 번에 답장 받기

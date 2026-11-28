@@ -57,11 +57,17 @@ def write(p, data):
     vault.write_json(path(p), data)
 
 
+OOC = []   # 민정이 대화창에 남긴 *OOC: 지시사항* — 남긴 뒤의 모든 답에 계속 따름 (시스템 프롬프트 끝에 붙음)
+
+
 def load_store():
     s = load(STORE, {}) or {}
     s.setdefault('letters', {})
     s.setdefault('chat', [])
     s.setdefault('memory', {'summary': '', 'upto': ''})
+    OOC[:] = [r['text'].strip() for r in s['chat'] if r.get('ooc') and str(r.get('text', '')).strip()]
+    s['chat_all'] = s['chat']
+    s['chat'] = [r for r in s['chat'] if not r.get('ooc')]   # 생성할 땐 대화로 안 봄
     return s
 
 
@@ -329,6 +335,9 @@ def system_prompt(cfg):
         if v:
             parts.append((title + '\n' if title else '') + v)
     parts.append('일정 규칙\n' + SCHED_RULE)
+    if OOC:
+        parts.append('민정의 지시 (OOC · 대화 밖에서 남긴 지시. 여기에 대답하거나 언급하지 말고, 모든 출력에 그대로 따를 것. 서로 겹치면 나중 것 우선)\n'
+                     + '\n'.join(f'- {t}' for t in OOC))
     return '\n\n'.join(parts)
 
 
@@ -1102,6 +1111,8 @@ def apply_receipt(patch):
 
 
 def apply(store, patch):
+    if 'chat_all' in store:   # 저장할 땐 OOC 까지 전부
+        store['chat'] = store.pop('chat_all')
     calls = store.setdefault('calls', [])
     if patch.get('call_new') and not any(c.get('id') == patch['call_new']['id'] for c in calls):
         calls.append(patch['call_new'])
@@ -1141,7 +1152,7 @@ def apply(store, patch):
         if rp['item']['id'] not in {x.get('id') for x in reps}:
             reps.append(rp['item'])
     cut = (now() - timedelta(days=KEEP_CHAT_DAYS)).strftime('%Y-%m-%d')
-    store['chat'] = [r for r in store['chat'] if r['at'][:10] >= cut]
+    store['chat'] = [r for r in store['chat'] if r['at'][:10] >= cut or r.get('ooc')]   # OOC 는 오래돼도 남김
     store['chat'].sort(key=lambda r: r['at'])
     store['updated_at'] = stamp()
     return store
