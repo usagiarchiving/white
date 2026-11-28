@@ -797,7 +797,7 @@ export function init() {
         pickEl.addEventListener('click', e => {
             const btn = e.target.closest('[data-i]');
             closePick();
-            if (btn) items[Number(btn.dataset.i)].run();
+            const it = btn && items[Number(btn.dataset.i)]; if (it && it.run) it.run();
         });
     }
 
@@ -2026,6 +2026,59 @@ export function init() {
         if (wins.bang && !wins.bang.el.contains(document.activeElement) && wins.bang.st.mdraft == null && !(wins.bang.st.pd && Object.keys(wins.bang.st.pd).length)) renderWin('bang');
         sionOpenFromNotice();
     }
+    /* 날씨 위치 — 마이홈과 같은 기억 칸(mh-place: { p, t })과 시온 설정(sion.json place: { name, lat, lon, at })
+       t·at = 그 위치로 정한 때. 마이홈·김민정 어디서 바꾸든 더 최근 것을 둘 다 따라감 */
+    const WMO_DESC = [[[0], '맑음'], [[1, 2], '구름 조금'], [[3], '흐림'], [[45, 48], '안개'], [[51, 53, 55, 56, 57], '이슬비'],
+        [[61, 63, 65, 66, 67], '비'], [[71, 73, 75, 77, 85, 86], '눈'], [[80, 81, 82], '소나기'], [[95, 96, 99], '뇌우']];
+    const wdesc = c => (WMO_DESC.find(([cs]) => cs.includes(c)) || [0, ''])[1];
+    const localPlace = () => { try { return JSON.parse(localStorage.getItem('mh-place') || 'null') || null; } catch (e) { return null; } };
+    const setLocalPlace = (p, t) => { try { localStorage.setItem('mh-place', JSON.stringify({ p, t })); localStorage.setItem('mh-geo-asked', '1'); } catch (e) {} };
+    async function placeName(lat, lon) {
+        try {
+            const r = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=ko');
+            if (r.ok) { const j = await r.json(); const strip = t => String(t || '').replace(/(특별자치시|특별자치도|특별시|광역시)$/, '').trim(); const city = strip(j.city || j.principalSubdivision), loc = String(j.locality || '').trim(); return [city, loc && loc !== j.city ? loc : ''].filter(Boolean).join(' ') || '현재 위치'; }
+        } catch (e) {}
+        return '현재 위치';
+    }
+    async function fetchWeather(pl) {   // 서버 아침 알림(letter.py)과 같은 모양
+        try {
+            const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + pl.lat + '&longitude=' + pl.lon +
+                '&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=2');
+            if (!r.ok) return null;
+            const w = await r.json(), d = w.daily;
+            const day = i => ({ code: d.weather_code[i], desc: wdesc(d.weather_code[i]), max: Math.round(d.temperature_2m_max[i]), min: Math.round(d.temperature_2m_min[i]), rain: d.precipitation_probability_max[i] });
+            return Object.assign(day(0), { place: pl.name, now: Math.round(w.current.temperature_2m), tomorrow: day(1) });
+        } catch (e) { return null; }
+    }
+    function placeMenu(el, after) {
+        const cur = (sion.cfg && sion.cfg.place) || {};
+        showPick(el, [
+            { label: '현재 위치로 다시 설정', run: () => resetPlace(after) },
+            { small: true, label: '지금: ' + esc(cur.name || ((localPlace() || {}).p || {}).name || '부산 동구') }
+        ], 'Weather');
+    }
+    function resetPlace(after) {
+        if (sionNeedToken()) return;
+        if (!navigator.geolocation) { mjAlert('이 기기에서는 위치를 쓸 수 없어요.'); return; }
+        toast('위치 찾는 중…');
+        navigator.geolocation.getCurrentPosition(async pos => {
+            const lat = +pos.coords.latitude.toFixed(3), lon = +pos.coords.longitude.toFixed(3), at = Date.now();
+            const name = await placeName(lat, lon);
+            setLocalPlace({ name, lat, lon }, at);
+            const r1 = v => Math.round(v * 10) / 10, next = { name, lat: r1(lat), lon: r1(lon), at };
+            if (sion.cfg) sion.cfg.place = next;
+            const k = todayKey(), w = await fetchWeather(next);
+            try {
+                await repo.commit('김민정: 날씨 위치 다시 설정 ' + name, {}, { [SION_CFG]: { fallback: {}, mutate: c => { c.place = next; return c; } } });
+                if (w && briefs()[k]) {
+                    const apply = d => { if (d.briefs && d.briefs[k]) d.briefs[k].weather = w; };
+                    apply(sion.data); if (after) after(); sionRefresh();
+                    sionCommit('오늘 날씨 (' + name + ')', apply).catch(e => console.warn('brief weather', e));
+                }
+                toast(name + ' 날씨로 바꿨어요');
+            } catch (e) { mjAlert('저장하지 못했어요.\n' + (e.message || e)); }
+        }, () => mjAlert('위치를 받지 못했어요.\n이 기기 설정에서 위치 권한을 허용해 주세요.'), { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 });
+    }
     // 새로 온 메시지·편지 → 화면 위 알림 띠 (지금 보고 있는 탭이면 생략)
     // 날씨 위치: 마이홈에서 허용한 이 기기 위치(동네 정도로 반올림)를 시온 설정에 저장 → 아침 알림·날씨 알림이 그 위치로
     function syncPlace(fresh) {
@@ -2037,8 +2090,10 @@ export function init() {
                 if (st.state !== 'granted') return;
                 navigator.geolocation.getCurrentPosition(async pos => {
                     const lat = +pos.coords.latitude.toFixed(3), lon = +pos.coords.longitude.toFixed(3);
-                    let old = null; try { old = (JSON.parse(localStorage.getItem('mh-place') || 'null') || {}).p; } catch (e) {}
-                    let name = old && Math.abs(old.lat - lat) < 0.01 && Math.abs(old.lon - lon) < 0.01 ? old.name : '현재 위치';
+                    const oldC = localPlace() || {}, old = oldC.p;
+                    const same = old && Math.abs(old.lat - lat) < 0.01 && Math.abs(old.lon - lon) < 0.01;
+                    if (same) { syncPlace(true); return; }                       // 그대로면 '정한 때'를 바꾸지 않음
+                    let name = '현재 위치';
                     if (name === '현재 위치') try {
                         const r = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=ko');
                         if (r.ok) { const j = await r.json(); const strip = t => String(t || '').replace(/(특별자치시|특별자치도|특별시|광역시)$/, '').trim(); const city = strip(j.city || j.principalSubdivision), loc = String(j.locality || '').trim(); name = [city, loc && loc !== j.city ? loc : ''].filter(Boolean).join(' ') || name; }
@@ -2048,10 +2103,13 @@ export function init() {
                 }, () => {}, { enableHighAccuracy: false, timeout: 10000, maximumAge: 30 * 60000 });
             }).catch(() => {});
         }
-        let p = null; try { p = (JSON.parse(localStorage.getItem('mh-place') || 'null') || {}).p; } catch (e) {}
+        const lc = localPlace() || {}, p = lc.p, lt = lc.t || 0;
+        const cur = sion.cfg.place || {}, rt = cur.at || 0;
+        // 마이홈이나 다른 기기에서 더 최근에 정한 위치면 이 기기도 그걸 따름
+        if (cur.lat && cur.lon && (!p || rt > lt)) { setLocalPlace({ name: cur.name || '', lat: cur.lat, lon: cur.lon }, rt); return; }
         if (!p || !p.lat || !p.lon) return;
         const r = v => Math.round(v * 10) / 10;
-        const next = { name: p.name || '', lat: r(p.lat), lon: r(p.lon) }, cur = sion.cfg.place || {};
+        const next = { name: p.name || '', lat: r(p.lat), lon: r(p.lon), at: lt };
         if (cur.lat === next.lat && cur.lon === next.lon && cur.name === next.name) return;
         syncPlace.busy = true;
         repo.commit('김민정: 날씨 위치', {}, { [SION_CFG]: { fallback: {}, mutate: c => { c.place = next; return c; } } })
@@ -2147,6 +2205,19 @@ export function init() {
         if (w.st.tab === 'Message' && sion.data && document.visibilityState === 'visible') sionMarkSeen();
         const t = w.el.querySelector('[data-sn=msg]');
         if (t && t.value) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 110) + 'px'; }
+    }
+    // 꾹 누르기 (0.55초) — 날씨 위치 다시 정하기 같은 메뉴
+    function onLongPress(el, sel, fn) {
+        let t = null, sx = 0, sy = 0;
+        el.addEventListener('pointerdown', e => {
+            const b = e.target.closest(sel); if (!b) return;
+            sx = e.clientX; sy = e.clientY;
+            clearTimeout(t); t = setTimeout(() => { t = null; if (navigator.vibrate) try { navigator.vibrate(12); } catch (err) {} fn(b); }, 550);
+        });
+        const stop = () => { clearTimeout(t); t = null; };
+        el.addEventListener('pointermove', e => { if (t && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) stop(); });
+        el.addEventListener('pointerup', stop); el.addEventListener('pointercancel', stop);
+        el.addEventListener('contextmenu', e => { if (e.target.closest(sel)) e.preventDefault(); });
     }
     // 두 번 누르기 (휴대폰 · PC 둘 다). 꾹 누르기는 글자 선택(복사)으로 남겨 둠
     function onDoubleTap(el, sel, fn) {
@@ -2409,6 +2480,7 @@ export function init() {
         });
         // 카드 속 시온 말풍선: 두 번 누르기 → 수정 · 하트 · 삭제 (꾹 누르면 글자 선택해서 복사)
         onDoubleTap(p, '.nt-sion .b[data-i]', b => briefMenu(p, b));
+        onLongPress(p, '.nt-wx', b => placeMenu(b, () => notiRender(p)));
         notiRender(p);
     }
     function notiRender(p) {

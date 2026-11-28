@@ -703,28 +703,33 @@ export function init() {
         return name || '현재 위치';
     }
     // 위치는 처음 한 번만 물음. 허용하면 기억해서 계속 사용, 거절하면 다시 묻지 않음(집 사용)
-    function getPosition(onDone) {
+    // 기억 칸 mh-place = { p: 위치, t: 그 위치로 정한 때 } — 김민정(날씨 알림)과 같이 씀. 더 최근에 정한 쪽을 둘 다 따라감
+    let placeT = 0;
+    function getPosition(onDone, manual) {
         navigator.geolocation.getCurrentPosition(async pos => {
             const lat = +pos.coords.latitude.toFixed(3), lon = +pos.coords.longitude.toFixed(3);
+            const moved = Math.abs(lat - PLACE.lat) > 0.01 || Math.abs(lon - PLACE.lon) > 0.01;
+            if (!moved && !manual) { syncSionPlace(PLACE); if (onDone) onDone(true); return; }   // 그대로면 '정한 때'를 바꾸지 않음
             let name = '현재 위치';
             try {
                 const r = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=ko');
                 if (r.ok) name = shortPlace(await r.json());
             } catch (e) {}
-            const moved = Math.abs(lat - PLACE.lat) > 0.01 || Math.abs(lon - PLACE.lon) > 0.01 || name !== PLACE.name;
-            PLACE = { name, lat, lon };
-            try { localStorage.setItem('mh-place', JSON.stringify({ p: PLACE, t: Date.now() })); } catch (e) {}
-            if (moved) loadWeather();
+            const changed = moved || name !== PLACE.name;
+            PLACE = { name, lat, lon }; placeT = Date.now();
+            try { localStorage.setItem('mh-place', JSON.stringify({ p: PLACE, t: placeT })); } catch (e) {}
+            if (changed) loadWeather();
             syncSionPlace(PLACE);
             if (onDone) onDone(true);
-        }, () => { if (onDone) onDone(false); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 30 * 60000 });
+        }, () => { if (onDone) onDone(false); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: manual ? 0 : 30 * 60000 });
     }
     // 하시온 날씨(아침 알림·비 알림)도 이 위치로: minjung/sion.json 의 place (동네 정도로 반올림)
     async function syncSionPlace(p) {
         if (!window.ghdb.hasToken() || !p || !p.lat) return;
-        const r = v => Math.round(v * 10) / 10, next = { name: p.name || '', lat: r(p.lat), lon: r(p.lon) };
+        const r = v => Math.round(v * 10) / 10, next = { name: p.name || '', lat: r(p.lat), lon: r(p.lon), at: placeT };
         try {
             const cur = ((await repo.readJSON('minjung/sion.json', {})) || {}).place || {};
+            if ((cur.at || 0) > placeT) return;                                   // 저쪽이 더 최근 → 올리지 않음 (locate에서 따라감)
             if (cur.lat === next.lat && cur.lon === next.lon && cur.name === next.name) return;
             await repo.commit('마이홈: 시온 날씨 위치', {}, { 'minjung/sion.json': { fallback: {}, mutate: c => { c.place = next; return c; } } });
         } catch (e) { console.warn('sion place', e); }
@@ -733,8 +738,17 @@ export function init() {
         let asked = false;
         try {
             const c = JSON.parse(localStorage.getItem('mh-place') || 'null');
-            if (c && c.p) PLACE = c.p;                                   // 기억해 둔 위치
+            if (c && c.p) { PLACE = c.p; placeT = c.t || 0; }            // 기억해 둔 위치
             asked = localStorage.getItem('mh-geo-asked') === '1';
+        } catch (e) {}
+        // 김민정(날씨 알림)이나 다른 기기에서 더 최근에 정한 위치가 있으면 그걸로
+        try {
+            const sp = ((await repo.readJSON('minjung/sion.json', {})) || {}).place;
+            if (sp && sp.lat && sp.lon && (sp.at || 0) > placeT) {
+                PLACE = { name: sp.name || '현재 위치', lat: sp.lat, lon: sp.lon }; placeT = sp.at;
+                try { localStorage.setItem('mh-place', JSON.stringify({ p: PLACE, t: placeT })); } catch (e) {}
+                loadWeather();
+            }
         } catch (e) {}
         if (!navigator.geolocation) return;
         let state = 'prompt';
@@ -1297,7 +1311,7 @@ export function init() {
         if (card && card.id === 'shop') { shopClick(e); return; }
         if (!card && e.target.closest('.mh-here')) {
             const btn = e.target.closest('.mh-here'); btn.textContent = '…';
-            getPosition(ok => { if (ok) setTimeout(() => { if (!card && bg.style.display === 'flex') openWeek(); }, 1200); else btn.textContent = '위치 권한이 꺼져 있어요'; });
+            getPosition(ok => { if (ok) setTimeout(() => { if (!card && bg.style.display === 'flex') openWeek(); }, 1200); else btn.textContent = '위치 권한이 꺼져 있어요'; }, true);   // 직접 누름 = 지금 위치로 다시 정함
             return;
         }
         if (!card) { if (e.target.closest('.mh-close')) closeCard(); return; }
