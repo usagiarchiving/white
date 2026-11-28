@@ -2243,7 +2243,7 @@ export function init() {
                 return;
             }
             if (r.img) {   // 내가 보낸 사진 (누르면 크게)
-                html += `<div class="sn-row ${r.from === 'me' ? 'me' : 'you'} tail${r.fav ? ' fav' : ''}"><div class="sn-img" data-lb-group>${imgTag(r.img, 'sn-imgi').replace(' loading="lazy"', '')}</div></div>`;
+                html += `<div class="sn-row ${r.from === 'me' ? 'me' : 'you'} tail${r.fav ? ' fav' : ''}"><div class="sn-img${r.land ? ' land' : ''}" data-lb-group>${imgTag(r.img, 'sn-imgi').replace(' loading="lazy"', r.land == null ? ' onload="this.parentNode.classList.toggle(\'land\',this.naturalWidth>this.naturalHeight)"' : '')}</div></div>`;
                 return;
             }
             const ph = PHOTO_RE.exec(r.text);
@@ -3199,7 +3199,9 @@ export function init() {
             let up;
             try { toast('사진 올리는 중…'); up = await uploadImage(f, 'chat', 1280, 'image/jpeg'); }
             catch (e) { return mjAlert('사진을 올리지 못했어요.\n' + (e.message || e)); }
-            const m = { id: uid('m'), from: 'me', text: '', img: up.path, at: stamp() };
+            // 가로 사진이면 4:3, 세로면 3:4 말풍선
+            const land = await new Promise(res => { const im = new Image(); im.onload = () => res(im.naturalWidth > im.naturalHeight); im.onerror = () => res(false); im.src = localImg[up.path] || ''; });
+            const m = { id: uid('m'), from: 'me', text: '', img: up.path, land, at: stamp() };
             sion.data.chat.push(m);
             st.stick = true; st.favs = false; st.searching = false; st.q = '';
             clearTimeout(sion.timer);

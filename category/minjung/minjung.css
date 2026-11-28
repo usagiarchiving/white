@@ -1076,5 +1076,6 @@ html.sn-lock, html.sn-lock body { height: 100%; overflow: hidden; overscroll-beh
 
 /* 내가 보낸 사진 */
 /* 크기를 미리 정해 둠: 사진이 늦게 불러와져도 대화창이 밀리지 않게 */
-.sn-img { width: 190px; max-width: 62%; height: 240px; border-radius: 14px; overflow: hidden; line-height: 0; background: rgba(255, 255, 255, .08); }
+.sn-img { width: 180px; max-width: 62%; aspect-ratio: 3 / 4; border-radius: 14px; overflow: hidden; line-height: 0; background: rgba(255, 255, 255, .08); }
+.sn-img.land { width: 240px; aspect-ratio: 4 / 3; }
 .sn-imgi { display: block; width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
