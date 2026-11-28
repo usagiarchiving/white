@@ -57,7 +57,8 @@ def write(p, data):
     vault.write_json(path(p), data)
 
 
-OOC = []   # 민정이 대화창에 남긴 *OOC: 지시사항* — 남긴 뒤의 모든 답에 계속 따름 (시스템 프롬프트 끝에 붙음)
+OOC = []   # 민정 메시지 속 *OOC: 지시사항* — 남긴 뒤의 모든 답에 따름 (시스템 프롬프트 끝에 붙음). 메시지와 같이 90일 지나면 사라짐
+OOC_RE = re.compile(r'\*\s*OOC\s*[:：]\s*([\s\S]*?)\s*\*', re.I)
 
 
 def load_store():
@@ -65,9 +66,15 @@ def load_store():
     s.setdefault('letters', {})
     s.setdefault('chat', [])
     s.setdefault('memory', {'summary': '', 'upto': ''})
-    OOC[:] = [r['text'].strip() for r in s['chat'] if r.get('ooc') and str(r.get('text', '')).strip()]
+    OOC[:] = [m.strip() for r in s['chat'] if r.get('from') == 'me' for m in OOC_RE.findall(str(r.get('text') or '')) if m.strip()]
     s['chat_all'] = s['chat']
-    s['chat'] = [r for r in s['chat'] if not r.get('ooc')]   # 생성할 땐 대화로 안 봄
+    view = []   # 생성할 땐 OOC 부분을 뺀 대화로 (지시사항만 있던 메시지는 없는 걸로)
+    for r in s['chat']:
+        t = re.sub(r'[ \t]{2,}', ' ', OOC_RE.sub(' ', str(r.get('text') or ''))).strip()
+        if r.get('from') == 'me' and not t and not r.get('img') and not r.get('kind'):
+            continue
+        view.append(dict(r, text=t))
+    s['chat'] = view
     return s
 
 
@@ -1110,6 +1117,31 @@ def apply_receipt(patch):
     write(RECEIPT, data)
 
 
+ARCHIVE_DIR = 'minjung/archive/'
+
+
+def archive_chat(chat):
+    """지난달까지의 대화를 minjung/archive/chat-YYYY-MM.json 에 모아 둠 (단순 기록 · 90일 지나 대화창에서 지워져도 남음)"""
+    month = now().strftime('%Y-%m')
+    by = {}
+    for r in chat:
+        if r['at'][:7] < month:
+            by.setdefault(r['at'][:7], []).append(r)
+    for m, rows in by.items():
+        f = f'{ARCHIVE_DIR}chat-{m}.json'
+        old = load(f, None) or {'month': m, 'chat': []}
+        have = {x.get('id'): x for x in old.get('chat') or []}
+        changed = False
+        for r in rows:
+            r = {k: v for k, v in r.items() if not k.startswith('_')}
+            if have.get(r.get('id')) != r:
+                have[r.get('id')] = r
+                changed = True
+        if changed or not os.path.exists(path(f)):
+            os.makedirs(os.path.dirname(path(f)), exist_ok=True)
+            write(f, {'month': m, 'chat': sorted(have.values(), key=lambda x: x.get('at', ''))})
+
+
 def apply(store, patch):
     if 'chat_all' in store:   # 저장할 땐 OOC 까지 전부
         store['chat'] = store.pop('chat_all')
@@ -1152,7 +1184,8 @@ def apply(store, patch):
         if rp['item']['id'] not in {x.get('id') for x in reps}:
             reps.append(rp['item'])
     cut = (now() - timedelta(days=KEEP_CHAT_DAYS)).strftime('%Y-%m-%d')
-    store['chat'] = [r for r in store['chat'] if r['at'][:10] >= cut or r.get('ooc')]   # OOC 는 오래돼도 남김
+    archive_chat(store['chat'])   # 지난달까지 대화는 지워지기 전에 월별 기록으로
+    store['chat'] = [r for r in store['chat'] if r['at'][:10] >= cut]
     store['chat'].sort(key=lambda r: r['at'])
     store['updated_at'] = stamp()
     return store

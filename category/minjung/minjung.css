@@ -1079,9 +1079,3 @@ html.sn-lock, html.sn-lock body { height: 100%; overflow: hidden; overscroll-beh
 .sn-img { width: 180px; max-width: 62%; aspect-ratio: 3 / 4; border-radius: 14px; overflow: hidden; line-height: 0; background: rgba(255, 255, 255, .08); }
 .sn-img.land { width: 240px; aspect-ratio: 4 / 3; }
 .sn-imgi { display: block; width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
-
-/* OOC 지시사항: 작은 표시만 */
-.sn-row.sn-oocrow { justify-content: center; margin: 6px 0 10px; }
-.sn-b.sn-ooc { padding: 2px 9px !important; border-radius: 999px !important; border: 1px dashed currentColor !important; background: transparent !important; border-image: none !important;
-    font-size: 9.5px; letter-spacing: 1px; opacity: .45; color: var(--mj-sub) !important; text-shadow: none !important; min-height: 0 !important; }
-.sn-b.sn-ooc::before, .sn-b.sn-ooc::after { display: none !important; }

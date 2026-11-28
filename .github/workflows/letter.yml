@@ -97,6 +97,7 @@ jobs:
             python .github/scripts/letter.py apply "$RUNNER_TEMP/patch.json"
             python .github/scripts/vault.py assert-sealed minjung/letters.json diary/receipt.json
             git add minjung/letters.json
+            [ -d minjung/archive ] && git add minjung/archive
             [ -f diary/receipt.json ] && git add diary/receipt.json
             git diff --cached --quiet && { echo '변경 없음'; exit 0; }
             git commit -q -m '김민정: 시온 메시지'
@@ -147,6 +148,7 @@ jobs:
             python .github/scripts/letter.py apply "$RUNNER_TEMP/patch.json"
             python .github/scripts/vault.py assert-sealed minjung/letters.json
             git add minjung/letters.json
+            [ -d minjung/archive ] && git add minjung/archive
             git diff --cached --quiet && { echo '변경 없음'; exit 0; }
             git commit -q -m '김민정: 시온 일정 메시지'
             if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo saved=1 >> "$GITHUB_OUTPUT"; exit 0; fi
